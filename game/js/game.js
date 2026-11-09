@@ -1085,6 +1085,8 @@ function loadLevel(id, carry) {
   if (levelMesh) R.deleteMesh(levelMesh);
   levelMesh = R.createMesh(buildLevelMesh());
   R.haze = LEVEL.haze || [0.035, 0.026, 0.02];
+  const gf = LEVEL.groundFog;                               // low fog lying on the field
+  R.gfog = gf ? [gf.density, gf.falloff, gf.floor || 0, 1] : [0, 0, 0, 0]; R.gfogCol = gf ? gf.col : [0, 0, 0];
   FLOW = null; GRILLE_CELLS.clear(); particles = []; interactTarget = null;
   const seed = parseInt(new URLSearchParams(location.search).get('seed'), 10) || 1;
   S = newState(seed, carry);

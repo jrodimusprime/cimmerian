@@ -281,6 +281,7 @@ const FIELD = { floor: 'TURF', wall: 'SUNSET', ceil: 'SUNSET' };   // open groun
 const LEVEL_E1M1 = {
   level: 'e1m1', next: 'e1m3', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [66, 30],
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
+  groundFog: { density: 0.16, falloff: 0.8, floor: 0, col: [0.47, 0.21, 0.2] },   // the battle's smoke and the evening mist, lying on the dead
   areas: [
     { id: 'charge', type: 'action', name: 'The Broken Charge', rooms: ['charge'] },
     { id: 'arrows', type: 'puzzle', name: 'The Arrow Ground', rooms: ['gully', 'arrowground'], cp: [17, 15, -Math.PI / 2] },
