@@ -379,8 +379,8 @@ const TEXGEN = {
   } },
   HIDE: { f: (x, y, s) => ({ v: 0.35 + 0.35 * tfbm(x / 64, y / 64, 8, 3, s) + 0.1 * Math.sin(TAU * y / 5), ramp: 'earth', lo: 0.04, hi: 0.5, h: 0.04 }) },
   SUNSET: { f: (x, y, s) => {                                   // "The sun sets": banded cloud over a red sky
-    const px = x / 64, py = y / 64, band = tfbmP(px, py, 2, 8, 3, s);
-    return { v: 0.3 + 0.6 * band, ramp: band > 0.55 ? 'fire' : 'scarlet', lo: 0.15, hi: 0.8, e: 1 };
+    const px = x / 64, py = y / 64, band = 0.6 * tfbmP(px, py, 1, 4, 3, s) + 0.4 * tfbm(px, py, 2, 2, s + 4);
+    return { v: 0.35 + 0.5 * band, ramp: 'scarlet', lo: 0.35, hi: 0.95, e: 0.9 };
   } },
   FACE: { f: (x, y, s) => ({ v: 0.6 + 0.2 * tfbm(x / 64, y / 64, 8, 3, s) - (hrand(Math.floor(x), Math.floor(y), s, 4) > 0.9 ? 0.12 : 0), ramp: 'earth', lo: 0.25, hi: 0.78, h: 0.05 }) },
 };

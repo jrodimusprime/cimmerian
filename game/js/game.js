@@ -142,6 +142,7 @@ function newState(seed, carry) {
   const g = entitySpec('black_giant'), gp = g ? W(g.at[0], g.at[1]) : { x: -1e4, z: -1e4 };
   const sh = entitySpec('monster_shukeli'), shp = sh ? W(sh.at[0], sh.at[1]) : { x: -1e4, z: -1e4 };
   const fixed = ['cell_door', 'grille_gate', 'portcullis'];
+  const armed = LEVEL.arms ? { fists: true, dagger: false, sword: true } : null;
   return {
     seed, level: LEVEL.level, tick: 0, rng: new RNG(hash4(seed, 0xC1, LEVEL.level.charCodeAt(3), 0)),
     x: sp.x, y: 0, z: sp.z, yaw: start.yaw, pitch: -0.12, vx: 0, vy: 0, vz: 0, onGround: true,
@@ -154,12 +155,15 @@ function newState(seed, carry) {
     satha: { start: entitySpec('scripted_satha') ? Math.round(3 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
     proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, combo: 0, lastSwing: -999, pendingHit: null,
-    weapons: carry ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }, weapon: carry ? carry.weapon : 'fists', hits: 0,
+    weapons: armed || (carry ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry ? carry.weapon : 'fists', hits: 0,
     foes: newFoes(), alerted: new Set(), areas: new Set([LEVEL.areas[0].id]), portc: { open: 0, target: 0, dropT: 0 },
     gates: Object.fromEntries(LEVEL.links.filter(l => !fixed.includes(l.name)).map(l => [l.name, { open: 0, target: 0 }])),
     valves: LEVEL.valves ? LEVEL.valves.at.map(() => 1) : [], wind: 0, windNow: 0, windSnd: 0,
     boom: { angle: LEVEL.boom ? LEVEL.boom.over : 0, target: LEVEL.boom ? LEVEL.boom.over : 0 }, stone: { drop: 0, target: 0 },
     checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1, playTicks: carry ? carry.playTicks : 0,
+    shamu: LEVEL.level === 'e1m1' ? { vt: 0, shout: false, cool: 0, woke: new Set(), phase: 'fight', t: 0, line: 0, hoof: [-1, -1, -1],
+      tsotha: { state: 'away', x: 62.8 * CELL, z: 15 * CELL, yaw: -Math.PI / 2, t: 0, walk: 0 } } : null,
+    paralysed: 0,
   };
 }
 
@@ -277,6 +281,7 @@ const DEATHS = {
   spear: 'The spear goes in under your ribs, and the dark comes up to meet you.',
   arrow: 'The arrow takes you in the throat. You drown on dry stone.',
   axe: 'The long axe comes down like a falling tree.',
+  trample: 'The charge rides you down. Hooves, and then nothing.',
   claws: 'They are on you in the dark, all claws and dripping jaws, and the pits keep what they catch.',
   weeper: 'The quaking mass flows over you, and its laughter is the last thing you hear.',
 };
@@ -455,6 +460,7 @@ function takeItem(it) {
   }
 }
 function onFire(kick) {
+  if (S.shamu && S.shamu.tsotha.state === 'offer' && !kick) { startAttack(false); tsothaTouch(); return; }
   if (!kick && S.flags.has_bone) { if (S.swing <= 0 && S.throwT <= 0) throwBone(); return; }
   startAttack(kick);
 }
@@ -683,7 +689,7 @@ function barsHit(p, nx, nz) {
 function updateProjectiles() {
   for (let i = S.proj.length - 1; i >= 0; i--) {
     const p = S.proj[i];
-    p.vy -= (p.type === 'bone' ? 10 : p.type === 'arrow' ? 2 : 4) * DT; p.spin += DT * 12; p.life -= DT;
+    p.vy -= (p.g || (p.type === 'bone' ? 10 : p.type === 'arrow' ? 2 : 4)) * DT; p.spin += DT * 12; p.life -= DT;
     let nx = p.x + p.vx * DT, ny = p.y + p.vy * DT, nz = p.z + p.vz * DT;
     const hit = p.type === 'bone' && !p.bounced ? barsHit(p, nx, nz) : null;
     if (hit) {
@@ -709,7 +715,12 @@ function updateProjectiles() {
       S.proj.splice(i, 1); continue;
     }
     p.x = nx; p.y = ny; p.z = nz;
-    if (p.type === 'arrow' && Math.hypot(p.x - S.x, p.y - (S.y + 1.1), p.z - S.z) < 0.6) {
+    if (p.type === 'arrow' && p.volley && p.vy < 0 && hiddenAt(S.x, S.z) && Math.hypot(p.x - S.x, p.z - S.z) < 1.5 && p.y < S.y + 2) {
+      S.proj.splice(i, 1); Sfx.arrow();
+      if (!S.hints.has('cover')) { S.hints.add('cover'); log('The shafts thud into the dead horse in front of you.', 'dim'); }
+      continue;
+    }
+    if (p.type === 'arrow' && Math.hypot(p.x - S.x, p.y - (S.y + 1.1), p.z - S.z) < (p.volley ? 0.9 : 0.6)) {
       S.proj.splice(i, 1); hurt(FOES.archer.dmg, 'arrow'); punchView(0.04, (Math.random() - 0.5) * 0.08);
       if (mode === 'play' && !S.hints.has('arrow')) { S.hints.add('arrow'); log('An arrow! Close with the archer, or put stone between you.', 'bad'); }
       continue;
@@ -778,6 +789,11 @@ function promptText(t) {
 const ROOM_DESC = {
   cell: 'A vault cut from the living rock, far under the hill. Straw rots on the floor. A torch burns in a niche above the ring you are chained to, and the darkness presses in on it like a living thing.',
   hall: 'The main corridor of the pits, vaulted high and narrow like the nave of a drowned temple. Its floor is worn into a smooth trough down the middle, as if something enormous passes along it often.',
+  charge: 'The field of the last charge. Five thousand knights rode into Koth behind you, and here they lie, slashed and trampled, their horses with them.',
+  arrowground: 'Open ground under the Shemite rise, feathered with spent shafts. The dead horses are the only cover.',
+  rise: 'The rise where the Shemitish bowmen stood to shoot your knights down.',
+  lanes: 'The ground the enemy horse rides over, again and again, churned to mire.',
+  heap: 'A heap of dead horses and men. Here the last of your house-troops fell around you. Here you will stand.',
   south_passage: 'A low passage, its walls gnawed. Something whimpers in the dark at the bottom of it.',
   post: 'A hall of the ancient works, older than the citadel. Its floor is gnawed bone.',
   den: 'A low den, heaped with bones. Things have been living here, many things.',
@@ -802,6 +818,17 @@ const ROOM_DESC = {
 };
 function objective() {
   const f = S.flags, live = g => S.foes.some(x => x.group === g && !x.dead && x.alert);
+  if (LEVEL.level === 'e1m1') {
+    const M = S.shamu;
+    if (S.paralysed > 0) return '';
+    if (M.tsotha.state === 'offer') return 'Answer him with the sword.';
+    if (M.phase !== 'fight') return 'The kings ride up.';
+    if (!S.areas.has('arrows')) return 'Fight your way across the field.';
+    if (!S.areas.has('line')) return 'Cross the arrow ground between volleys. Use the dead for cover.';
+    if (!f.line_broken) return 'Break the Shemite line.';
+    if (!f.lanes_crossed) return 'Cross the riders\' ground between charges.';
+    return 'Stand on the heap of dead. Hold.';
+  }
   if (LEVEL.level === 'e1m3') {
     if (live('nook') || live('warren')) return 'Fight! Kick them back.';
     if (!S.areas.has('warren')) return 'Find the safe road. Read the apprentices\' marks.';
@@ -868,6 +895,76 @@ function updateTunnels() {
 }
 function boomTip() { const b = LEVEL.boom, a = S.boom.angle; return [b.post[0] * CELL + Math.cos(a) * b.len, b.post[1] * CELL + Math.sin(a) * b.len]; }
 
+// ---------------------------------------------------------------- e1m1: the plain of Shamu (ch. I)
+const SHAMU_KINGS = [
+  ['Now through the yelling lines ride the lords of the conquerors: Strabonus, with his broad dark face and crafty eyes; Amalrus, slender, fastidious, treacherous, dangerous as a cobra; and the lean vulture Tsotha-lanti, clad only in silken robes.', 'warn'],
+  ['"Arrows!" snarls Strabonus. "Who can take a man-eating tiger alive?"', 'voice'],
+  ['"Take him alive," says Tsotha. He swings down from his horse and comes through the lines of the pikemen, who shrink back fearfully lest they so much as touch the skirts of his robe.', 'voice'],
+];
+function updateShamu() {
+  const M = S.shamu, L = LEVEL, room = S.room;
+  if (!M) return;
+  M.cool -= DT;
+  const alive = g => S.foes.filter(f => f.group === g && !f.dead);
+  const wake = (g) => { if (M.woke.has(g)) return; M.woke.add(g); for (const f of S.foes) if (f.group === g) f.hold = false; alertGroup(g); };
+  if (S.areas.has('line')) wake('line');
+  if (S.areas.has('heap')) wake('heap1');
+  if (M.woke.has('heap1') && !alive('heap1').length) wake('heap2');
+  for (const g of M.woke) if (S.foes.some(f => f.group === g && !f.dead && !f.alert)) alertGroup(g, true);   // the battle is on: after a fall they come again
+  if (S.areas.has('line') && !alive('line').length) setFlag('line_broken');
+  if (S.x > 50 * CELL) setFlag('lanes_crossed');
+  // the Shemite volleys over the arrow ground
+  const V = L.volley, archers = alive(V.group).filter(f => f.cls === 'archer');
+  if (!M.woke.has(V.group) && V.rooms.includes(room) && archers.length && mode === 'play') {
+    M.vt += DT;
+    if (!M.shout && M.vt >= V.period - 1.2) { M.shout = true; Sfx.shout(); if (!S.hints.has('volley')) { S.hints.add('volley'); log('On the rise ahead the Shemite captains bawl the order, and the bows come up together. Get down behind the dead horses!', 'bad'); } }
+    if (M.vt >= V.period) {
+      M.vt = 0; M.shout = false; Sfx.bow();
+      for (const a of archers) {
+        const T = 1.5, g = 9, tx = S.x + (S.rng.next() - 0.5) * 3, tz = S.z + (S.rng.next() - 0.5) * 3, ty = S.y + 1.0;
+        const ox = a.x, oy = a.y + 1.5, oz = a.z;
+        S.proj.push({ type: 'arrow', x: ox, y: oy, z: oz, vx: (tx - ox) / T, vy: (ty - oy + 0.5 * g * T * T) / T, vz: (tz - oz) / T, life: 3, spin: 0, g, volley: true });
+      }
+    }
+  } else { M.vt = Math.min(M.vt, V.period - 1.5); M.shout = false; }
+  // the riders: Ophirean knights charge down three lanes on a fixed cadence
+  const [z0, z1] = L.chargeSpan.map(v => v * CELL), span = z1 - z0;
+  L.charges.forEach((c, i) => {
+    const ph = ((S.tick / SIM_HZ + c.offset) % c.period) / (c.period * 0.62);
+    if (ph > 1) { M.hoof[i] = -1; return; }
+    if (M.hoof[i] < 0 && Math.abs(S.x - c.x * CELL) < 30) Sfx.rumble();
+    const z = c.dir > 0 ? z0 + ph * span : z1 - ph * span; M.hoof[i] = z;
+    if (mode === 'play' && Math.abs(S.x - c.x * CELL) < 1.3 && Math.abs(S.z - z) < 1.7 && M.cool <= 0) {
+      M.cool = 1.0; hurt(30, 'trample'); S.vx += (S.x < c.x * CELL ? -1 : 1) * 8; punchView(0.1, 0.1);
+      if (mode === 'play') log('A gilded knight rides you down and is gone, laughing.', 'bad');
+    }
+  });
+  // the end of the field: the kings ride up; the wizard; the ring
+  const ts = M.tsotha;
+  if (M.phase === 'fight' && M.woke.has('heap2') && !alive('heap2').length) { M.phase = 'kings'; M.t = 0; M.line = 0; setFlag('heap_held'); }
+  M.t += DT;
+  if (M.phase === 'kings') {
+    if (M.line < SHAMU_KINGS.length && M.t > 1 + M.line * 4) { log(SHAMU_KINGS[M.line][0], SHAMU_KINGS[M.line][1]); Sfx.voice(0.5); M.line++; }
+    if (M.line >= SHAMU_KINGS.length && M.t > 13) { M.phase = 'wizard'; ts.state = 'walk'; }
+  }
+  if (ts.state === 'walk') {
+    const dx = S.x - ts.x, dz = S.z - ts.z, d = Math.hypot(dx, dz);
+    ts.yaw = Math.atan2(dx, dz);
+    if (d > 2.25) { const st = Math.min(d - 2.2, 2.6 * DT); ts.x += dx / d * st; ts.z += dz / d * st; ts.walk += st; }
+    else { ts.state = 'offer'; ts.t = 0; Sfx.voice(0.3); log('He steps over the corpses and comes face to face with you. "I offer you life, Conan," he says, a cruel mirth bubbling at the back of his voice.', 'voice'); }
+  }
+  if (ts.state === 'offer') { ts.yaw = Math.atan2(S.x - ts.x, S.z - ts.z); if (Math.hypot(S.x - ts.x, S.z - ts.z) > 3.5) ts.state = 'walk'; }
+  if (S.paralysed > 0) { S.paralysed += DT; if (S.paralysed > 5 && mode === 'play') finishLevel(); }
+}
+function tsothaTouch() {
+  const ts = S.shamu.tsotha;
+  ts.state = 'touch'; setFlag('answered'); S.paralysed = 0.001; Sfx.swing(); Sfx.sting();
+  log('"I give you death, wizard!" The great sword swings in a stroke meant to shear him in half.', 'good');
+  log('But the wizard steps in, too quick for the eye to follow, and merely lays an open hand on your left forearm, where the mail has been hacked away. A steel fang darts from his ring like a snake\'s tongue. The blade veers from its arc, and you crash to the earth, rigid as a dead man, your eyes wide open.', 'bad');
+  log('"Take him up and fear not," laughs Tsotha. "The lion\'s fangs are drawn."', 'voice');
+  fadeTarget = 0.85;
+}
+
 // ---------------------------------------------------------------- the tick
 function humanInput() {
   const inp = {
@@ -880,6 +977,10 @@ function humanInput() {
 }
 function tick(inp) {
   S.tick++; S.playTicks++;
+  if (S.paralysed > 0) {                                  // the purple lotus: rigid, eyes open, falling back to the sky
+    inp = { fwd: 0, side: 0, run: false, jump: false, use: false, fire: false, kick: false };
+    S.pitch += (1.25 - S.pitch) * Math.min(1, DT * 1.5);
+  }
   if (inp.yaw !== undefined) S.yaw = inp.yaw;
   if (inp.pitch !== undefined) S.pitch = inp.pitch;
   prev = { x: S.x, y: S.y, z: S.z };
@@ -894,6 +995,7 @@ function tick(inp) {
   updateShukeli();
   updateFoes();
   updateTunnels();
+  updateShamu();
   updateProjectiles();
   if (mode !== 'play') return;
   resolvePlayerHit();
@@ -911,7 +1013,7 @@ function tick(inp) {
   }
   if (S.onGround && sp > 0.8) { stepAcc += sp * DT; bobPhase += sp * DT * 2.2; if (stepAcc > 2.0) { stepAcc = 0; Sfx.step(hiddenAt(S.x, S.z)); } }
   bobAmt += ((S.onGround && sp > 0.8 ? Math.min(1, sp / 5) : 0) - bobAmt) * Math.min(1, DT * 8);
-  const ex = LEVEL.entities.find(e => e.class === 'trigger_exit').rect;
+  const exE = LEVEL.entities.find(e => e.class === 'trigger_exit'), ex = exE ? exE.rect : [1e9, 1e9, 1e9, 1e9];
   if (S.x > ex[0] * CELL && S.x < ex[2] * CELL && S.z > ex[1] * CELL && S.z < ex[3] * CELL && (LEVEL.level !== 'e1m3' || S.flags.gate_open)) finishLevel();
 }
 
@@ -963,6 +1065,8 @@ async function showIntro() {
 const LEVEL_INTRO = {
   e1m2: [['THE PITS', 'title'], ['Chained to a ring in a vault far beneath the hill. A torch burns in a niche above your head; the darkness presses in on it like a living thing.', ''],
     ['Out in the black beyond the arch, something vast is moving.', 'warn'], ['(E to use things. Read whatever the dead have left you.)', 'dim']],
+  e1m1: [['THE PLAIN OF SHAMU', 'title'], ['Five thousand knights followed you over the border into Koth, to aid Amalrus of Ophir. Amalrus has betrayed you to Strabonus, and not one of the five thousand will leave the field alive.', ''],
+    ['The sun is going down red on the last of them.', 'warn']],
   e1m3: [['THE TUNNELS BELOW', 'title'], ['The grille is bolted from the outside, and Shukeli lies dead against it. The only way left is down: into the pits, where the made stone ends.', ''],
     ['Somewhere far off, a woman is weeping.', 'warn']],
 };
@@ -980,6 +1084,7 @@ function loadLevel(id, carry) {
   if (entitySpec('scripted_satha')) buildSathaPath();
   if (levelMesh) R.deleteMesh(levelMesh);
   levelMesh = R.createMesh(buildLevelMesh());
+  R.haze = LEVEL.haze || [0.035, 0.026, 0.02];
   FLOW = null; GRILLE_CELLS.clear(); particles = []; interactTarget = null;
   const seed = parseInt(new URLSearchParams(location.search).get('seed'), 10) || 1;
   S = newState(seed, carry);
@@ -1147,6 +1252,30 @@ function render(alpha) {
     }
   }
   drawFoes();
+  if (S.shamu) {
+    const M = S.shamu;
+    LEVEL.charges.forEach((c, i) => {
+      if (M.hoof[i] < 0) return;
+      const x = c.x * CELL, z = M.hoof[i], y = groundInfo(x, z).floor, yaw = c.dir > 0 ? 0 : Math.PI, l = sampleLight(x, y + 1.5, z), gal = gameTime * 14 + i;
+      drawHorse(x, y, z, yaw, gal, l);
+      drawCharacter('oknight', x, y + 0.5 + Math.abs(Math.sin(gal)) * 0.1, z - (c.dir > 0 ? 0.1 : -0.1), yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
+    });
+    if (M.phase !== 'fight') {                         // the kings, watching from their horses
+      for (const [kx, kz, who] of [[63.6, 12.5, 'kknight'], [63.6, 17.5, 'oknight']]) {
+        const x = kx * CELL, z = kz * CELL, y = groundInfo(x, z).floor, l = sampleLight(x, y + 1.5, z);
+        drawHorse(x, y, z, -Math.PI / 2, 0, l); drawCharacter(who, x, y + 0.5, z, -Math.PI / 2, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, unarmed: true, noShield: true }, l);
+      }
+      const ts = M.tsotha, tl = sampleLight(ts.x, 2, ts.z);
+      drawHorse(63.2 * CELL, groundInfo(63.2 * CELL, 15 * CELL).floor, 15 * CELL, -Math.PI / 2, 0, tl);
+      if (ts.state !== 'away') {
+        const P = poseIdle({}, gameTime);
+        if (ts.state === 'walk') poseWalk(P, ts.walk * 3, 0.7);
+        if (ts.state === 'offer') Object.assign(P, { uxR: -0.9, fxR: -0.8, headX: 0.15 });
+        if (ts.state === 'touch') Object.assign(P, { uxL: -1.3, fxL: -0.3, lean: 0.25 });
+        drawCharacter('tsotha', ts.x, groundInfo(ts.x, ts.z).floor, ts.z, ts.yaw, P, tl);
+      }
+    }
+  }
   // writing scratched into the walls wherever there is something to read
   for (const f of LV.features) {
     if (f.type !== 'clue' || !f.wall) continue;

@@ -19,6 +19,9 @@ const FOES = {
   warden: { hp: 70, speed: 3.3, reach: 2.4, dmg: 13, windup: 0.5, strike: 0.22, recover: 0.6, block: 'alternate', sight: 17, name: 'Kothian guard' },
   spearman: { hp: 55, speed: 3.1, reach: 3.3, dmg: 15, windup: 0.62, strike: 0.22, recover: 0.75, sight: 17, name: 'Kothian spearman' },
   archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 15], sight: 24, name: 'Shemite archer' },
+  // ch. I: "dark-faced Kothian knights", "Ophirean knights in gilded mail"
+  kknight: { hp: 80, speed: 3.4, reach: 2.5, dmg: 14, windup: 0.5, strike: 0.22, recover: 0.55, block: 'alternate', sight: 20, name: 'Kothian knight' },
+  oknight: { hp: 75, speed: 3.6, reach: 2.5, dmg: 13, windup: 0.45, strike: 0.2, recover: 0.5, block: 'alternate', sight: 20, name: 'Ophirean knight' },
   // "the black giants who guarded him ... grasping their long-shafted axes" (ch. II): Tsotha's own guard
   axeman: { hp: 160, speed: 3.3, reach: 2.7, dmg: 20, windup: 0.7, strike: 0.26, recover: 0.85, block: 'front', sight: 20, name: 'black axeman' },
   // "monsters with dripping jaws agape"; "something whimpered in fear and slunk away in the darkness" (ch. III-IV)
@@ -32,6 +35,10 @@ const ALERT_LINES = {
   vaults: 'The dark between the pillars is full of movement.',
   bonepit: 'The bones shift. Things uncurl from among them, all dripping jaws.',
   pits: 'Something drops from the roof of the way.',
+  charge: 'Kothian knights on foot come picking through the dead of the last charge, finishing the wounded. They see you.',
+  line: 'The Shemites throw down their bows and close with you, their spearmen first.',
+  heap1: 'They come at you over the dead: Kothian knights and Ophirean, in a ring.',
+  heap2: 'More of them, wave on wave. About your iron-clad feet grows a ring of mangled corpses.',
   barracks: 'Shukeli\'s death-squeal rings through the pits. Boots thunder in the barracks!',
   landing: 'One of Tsotha\'s black giants bars the stair, his long-shafted axe across his chest, and the guards close in around him.',
   warren: 'Something whimpers in the dark, and something else answers it. The things of the pits are coming.',
@@ -45,7 +52,7 @@ function newFoes() {
     const p = { x: e.at[0] * CELL, z: e.at[1] * CELL };
     return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw || 0, yaw: e.yaw || 0,
       hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
-      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0 };
+      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold };
   });
 }
 
@@ -144,7 +151,7 @@ function updateFoes() {
     if (g.kind === 2 && !st.invulnerable) { killFoe(f, 'fall'); f.falling = 1; f.vy = 0; continue; }
     f.y += (g.floor - f.y) * Math.min(1, DT * 12);
     const dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz), want = Math.atan2(dx, dz);
-    if (!f.alert && mode === 'play' && foeSees(f)) alertGroup(f.group);
+    if (!f.alert && !f.hold && mode === 'play' && foeSees(f)) alertGroup(f.group);
     f.moving = false;
     const turn = (rate) => { let a = want - f.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); f.yaw += clamp(a, -rate * DT, rate * DT); };
     const move = (tx, tz, spd) => {

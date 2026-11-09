@@ -457,7 +457,7 @@ Exit: the eagle takes the head (ending splash).
 
 | Where | Book | Current build | Fix |
 |---|---|---|---|
-| e1m1 | The plain of Shamu | Not built | Build it (above) |
+| e1m1 | The plain of Shamu | *(was: not built)* | **Done**: built to the plan above. The charge, the volleys over the arrow ground, the Shemite line, three charge lanes, two waves at the heap (the second, with the pikemen, out of the kings' ground), the kings' lines from the book, Tsotha's offer and the fang |
 | e1m2 | Keys gripped with his toes; Shukeli slams the grille; trapped; the pits behind | *(was: a rusted-link puzzle, a bone lure, soldiers in the pits)* | **Done**: rebuilt to the plan above |
 | e1m3 | The weeping, the well and the presence, the torch blown out, Satha returns | Marked ways, a vent puzzle, a hanging sigil-stone and a sigil gate | Rebuild to the plan above |
 | Satha | "the great shimmering white form"; venom drips | *(was: green; spat)* | **Done**: white; drips |
@@ -486,7 +486,7 @@ Each level is a **gated chain**: explore, find a clue, act on it, open the way o
 | Map | Puzzle chain (clue → action → unlock) |
 |---|---|
 | `e0m1` The Phoenix | The crypt frieze shows four braziers in an order → light them in that order → the sage wakes and marks your sword (the only weapon that hurts the demon). In the bedchamber, the axe is mounted high, so knock its wall mount loose with the broken hilt to drop it |
-| `e1m1` Plain of Shamu | Light puzzle (a combat level). Three rally standards: holding each in turn delays the waves and opens the next fallback position. The level always ends with the scripted fang |
+| `e1m1` Plain of Shamu | Light puzzle (a combat level). The captains bawl before each volley, so dash from dead horse to dead horse between volleys; read the riders' lanes from the churned ground and cross each one while it stands empty. The level always ends with the scripted fang: answer Tsotha's offer with the sword |
 | `e1m2` The Pits | Lie still while Satha passes (moving under her draws the venom); the strangler's keys land beyond your hands, so slip your foot free and grip them with your toes; Shukeli slams the grille, so strike through the bars before he flees |
 | `e1m3` The Tunnels | Satha's corridor on a fixed cycle (hide in side tunnels with your torch out); flee the weeping thing; in the crossing chamber the well's wind blows your torch out, so find your way back by its ember. (The current build's marked ways, vents and hanging stone predate this plan; see the audit in §9) |
 | `e1m4` Yothga | Open the cage with one of Shukeli's keys. Cut Yothga's stem, never its roots (the book: touching the roots is death). Pelias needs no puzzle to scare Satha off; he raises Shukeli to work the bolt |

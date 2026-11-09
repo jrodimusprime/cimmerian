@@ -15,12 +15,16 @@ const SPLASHES = {
   e1m3: {
     title: 'THE TUNNELS BELOW', scene: 'descent', seed: 19,
     accent: [],                                                   // the painter adds the torch
-    text: 'The jailer\'s keys are heavy in your fist, and the stair climbs toward the citadel. But the keys open more than one door, and the pits go deeper than any stair. Somewhere below, something is weeping, and a prisoner older than the citadel is waiting to be found.',
+    text: 'Back in the dark, and the dark is real. The grille is bolted from outside, Shukeli lies dead against it, and the only way left is down, into the pits beneath the Scarlet Citadel. Somewhere in the tunnels a woman is weeping.',
   },
 };
 SPLASHES.e1m4 = {
   title: 'YOTHGA', scene: 'descent', seed: 31, accent: [],
   text: 'Beyond the sigil gate a cage of bars stands in the dark, and in it a garden that should not be: a pale stem, livid blossoms, tendrils that rear like cobras. In their grip hangs a man who is very old, or something wearing one. The flower is drinking his soul.',
+};
+SPLASHES.e1m1 = {
+  title: 'THE PLAIN OF SHAMU', scene: 'battle', seed: 11, accent: [[0.5, 0.18, 0.09]],
+  text: 'How did the king come to lie in chains beneath the Scarlet Citadel? Remember. Remember the plain of Shamu: Amalrus of Ophir\'s betrayal, five thousand Aquilonian knights riding into a trap, and the sun going down red on the last of them.',
 };
 SPLASHES.title = { image: 'art/title.jpg', credit: 'John Martin, <i>Pandemonium</i>, 1841' };
 new Image().src = SPLASHES.title.image;
@@ -191,13 +195,42 @@ function paintTorchbearer(c, W, H, g, poly, k) {
   return [[(fx + 60 * k) / W, (fy - 202 * k) / H, 0.04]];
 }
 
+// The plain of Shamu at sunset: a red sky, a low sun, spear-ranks on the ridge, and on a heap
+// of dead horses and men a lone figure in black mail with his sword up.
+function paintBattle(c, W, H, sp) {
+  const k = H / 640, r = new RNG(sp.seed), g = v => { v = clamp(Math.round(v), 0, 255); return 'rgb(' + v + ',' + v + ',' + v + ')'; };
+  const poly = (pts, fill) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]); c.closePath(); c.fillStyle = fill; c.fill(); };
+  const sky = c.createLinearGradient(0, 0, 0, H * 0.62); sky.addColorStop(0, g(40)); sky.addColorStop(0.7, g(200)); sky.addColorStop(1, g(245));
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  c.fillStyle = g(255); c.beginPath(); c.arc(W * 0.5, H * 0.58, H * 0.08, Math.PI, 0); c.fill();                     // the sun on the horizon
+  for (let b = 0; b < 10; b++) { c.globalAlpha = 0.45; c.fillStyle = g(r.range(30, 110)); c.beginPath(); c.ellipse(r.range(0, W), r.range(0.05, 0.4) * H, r.range(0.15, 0.45) * W, r.range(0.012, 0.035) * H, 0, 0, Math.PI * 2); c.fill(); }
+  c.globalAlpha = 1;
+  poly([[0, H * 0.6], [W * 0.2, H * 0.56], [W * 0.45, H * 0.6], [W * 0.7, H * 0.55], [W, H * 0.59], [W, H], [0, H]], g(70));    // the ridge
+  for (let x = 0; x < W; x += 5 * k) { const y = H * 0.565 + Math.sin(x * 0.01) * 6 * k; c.strokeStyle = g(20); c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(x, y); c.lineTo(x + r.range(-1, 1) * k, y - r.range(18, 30) * k); c.stroke(); }   // the spears of Koth
+  const fg = c.createLinearGradient(0, H * 0.6, 0, H); fg.addColorStop(0, g(110)); fg.addColorStop(1, g(30)); c.fillStyle = fg; c.fillRect(0, H * 0.62, W, H * 0.38);
+  for (let i = 0; i < 40; i++) { const x = r.range(0, W), y = r.range(0.66, 0.98) * H, s = r.range(8, 22) * k * (y / H); c.fillStyle = g(15); c.beginPath(); c.ellipse(x, y, s * 1.6, s * 0.5, r.range(-0.3, 0.3), 0, Math.PI * 2); c.fill(); }   // the dead
+  for (let i = 0; i < 14; i++) { const x = r.range(0, W), y = r.range(0.66, 0.95) * H; c.strokeStyle = g(10); c.lineWidth = 2 * k; c.beginPath(); c.moveTo(x, y); c.lineTo(x + r.range(-40, 40) * k, y - r.range(30, 70) * k); c.stroke(); }   // broken lances
+  const hx = W * 0.5, hy = H * 0.82;
+  poly([[hx - 230 * k, hy + 40 * k], [hx - 120 * k, hy - 50 * k], [hx - 20 * k, hy - 80 * k], [hx + 90 * k, hy - 55 * k], [hx + 220 * k, hy + 40 * k]], g(12));   // the heap
+  c.save(); c.translate(hx, hy - 78 * k); c.scale(k * 1.15, k * 1.15);
+  const ink = g(4);
+  poly([[-26, -96], [26, -98], [34, -84], [22, -40], [24, -4], [-24, -4], [-20, -40], [-34, -82]], ink);
+  poly([[-22, -6], [-6, -6], [-14, 40], [-26, 78], [-40, 76], [-28, 38]], ink); poly([[6, -6], [22, -6], [30, 38], [44, 74], [30, 78], [16, 40]], ink);
+  c.beginPath(); c.ellipse(0, -112, 13, 15, 0, 0, Math.PI * 2); c.fillStyle = ink; c.fill();
+  poly([[-12, -124], [-28, -98], [-20, -96], [-8, -112]], ink); poly([[12, -124], [26, -98], [18, -96], [8, -112]], ink);
+  poly([[20, -92], [30, -98], [56, -150], [48, -156]], ink); poly([[-22, -90], [-32, -94], [-58, -60], [-52, -54]], ink);
+  poly([[46, -152], [56, -150], [96, -262], [90, -264]], g(60)); poly([[40, -152], [62, -148], [61, -142], [39, -146]], ink);   // the sword, raised
+  c.restore();
+  return [[hx / W, (hy - 200 * k) / H, 0.06]];
+}
+
 // ---- 2. engrave: anti-aliased hatching whose line weight carries the tone --
 function paintCarceri(cv, sp) {
   const W = 1280, H = clamp(Math.round(1280 * innerHeight / Math.max(1, innerWidth)), 540, 1100);
   cv.width = W; cv.height = H;
   const tc = document.createElement('canvas'); tc.width = W; tc.height = H;
   const c = tc.getContext('2d');
-  const accents = sp.accent.concat(paintTone(c, W, H, sp) || []);
+  const accents = sp.accent.concat((sp.scene === 'battle' ? paintBattle(c, W, H, sp) : paintTone(c, W, H, sp)) || []);
   const src = c.getImageData(0, 0, W, H).data, N = W * H;
   let tone = new Float32Array(N);
   for (let i = 0; i < N; i++) tone[i] = src[i * 4] / 255;
