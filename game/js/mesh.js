@@ -233,6 +233,38 @@ function addPrefab(mb, p) {
       addLathe(mb, p.x, p.y, p.z, [[0, 0], [0.3, 0], [0.26, 5.6], [0, 5.7]], 8, T.WOOD);
       for (const y of [0.4, 5.2]) addLathe(mb, p.x, p.y + y, p.z, [[0.3, 0], [0.32, 0.06], [0.32, 0.16], [0.3, 0.22]], 8, T.IRON);
       break;
+    case 'deadhorse': {                                   // a dead horse on its side: cover from arrows
+      const yaw = p.rot || 0, c = Math.cos(yaw), sn = Math.sin(yaw), P = (lx, lz) => [p.x + lx * c + lz * sn, p.z - lx * sn + lz * c];
+      const b = P(0, 0); addRock(mb, b[0], p.y + 0.45, b[1], 0.55, 0.45, 1.0, 11, T.HIDE, 0.12);
+      const h = P(0.1, 1.25); addRock(mb, h[0], p.y + 0.25, h[1], 0.18, 0.2, 0.42, 5, T.HIDE, 0.1);
+      for (const [lx, lz] of [[0.35, 0.6], [0.45, 0.4], [0.35, -0.55], [0.45, -0.75]]) { const q = P(lx, lz); addBox(mb, q[0] + 0.3 * c, p.y + 0.25, q[1] - 0.3 * sn, 0.5, 0.05, 0.05, T.HIDE, yaw); }
+      const sd = P(-0.3, 0); addBox(mb, sd[0], p.y + 0.8, sd[1], 0.05, 0.35, 0.4, T.LEATHER, yaw);
+      break;
+    }
+    case 'fallen': {                                      // a dead knight in his mail
+      const yaw = p.rot || 0, c = Math.cos(yaw), sn = Math.sin(yaw), P = (lz) => [p.x + lz * sn, p.z + lz * c];
+      const t = P(0), hd = P(0.75), l = P(-0.7);
+      addRock(mb, t[0], p.y + 0.16, t[1], 0.26, 0.15, 0.4, 3, T.MAIL, 0.1);
+      addRock(mb, hd[0], p.y + 0.14, hd[1], 0.13, 0.13, 0.15, 6, T.STEEL, 0.05);
+      addBox(mb, l[0] + 0.12 * c, p.y + 0.09, l[1] - 0.12 * sn, 0.08, 0.08, 0.45, T.CLOTH, yaw + 0.1);
+      addBox(mb, l[0] - 0.12 * c, p.y + 0.09, l[1] + 0.12 * sn, 0.08, 0.08, 0.45, T.CLOTH, yaw - 0.15);
+      addBox(mb, t[0] + 0.5 * c, p.y + 0.06, t[1] - 0.5 * sn, 0.4, 0.02, 0.025, T.STEEL, yaw + 1.2);    // his sword
+      break;
+    }
+    case 'standard': {                                    // a toppled standard, its banner in the mud
+      const yaw = p.rot || 0;
+      addBox(mb, p.x, p.y + 0.06, p.z, 0.04, 0.04, 1.8, T.WOOD, yaw, ONE3, 0.05);
+      addBox(mb, p.x + Math.sin(yaw) * 1.3 + Math.cos(yaw) * 0.5, p.y + 0.04, p.z + Math.cos(yaw) * 1.3 - Math.sin(yaw) * 0.5, 0.5, 0.02, 0.45, T.BANNER, yaw);
+      break;
+    }
+    case 'heap': {                                        // "a heap of dead horses and men"
+      for (let k = 0; k < 9; k++) {
+        const a = k * 2.399, r = 0.4 + (k % 4) * 0.45, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, hgt = 0.9 - r * 0.35;
+        addRock(mb, x, p.y + hgt * 0.5, z, 0.6, hgt * 0.55, 0.9, 20 + k, k % 3 ? T.HIDE : T.MAIL, 0.2);
+      }
+      for (let k = 0; k < 5; k++) { const a = k * 1.7; addBox(mb, p.x + Math.cos(a) * 1.1, p.y + 0.9, p.z + Math.sin(a) * 1.1, 0.03, 0.03, 1.2, T.WOOD, a, ONE3, 0.6); }   // broken lances
+      break;
+    }
     case 'grating': {
       const cx = (p.at[0] + 0.5) * CELL, cz = (p.at[1] + 0.5) * CELL, y = groundInfo(cx, cz).ceil - 0.3;
       for (let k = -2; k <= 2; k++) {
@@ -324,6 +356,7 @@ function buildModel(name) {
   const mb = new MeshBuilder(512);
   if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
   if (name.startsWith('weeper:')) return buildWeeperPart(name.split(':')[1]);
+  if (name.startsWith('horse:')) return buildHorsePart(name.split(':')[1]);
   if (name.startsWith('broken:')) return buildBroken(name.split(':')[1]);
   if (name.startsWith('bars:')) {
     // a run of iron bars along +x, from 0 to len, base at y=0
@@ -473,7 +506,7 @@ function loft(mb, st, sides, layer, vScale = 1, shade = null, axis = 'z') {
     }
     ring.push(r);
   }
-  const uv = layer === T.SATHA || layer === T.ARM || layer === T.MANACLE;   // UV skins carry (u, v, shade); others a grey tint
+  const uv = layer === T.SATHA || layer === T.ARM || layer === T.MANACLE || layer === T.FACE_BRUTE || layer === T.FACE_EUNUCH || layer === T.FACE_VULTURE;   // UV skins carry (u, v, shade); others a grey tint
   for (let i = 0; i < ring.length - 1; i++) for (let k = 0; k < sides; k++) {
     const a = ring[i][k], b = ring[i][k + 1], c = ring[i + 1][k + 1], d = ring[i + 1][k];
     for (const q of [a, b, c, a, c, d]) { mb.ensure(1); mb.v(q.p, q.n[0], q.n[1], q.n[2], uv ? [q.u, q.v, q.sh] : [q.sh, q.sh, q.sh], layer); }

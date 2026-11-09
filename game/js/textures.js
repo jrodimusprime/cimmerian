@@ -15,7 +15,8 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CLOTH', 'ROBE', 'BONE', 'FIRE', 'EYE', 'VENOM', 'BLACK', 'STRAW', 'SKY',
   'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL',
   'MAIL', 'LEATHER', 'TABARD', 'HAIR', 'SHIELD', 'BLOOD', 'BANNER', 'FACE',
-  'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'SIGIL', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3'];
+  'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'SIGIL', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
+  'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -36,6 +37,8 @@ const RAMPS = {
   fire: makeRamp('#5a1a00', '#ffd27a', 10, 0.9),
   scarlet: makeRamp('#2a0606', '#c4302b', 10),     // UI only in this level
   earth: makeRamp('#160e08', '#b08a66', 16),
+  bronze: makeRamp('#20140a', '#d8a24a', 14),
+  night: makeRamp('#0a0d14', '#6b7a96', 12),
   magic: makeRamp('#0a3020', '#e6fff0', 16, 0.9),
 };
 // The game palette (README §7): 6 lit ramps and 2 fullbright ramps of 16 shades, like the rows of
@@ -358,6 +361,27 @@ const TEXGEN = {
   TALLY1: { f: (x, y, s) => tallyTex(x, y, s, 1) },
   TALLY2: { f: (x, y, s) => tallyTex(x, y, s, 2) },
   TALLY3: { f: (x, y, s) => tallyTex(x, y, s, 3) },
+  // ---- e1m1, the plain of Shamu -----------------------------------------
+  TURF: { pre: s => makeCells(7, s), f: (x, y, s, c) => {       // trampled meadow: churned turf, hoof-holes, blood
+    const px = x / 64, py = y / 64, k = cellAt(c, px, py);
+    if (k.f1 < 0.03 + 0.015 * k.id) return { v: 0.15 + 0.2 * k.id, ramp: 'earth', lo: 0.02, hi: 0.3 };       // hoof-holes
+    if (tfbm(px, py, 4, 3, s + 7) > 0.66) return { v: 0.3 + 0.4 * tfbm(px, py, 16, 1, s), ramp: 'scarlet', lo: 0.05, hi: 0.4 };
+    const blades = Math.abs(Math.sin(TAU * (x * 0.37 + tfbm(px, py, 8, 2, s) * 4))) > 0.7;
+    return blades ? { v: 0.4 + 0.3 * tfbm(px, py, 8, 2, s), ramp: 'jade', lo: 0.1, hi: 0.55 } : { v: 0.2 + 0.3 * tfbm(px, py, 8, 3, s + 3), ramp: 'earth', lo: 0.05, hi: 0.45, h: 0.04 };
+  } },
+  GILT: { f: (x, y, s) => {                                     // Ophir's gilded mail
+    const row = Math.floor(y / 3), fx = ((x + (row % 2) * 1.5) / 3) % 1, fy = (y / 3) % 1, d = Math.abs(Math.hypot(fx - 0.5, fy - 0.5) - 0.3);
+    return { v: d < 0.12 ? 0.9 - d * 3 : 0.2, ramp: 'bronze', lo: 0.1, hi: 1, e: 0.05 };
+  } },
+  BLACKMAIL: { f: (x, y, s) => {                               // the king's black mail
+    const row = Math.floor(y / 3), fx = ((x + (row % 2) * 1.5) / 3) % 1, fy = (y / 3) % 1, d = Math.abs(Math.hypot(fx - 0.5, fy - 0.5) - 0.3);
+    return { v: d < 0.12 ? 0.6 - d * 3 : 0.05, ramp: 'night', lo: 0.0, hi: 0.6 };
+  } },
+  HIDE: { f: (x, y, s) => ({ v: 0.35 + 0.35 * tfbm(x / 64, y / 64, 8, 3, s) + 0.1 * Math.sin(TAU * y / 5), ramp: 'earth', lo: 0.04, hi: 0.5, h: 0.04 }) },
+  SUNSET: { f: (x, y, s) => {                                   // "The sun sets": banded cloud over a red sky
+    const px = x / 64, py = y / 64, band = tfbmP(px, py, 2, 8, 3, s);
+    return { v: 0.3 + 0.6 * band, ramp: band > 0.55 ? 'fire' : 'scarlet', lo: 0.15, hi: 0.8, e: 1 };
+  } },
   FACE: { f: (x, y, s) => ({ v: 0.6 + 0.2 * tfbm(x / 64, y / 64, 8, 3, s) - (hrand(Math.floor(x), Math.floor(y), s, 4) > 0.9 ? 0.12 : 0), ramp: 'earth', lo: 0.25, hi: 0.78, h: 0.05 }) },
 };
 
@@ -370,6 +394,62 @@ function tallyTex(x, y, s, n) {                      // n deep vertical cuts, sl
   }
   return { v: 0, ramp: 'ink', cut: false };
 }
+// ---- painted faces (Quake's way: a plain head, the features in the skin) -------
+// UV: u runs round the head with the face centred on u = 0; v runs up it (0.2 chin, 0.61 eyes, 1 crown).
+function faceSpace(x, y) { const u = x / 64, v = y / 64; return { du: u > 0.5 ? u - 1 : u, v }; }
+const ell = (du, v, cx, cy, rx, ry) => Math.hypot((du - cx) / rx, (v - cy) / ry);
+function seg(du, v, x0, y0, x1, y1) { const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy, t = clamp(((du - x0) * dx + (v - y0) * dy) / l2, 0, 1); return Math.hypot(du - x0 - dx * t, v - y0 - dy * t); }
+function paintFace(x, y, s, F) {
+  const { du, v } = faceSpace(x, y), a = Math.abs(du);
+  let t = 0.5 + 0.12 * tfbm(x / 64, y / 64, 16, 2, s) - 0.25 * smoothstep(0.18, 0.3, a);       // turning away from the light
+  t += 0.18 * Math.exp(-(ell(a, v, 0.075, 0.54, 0.05, 0.05) ** 2));                              // cheekbones
+  t += F.brow * Math.exp(-(ell(a, v, 0.05, 0.68, 0.08, 0.02) ** 2));                              // brow ridge
+  t -= F.hollow * Math.exp(-(ell(a, v, 0.085, 0.47, 0.03, 0.05) ** 2));                           // hollow cheeks
+  t -= 0.12 * Math.exp(-(ell(du, v, 0, 0.3, 0.08, 0.06) ** 2));                                   // under the jaw
+  if (F.jowls) t -= 0.22 * Math.exp(-(ell(a, v, 0.075, 0.36, 0.045, 0.035) ** 2)), t += 0.15 * Math.exp(-(ell(a, v, 0.07, 0.43, 0.05, 0.03) ** 2));
+  // nose: a lit bridge, shadowed nostrils
+  if (a < F.nose && v > 0.49 && v < 0.63) t += 0.2 * (1 - a / F.nose);
+  if (ell(a, v, 0.017, 0.495, 0.011, 0.007) < 1) return { v: 0.04, ramp: 'ink', lo: 0, hi: 0.2 };
+  // eyes in their sockets
+  const sock = ell(a, v, 0.062, 0.61, F.sock[0], F.sock[1]);
+  if (sock < 1) {
+    const eye = ell(a, v, 0.062, 0.608, F.eye[0], F.eye[1]);
+    if (eye < 1) return F.glow ? { v: 0.6 + 0.4 * (1 - eye), ramp: 'fire', lo: 0.25, hi: 1, e: F.glow } : { v: eye < 0.45 ? 0.05 : 0.8, ramp: 'ink', lo: 0, hi: 0.9 };
+    t -= 0.45 * (1 - sock * 0.6);
+  }
+  // mouth
+  const m = F.mouth(du, v);
+  if (m) return m;
+  for (const [x0, y0, x1, y1] of F.scars || []) if (seg(du, v, x0, y0, x1, y1) < 0.006) return { v: 0.7, ramp: 'ink', lo: 0.3, hi: 0.6 };
+  return F.skin(t, du, v);
+}
+const FACES = {
+  // the strangler: "his eyes glinted redly in the torchlight", "showing white tusks", a shaved skull
+  FACE_BRUTE: { brow: 0.3, hollow: 0.05, nose: 0.024, sock: [0.04, 0.034], eye: [0.018, 0.01], glow: 0.55, scars: [[0.04, 0.78, 0.11, 0.55], [-0.08, 0.42, -0.05, 0.33]],
+    mouth: (du, v) => {
+      const a = Math.abs(du), lip = 0.425 + 0.6 * du * du;                                     // a wide grin
+      if (a < 0.055 && Math.abs(v - lip) < 0.018) {
+        if (Math.abs(v - lip - 0.006) < 0.007 && (Math.floor(a * 160) % 2 === 0 || a > 0.03)) return { v: 0.85, ramp: 'ink', lo: 0.55, hi: 1 };   // teeth and tusks
+        return { v: 0.1, ramp: 'scarlet', lo: 0, hi: 0.3 };
+      }
+      return null;
+    },
+    skin: (t) => ({ v: t, ramp: 'earth', lo: 0.04, hi: 0.5, h: 0.05 }) },
+  // Shukeli: "a fat repellent figure", a face "like a fiendishly mocking carven gargoyle"
+  FACE_EUNUCH: { brow: 0.05, hollow: 0, nose: 0.02, jowls: true, sock: [0.03, 0.016], eye: [0.012, 0.005], glow: 0,
+    mouth: (du, v) => {
+      const a = Math.abs(du), lip = 0.43 + 0.1 * (0.06 - a) - 6 * Math.max(0, a - 0.04) ** 2 * 30;   // a leer, turned up at the corners
+      if (a < 0.065 && Math.abs(v - lip) < 0.009) return Math.abs(v - lip) < 0.004 && a < 0.04 && Math.floor(a * 130) % 2 ? { v: 0.8, ramp: 'ink', lo: 0.5, hi: 0.9 } : { v: 0.15, ramp: 'scarlet', lo: 0, hi: 0.35 };
+      return null;
+    },
+    skin: (t, du, v) => hrand(Math.floor(du * 900), Math.floor(v * 400), 3, 3) > 0.985 ? { v: 0.9, ramp: 'ink', lo: 0.6, hi: 0.9 } : { v: t, ramp: 'earth', lo: 0.3, hi: 0.8, h: 0.04 } },
+  // Tsotha-lanti: "the lean vulture", eyes like a beast's
+  FACE_VULTURE: { brow: 0.2, hollow: 0.3, nose: 0.03, sock: [0.045, 0.038], eye: [0.013, 0.009], glow: 0.9, scars: [],
+    mouth: (du, v) => Math.abs(du) < 0.04 && Math.abs(v - 0.42) < 0.004 ? { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 } : null,
+    skin: (t, du, v) => (Math.abs(du) < 0.08 && v > 0.72 && v < 0.82 && Math.abs(((v * 90) % 1) - 0.5) < 0.08) ? { v: t - 0.2, ramp: 'ink', lo: 0.2, hi: 0.6 } : { v: t, ramp: 'ink', lo: 0.28, hi: 0.72, h: 0.04 } },
+};
+for (const k in FACES) TEXGEN[k] = { f: (x, y, s) => paintFace(x, y, s, FACES[k]) };
+
 function generateTextures() {
   const S = TEX_SIZE, out = [];
   for (let li = 0; li < TEX_NAMES.length; li++) {

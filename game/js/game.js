@@ -36,7 +36,7 @@ function getModel(name) {
 // draw a cached model; `light` comes from sampleLight and carries its key direction
 function drawM(name, m, light, glow = 0, alpha = 1) {
   R.key = light.d || [0.3, 0.9, 0.3];
-  R.drawEntity(getModel(name), m, light, glow, alpha, UV_MODELS.has(name));
+  R.drawEntity(getModel(name), m, light, glow, alpha, UV_MODELS.has(name) || name.endsWith(':face'));
 }
 
 // ---------------------------------------------------------------- text log

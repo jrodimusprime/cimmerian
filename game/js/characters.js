@@ -7,21 +7,28 @@
 // ---------------------------------------------------------------------------
 
 const CAST = {
-  giant: { scale: 1.34, bulk: 1.38, belly: 0, skin: 'DARKSKIN', head: 'brute', torso: 'bare', hips: 'loin', arms: 'bare', legs: 'bare', feet: 'bare', weapon: 'sword' },
-  shukeli: { scale: 0.98, bulk: 1.2, belly: 1.25, skin: 'SICK', head: 'eunuch', torso: 'robe', hips: 'robe', arms: 'sleeves', legs: 'none', feet: 'slippers' },
+  giant: { face: 'FACE_BRUTE', scale: 1.34, bulk: 1.38, belly: 0, skin: 'DARKSKIN', head: 'brute', torso: 'bare', hips: 'loin', arms: 'bare', legs: 'bare', feet: 'bare', weapon: 'sword' },
+  shukeli: { face: 'FACE_EUNUCH', scale: 0.98, bulk: 1.2, belly: 1.25, skin: 'SICK', head: 'eunuch', torso: 'robe', hips: 'robe', arms: 'sleeves', legs: 'none', feet: 'slippers' },
   warden: { scale: 1.02, bulk: 1.1, belly: 0.1, skin: 'FACE', head: 'helm_great', torso: 'mail', hips: 'mail', arms: 'mail', legs: 'trousers', feet: 'boots', weapon: 'sword', shield: true, pauldrons: true, spikes: true },
   spearman: { scale: 1.02, bulk: 1.0, belly: 0.15, skin: 'FACE', head: 'coif', torso: 'mail', hips: 'mail', arms: 'mail', legs: 'trousers', feet: 'boots', weapon: 'spear' },
   archer: { scale: 0.97, bulk: 0.95, belly: 0, skin: 'FACE', head: 'hood', torso: 'leather', hips: 'leather', arms: 'leather', legs: 'trousers', feet: 'boots', weapon: 'bow', quiver: true },
   // Tsotha's guard: "a dozen black giants, grasping their long-shafted axes" (ch. II)
   axeman: { scale: 1.3, bulk: 1.3, belly: 0, skin: 'DARKSKIN', head: 'helm_horned', torso: 'bare', hips: 'mail', arms: 'bare', legs: 'bare', feet: 'boots', weapon: 'axe', pauldrons: true, spikes: true, cloak: true },
+  // e1m1: the plain of Shamu (ch. I) -- "Ophirean knights in gilded mail ... dark-faced Kothian knights"
+  kknight: { scale: 1.04, bulk: 1.12, belly: 0.1, skin: 'FACE', head: 'helm_great', torso: 'mail', hips: 'mail', arms: 'mail', legs: 'trousers', feet: 'boots', weapon: 'sword', shield: true, pauldrons: true },
+  oknight: { scale: 1.02, bulk: 1.06, belly: 0, skin: 'FACE', head: 'helm_crest', torso: 'mail', hips: 'mail', arms: 'mail', legs: 'trousers', feet: 'boots', weapon: 'sword', shield: true, mail: 'GILT', tabard: 'GILT' },
+  tsotha: { face: 'FACE_VULTURE', scale: 1.04, bulk: 0.78, belly: 0, skin: 'PALE', head: 'vulture', torso: 'robe', hips: 'robe', arms: 'sleeves', legs: 'none', feet: 'slippers', robeTex: 'TABARD' },
   // e1m3: "monsters with dripping jaws agape", the nameless things of Tsotha's pits
   thing: { scale: 0.92, bulk: 0.82, belly: 0, skin: 'PALE', head: 'crawler', torso: 'gaunt', hips: 'rag', arms: 'bare', legs: 'bare', feet: 'bare', arm: 1.35, claws: true },
 };
+// the head: a lofted skull, nose and brow carried by the cross-sections, the features painted on
+const HEAD_SHAPE = hw => [[0.07, 0.055 * hw, 0.09, 0.03, 0.01], [0.11, 0.075 * hw, 0.1, 0.07], [0.15, 0.084 * hw, 0.104, 0.092], [0.19, 0.086, 0.112, 0.1],
+  [0.23, 0.088, 0.105, 0.105], [0.27, 0.083, 0.088, 0.1], [0.31, 0.065, 0.052, 0.08], [0.335, 0.02, 0.015, 0.03]];
 const RIG = { hipY: 0.95, spineY: 1.0, neckY: 0.55, shoulderY: 0.46, shoulderX: 0.225, hipX: 0.1, upper: 0.29, fore: 0.3, thigh: 0.47, shin: 0.44 };
 
 // vertical loft: stations [y, halfWidth, front, back, forward offset]
-function loftY(mb, st, sides, layer, shade) {
-  loft(mb, st.map(s => S_(s[0], s[1], s[3], s[2], -(s[4] || 0))), sides, layer, 1, shade || null, 'y');
+function loftY(mb, st, sides, layer, shade, vScale = 1) {
+  loft(mb, st.map(s => S_(s[0], s[1], s[3], s[2], -(s[4] || 0))), sides, layer, vScale, shade || null, 'y');
 }
 function ringY(mb, y0, y1, w, f, bk, layer, cz = 0) { loftY(mb, [[y0, w * 0.97, f * 0.97, bk * 0.97, cz], [y0 + 0.004, w, f, bk, cz], [y1 - 0.004, w, f, bk, cz], [y1, w * 0.97, f * 0.97, bk * 0.97, cz]], 10, layer); }
 const DOWN = [0, -1, 0];
@@ -29,7 +36,7 @@ const DOWN = [0, -1, 0];
 function buildCharPart(id, part) {
   const c = CAST[id], b = c.bulk, fat = c.belly || 0, mb = new MeshBuilder(2048), sk = T[c.skin];
   const L = (layerName) => T[layerName];
-  const clothOf = k => ({ mail: L('MAIL'), leather: L('LEATHER'), robe: L('ROBE'), bare: sk, loin: sk, trousers: L('CLOTH'), sleeves: L('ROBE') }[k] || sk);
+  const clothOf = k => ({ mail: L(c.mail || 'MAIL'), leather: L('LEATHER'), robe: L(c.robeTex || 'ROBE'), bare: sk, loin: sk, trousers: L('CLOTH'), sleeves: L('ROBE') }[k] || sk);
   switch (part) {
     case 'torso': {                                     // spine-local: 0 = waist, 0.55 = neck base
       const lay = clothOf(c.torso), inf = c.torso === 'mail' ? 1.04 : 1;
@@ -50,8 +57,8 @@ function buildCharPart(id, part) {
         for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2; addBox(mb, Math.sin(a) * 0.17 * b, -0.1 - (k % 3) * 0.06, Math.cos(a) * 0.12, 0.03, 0.12 + (k % 3) * 0.05, 0.006, L('CLOTH'), a); }
       }
       if (c.torso === 'mail') {                         // scarlet tabard over the mail, front and back
-        addBox(mb, 0, 0.2, 0.128 + 0.12 * fat, 0.15 * b, 0.25, 0.008, L('TABARD'), 0, ONE3, -0.05);
-        addBox(mb, 0, 0.22, -0.112, 0.15 * b, 0.25, 0.008, L('TABARD'));
+        addBox(mb, 0, 0.2, 0.128 + 0.12 * fat, 0.15 * b, 0.25, 0.008, L(c.tabard || 'TABARD'), 0, ONE3, -0.05);
+        addBox(mb, 0, 0.22, -0.112, 0.15 * b, 0.25, 0.008, L(c.tabard || 'TABARD'));
       }
       if (c.torso === 'leather') {
         addBox(mb, 0, 0.3, 0.13, 0.025, 0.2, 0.01, L('LEATHER'), 0, ONE3, 0); // baldric
@@ -79,8 +86,8 @@ function buildCharPart(id, part) {
       }
       if (c.hips === 'mail') {                          // hauberk skirt to mid-thigh and the tabard's flaps
         loftY(mb, [[0.01, 0.168 * b, 0.115, 0.115], [-0.12, 0.185 * b, 0.13, 0.13], [-0.26, 0.205 * b, 0.15, 0.145]], 12, L('MAIL'));
-        addBox(mb, 0, -0.15, 0.155, 0.12 * b, 0.15, 0.008, L('TABARD'), 0, ONE3, 0.08);
-        addBox(mb, 0, -0.15, -0.15, 0.12 * b, 0.15, 0.008, L('TABARD'), 0, ONE3, -0.08);
+        addBox(mb, 0, -0.15, 0.155, 0.12 * b, 0.15, 0.008, L(c.tabard || 'TABARD'), 0, ONE3, 0.08);
+        addBox(mb, 0, -0.15, -0.15, 0.12 * b, 0.15, 0.008, L(c.tabard || 'TABARD'), 0, ONE3, -0.08);
       }
       if (c.hips === 'leather') loftY(mb, [[0.01, 0.168 * b, 0.115, 0.115], [-0.18, 0.19 * b, 0.135, 0.135]], 10, L('LEATHER'));
       if (c.hips === 'rag' || c.hips === 'rags') {
@@ -104,10 +111,9 @@ function buildCharPart(id, part) {
     case 'head': {                                      // head-local: 0 = base of the neck
       smoothLathe(mb, 0, -0.02, 0, [[0.062 * b, 0], [0.058 * b, 0.06], [0.054 * b, 0.12]], 8, sk, ONE3, [0, 1, 0]);
       const hw = id === 'shukeli' ? 1.12 : 1;
-      loftY(mb, [[0.07, 0.055 * hw, 0.09, 0.03, 0.01], [0.11, 0.075 * hw, 0.1, 0.07], [0.16, 0.085 * hw, 0.105, 0.095], [0.21, 0.088, 0.1, 0.105],
-        [0.27, 0.083, 0.085, 0.1], [0.31, 0.065, 0.05, 0.08], [0.335, 0.02, 0.015, 0.03]], 12, sk);
-      const brute = c.head === 'brute', ghoul = c.head === 'crawler' || c.head === 'weeper';
-      const covered = ['coif', 'hood', 'helm_great', 'helm_horned'].includes(c.head);   // README §8: hide faces under helms
+      if (!c.face) loftY(mb, HEAD_SHAPE(hw), 12, sk);
+      const brute = c.head === 'brute' && !c.face, ghoul = c.head === 'crawler' || c.head === 'weeper';
+      const covered = ['coif', 'hood', 'helm_great', 'helm_horned', 'helm_crest'].includes(c.head);   // README §8: hide faces under helms
       if (brute || ghoul || c.head === 'eunuch') {
         // a face built to frighten: a heavy brow over sunken sockets, the mouth open on teeth
         addRock(mb, 0, 0.232, 0.092, 0.085, 0.024, 0.03, 4, sk, 0.06);
@@ -116,18 +122,21 @@ function buildCharPart(id, part) {
         addBox(mb, 0, 0.142, 0.1, ghoul ? 0.03 : 0.04, c.head === 'weeper' ? 0.04 : 0.018, 0.012, T.BLACK);
         for (let k = -3; k <= 3; k++) { addBox(mb, k * 0.011, 0.156, 0.108, 0.004, 0.007, 0.004, T.BONE); addBox(mb, k * 0.011, 0.128, 0.108, 0.004, 0.007, 0.004, T.BONE); }
         addBox(mb, 0, 0.185, 0.115, 0.016, 0.022, 0.016, sk, 0, ONE3, -0.4);      // a broken nose
-      } else if (!covered) addBox(mb, 0, 0.19, 0.112, 0.012, 0.03, 0.018, sk, 0, ONE3, -0.3);                    // nose
-      if (!(brute || ghoul || covered || c.head === 'eunuch')) {
+      } else if (!covered && !c.face) addBox(mb, 0, 0.19, 0.112, 0.012, 0.03, 0.018, sk, 0, ONE3, -0.3);                    // nose
+      if (!(brute || ghoul || covered || c.face)) {
         addBox(mb, 0, 0.228, 0.098, 0.068, 0.011, 0.014, sk, 0, [0.8, 0.8, 0.8]);
         for (const sx of [-1, 1]) addBox(mb, sx * 0.034, 0.208, 0.096, 0.015, 0.007, 0.006, T.BLACK);
         addBox(mb, 0, 0.143, 0.104, 0.024, 0.004, 0.005, T.BLACK);
       }
       if (!ghoul && !covered) for (const sx of [-1, 1]) addRock(mb, sx * 0.089, 0.2, -0.005, 0.014, 0.026, 0.02, 2 + sx, sk, 0.05);   // ears
       switch (c.head) {
+        case 'vulture':                                 // Tsotha: "the lean vulture", bald, a thin forked beard, hollow eyes
+          addRock(mb, 0, 0.1, 0.07, 0.04, 0.07, 0.03, 4, T.HAIR, 0.1);
+          addBox(mb, -0.012, 0.03, 0.08, 0.008, 0.05, 0.008, T.HAIR, 0, ONE3, 0.2); addBox(mb, 0.012, 0.03, 0.08, 0.008, 0.05, 0.008, T.HAIR, 0, ONE3, 0.2);
+          break;
         case 'brute':                                   // shaved skull, scars, iron rings in the ears
           for (const sx of [-1, 1]) addLathe(mb, sx * 0.092, 0.17, -0.005, [[0.012, 0], [0.016, 0.01], [0.012, 0.02]], 6, T.IRON, 0, ONE3, [1, 0, 0]);
-          addBox(mb, 0.04, 0.27, 0.07, 0.006, 0.05, 0.004, T.PALE, 0.3, ONE3, -0.4);
-          addBox(mb, -0.05, 0.15, 0.085, 0.004, 0.035, 0.004, T.PALE, -0.4);
+
           break;
         case 'crawler':                                 // a long bald skull, no ears, the jaw slung low
           addRock(mb, 0, 0.27, -0.06, 0.08, 0.075, 0.12, 5, sk, 0.06);
@@ -162,9 +171,8 @@ function buildCharPart(id, part) {
         case 'shaved':
           for (const sx of [-1, 1]) addLathe(mb, sx * 0.092, 0.17, -0.005, [[0.012, 0], [0.016, 0.01], [0.012, 0.02]], 6, T.NAIL, 0, ONE3, [1, 0, 0]);  // earrings
           break;
-        case 'eunuch':                                  // jowls, a double chin, a gold ring in each ear
-          for (const sx of [-1, 1]) addRock(mb, sx * 0.07, 0.135, 0.055, 0.05, 0.045, 0.05, 5 + sx, sk, 0.05);
-          addRock(mb, 0, 0.085, 0.055, 0.065, 0.04, 0.055, 9, sk, 0.05);
+        case 'eunuch':                                  // a double chin and a gold ring in each ear (the jowls are painted)
+          addRock(mb, 0, 0.075, 0.05, 0.06, 0.035, 0.05, 9, sk, 0.05);
           for (const sx of [-1, 1]) addLathe(mb, sx * 0.093, 0.17, -0.005, [[0.014, 0], [0.018, 0.01], [0.014, 0.02]], 6, T.NAIL, 0, ONE3, [1, 0, 0]);
           break;
         case 'helm_conical': case 'helm_crest': {       // Kothian helm with a nasal; a beard beneath
@@ -194,6 +202,11 @@ function buildCharPart(id, part) {
           addBox(mb, 0, 0.135, 0.103, 0.03, 0.006, 0.006, T.HAIR);                              // moustache
           break;
       }
+      break;
+    }
+    case 'face': {                                      // the head, UV-painted with its face (Quake's way)
+      const hw = id === 'shukeli' ? 1.12 : 1;
+      loftY(mb, HEAD_SHAPE(hw), 16, T[c.face], null, 1 / 0.34);
       break;
     }
     case 'uarm': {                                      // shoulder-local, hanging down
@@ -276,7 +289,9 @@ function drawCharacter(id, x, y, z, yaw, P, light, glow = 0) {
   const spine = m4mul(root, m4mul(m4t(0, RIG.spineY + (P.breathe || 0), 0), m4mul(m4ry(P.twist || 0), m4rx(P.lean || 0))));
   M('hips', hips);
   M('torso', spine);
-  M('head', m4mul(spine, m4mul(m4t(0, RIG.neckY, 0), m4mul(m4ry(P.headY || 0), m4rx(P.headX || 0)))));
+  const headM = m4mul(spine, m4mul(m4t(0, RIG.neckY, 0), m4mul(m4ry(P.headY || 0), m4rx(P.headX || 0))));
+  M('head', headM);
+  if (c.face) M('face', headM);
   let handR = null, farmL = null;
   for (const s of [-1, 1]) {
     const k = s < 0 ? 'L' : 'R';
@@ -427,4 +442,36 @@ function buildBroken(part) {
     }
   }
   return mb.finish();
+}
+
+// ---- the horse (ch. I: "Riderless horses raced down the field") ----------------
+// Built along +z, hooves at y=0. Legs are separate parts so the gallop animates.
+function buildHorsePart(part) {
+  const mb = new MeshBuilder(2048);
+  switch (part) {
+    case 'body':
+      loft(mb, [S_(-0.95, 0.18, 0.3, 0.3, 1.25), S_(-0.7, 0.3, 0.36, 0.36, 1.3), S_(0, 0.33, 0.34, 0.4, 1.32), S_(0.6, 0.31, 0.36, 0.38, 1.38), S_(0.85, 0.22, 0.3, 0.28, 1.45)], 10, T.HIDE);
+      loft(mb, [S_(0.7, 0.16, 0.2, 0.2, 1.55), S_(1.0, 0.13, 0.17, 0.15, 1.85), S_(1.2, 0.1, 0.13, 0.12, 2.05)], 8, T.HIDE);            // neck
+      loft(mb, [S_(1.15, 0.1, 0.12, 0.12, 2.1), S_(1.45, 0.08, 0.09, 0.1, 1.95), S_(1.7, 0.06, 0.06, 0.07, 1.82), S_(1.78, 0.03, 0.03, 0.03, 1.8)], 8, T.HIDE);   // head
+      for (const sx of [-1, 1]) addBox(mb, sx * 0.07, 2.18, 1.1, 0.02, 0.06, 0.03, T.HIDE);                                     // ears
+      addBox(mb, 0, 1.95, 0.95, 0.025, 0.2, 0.15, T.HAIR, 0, ONE3, -0.6);                                                       // mane
+      smoothLathe(mb, 0, 1.35, -0.95, [[0.07, 0], [0.06, 0.4], [0.02, 0.75]], 5, T.HAIR, ONE3, [0, -0.8, -0.6]);              // tail
+      loft(mb, [S_(-0.35, 0.36, 0.08, 0.36, 1.32), S_(0.3, 0.37, 0.08, 0.37, 1.34)], 10, T.LEATHER);                            // saddle cloth
+      break;
+    case 'leg':                                           // hip-local, hanging down: upper, cannon, hoof
+      smoothLathe(mb, 0, 0, 0, [[0.09, -0.05], [0.1, 0.1], [0.06, 0.45], [0.045, 0.6], [0.04, 0.95], [0.06, 1.0], [0.06, 1.08]], 6, T.HIDE, ONE3, [0, -1, 0]);
+      break;
+  }
+  return mb.finish();
+}
+function drawHorse(x, y, z, yaw, gallop, light, dead) {
+  const root = m4trs(x, y, z, yaw, dead ? 0 : 0, dead ? Math.PI / 2 : 0, 1);
+  const lift = dead ? 0 : Math.abs(Math.sin(gallop)) * 0.1;
+  const base = m4mul(root, m4t(0, (dead ? -0.95 : 0) + lift, 0));
+  drawM('horse:body', base, light);
+  const legs = [[-0.2, 0.65, 0], [0.2, 0.65, 0.9], [-0.2, -0.75, 2.1], [0.2, -0.75, 3.0]];
+  for (const [lx, lz, ph] of legs) {
+    const a = dead ? 0.3 : Math.sin(gallop + ph) * 0.7;
+    drawM('horse:leg', m4mul(base, m4mul(m4t(lx, 1.08, lz), m4rx(a))), light);
+  }
 }
