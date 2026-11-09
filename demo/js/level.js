@@ -46,7 +46,7 @@ const LEVEL = {
     { prefab: 'grating', at: [8, 9] },
   ],
   lights: [
-    { at: [8.5, 9.5], y: 7, col: [0.5, 0.54, 0.62], rad: 15, i: 1.7 },          // daylight down the grating
+    { at: [8.5, 9.5], y: 7, col: [0.55, 0.6, 0.7], rad: 16, i: 2.0 },          // daylight down the grating
     { at: [4, 14], y: -4, col: [0.25, 0.55, 0.38], rad: 10, i: 0.9 },             // slime glow in the well
     { at: [28, 7], y: -8, col: [0.25, 0.55, 0.38], rad: 9, i: 0.6 },              // slime glow in the serpent's hole
     { at: [39.5, 12.2], y: 1.6, col: [1.0, 0.6, 0.3], rad: 5, i: 0.7 },           // Shukeli's candle
@@ -156,9 +156,9 @@ function buildLevel(spec) {
     LV.props.push(prop);
     if (p.prefab === 'torch') {
       const n = wallIn(p.wall);
-      LV.lights.push({ x: x + n[0] * 0.9, y: prop.y + 2.6, z: z + n[1] * 0.9, r: 1.0, g: 0.55, b: 0.22, rad: 12, i: 1.35 });
+      LV.lights.push({ x: x + n[0] * 0.9, y: prop.y + 2.6, z: z + n[1] * 0.9, r: 1.0, g: 0.6, b: 0.28, rad: 15, i: 1.6 });
     } else if (p.prefab === 'brazier') {
-      LV.lights.push({ x, y: prop.y + 1.6, z, r: 1.0, g: 0.5, b: 0.18, rad: 13, i: 1.6 });
+      LV.lights.push({ x, y: prop.y + 1.6, z, r: 1.0, g: 0.55, b: 0.22, rad: 16, i: 1.9 });
       LV.colliders.push({ x, z, r: 0.75 });
     } else if (p.prefab === 'table') LV.colliders.push({ x, z, r: 1.15 });
     else if (p.prefab === 'stool') LV.colliders.push({ x, z, r: 0.35 });

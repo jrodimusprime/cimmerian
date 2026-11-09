@@ -10,7 +10,9 @@ A playable vertical slice of **e1m2, The Pits** (README §9, milestone M4), buil
 | E | Use: read, take, try doors |
 | Click | Strike with the dagger, or throw the bone you're holding |
 | Esc | Pause (mouse sensitivity, restart) |
-| P, K, F3 | Pixel size, sound, debug line (tick, state hash, flags) |
+| P, K, F3 | Render resolution, sound, debug line (tick, state hash, flags) |
+
+Brightness and mouse sensitivity are on the pause screen.
 
 ## What's in it
 
@@ -22,7 +24,7 @@ The level follows README §10's puzzle chain for e1m2:
 4. Take a thighbone from the bone alcove. Hide in the niche beside the grille, and throw the bone against the bars. Shukeli comes to investigate. If he sees you, he backs off. If he doesn't, strike him through the bars.
 5. Take his keys, unlock the grille and climb the stair. The e1m3 splash appears, with your time, deaths and final state hash.
 
-Story splashes (README §12) bracket the level. Each one is a procedural Piranesi-style engraving in two-tone ink and bone with one scarlet accent mask, standing in until the public-domain scans are processed.
+Story splashes (README §12) bracket the level. Each one is painted as a tonal scene (a Piranesi-style vaulted corridor, arches, a stair, a bridge, chains, and Satha or the torch-bearer), then engraved with anti-aliased hatching whose line weight carries the tone. Each has one scarlet accent, standing in until the public-domain scans are processed.
 
 ## How it maps to the design
 
@@ -30,8 +32,8 @@ Story splashes (README §12) bracket the level. Each one is a procedural Piranes
 |---|---|
 | §5 level spec | `LEVEL` in `js/level.js`: rooms, links, props, entities and a `puzzle:` block in the YAML shape, built into a grid |
 | §10 solver | `solvePuzzle()` searches every flag state. Its result is logged at boot: *15 states, goal reachable, no softlocks* |
-| §7 palette | `js/textures.js` builds every texture from the `ink`, `jade` and `fire` ramps (the level's declared ramps) with the engraving hatch layer |
-| §8 / MODELS.md | The humanoids are rigid parts on a small bone rig. Satha is a head, 12 segments and a tail following one track, as in MODELS.md |
+| §7 palette | `js/textures.js` builds 128×128 textures from the `ink`, `jade` and `fire` ramps (the level's declared ramps), plus `earth` for the hero's own skin. Texels are ordered-dithered between ramp entries, and every texture has the engraving hatch layer. Satha, the forearm and the cuff have UV-mapped skins |
+| §8 / MODELS.md | The humanoids are rigid parts on a small bone rig. Satha has a sculpted head and hinged jaw, and her body is one smooth UV-mapped tube rebuilt every frame along her spine; the sim still checks collisions against the 14 points MODELS.md describes. The first-person view-model is the hero's manacled right hand at view-model density: a muscled forearm, a riveted cuff, fingers with three joints and nails, and a thumb. Models are lit from the direction of their strongest nearby light, as Quake lit its alias models |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for sim randomness, FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, run, jump}, ticks)` returns an observation. Load with `?agent` to skip the splash. `CIM.solve()` runs the puzzle solver |
 | §11 recorded solutions | `test/run.sh` replays a scripted solution in headless Chrome and checks the final tick and hash (`3467`, `dcbdf935`) |

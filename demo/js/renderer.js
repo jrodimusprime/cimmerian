@@ -1,7 +1,9 @@
 'use strict';
 // ---------------------------------------------------------------------------
 // Tiny WebGL2 renderer in the spirit of 1996 software rendering (from The
-// Endless Cave engine; adds uLightMul so baked torchlight can gutter):
+// Endless Cave engine). Additions for The Cimmerian: uLightMul so baked
+// torchlight can gutter, UV-mapped models (uUV: aCol = u, v, shade), a key
+// light direction per model so form reads, gamma, and dynamic meshes:
 // low internal resolution, nearest-neighbour texels, banded light levels,
 // overbright lighting, black fog, then a chunky upscale to the screen.
 // ---------------------------------------------------------------------------
@@ -15,6 +17,7 @@ uniform mat4 uVP;
 uniform mat4 uModel;
 uniform float uEnt;
 uniform float uTexScale;
+uniform float uUV;
 out vec3 vWPos;
 out vec3 vNor;
 out vec3 vCol;
@@ -29,6 +32,7 @@ void main() {
   vec3 tp = (uEnt > 0.5 ? aPos : wp.xyz) * uTexScale;
   vec3 an = abs(aNor);
   vUv = an.y > 0.7 ? tp.xz : (an.x > an.z ? tp.zy : tp.xy);
+  if (uUV > 0.5) vUv = aCol.xy;
   gl_Position = uVP * wp;
 }`;
 
@@ -47,6 +51,8 @@ uniform vec3 uCamPos;
 uniform float uFog;
 uniform float uTime;
 uniform float uLightMul;
+uniform float uUV;
+uniform vec3 uKeyDir;
 in vec3 vWPos;
 in vec3 vNor;
 in vec3 vCol;
@@ -60,7 +66,9 @@ void main() {
   if (abs(vLayer - ${T.FIRE}.0) < 0.5) uv.y -= uTime * 1.5;
   vec4 t = texture(uTex, vec3(uv, vLayer));
   vec3 n = normalize(vNor);
-  vec3 light = (uEnt > 0.5 ? uEntLight : vCol) * uLightMul;
+  vec3 light = vCol;
+  if (uEnt > 0.5) { float hl = dot(n, uKeyDir) * 0.5 + 0.5; light = uEntLight * (0.38 + 1.05 * hl * hl); }
+  light *= uLightMul;
   vec3 Ld = uLampPos - vWPos;
   float d = max(length(Ld), 0.001);
   float att = clamp(1.0 - d / uLampRange, 0.0, 1.0);
@@ -68,7 +76,7 @@ void main() {
   float lam = max(dot(n, Ld / d), 0.0) * 0.75 + 0.25;
   light += uLampCol * att * lam;
   light = floor(light * 12.0 + 0.5) / 12.0;       // light-level banding
-  vec3 tint = uEnt > 0.5 ? vCol : vec3(1.0);
+  vec3 tint = uEnt > 0.5 ? (uUV > 0.5 ? vec3(vCol.z) : vCol) : vec3(1.0);
   float e = clamp(t.a + uGlow, 0.0, 1.0);
   vec3 col = t.rgb * tint * (light * 1.9 * (1.0 - e) + e * 1.3);
   float fd = length(vWPos - uCamPos);
@@ -90,10 +98,12 @@ uniform sampler2D uScene;
 uniform float uFade;
 uniform float uFlash;
 uniform vec3 uFlashCol;
+uniform float uGamma;
 in vec2 vUv;
 out vec4 outColor;
 void main() {
   vec3 c = texture(uScene, vUv).rgb;
+  c = pow(max(c, vec3(0.0)), vec3(1.0 / uGamma));
   c = floor(c * 40.0 + 0.5) / 40.0;
   vec2 d = vUv - 0.5;
   c *= 1.0 - dot(d, d) * 0.9;
@@ -110,13 +120,14 @@ class Renderer {
     this.prog = this.program(SCENE_VS, SCENE_FS);
     this.post = this.program(POST_VS, POST_FS);
     this.u = {};
-    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul'])
+    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir'])
       this.u[n] = gl.getUniformLocation(this.prog, n);
     this.pu = {};
-    for (const n of ['uScene', 'uFade', 'uFlash', 'uFlashCol']) this.pu[n] = gl.getUniformLocation(this.post, n);
+    for (const n of ['uScene', 'uFade', 'uFlash', 'uFlashCol', 'uGamma']) this.pu[n] = gl.getUniformLocation(this.post, n);
     this.ident = m4ident();
     this.postVao = gl.createVertexArray();
     this.fbo = null; this.aspect = 1; this.lw = 1; this.lh = 1;
+    this.key = [0.3, 0.9, 0.3]; this.gamma = 1.3;
   }
   program(vs, fs) {
     const gl = this.gl;
@@ -182,6 +193,12 @@ class Renderer {
     gl.bindVertexArray(null);
     return { vao, vbo, count: data.length / 10 };
   }
+  updateMesh(m, data) {
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, m.vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    m.count = data.length / 10;
+  }
   deleteMesh(m) { if (!m) return; this.gl.deleteBuffer(m.vbo); this.gl.deleteVertexArray(m.vao); }
 
   beginScene(time) {
@@ -213,12 +230,13 @@ class Renderer {
     if (!m || !m.count) return;
     const gl = this.gl, u = this.u;
     gl.uniformMatrix4fv(u.uModel, false, this.ident);
-    gl.uniform1f(u.uEnt, 0); gl.uniform1f(u.uTexScale, 0.32); gl.uniform1f(u.uGlow, 0); gl.uniform1f(u.uAlpha, alpha);
+    gl.uniform1f(u.uEnt, 0); gl.uniform1f(u.uUV, 0); gl.uniform1f(u.uTexScale, 0.32); gl.uniform1f(u.uGlow, 0); gl.uniform1f(u.uAlpha, alpha);
     gl.bindVertexArray(m.vao);
     gl.drawArrays(gl.TRIANGLES, 0, m.count);
   }
-  drawEntity(m, model, light, glow = 0, alpha = 1) {
+  drawEntity(m, model, light, glow = 0, alpha = 1, uv = false) {
     const gl = this.gl, u = this.u;
+    gl.uniform1f(u.uUV, uv ? 1 : 0); gl.uniform3fv(u.uKeyDir, this.key);
     gl.uniformMatrix4fv(u.uModel, false, model);
     gl.uniform1f(u.uEnt, 1); gl.uniform1f(u.uTexScale, 3.0);
     gl.uniform3fv(u.uEntLight, light); gl.uniform1f(u.uGlow, glow); gl.uniform1f(u.uAlpha, alpha);
@@ -243,6 +261,7 @@ class Renderer {
     gl.uniform1f(this.pu.uFade, fade);
     gl.uniform1f(this.pu.uFlash, flash);
     gl.uniform3fv(this.pu.uFlashCol, flashCol);
+    gl.uniform1f(this.pu.uGamma, this.gamma);
     gl.bindVertexArray(this.postVao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.activeTexture(gl.TEXTURE0);

@@ -205,7 +205,7 @@ function bakeLights(mb, lights, amb) {
     d[o + 6] = r; d[o + 7] = g; d[o + 8] = b;
   }
 }
-const AMBIENT = [0.07, 0.066, 0.06];
+const AMBIENT = [0.085, 0.08, 0.072];
 const DIRS = [[0, -1, 0, 0, 1, 0], [1, 0, 1, 0, 1, 1], [0, 1, 1, 1, 0, 1], [-1, 0, 0, 1, 0, 0]];
 function buildLevelMesh() {
   const mb = new MeshBuilder(40000), W = LV.W, H = LV.H;
@@ -290,6 +290,10 @@ function buildKeys(mb, s) {
   }
 }
 function buildModel(name) {
+  if (name.startsWith('satha_head') || name.startsWith('satha_jaw')) return buildSathaHead(name);
+  if (name === 'vm_hand_grip') return buildHand('grip');
+  if (name === 'vm_hand_open') return buildHand('open');
+  if (name.startsWith('vm_') && name !== 'vm_arm' || name === 'dagger2') return buildViewModel(name);
   const mb = new MeshBuilder(512);
   if (name.startsWith('part:')) { const [, d, p] = name.split(':'); return buildPart(CHAR_DEFS[d], p); }
   if (name.startsWith('bars:')) {
@@ -358,6 +362,194 @@ function buildModel(name) {
       addBox(mb, 0, 0.075, 0.12, 0.02, 0.012, 0.035, T.IRON);         // broken link
       break;
     default: addBox(mb, 0, 0.1, 0, 0.1, 0.1, 0.1, T.BONE);
+  }
+  return mb.finish();
+}
+
+// ===========================================================================
+// Detailed models (Quake view-model / boss density): smooth normals, UVs.
+// UV meshes put (u, v, shade) in the colour slot and draw with uv = true.
+// ===========================================================================
+const UV_MODELS = new Set(['satha_head_uv', 'satha_jaw_uv', 'vm_forearm', 'vm_manacle']);
+
+// Loft through elliptical stations along +z. Each station: {z, w, ht, hb, cy, x?}
+// (half-width, height above and below the centre). u runs around from the
+// bottom (0) over the top (0.5), v = z * vScale. Smooth per-vertex normals.
+function loft(mb, st, sides, layer, vScale = 1, shade = null, axis = 'z') {
+  const ring = [];
+  for (let i = 0; i < st.length; i++) {
+    const s = st[i], prev = st[Math.max(0, i - 1)], next = st[Math.min(st.length - 1, i + 1)];
+    const dz = next.z - prev.z || 1, dw = (next.w - prev.w) / dz;
+    const r = [];
+    for (let k = 0; k <= sides; k++) {
+      const a = k / sides * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), h = ca > 0 ? s.hb : s.ht;
+      const x = (s.x || 0) + sa * s.w, y = s.cy - ca * h;
+      let n = norm3([sa / Math.max(s.w, 1e-3), -ca / Math.max(h, 1e-3), -dw * 0.6]);
+      let p = [x, y, s.z];
+      if (axis === 'y') { p = [x, s.z, -y]; n = [n[0], n[2], -n[1]]; }     // loft along +y instead
+      r.push({ p, n, u: k / sides, v: s.z * vScale, sh: shade ? shade(k / sides, i / (st.length - 1)) : 1 });
+    }
+    ring.push(r);
+  }
+  const uv = layer === T.SATHA || layer === T.ARM || layer === T.MANACLE;   // UV skins carry (u, v, shade); others a grey tint
+  for (let i = 0; i < ring.length - 1; i++) for (let k = 0; k < sides; k++) {
+    const a = ring[i][k], b = ring[i][k + 1], c = ring[i + 1][k + 1], d = ring[i + 1][k];
+    for (const q of [a, b, c, a, c, d]) { mb.ensure(1); mb.v(q.p, q.n[0], q.n[1], q.n[2], uv ? [q.u, q.v, q.sh] : [q.sh, q.sh, q.sh], layer); }
+  }
+}
+const S_ = (z, w, ht, hb, cy, x) => ({ z, w, ht, hb, cy, x });
+
+// ---- Satha's head: skull + hinged jaw, sculpted in lofted cross-sections ---
+function buildSathaHead(part) {
+  const mb = new MeshBuilder(2048);
+  switch (part) {
+    case 'satha_head_uv':                                   // skull: broad temples, flat crown, tapering snout
+      loft(mb, [S_(-0.7, 0.92, 0.8, 0.8, 0), S_(-0.2, 1.0, 0.82, 0.62, 0.08), S_(0.35, 1.12, 0.78, 0.42, 0.22), S_(0.9, 1.1, 0.7, 0.3, 0.3),
+        S_(1.45, 0.92, 0.58, 0.24, 0.32), S_(1.95, 0.7, 0.46, 0.2, 0.3), S_(2.35, 0.48, 0.34, 0.16, 0.26), S_(2.62, 0.27, 0.22, 0.12, 0.22), S_(2.76, 0.07, 0.07, 0.06, 0.2)],
+      14, T.SATHA, 1 / 4.4);
+      break;
+    case 'satha_jaw_uv':                                    // lower jaw, pivots at its root
+      loft(mb, [S_(-0.3, 0.9, 0.1, 0.55, -0.3), S_(0.4, 0.98, 0.1, 0.45, -0.18), S_(1.2, 0.84, 0.08, 0.32, -0.08), S_(1.9, 0.6, 0.07, 0.22, -0.02),
+        S_(2.4, 0.36, 0.06, 0.14, 0.0), S_(2.62, 0.1, 0.04, 0.05, 0.02)], 12, T.SATHA, 1 / 4.4);
+      break;
+    case 'satha_head_parts':
+      for (const sx of [-1, 1]) {
+        addRock(mb, sx * 0.86, 0.62, 1.12, 0.2, 0.18, 0.22, 3, T.EYE, 0.02);                    // eye (fullbright)
+        addBox(mb, sx * 1.02, 0.62, 1.12, 0.02, 0.15, 0.035, T.BLACK, sx * 0.25);              // slit pupil
+        addRock(mb, sx * 0.74, 0.86, 1.08, 0.34, 0.12, 0.5, 7 + sx, T.SCALES, 0.08);           // brow plate
+        addSpike(mb, sx * 0.34, 0.12, 2.0, [sx * 0.08, -1, -0.25], 0.5, 0.065, 5, T.BONE);      // fangs
+        for (let k = 0; k < 5; k++) addSpike(mb, sx * (0.62 - k * 0.07), 0.13, 0.7 + k * 0.28, [0, -1, 0.1], 0.14, 0.03, 4, T.BONE);
+        addBox(mb, sx * 0.16, 0.42, 2.62, 0.045, 0.03, 0.03, T.BLACK, sx * 0.4);               // nostrils
+        addBox(mb, sx * 1.0, 0.3, 0.9, 0.04, 0.025, 0.9, T.BLACK, sx * 0.12);                  // lip line
+      }
+      addBox(mb, 0, 0.05, 1.1, 0.75, 0.04, 1.2, T.MOUTH);                                       // palate
+      break;
+    case 'satha_jaw_parts':
+      addBox(mb, 0, -0.12, 1.0, 0.7, 0.04, 1.2, T.MOUTH);                                      // tongue bed
+      addLathe(mb, 0, -0.08, 0.6, [[0.12, 0], [0.09, 1.2], [0.03, 1.9], [0, 2.0]], 5, T.MOUTH, 0, ONE3, [0, 0.05, 1]); // tongue
+      for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) addSpike(mb, sx * (0.6 - k * 0.08), -0.06, 0.7 + k * 0.3, [0, 1, 0.1], 0.12, 0.028, 4, T.BONE);
+      break;
+  }
+  return mb.finish();
+}
+
+// ---- Satha's body: one smooth tube rebuilt every frame along her spine ------
+// spine(d) gives the point d units behind the head; B0 is the head's "down".
+const TUBE_SIDES = 12;
+function buildSathaTube(spine, len, step, B0, radius) {
+  const n = Math.ceil(len / step) + 1, mb = new MeshBuilder(n * TUBE_SIDES * 6);
+  let B = B0, prevRing = null;
+  for (let i = 0; i < n; i++) {
+    const d = Math.min(len, i * step), c = spine(d), a = spine(d + 0.2), b = spine(Math.max(0, d - 0.2));
+    const Tn = norm3([a[0] - b[0], a[1] - b[1], a[2] - b[2]]);     // points toward the tail
+    const bd = B[0] * Tn[0] + B[1] * Tn[1] + B[2] * Tn[2];
+    B = norm3([B[0] - Tn[0] * bd, B[1] - Tn[1] * bd, B[2] - Tn[2] * bd]);   // parallel transport
+    const Sd = cross3(Tn, B), r = radius(d / len);
+    const ring = [];
+    for (let k = 0; k <= TUBE_SIDES; k++) {
+      const ang = k / TUBE_SIDES * Math.PI * 2, ca = Math.cos(ang), sa = Math.sin(ang);
+      const h = ca > 0 ? r * 0.78 : r * 0.92, w = r;               // flatter belly
+      const p = [c[0] + B[0] * ca * h + Sd[0] * sa * w, c[1] + B[1] * ca * h + Sd[1] * sa * w, c[2] + B[2] * ca * h + Sd[2] * sa * w];
+      const nn = norm3([B[0] * ca / h + Sd[0] * sa / w, B[1] * ca / h + Sd[1] * sa / w, B[2] * ca / h + Sd[2] * sa / w]);
+      ring.push({ p, n: nn, u: k / TUBE_SIDES, v: d / 4.4 });
+    }
+    if (prevRing) for (let k = 0; k < TUBE_SIDES; k++) {
+      const q0 = prevRing[k], q1 = prevRing[k + 1], q2 = ring[k + 1], q3 = ring[k];
+      for (const q of [q0, q1, q2, q0, q2, q3]) mb.v(q.p, q.n[0], q.n[1], q.n[2], [q.u, q.v, 1], T.SATHA);
+    }
+    prevRing = ring;
+  }
+  return mb.finish();
+}
+
+// ---- the hero's right hand (view-model) ------------------------------------
+// Hand space: wrist at the origin, forearm along +z, fingers along -z, palm
+// facing -y, thumb on the -x side. The grip axis runs across the palm (x).
+const GRIP_C = [0, -0.03, -0.083];
+// lathe along an arbitrary axis with smooth (Gouraud) normals: fingers, thumb
+function smoothLathe(mb, ox, oy, oz, profile, sides, layer, col, axis) {
+  const ax = norm3(axis), ref = Math.abs(ax[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0], u = norm3(cross3(ax, ref)), w = cross3(ax, u);
+  const rings = profile.map(([r, h], i) => {
+    const pr = profile[Math.max(0, i - 1)], nx = profile[Math.min(profile.length - 1, i + 1)];
+    const slope = (nx[0] - pr[0]) / ((nx[1] - pr[1]) || 1);
+    const out = [];
+    for (let k = 0; k <= sides; k++) {
+      const a = k / sides * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+      const rad = [u[0] * c + w[0] * s, u[1] * c + w[1] * s, u[2] * c + w[2] * s];
+      const n = r < 1e-4 ? ax.map(v => v * Math.sign(h || 1)) : norm3([rad[0] - ax[0] * slope, rad[1] - ax[1] * slope, rad[2] - ax[2] * slope]);
+      out.push({ p: [ox + ax[0] * h + rad[0] * r, oy + ax[1] * h + rad[1] * r, oz + ax[2] * h + rad[2] * r], n });
+    }
+    return out;
+  });
+  for (let i = 0; i < rings.length - 1; i++) for (let k = 0; k < sides; k++) {
+    const a = rings[i][k], b = rings[i][k + 1], c = rings[i + 1][k + 1], d = rings[i + 1][k];
+    for (const q of [a, b, c, a, c, d]) { mb.ensure(1); mb.v(q.p, q.n[0], q.n[1], q.n[2], col, layer); }
+  }
+}
+function addFinger(mb, base, lens, rad, curls, col) {
+  let p = base, th = 0;
+  for (let j = 0; j < 3; j++) {
+    th += curls[j];
+    const d = [0, -Math.sin(th), -Math.cos(th)], L = lens[j], r = rad[j];
+    smoothLathe(mb, p[0], p[1], p[2], [[r * 0.5, -r * 0.6], [r * 0.95, -r * 0.2], [r * 1.02, L * 0.12], [r * 0.9, L * 0.55], [r * 0.86, L * 0.85], [r * 0.6, L + r * 0.35], [0, L + r * 0.7]], 8, T.HANDSKIN, col, d);
+    if (j === 2) {                                           // nail on the back of the last joint
+      const dor = [0, Math.cos(th), -Math.sin(th)], q = [p[0] + d[0] * L * 0.62 + dor[0] * r * 0.82, p[1] + d[1] * L * 0.62 + dor[1] * r * 0.82, p[2] + d[2] * L * 0.62 + dor[2] * r * 0.82];
+      addBox(mb, q[0], q[1], q[2], r * 0.7, 0.0018, L * 0.32, T.NAIL, 0, ONE3, th);
+    }
+    p = [p[0] + d[0] * L * 0.94, p[1] + d[1] * L * 0.94, p[2] + d[2] * L * 0.94];
+  }
+}
+function addSeg(mb, a, b, r0, r1, layer, col) {
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], L = Math.hypot(d[0], d[1], d[2]);
+  smoothLathe(mb, a[0], a[1], a[2], [[r0 * 0.5, -r0 * 0.6], [r0, -r0 * 0.1], [(r0 + r1) * 0.48, L * 0.5], [r1, L * 0.85], [r1 * 0.55, L + r1 * 0.4], [0, L + r1 * 0.7]], 8, layer, col, norm3(d));
+}
+function buildHand(pose) {
+  const mb = new MeshBuilder(2048), grip = pose === 'grip';
+  // palm and back of the hand: wrist to knuckles, the back slightly arched
+  loft(mb, [S_(0.004, 0.033, 0.022, 0.022, 0), S_(-0.035, 0.044, 0.024, 0.021, -0.002), S_(-0.075, 0.05, 0.022, 0.018, -0.003), S_(-0.09, 0.047, 0.016, 0.014, -0.002)],
+    10, T.HANDSKIN, 1, (u) => 0.82 + 0.18 * Math.max(0, -Math.cos(u * Math.PI * 2)));
+  for (const kx of [-0.033, -0.011, 0.011, 0.033]) addRock(mb, kx, 0.013, -0.084, 0.012, 0.008, 0.011, 5, T.HANDSKIN, 0.05);   // knuckles
+  const shade = [0.9, 0.9, 0.9];
+  const fingers = [[-0.033, 1.0, 0.98], [-0.011, 1.08, 1.0], [0.011, 1.02, 0.96], [0.033, 0.82, 0.88]];
+  for (const [fx, ls, rs] of fingers) {
+    const curls = grip ? [1.3, 1.45, 1.0] : [0.45, 0.6, 0.45];
+    addFinger(mb, [fx, -0.002, -0.088], [0.043 * ls, 0.027 * ls, 0.021 * ls], [0.0105 * rs, 0.0095 * rs, 0.0085 * rs], curls, shade);
+  }
+  // thumb: thenar pad, then two joints wrapping over the grip
+  const t0 = [-0.04, -0.012, -0.012], t1 = [-0.058, -0.022, -0.05], t2 = grip ? [-0.042, -0.04, -0.088] : [-0.066, -0.03, -0.088], t3 = grip ? [-0.02, -0.046, -0.104] : [-0.062, -0.034, -0.118];
+  addRock(mb, -0.03, -0.018, -0.03, 0.02, 0.016, 0.03, 9, T.HANDSKIN, 0.05);
+  addSeg(mb, t0, t1, 0.016, 0.013, T.HANDSKIN, ONE3);
+  addSeg(mb, t1, t2, 0.013, 0.012, T.HANDSKIN, ONE3);
+  addSeg(mb, t2, t3, 0.012, 0.01, T.HANDSKIN, ONE3);
+  const tn = norm3([t3[0] - t2[0], t3[1] - t2[1], t3[2] - t2[2]]);
+  addBox(mb, t3[0] - tn[0] * 0.008 - 0.004, t3[1] - tn[1] * 0.008 + 0.006, t3[2] - tn[2] * 0.008, 0.007, 0.0018, 0.008, T.NAIL, Math.atan2(tn[0], tn[2]));
+  return mb.finish();
+}
+function buildViewModel(name) {
+  const mb = new MeshBuilder(2048);
+  switch (name) {
+    case 'vm_forearm':                                      // muscled forearm, belly of the muscle toward the elbow
+      loft(mb, [S_(-0.004, 0.032, 0.023, 0.023, 0), S_(0.05, 0.039, 0.029, 0.027, 0.002), S_(0.14, 0.046, 0.036, 0.031, 0.004), S_(0.26, 0.056, 0.046, 0.037, 0.006),
+        S_(0.38, 0.06, 0.049, 0.04, 0.006), S_(0.5, 0.057, 0.047, 0.041, 0.004), S_(0.62, 0.054, 0.046, 0.043, 0)], 12, T.ARM, 1 / 0.62);
+      break;
+    case 'vm_manacle':
+      loft(mb, [S_(0.016, 0.041, 0.032, 0.032, 0.002), S_(0.022, 0.05, 0.041, 0.041, 0.002), S_(0.086, 0.05, 0.041, 0.041, 0.002), S_(0.092, 0.041, 0.032, 0.032, 0.002)], 12, T.MANACLE, 1 / 0.076);
+      break;
+    case 'vm_chain':                                        // the broken chain still hanging from the cuff
+      addBox(mb, 0, -0.05, 0.055, 0.008, 0.012, 0.012, T.IRON);
+      for (let k = 0; k < 3; k++) {
+        const y = -0.064 - k * 0.026;
+        if (k % 2) { addBox(mb, -0.009, y, 0.055, 0.003, 0.014, 0.003, T.IRON); addBox(mb, 0.009, y, 0.055, 0.003, 0.014, 0.003, T.IRON); }
+        else { addBox(mb, 0, y, 0.046, 0.003, 0.014, 0.003, T.IRON); addBox(mb, 0, y, 0.064, 0.003, 0.014, 0.003, T.IRON); }
+      }
+      break;
+    case 'dagger2':                                         // along +y: pommel, wrapped grip, guard, diamond blade
+      addRock(mb, 0, 0, 0, 0.016, 0.016, 0.016, 2, T.IRON, 0.05);
+      addLathe(mb, 0, 0.008, 0, [[0.011, 0], [0.013, 0.045], [0.011, 0.09]], 8, T.GRIP);
+      addBox(mb, 0, 0.098, 0, 0.052, 0.007, 0.013, T.IRON);
+      addRock(mb, -0.052, 0.098, 0, 0.011, 0.011, 0.014, 4, T.IRON, 0.05); addRock(mb, 0.052, 0.098, 0, 0.011, 0.011, 0.014, 6, T.IRON, 0.05);
+      loft(mb, [S_(0.1, 0.02, 0.006, 0.006, 0), S_(0.25, 0.017, 0.005, 0.005, 0), S_(0.38, 0.009, 0.003, 0.003, 0), S_(0.44, 0.001, 0.001, 0.001, 0)], 4, T.STEEL, 1, null, 'y');
+      break;
   }
   return mb.finish();
 }

@@ -11,11 +11,12 @@
 const $ = id => document.getElementById(id);
 const canvas = $('gl'), hud = $('hud'), logEl = $('log'), promptEl = $('prompt'), overlay = $('overlay');
 const SIM_HZ = 72, DT = 1 / SIM_HZ, EYE = 1.6, RADIUS = 0.42, REACH = 2.7, TETHER = 3.2;
-const BASE_SENS = 0.0022, RES_STEPS = [180, 240, 300, 400, 540], SENS_KEY = 'cimmerian-sens';
+const BASE_SENS = 0.0022, RES_STEPS = [240, 300, 400, 540, 720], SENS_KEY = 'cimmerian-sens', BRIGHT_KEY = 'cimmerian-bright';
 const SATHA_SPEED = 7.5, SATHA_SPACING = 2.0, SATHA_SEGS = 12, SATHA_PERIOD = 40;
 const GRILLE_X = 34 * CELL, HALL_Z = 14 * CELL;
-let resIdx = 2, R = null, levelMesh = null, sensMul = 1;
+let resIdx = 3, R = null, levelMesh = null, sensMul = 1, brightness = 1.18;
 try { const v = parseFloat(localStorage.getItem(SENS_KEY)); if (v >= 0.1 && v <= 4) sensMul = v; } catch (e) { /* ignore */ }
+try { const v = parseFloat(localStorage.getItem(BRIGHT_KEY)); if (v >= 0.8 && v <= 2.2) brightness = v; } catch (e) { /* ignore */ }
 
 let mode = 'loading';            // loading | splash | play | paused | dead | done
 let S = null;                    // simulation state
@@ -30,6 +31,11 @@ function getModel(name) {
   let m = modelCache.get(name);
   if (!m) { m = R.createMesh(buildModel(name)); modelCache.set(name, m); }
   return m;
+}
+// draw a cached model; `light` comes from sampleLight and carries its key direction
+function drawM(name, m, light, glow = 0, alpha = 1) {
+  R.key = light.d || [0.3, 0.9, 0.3];
+  R.drawEntity(getModel(name), m, light, glow, alpha, UV_MODELS.has(name));
 }
 
 // ---------------------------------------------------------------- text log
@@ -79,6 +85,16 @@ function pathAt(s) {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }
 const BODY_LEN = (SATHA_SEGS + 1) * SATHA_SPACING + 1.2;
+// the slithering spine: the track plus a lateral wave fixed to track position
+function spineAt(s) {
+  const p = pathAt(s), q = pathAt(s + 0.3), r = pathAt(s - 0.3);
+  const tx = q[0] - r[0], tz = q[2] - r[2], th = Math.hypot(tx, tz), tl = Math.hypot(tx, q[1] - r[1], tz) || 1;
+  const wig = Math.sin(s * 0.45) * 0.38 * th / tl;
+  return th > 1e-4 ? [p[0] - tz / th * wig, p[1], p[2] + tx / th * wig] : p;
+}
+const SATHA_CHUNKS = 4;
+let sathaMeshes = null;
+const sathaRadius = t => t < 0.12 ? 0.95 + 0.3 * smoothstep(0, 0.12, t) : t < 0.45 ? 1.25 + 0.05 * smoothstep(0.12, 0.45, t) : Math.max(0.05, 1.3 * Math.pow(1 - (t - 0.45) / 0.55, 0.85));
 // head (i=0), segments, tail: positions with a slither offset baked into the track
 function sathaPoints(sHead) {
   const out = [];
@@ -117,16 +133,24 @@ function newState(seed) {
 }
 
 // ---------------------------------------------------------------- light
+// Light at a point, as Quake lit its alias models: a colour plus a key
+// direction (toward the strongest nearby lights) so models show their form.
 function sampleLight(x, y, z) {
-  let r = AMBIENT[0], g = AMBIENT[1], b = AMBIENT[2];
+  let r = AMBIENT[0], g = AMBIENT[1], b = AMBIENT[2], kx = 0.1, ky = 0.35, kz = 0.05;
   for (const l of LV.lights) {
     const dx = l.x - x, dy = l.y - y, dz = l.z - z, d2 = dx * dx + dy * dy + dz * dz;
     if (d2 > l.rad * l.rad) continue;
-    let a = 1 - Math.sqrt(d2) / l.rad; a = a * a * l.i * 0.7;
+    const d = Math.sqrt(d2) || 1e-3;
+    let a = 1 - d / l.rad; a = a * a * l.i * 0.7;
     r += l.r * a; g += l.g * a; b += l.b * a;
+    const w = a * (l.r + l.g + l.b);
+    kx += dx / d * w; ky += dy / d * w; kz += dz / d * w;
   }
-  return [r, g, b];
+  const out = [r, g, b];
+  out.d = norm3([kx, ky, kz]);
+  return out;
 }
+function rotDir(m, v) { return norm3([m[0] * v[0] + m[4] * v[1] + m[8] * v[2], m[1] * v[0] + m[5] * v[1] + m[9] * v[2], m[2] * v[0] + m[6] * v[1] + m[10] * v[2]]); }
 
 // ---------------------------------------------------------------- physics
 function linkClosed(idx) {
@@ -724,9 +748,11 @@ function showPause() {
   overlay.className = '';
   overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">e1m2 · The Pits · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
     '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>P</b> pixel size · <b>K</b> sound · <b>F3</b> debug</div>' +
+    '<div class="setting"><label for="brIn">Brightness</label><input type="range" id="brIn" min="0.8" max="2.2" step="0.05" value="' + brightness + '"><span id="brVal">' + brightness.toFixed(2) + '</span></div>' +
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
     '<div class="btns"><button id="bRes">Resume</button><button id="bRestart">Restart level</button></div></div>';
   $('sensIn').oninput = e => { sensMul = parseFloat(e.target.value); $('sensVal').textContent = sensMul.toFixed(2) + '×'; try { localStorage.setItem(SENS_KEY, String(sensMul)); } catch (err) { /* ignore */ } };
+  $('brIn').oninput = e => { brightness = parseFloat(e.target.value); R.gamma = brightness; $('brVal').textContent = brightness.toFixed(2); try { localStorage.setItem(BRIGHT_KEY, String(brightness)); } catch (err) { /* ignore */ } };
   $('bRes').onclick = () => { hideOverlay(); mode = 'play'; lockPointer(); };
   $('bRestart').onclick = () => location.reload();
 }
@@ -766,7 +792,7 @@ function updateHUD() {
 function drawHumanoid(name, x, y, z, yaw, pose, light) {
   const def = CHAR_DEFS[name], b = def.bulk;
   const root = m4trs(x, y, z, yaw, pose.pitch || 0, pose.roll || 0, def.scale);
-  const P = (part, m) => R.drawEntity(getModel('part:' + name + ':' + part), m, light);
+  const P = (part, m) => drawM('part:' + name + ':' + part, m, light);
   P('torso', root);
   P('head', m4mul(root, m4mul(m4t(0, 1.5, 0), m4mul(m4rx(pose.head || 0), m4t(0, -1.5, 0)))));
   const ph = pose.walk || 0;
@@ -783,7 +809,7 @@ function drawHumanoid(name, x, y, z, yaw, pose, light) {
       P('shin', m4mul(th, m4mul(m4t(0, -0.45, 0), m4rx(Math.max(0, -leg) * 0.9))));
     }
   }
-  if (pose.keys) R.drawEntity(getModel('part:shukeli:keys'), m4mul(root, m4trs(0.42, 0.98, 0.1, Math.PI / 2, 0, 0, 1)), light);
+  if (pose.keys) drawM('part:shukeli:keys', m4mul(root, m4trs(0.42, 0.98, 0.1, Math.PI / 2, 0, 0, 1)), light);
 }
 function render(alpha) {
   const px = lerp(prev.x, S.x, alpha), py = lerp(prev.y, S.y, alpha), pz = lerp(prev.z, S.z, alpha);
@@ -791,27 +817,27 @@ function render(alpha) {
   const proj = m4persp(72 * Math.PI / 180, R.aspect, 0.05, 200);
   const view = m4mul(m4rx(-S.pitch), m4mul(m4ry(-S.yaw), m4t(-px, -eyeY, -pz)));
   const vp = m4mul(proj, view), f = camFwd();
-  const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3], lc = [0.24, 0.22, 0.19];
+  const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3], lc = [0.3, 0.27, 0.23];
   // torches gutter as Satha comes (rule 4: timing visible in the world)
   const t = sathaPhase();
   let lm = 1 + 0.035 * Math.sin(gameTime * 9.1) + 0.02 * Math.sin(gameTime * 23.7);
   if (t >= 0 && t < 6.5) lm *= 1 - 0.5 * smoothstep(0, 0.6, t) * (1 - smoothstep(5, 6.5, t)) * (0.75 + 0.25 * Math.sin(gameTime * 37));
   R.beginScene(gameTime);
   R.lightMul(lm);
-  R.setCamera(vp, [px, eyeY, pz], lampPos, lc, 9, 0.045);
+  R.setCamera(vp, [px, eyeY, pz], lampPos, lc, 10, 0.034);
   R.drawWorld(levelMesh);
   // items
   for (const it of S.items) {
     if (it.taken) continue;
     const light = sampleLight(it.x, it.y + 0.5, it.z);
-    const mesh = it.kind === 'wine' && it.name.startsWith('jug') ? 'jug' : it.kind;
+    const mesh = it.kind === 'wine' && it.name.startsWith('jug') ? 'jug' : it.kind === 'dagger' ? 'dagger2' : it.kind;
     const flat = it.kind === 'dagger' || it.kind === 'bone' || it.kind === 'keys';
-    const m = flat ? m4trs(it.x, it.y + 0.05, it.z, hrand(it.x * 10, it.z * 10, 1, 1) * 6, Math.PI / 2, 0, 1.2) : m4trs(it.x, it.y, it.z, 0.6, 0, 0, 1.3);
-    R.drawEntity(getModel(mesh), m, light, 0.06 + 0.05 * Math.sin(gameTime * 3));
+    const m = flat ? m4trs(it.x, it.y + 0.05, it.z, hrand(it.x * 10, it.z * 10, 1, 1) * 6, Math.PI / 2, 0, it.kind === 'dagger' ? 2.2 : 1.2) : m4trs(it.x, it.y, it.z, 0.6, 0, 0, 1.3);
+    drawM(mesh, m, light, 0.06 + 0.05 * Math.sin(gameTime * 3));
   }
   // ring and chain
   const ring = feature('ring'), rl = sampleLight(ring.x, 1, ring.z + 1);
-  R.drawEntity(getModel('ring'), m4trs(ring.x, ring.y, ring.z + 0.08, 0, 0, 0, 1.4), rl);
+  drawM('ring', m4trs(ring.x, ring.y, ring.z + 0.08, 0, 0, 0, 1.4), rl);
   const A = [ring.x, ring.y - 0.22, ring.z + 0.12];
   const B = S.flags.free ? [ring.x + 0.5, groundInfo(ring.x + 0.5, ring.z + 1.6).floor + 0.03, ring.z + 1.6] : [px, py + 0.12, pz];
   const dist = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]), n = Math.max(4, Math.ceil(dist / 0.17)), sag = Math.sqrt(Math.max(0, 3.6 * 3.6 - dist * dist)) * 0.45;
@@ -820,14 +846,14 @@ function render(alpha) {
     const tt = i / n, x = lerp(A[0], B[0], tt), z = lerp(A[2], B[2], tt);
     const y = Math.max(groundInfo(x, z).floor + 0.03, lerp(A[1], B[1], tt) - sag * Math.sin(Math.PI * tt));
     const dx = x - lp[0], dy = y - lp[1], dz = z - lp[2];
-    R.drawEntity(getModel('link'), m4trs((x + lp[0]) / 2, (y + lp[1]) / 2, (z + lp[2]) / 2, Math.atan2(dx, dz), -Math.atan2(dy, Math.hypot(dx, dz)), i % 2 ? Math.PI / 2 : 0, 1), sampleLight(x, y + 0.5, z));
+    drawM('link', m4trs((x + lp[0]) / 2, (y + lp[1]) / 2, (z + lp[2]) / 2, Math.atan2(dx, dz), -Math.atan2(dy, Math.hypot(dx, dz)), i % 2 ? Math.PI / 2 : 0, 1), sampleLight(x, y + 0.5, z));
     lp = [x, y, z];
   }
   // the cell door (swings into the hall) and the grille (slides up)
   const dl = sampleLight(8 * CELL, 1.5, 12.2 * CELL);
-  R.drawEntity(getModel('bars:2.5:3.2'), m4trs(7 * CELL, 0, 12 * CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // swings into the cell
+  drawM('bars:2.5:3.2', m4trs(7 * CELL, 0, 12 * CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // swings into the cell
   const gl2 = sampleLight(GRILLE_X, 2, HALL_Z);
-  R.drawEntity(getModel('bars:5:7.5'), m4trs(GRILLE_X, S.grille.open * 6.6, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), gl2);
+  drawM('bars:5:7.5', m4trs(GRILLE_X, S.grille.open * 6.6, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), gl2);
   // the giant
   const g = S.giant;
   if (g.state === 'crushed') {
@@ -844,42 +870,69 @@ function render(alpha) {
     drawHumanoid('shukeli', sh.x, groundInfo(sh.x, sh.z).floor + (moving ? Math.abs(Math.sin(sh.walk * 3)) * 0.04 : 0), sh.z, sh.yaw,
       { walk: sh.walk * 3, moving, head: sh.state === 'peer' ? 0.25 : 0, pitch: sh.state === 'peer' ? 0.12 : 0, arms: sh.state === 'peer' ? 0.35 : 0, keys: true }, sl);
   }
-  // Satha (head + 12 segments + tail, README MODELS §5.2), sampled at render time for smooth motion
+  // Satha (README MODELS §5.2): sculpted head and jaw, and one smooth body tube
+  // rebuilt each frame along her spine, drawn in chunks so each is lit locally.
   if (t >= 0) {
     const sHead = SATHA_SPEED * (t + alpha * DT);
     if (sHead - BODY_LEN < SATHA_PATH.len) {
-      const pts = sathaPoints(sHead);
-      for (let i = pts.length - 1; i >= 0; i--) {
-        const p = pts[i];
-        if (p.y < -12 && p.y < groundInfo(p.x, p.z).floor - 3) continue;
-        const light = sampleLight(p.x, p.y + 0.5, p.z);
-        const name = i === 0 ? 'satha_head' : i === pts.length - 1 ? 'satha_tail' : 'satha_seg';
-        const sc = i === 0 ? 1.7 : p.r / 0.86;
-        const roll = i === 0 ? 0 : Math.sin(i * 0.9 + sHead * 0.4) * 0.12;
-        R.drawEntity(getModel(name), m4trs(p.x, p.y + (i === 0 ? -1.1 : 0), p.z, p.yaw, p.pitch, roll, sc), light, 0.04);
+      const h = spineAt(sHead), fa = spineAt(sHead + 0.4), fb = spineAt(sHead - 0.4);
+      const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
+      const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
+      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, 1.15);
+      const hl = sampleLight(h[0], h[1] + 1, h[2]);
+      if (h[1] > -10) {
+        const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
+        const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
+        drawM('satha_head_uv', hm, hl, 0.03); drawM('satha_head_parts', hm, hl);
+        drawM('satha_jaw_uv', jm, hl, 0.03); drawM('satha_jaw_parts', jm, hl);
+      }
+      if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
+      const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS;
+      let B = down;
+      for (let c = 0; c < SATHA_CHUNKS; c++) {
+        const d0 = c * cl, mid = spineAt(sHead - 0.55 - d0 - cl / 2);
+        const data = buildSathaTube(d => spineAt(sHead - 0.55 - d0 - d), cl, 0.75, B, tt => sathaRadius((d0 + tt * cl) / L));
+        // carry the frame across chunks: recompute 'down' at the chunk end from the last ring
+        const e = spineAt(sHead - 0.55 - d0 - cl), e2 = spineAt(sHead - 0.55 - d0 - cl - 0.2), Tn = norm3([e2[0] - e[0], e2[1] - e[1], e2[2] - e[2]]);
+        const bd = B[0] * Tn[0] + B[1] * Tn[1] + B[2] * Tn[2]; B = norm3([B[0] - Tn[0] * bd, B[1] - Tn[1] * bd, B[2] - Tn[2] * bd]);
+        // shift v so the pattern runs continuously from chunk to chunk
+        for (let i = 7; i < data.length; i += 10) data[i] += d0 / 4.4;
+        R.updateMesh(sathaMeshes[c], data);
+        if (mid[1] < -14) continue;
+        const lc = sampleLight(mid[0], mid[1] + 1, mid[2]);
+        R.key = lc.d;
+        R.drawEntity(sathaMeshes[c], m4ident(), lc, 0.03, 1, true);
       }
     }
   }
   for (const p of S.proj) {
     const light = sampleLight(p.x, p.y, p.z);
-    if (p.type === 'bone') R.drawEntity(getModel('bone'), m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), p.spin, 0, 1.3), light);
-    else R.drawEntity(getModel('venom'), m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), 0, p.spin, 1.2), light, 0.5);
+    if (p.type === 'bone') drawM('bone', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), p.spin, 0, 1.3), light);
+    else drawM('venom', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), 0, p.spin, 1.2), light, 0.5);
   }
-  for (const p of particles) R.drawEntity(getModel(p.m === 'venom' ? 'venom' : 'drop'), m4trs(p.x, p.y, p.z, p.life * 3, 0, 0, p.s * (p.life / p.max) * (p.m === 'venom' ? 0.4 : 1)), sampleLight(p.x, p.y, p.z), p.m === 'venom' ? 0.5 : 0);
+  for (const p of particles) drawM(p.m === 'venom' ? 'venom' : 'drop', m4trs(p.x, p.y, p.z, p.life * 3, 0, 0, p.s * (p.life / p.max) * (p.m === 'venom' ? 0.4 : 1)), sampleLight(p.x, p.y, p.z), p.m === 'venom' ? 0.5 : 0);
   R.blend(true);
-  for (const pd of S.puddles) R.drawEntity(getModel('puddle'), m4trs(pd.x, pd.y, pd.z, 0, 0, 0, 0.6 + 0.4 * Math.min(1, (6 - pd.t) * 3)), [0.3, 0.3, 0.3], 0.4, Math.min(0.85, pd.t));
+  for (const pd of S.puddles) drawM('puddle', m4trs(pd.x, pd.y, pd.z, 0, 0, 0, 0.6 + 0.4 * Math.min(1, (6 - pd.t) * 3)), sampleLight(pd.x, pd.y + 0.5, pd.z), 0.1, Math.min(0.6, pd.t * 0.5));
   R.blend(false);
-  // view-model: the hero's manacled forearm, with whatever is in hand
+  // view-model: the hero's manacled right hand, with whatever is in it
   if (mode === 'play' || mode === 'paused') {
     R.clearDepth(); R.lightMul(1);
     R.setCamera(m4persp(60 * Math.PI / 180, R.aspect, 0.01, 10), [0, 0, 0], [0.1, 0.2, 0.3], [0, 0, 0], 1, 0);
-    const am = sampleLight(px, py + 1.2, pz), vl = [am[0] + 0.06, am[1] + 0.055, am[2] + 0.05];
+    const am = sampleLight(px, py + 1.2, pz), vl = [am[0] + 0.05, am[1] + 0.045, am[2] + 0.04];
+    vl.d = rotDir(m4mul(m4rx(-S.pitch), m4ry(-S.yaw)), am.d);
     const sb = Math.sin(bobPhase) * 0.012 * bobAmt, cb = Math.abs(Math.cos(bobPhase)) * 0.012 * bobAmt;
     const sw = S.swing > 0 ? Math.sin((1 - S.swing / 0.38) * Math.PI) : 0, th = S.throwT > 0 ? Math.sin((1 - S.throwT / 0.35) * Math.PI) : 0;
-    const arm = m4trs(0.24 - sb - sw * 0.1, -0.29 + cb + sw * 0.07 + th * 0.12, -0.5 - sw * 0.2 - th * 0.1, 0.18 + sw * 0.2, 0.28 - th * 0.8, 0, 0.75);
-    R.drawEntity(getModel('vm_arm'), arm, vl);
-    if (S.flags.has_bone) R.drawEntity(getModel('bone'), m4mul(arm, m4trs(0, 0.02, -0.08, 0.5, 0.4, 0, 0.6)), vl);
-    else if (S.flags.has_dagger) R.drawEntity(getModel('dagger'), m4mul(arm, m4trs(0, 0.0, -0.08, 0, -1.0 - sw * 0.5, 0, 0.62)), vl);
+    const holding = S.flags.has_dagger || S.flags.has_bone;
+    // hand space -> view space: the grip axis (hand -x) points forward and up, the forearm runs back toward the camera
+    const fwd = norm3([-0.1 - sw * 0.05, 0.5 - sw * 0.35 + th * 0.4, -1]), X = [-fwd[0], -fwd[1], -fwd[2]];
+    const arm = [0.62, -0.5, 0.6], ad = arm[0] * X[0] + arm[1] * X[1] + arm[2] * X[2];
+    const Z = norm3([arm[0] - X[0] * ad, arm[1] - X[1] * ad, arm[2] - X[2] * ad]), Y = cross3(Z, X);
+    const pos = [0.17 - sb + fwd[0] * sw * 0.16, (holding ? -0.19 : -0.2) + cb + fwd[1] * sw * 0.16 + th * 0.06, -0.33 + fwd[2] * sw * 0.16];
+    const hand = new Float32Array([X[0], X[1], X[2], 0, Y[0], Y[1], Y[2], 0, Z[0], Z[1], Z[2], 0, pos[0], pos[1], pos[2], 1]);
+    drawM('vm_forearm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl);
+    drawM('vm_hand_grip', hand, vl);       // empty-handed, he makes a fist
+    if (S.flags.has_bone) drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
+    else if (S.flags.has_dagger) drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
   }
   R.present(fade, flash, flashCol);
 }
@@ -953,6 +1006,7 @@ document.addEventListener('pointerlockchange', () => {
 function boot() {
   try { R = new Renderer(canvas); }
   catch (e) { overlay.innerHTML = '<div class="panel"><h2>No WebGL2</h2><p>This demo needs a browser with WebGL2. (' + e.message + ')</p></div>'; return; }
+  R.gamma = brightness;
   onResize();
   addEventListener('resize', onResize);
   setTimeout(() => {

@@ -1,17 +1,22 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// Procedural 64x64 textures built from the Cimmerian ramps (README §7).
+// Procedural 128x128 textures built from the Cimmerian ramps (README §7).
 // e1m2 declares ramps [ink, jade, fire]: ink dominates, jade is the pits'
 // damp and Satha's scales, fire is the only fullbright (torches, eyes).
+// The hero's own skins use the earth ramp (MODELS.md: skin, leather), since
+// he appears in every level. Texels are ordered-dithered between ramp entries,
+// as Quake's textures were, so gradients stay palette-locked but smooth.
+// UV-mapped skins (SATHA, ARM, MANACLE) take u around the body, v along it.
 // Every texture gets the engraving hatch layer so the 3D world matches the
 // engraved splash screens. The alpha channel is the EMISSIVE mask.
 // ---------------------------------------------------------------------------
 
 const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SCALES', 'BELLY', 'SKIN', 'DARKSKIN',
-  'CLOTH', 'ROBE', 'BONE', 'FIRE', 'EYE', 'VENOM', 'BLACK', 'STRAW', 'SKY'];
+  'CLOTH', 'ROBE', 'BONE', 'FIRE', 'EYE', 'VENOM', 'BLACK', 'STRAW', 'SKY',
+  'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
-const TEX_SIZE = 64;
+const TEX_SIZE = 128;
 
 function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
 // n-step ramp between two anchors, slightly gamma-curved like Quake's palette rows
@@ -28,10 +33,12 @@ const RAMPS = {
   jade: makeRamp('#08120c', '#7fa88a', 12),
   fire: makeRamp('#5a1a00', '#ffd27a', 10, 0.9),
   scarlet: makeRamp('#2a0606', '#c4302b', 10),     // UI only in this level
+  earth: makeRamp('#160e08', '#b08a66', 16),
 };
-function rampAt(name, v, lo = 0, hi = 1) {
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16 - 0.5);
+function rampAt(name, v, lo = 0, hi = 1, px = 0, py = 0) {
   const r = RAMPS[name], t = clamp(lo + (hi - lo) * v, 0, 0.999);
-  return r[Math.floor(t * r.length)];
+  return r[clamp(Math.floor(t * r.length + 0.5 + BAYER4[(py & 3) * 4 + (px & 3)] * 0.9), 0, r.length - 1)];
 }
 
 function tnoise(x, y, period, seed) {
@@ -131,6 +138,57 @@ const TEXGEN = {
   BLACK: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 2, s), ramp: 'ink', hi: 0.08 }) },
   STRAW: { f: (x, y, s) => ({ v: 0.3 + 0.5 * Math.abs(Math.sin(TAU * (x * 0.13 + tfbm(x / 64, y / 64, 4, 2, s) * 3))), ramp: 'ink', lo: 0.12, hi: 0.5, h: 0.2 }) },
   SKY: { f: (x, y, s) => ({ v: 0.6 + 0.4 * tfbm(x / 64, y / 64, 2, 3, s), ramp: 'ink', lo: 0.4, hi: 0.75, e: 1 }) },  // daylight through the grating
+  // ---- UV-mapped skins ----------------------------------------------------
+  // Satha: u around the body (0.5 = spine, 0/1 = belly), v along it.
+  SATHA: { f: (x, y, s) => {
+    const u = x / 64, v = y / 64, bu = Math.min(u, 1 - u);
+    if (bu < 0.13) {                                   // belly scutes: broad transverse plates
+      const band = (v * 8) % 1;
+      if (band < 0.09) return { v: 0.18, ramp: 'ink', lo: 0.2, hi: 0.6 };
+      return { v: 0.55 + 0.35 * (1 - band) + 0.1 * tfbm(u, v, 8, 2, s), ramp: 'ink', lo: 0.45, hi: 0.85, h: 0.08 };
+    }
+    // overlapping keeled scales, rows offset, highlight on each scale's crown
+    const su = u * 18, sv = v * 9, row = Math.floor(sv), fu = (su + (row % 2) * 0.5) % 1, fv = sv - row;
+    const d = Math.hypot((fu - 0.5) * 1.2, (fv - 0.35) * 1.0);
+    let t = 0.75 - d * 1.1 + 0.25 * (1 - fv) - (Math.abs(fu - 0.5) < 0.05 && fv < 0.7 ? 0.12 : 0);
+    if (d > 0.55) t = 0.05;
+    t += 0.1 * tfbm(u, v, 4, 2, s);
+    const du = Math.abs(u - 0.5);
+    // dorsal saddles: dark diamonds with pale rims down the spine
+    const dd = du / 0.2 + Math.abs(((v * 2) % 1) - 0.5) * 2.2;
+    let lo = 0.12, hi = 0.95;
+    if (dd < 0.9) { lo = 0.02; hi = 0.45; } else if (dd < 1.1) { lo = 0.35; hi = 1; }
+    if (du > 0.3) { lo += 0.08; hi = Math.min(1, hi + 0.05); }   // paler flanks
+    return { v: t, ramp: 'jade', lo, hi, h: 0.12 };
+  } },
+  // The hero's right forearm: u around (0.5 = back of the arm), v from wrist (0) to elbow (1).
+  ARM: { f: (x, y, s) => {
+    const u = x / 64, v = y / 64;
+    let t = 0.58 + 0.06 * Math.sin(TAU * (u * 2 + v * 0.6)) + 0.12 * tfbm(u, v, 4, 3, s) - 0.1 * (1 - smoothstep(0, 0.2, v));
+    const vein = Math.abs(u - (0.2 + 0.035 * Math.sin(v * 11) + 0.02 * Math.sin(v * 23)));
+    if (vein < 0.012) t -= 0.14; else if (vein < 0.022) t += 0.05;
+    const vein2 = Math.abs(u - (0.12 + 0.05 * v + 0.02 * Math.sin(v * 17 + 1)));
+    if (v > 0.35 && vein2 < 0.009) t -= 0.1;
+    if (u > 0.38 && u < 0.85 && hrand(Math.floor(x * 2), Math.floor(y * 0.7), s, 9) > 0.86) t -= 0.12;   // coarse hair
+    const scar = Math.abs((u - 0.55) - (v - 0.55) * 0.8);
+    if (scar < 0.012 && u > 0.5 && u < 0.72) t += 0.22;
+    return { v: t, ramp: 'earth', lo: 0.22, hi: 0.8, h: 0.07 };
+  } },
+  HANDSKIN: { f: (x, y, s) => ({ v: 0.62 + 0.18 * tfbm(x / 64, y / 64, 8, 3, s) - (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 4) > 0.93 ? 0.1 : 0), ramp: 'earth', lo: 0.28, hi: 0.8, h: 0.06 }) },
+  NAIL: { f: (x, y, s) => ({ v: 0.6 + 0.3 * tfbm(x / 64, y / 64, 4, 2, s), ramp: 'ink', lo: 0.4, hi: 0.85 }) },
+  // Manacle band: u around, v across the band. Riveted iron, rust where the skin rubs.
+  MANACLE: { f: (x, y, s) => {
+    const u = x / 64, v = y / 64, fu = (u * 8) % 1;
+    const rd = Math.hypot(fu - 0.5, (v - 0.5) * 0.6);
+    if (rd < 0.11) return { v: 0.95 - rd * 4, ramp: 'ink', lo: 0.15, hi: 0.75 };
+    if (rd < 0.15) return { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 };
+    let t = 0.45 + 0.3 * tfbm(u, v, 8, 3, s) - (v < 0.12 || v > 0.88 ? 0.25 : 0) + (v > 0.15 && v < 0.22 ? 0.2 : 0);
+    if (tfbm(u, v, 4, 3, s + 5) > 0.58) return { v: t, ramp: 'earth', lo: 0.15, hi: 0.6, h: 0.1 };
+    return { v: t, ramp: 'ink', lo: 0.06, hi: 0.5, h: 0.15 };
+  } },
+  MOUTH: { f: (x, y, s) => ({ v: 0.4 + 0.5 * tfbm(x / 64, y / 64, 4, 3, s) + 0.2 * Math.sin(TAU * y / 16), ramp: 'earth', lo: 0.05, hi: 0.5, e: 0.04 }) },
+  GRIP: { f: (x, y) => { const band = ((x + y * 2) / 10) % 1; return { v: band < 0.15 ? 0.1 : 0.55 + 0.3 * Math.sin(band * Math.PI), ramp: 'earth', lo: 0.05, hi: 0.55 }; } },
+  STEEL: { f: (x, y, s) => ({ v: 0.55 + 0.25 * tfbm(x / 64 * 0.2, y / 64 * 4, 4, 2, s) + 0.15 * Math.sin(TAU * y / 6), ramp: 'ink', lo: 0.35, hi: 1, e: 0.06 }) },
 };
 
 function generateTextures() {
@@ -138,11 +196,12 @@ function generateTextures() {
   for (let li = 0; li < TEX_NAMES.length; li++) {
     const spec = TEXGEN[TEX_NAMES[li]], seed = 4000 + li * 131, pre = spec.pre ? spec.pre(seed) : null;
     const data = new Uint8Array(S * S * 4);
+    const k = 64 / S;                                 // recipes are written in 64-texel space
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-      const r = spec.f(x, y, seed, pre);
+      const r = spec.f(x * k, y * k, seed, pre);
       let v = r.v;
       if (r.h) v = hatch(v, x, y, r.h);
-      const rgb = rampAt(r.ramp, clamp(v, 0, 1), r.lo || 0, r.hi === undefined ? 1 : r.hi);
+      const rgb = rampAt(r.ramp, clamp(v, 0, 1), r.lo || 0, r.hi === undefined ? 1 : r.hi, x, y);
       const o = (y * S + x) * 4;
       data[o] = rgb[0]; data[o + 1] = rgb[1]; data[o + 2] = rgb[2]; data[o + 3] = Math.round(clamp(r.e || 0, 0, 1) * 255);
     }
