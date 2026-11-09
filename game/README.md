@@ -38,15 +38,18 @@ The book's chapter III, in its order (README §9). It opens cold, chained in the
 
 ### e1m1, The Plain of Shamu (the flashback)
 
-The book's chapter I. A splash asks how the king came to lie in chains, and the level is the end of the battle, fought east across an open field under a red sunset toward the heap of dead. You can't win it: the more you kill, the closer the kings ride. About 5–10 minutes, with 19 foes.
+The book's chapter I. A splash asks how the king came to lie in chains, and the level is the end of the battle, fought east across the plain toward the heap of dead under a red sunset. You can't win it: the more you kill, the closer the kings ride. About 5–10 minutes, with 23 foes.
+
+The plain has no walls. It runs on to the horizon under a sky dome, with the sun going down in the west behind low hills and ground mist lying on the dead. A deep stream closes the north of the field (go down its bank and you drown), lines of weathered boulders close the west and south, and the ranks of the host close the east. Inside, the field runs in bands as wide as the plain, so no beat can be walked round.
 
 | # | Area | Type | What happens |
 |---|---|---|---|
 | 1 | The Broken Charge | combat | You come to among the dead of the last charge. Kothian knights on foot finish the wounded |
-| 2 | The Arrow Ground | puzzle | The Shemite captains bawl the order, and a volley falls on a fixed cadence. Dead horses are the only cover: run from one to the next between volleys |
-| 3 | The Shemite Line | combat | Close with the archers on the rise; spearmen screen them |
-| 4 | The Riderless Horses | puzzle | Ophirean knights in gilded mail charge down three lanes, one after another. Cross each lane while it stands empty; a rider tramples you and throws you back |
-| 5 | The Heap of Dead | combat | Your back to the heap, two waves: Kothian and Ophirean knights, then more with the pikemen out of the kings' ground. Then Strabonus, Amalrus and Tsotha ride up, and the book's lines play out. Tsotha walks to you and offers you life; answer with the sword. The fang in his ring drops you rigid to the earth, and the level cuts back to the dark |
+| 2 | The Gully of Dead | agility | A sunken gully across the whole field, choked with the fallen: cover from the volleys, but its banks are steep. Drop in and jump the far bank |
+| 3 | The Arrow Ground | puzzle | The Shemite captains bawl the order, and a volley falls on a fixed cadence. Dead horses are the only cover: run from one to the next between volleys |
+| 4 | The Shemite Line | combat | Close with the archers on the rise; spearmen screen them |
+| 5 | The Riderless Horses | puzzle | Ophirean knights in gilded mail charge down three lanes the length of the field, one after another. Cross each lane while it stands empty; a rider tramples you and throws you back |
+| 6 | The Heap of Dead | combat | Your back to the heap, two waves: Kothian and Ophirean knights, then more stepping out of the ring of the host. Then Strabonus, Amalrus and Tsotha ride up, and the book's lines play out. Tsotha walks to you and offers you life; answer with the sword. The fang in his ring drops you rigid to the earth, and the level cuts back to the dark |
 
 On this field the battle is on: a group that has seen you keeps coming even after you fall and come round at the last safe place.
 
@@ -112,7 +115,7 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *6 states*, e1m1 *5 states*, e1m3 *6 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `9412`, `22196563`; e1m3: `9569`, `7aaa8a39`; e1m1's is being re-recorded for the open plain) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `9412`, `22196563`; e1m1: `11776`, `b94019fb`; e1m3: `9569`, `7aaa8a39`) |
 
 ## Not the real build
 

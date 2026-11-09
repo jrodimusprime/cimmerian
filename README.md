@@ -461,7 +461,7 @@ Exit: the eagle takes the head (ending splash).
 
 | Where | Book | Current build | Fix |
 |---|---|---|---|
-| e1m1 | The plain of Shamu | *(was: not built)* | **Done**: built to the plan above. The charge, the volleys over the arrow ground, the Shemite line, three charge lanes, two waves at the heap (the second, with the pikemen, out of the kings' ground), the kings' lines from the book, Tsotha's offer and the fang |
+| e1m1 | The plain of Shamu | *(was: not built; then a walled field)* | **Done**: an open plain to the horizon, closed by a stream, boulders and the ranks of the host. The charge, the gully of dead (agility), the volleys over the arrow ground, the Shemite line, three charge lanes, two waves at the heap, the kings' lines from the book, Tsotha's offer and the fang |
 | e1m2 | Keys gripped with his toes; Shukeli slams the grille; trapped; the pits behind | *(was: a rusted-link puzzle, a bone lure, soldiers in the pits)* | **Done**: rebuilt to the plan above |
 | e1m3 | The weeping, the well and the presence, the torch blown out, Satha returns | *(was: marked ways, a vent puzzle, a hanging sigil-stone and a sigil gate)* | **Done**: rebuilt to the plan above. The weeping through the forks, the weeping thing and the things it drives, the well's breath, the presence and the torch's ember, the draft, the side tunnels, Satha down the corridor, the cage with a garden in it |
 | Satha | "the great shimmering white form"; venom drips | *(was: green; spat)* | **Done**: white; drips |

@@ -9,7 +9,7 @@
 // Heights in the spec are in cells, like the README's level YAML.
 // ---------------------------------------------------------------------------
 
-const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32;
+const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32, F_WATER = 64;
 
 // Pacing (README §9): every level alternates PUZZLE areas (think, read,
 // time things) and ACTION areas (fight). e1m2 runs:
@@ -286,81 +286,106 @@ const LEVEL_E1M3 = {
 // The last stand, fought across the field toward the heap of dead; it can't be
 // won, and Tsotha's ring ends it.
 // ---------------------------------------------------------------------------
-const FIELD = { floor: 'TURF', wall: 'SUNSET', ceil: 'SUNSET' };   // open ground: the red sky all round
+const FIELD = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' };   // open ground under the red sky
+const STREAM = { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M1 = {
-  level: 'e1m1', next: 'e1m3', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [66, 30],
+  level: 'e1m1', next: 'e1m3', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
-  groundFog: { density: 0.16, falloff: 0.8, floor: 0, col: [0.47, 0.21, 0.2] },   // the battle's smoke and the evening mist, lying on the dead
+  // no walls: the plain goes on to the horizon under the sky; a stream and lines of boulders close the field in
+  open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -1.0,
+  groundFog: { density: 0.085, falloff: 0.7, floor: 0, col: [0.5, 0.15, 0.1] },   // the battle's smoke and the evening mist, lying on the dead
   areas: [
     { id: 'charge', type: 'action', name: 'The Broken Charge', rooms: ['charge'] },
-    { id: 'arrows', type: 'puzzle', name: 'The Arrow Ground', rooms: ['gully', 'arrowground'], cp: [17, 15, -Math.PI / 2] },
-    { id: 'line', type: 'action', name: 'The Shemite Line', rooms: ['rise'], cp: [33, 15, -Math.PI / 2] },
-    { id: 'lanes', type: 'puzzle', name: 'The Riderless Horses', rooms: ['lanes'], cp: [41.5, 15, -Math.PI / 2] },
-    { id: 'heap', type: 'action', name: 'The Heap of Dead', rooms: ['heap'], cp: [50.5, 15, -Math.PI / 2] },
+    { id: 'arrows', type: 'puzzle', name: 'The Arrow Ground', rooms: ['gully', 'arrowground'], cp: [31, 31, -Math.PI / 2] },
+    { id: 'line', type: 'action', name: 'The Shemite Line', rooms: ['rise'], cp: [58.5, 31, -Math.PI / 2] },
+    { id: 'lanes', type: 'puzzle', name: 'The Riderless Horses', rooms: ['lanes'], cp: [67.5, 31, -Math.PI / 2] },
+    { id: 'heap', type: 'action', name: 'The Heap of Dead', rooms: ['heap'], cp: [85, 31, -Math.PI / 2] },
   ],
+  // the field runs west to east in bands as wide as the plain, so no beat can be walked round
   rooms: [
-    { id: 'charge', name: 'the field of the last charge', at: [2, 9], size: [14, 12], sky: true, tex: FIELD },
-    { id: 'gully', name: 'a gully of dead', at: [16, 12], size: [4, 6], pit: 1.8, hide: true, sky: true, tex: { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' } },   // drop in; jump the far bank
-    { id: 'arrowground', name: 'the arrow ground', at: [20, 7], size: [14, 16], sky: true, tex: FIELD },
-    { id: 'rise', name: 'the Shemite rise', at: [34, 9], size: [8, 12], floor: 1.0, sky: true, tex: FIELD },
-    { id: 'lanes', name: 'the riders\' ground', at: [42, 5], size: [8, 20], floor: 1.0, sky: true, tex: FIELD },
-    { id: 'heap', name: 'the heap of dead', at: [50, 8], size: [11, 14], floor: 1.0, sky: true, tex: FIELD },
-    { id: 'kings', name: 'the kings\' ground', at: [61, 10], size: [4, 10], floor: 1.0, sky: true, nopass: true, tex: FIELD },
+    { id: 'plain', name: 'the plain of Shamu', at: [0, 0], size: [120, 64], nopass: true, sky: true, tex: FIELD },
+    { id: 'charge', name: 'the field of the last charge', at: [3, 5], size: [31, 53], sky: true, tex: FIELD },
+    { id: 'arrowground', name: 'the arrow ground', at: [34, 5], size: [27, 53], sky: true, tex: FIELD },
+    { id: 'gully', name: 'a gully of dead', at: [33, 5], size: [4, 26], pit: 1.8, hide: true, sky: true, tex: FIELD },   // drop in; jump the far bank
+    { id: 'gully', name: 'a gully of dead', at: [34, 31], size: [4, 27], pit: 1.8, hide: true, sky: true, tex: FIELD },
+    { id: 'rise', name: 'the Shemite rise', at: [61, 5], size: [8, 53], floor: 1.0, sky: true, tex: FIELD },
+    { id: 'lanes', name: 'the riders\' ground', at: [69, 5], size: [14, 53], sky: true, tex: FIELD },
+    { id: 'heap', name: 'the heap of dead', at: [83, 5], size: [20, 53], sky: true, tex: FIELD },
+    { id: 'kings', name: 'the ring of the host', at: [103, 5], size: [10, 53], nopass: true, sky: true, tex: FIELD },
+    // a stream along the north of the field, deep and black: go down the bank and you drown
+    { id: 'stream', name: 'a stream', at: [2, 2], size: [38, 6], pit: 30, water: true, sky: true, tex: STREAM },
+    { id: 'stream', name: 'a stream', at: [40, 1], size: [34, 5], pit: 30, water: true, sky: true, tex: STREAM },
+    { id: 'stream', name: 'a stream', at: [74, 2], size: [44, 7], pit: 30, water: true, sky: true, tex: STREAM },
   ],
   shafts: [], links: [],
+  boulders: [
+    { from: [2.4, 4], to: [2.4, 59.5], r: [1.8, 3.8] },
+    { from: [2, 58.6], to: [118, 58.6], r: [1.6, 3.8], jitter: 2 },
+    { from: [113.4, 3], to: [113.4, 59], r: [1.8, 3.8] },
+  ],
+  scatter: [
+    { prefab: 'fallen', n: 90, rect: [4, 7, 98, 50] },
+    { prefab: 'deadhorse', n: 26, rect: [4, 8, 64, 49] },
+    { prefab: 'deadhorse', n: 10, rect: [83, 8, 19, 49] },
+    { prefab: 'standard', n: 14, rect: [4, 8, 100, 49] },
+    { prefab: 'boulder', n: 9, rect: [6, 12, 54, 42], size: [1.2, 2.8] },     // outcrops in the field: cover, and a ragged skyline
+    { prefab: 'boulder', n: 4, rect: [85, 10, 16, 44], size: [1.2, 2.4] },
+  ],
   props: [
-    { prefab: 'deadhorse', at: [5, 12], rot: 0.4 }, { prefab: 'deadhorse', at: [9, 17.5], rot: 2.0 }, { prefab: 'fallen', at: [7, 14], rot: 1.2 }, { prefab: 'fallen', at: [12, 11], rot: 3.0 },
-    { prefab: 'fallen', at: [11, 18.6], rot: 0.3 }, { prefab: 'standard', at: [4, 18], rot: 1.0 }, { prefab: 'fallen', at: [14, 15], rot: 2.2 },
-    { prefab: 'fallen', at: [17, 14], rot: 0.9 }, { prefab: 'deadhorse', at: [18, 16.5], rot: 1.6 },
     // the arrow ground: dead horses are the only cover
-    { prefab: 'deadhorse', at: [22.5, 10.5], rot: 1.57, cover: true }, { prefab: 'deadhorse', at: [24.5, 15.5], rot: 1.4, cover: true }, { prefab: 'deadhorse', at: [26.5, 19.5], rot: 1.8, cover: true },
-    { prefab: 'deadhorse', at: [28.5, 12.5], rot: 1.5, cover: true }, { prefab: 'deadhorse', at: [30.5, 17.5], rot: 1.7, cover: true }, { prefab: 'deadhorse', at: [32.5, 9.5], rot: 1.3, cover: true },
-    { prefab: 'fallen', at: [23.5, 13], rot: 0.5 }, { prefab: 'fallen', at: [27.5, 16], rot: 2.5 }, { prefab: 'fallen', at: [31.5, 13.5], rot: 1.0 }, { prefab: 'standard', at: [29.5, 21], rot: 2.6 },
-    { prefab: 'fallen', at: [36, 12], rot: 1.9 }, { prefab: 'fallen', at: [39.5, 17.5], rot: 0.2 },
-    { prefab: 'deadhorse', at: [43, 4.8], rot: 0 }, { prefab: 'deadhorse', at: [48, 25.2], rot: 3.1 },
-    { prefab: 'heap', at: [55.5, 15] }, { prefab: 'fallen', at: [53, 11.5], rot: 1.2 }, { prefab: 'fallen', at: [58, 18.5], rot: 2.2 }, { prefab: 'fallen', at: [52.5, 18], rot: 0.7 },
-    { prefab: 'standard', at: [57.5, 10.5], rot: 0.4 },
+    ...[[37.5, 12], [40, 22], [39, 34], [41, 47], [44, 16], [45.5, 28], [44, 40], [47, 53], [49.5, 9], [50, 21], [51, 33], [49.5, 45],
+      [54, 14], [55, 27], [54.5, 39], [56, 51], [58.5, 20], [59, 33], [58, 44]].map(([x, z], k) => ({ prefab: 'deadhorse', at: [x, z], rot: 1.2 + (k % 5) * 0.2, cover: true })),
+    { prefab: 'heap', at: [92, 31.5] }, { prefab: 'standard', at: [90, 28], rot: 0.4 }, { prefab: 'standard', at: [94.5, 35], rot: 2.4 },
   ],
   lights: [
-    { at: [0, 15], y: 14, col: [1.0, 0.5, 0.3], rad: 80, i: 1.4 },             // the sun going down in the west
-    { at: [33, 15], y: 20, col: [0.9, 0.45, 0.35], rad: 60, i: 0.8 },
-    { at: [55, 15], y: 18, col: [0.8, 0.4, 0.35], rad: 40, i: 0.7 },
+    { at: [-40, 32], y: 26, col: [1.0, 0.5, 0.3], rad: 260, i: 1.4 },             // the sun going down in the west
+    { at: [60, 30], y: 40, col: [0.85, 0.42, 0.35], rad: 150, i: 0.6 },
+    { at: [100, 32], y: 30, col: [0.8, 0.4, 0.35], rad: 90, i: 0.6 },
   ],
   features: [],
   items: [
-    { kind: 'wine', name: 'dead knight\'s wineskin', at: [13.5, 12.5], heal: 25 },
-    { kind: 'wine', name: 'Shemite water-skin', at: [37.5, 18.5], heal: 25 },
-    { kind: 'bread', name: 'trooper\'s ration', at: [41.2, 10.5], heal: 25 },
-    { kind: 'wine', name: 'Ophirean wine', at: [51.5, 9.5], heal: 25 },
+    { kind: 'wine', name: 'dead knight\'s wineskin', at: [11, 15], heal: 25 },
+    { kind: 'bread', name: 'trooper\'s ration', at: [27, 49], heal: 25 },
+    { kind: 'wine', name: 'Shemite water-skin', at: [66, 45], heal: 25 },
+    { kind: 'bread', name: 'trooper\'s ration', at: [66, 17], heal: 25 },
+    { kind: 'wine', name: 'Ophirean wine', at: [86, 46], heal: 25 },
   ],
   // "Ophirean knights in gilded mail ... squat Shemites with blue-black beards, and dark-faced Kothian knights"
   entities: [
-    { class: 'info_player_start', at: [3.5, 15], yaw: -Math.PI / 2 },
-    { class: 'kknight', id: 'c1', at: [8, 12.5], group: 'charge', yaw: Math.PI / 2 },
-    { class: 'kknight', id: 'c2', at: [10, 16.5], group: 'charge', yaw: Math.PI / 2 },
-    { class: 'spearman', id: 'c3', at: [13, 13.5], group: 'charge', yaw: Math.PI / 2 },
-    { class: 'kknight', id: 'c4', at: [14.5, 18.5], group: 'charge', yaw: Math.PI / 2 },
-    { class: 'archer', id: 'l1', at: [36.5, 11], group: 'line', yaw: Math.PI / 2, hold: true },
-    { class: 'archer', id: 'l2', at: [37, 14], group: 'line', yaw: Math.PI / 2, hold: true },
-    { class: 'archer', id: 'l3', at: [36.5, 17], group: 'line', yaw: Math.PI / 2, hold: true },
-    { class: 'archer', id: 'l4', at: [39.5, 15.5], group: 'line', yaw: Math.PI / 2, hold: true },
-    { class: 'spearman', id: 'l5', at: [35, 13], group: 'line', yaw: Math.PI / 2, hold: true },
-    { class: 'spearman', id: 'l6', at: [35, 16.5], group: 'line', yaw: Math.PI / 2, hold: true },
-    { class: 'kknight', id: 'h1', at: [57, 12], group: 'heap1', yaw: Math.PI / 2, hold: true },
-    { class: 'oknight', id: 'h2', at: [58.5, 15], group: 'heap1', yaw: Math.PI / 2, hold: true },
-    { class: 'kknight', id: 'h3', at: [57.5, 18.5], group: 'heap1', yaw: Math.PI / 2, hold: true },
-    { class: 'spearman', id: 'h4', at: [59.5, 13], group: 'heap1', yaw: Math.PI / 2, hold: true },
-    { class: 'oknight', id: 'h5', at: [62.5, 12], group: 'heap2', yaw: Math.PI / 2, hold: true },
-    { class: 'oknight', id: 'h6', at: [62.5, 15], group: 'heap2', yaw: Math.PI / 2, hold: true },
-    { class: 'kknight', id: 'h7', at: [62.5, 18], group: 'heap2', yaw: Math.PI / 2, hold: true },
-    { class: 'spearman', id: 'h8', at: [63.5, 13.5], group: 'heap2', yaw: Math.PI / 2, hold: true },
-    { class: 'oknight', id: 'h9', at: [63.5, 16.5], group: 'heap2', yaw: Math.PI / 2, hold: true },
+    { class: 'info_player_start', at: [6, 31], yaw: -Math.PI / 2 },
+    { class: 'kknight', id: 'c1', at: [15, 24], group: 'charge', yaw: Math.PI / 2 },
+    { class: 'kknight', id: 'c2', at: [17, 38], group: 'charge', yaw: Math.PI / 2 },
+    { class: 'spearman', id: 'c3', at: [22, 30], group: 'charge', yaw: Math.PI / 2 },
+    { class: 'kknight', id: 'c4', at: [26, 41], group: 'charge', yaw: Math.PI / 2 },
+    { class: 'spearman', id: 'c5', at: [24, 19], group: 'charge', yaw: Math.PI / 2 },
+    { class: 'kknight', id: 'c6', at: [29, 33], group: 'charge', yaw: Math.PI / 2 },
+    { class: 'archer', id: 'l1', at: [64, 20], group: 'line', yaw: Math.PI / 2, hold: true },
+    { class: 'archer', id: 'l2', at: [63.5, 27], group: 'line', yaw: Math.PI / 2, hold: true },
+    { class: 'archer', id: 'l3', at: [64, 35], group: 'line', yaw: Math.PI / 2, hold: true },
+    { class: 'archer', id: 'l4', at: [63.5, 42], group: 'line', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'l5', at: [62, 24], group: 'line', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'l6', at: [62, 31], group: 'line', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'l7', at: [62, 38], group: 'line', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h1', at: [95, 26], group: 'heap1', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h2', at: [97, 32], group: 'heap1', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h3', at: [95, 38], group: 'heap1', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h4', at: [99, 29], group: 'heap1', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h5', at: [99, 35], group: 'heap1', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h6', at: [102.4, 27], group: 'heap2', yaw: Math.PI / 2, hold: true },     // the second wave steps out of the ring of the host
+    { class: 'oknight', id: 'h7', at: [102.4, 32], group: 'heap2', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h8', at: [102.4, 37], group: 'heap2', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h9', at: [101.6, 29.5], group: 'heap2', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h10', at: [101.6, 34.5], group: 'heap2', yaw: Math.PI / 2, hold: true },
   ],
   // the arrow ground: "Strabonus' Shemitish bowmen had wrought havoc among his knights"
   volley: { rooms: ['gully', 'arrowground'], group: 'line', period: 4.2 },
   // the riders' ground: "Ophirean knights in gilded mail leaped their horses over mounds of corpses"
-  charges: [{ x: 43.5, period: 6.0, offset: 0.0, dir: 1 }, { x: 46, period: 6.0, offset: 2.0, dir: -1 }, { x: 48.5, period: 6.0, offset: 4.0, dir: 1 }],
-  chargeSpan: [4, 26],
+  charges: [{ x: 72, period: 9.0, offset: 0.0, dir: 1 }, { x: 75.5, period: 9.0, offset: 3.0, dir: -1 }, { x: 79, period: 9.0, offset: 6.0, dir: 1 }],
+  chargeSpan: [6, 57],
+  // the kings watch from their horses in the ring of the host; Tsotha swings down and walks out to you
+  kings: { riders: [[108, 28, 'kknight'], [108, 36, 'oknight']], horse: [105.4, 32], tsotha: [104.6, 32] },
+  // "the ring of attackers": the host stands round the heap in ranks of pikemen, giants in steel caps
+  host: { x: [103.7, 105.2], z: [7, 57], step: 3.4 },
   puzzle: {
     flags: ['line_broken', 'lanes_crossed', 'heap_held', 'answered'],
     actions: [
@@ -421,7 +446,7 @@ function buildLevel(spec) {
       LV.floor[idx] = r.pit ? fl - r.pit : fl;
       LV.ceil[idx] = r.pit ? LV.ceil[idx] || fl + 4 * CELL : fl + (r.h || 2) * CELL;
       LV.room[idx] = ri; LV.rough[idx] = st ? 0.12 : 1; LV.vault[idx] = r.vault || 0; LV.tex[idx] = tex;
-      LV.flags[idx] = (r.hide ? F_HIDE : 0) | (r.nopass ? F_NOPASS : 0) | (r.id === 'serpent' ? F_SLIME : 0) | (r.wind ? F_WIND : 0);
+      LV.flags[idx] = (r.hide ? F_HIDE : 0) | (r.nopass ? F_NOPASS : 0) | (r.id === 'serpent' ? F_SLIME : 0) | (r.wind ? F_WIND : 0) | (r.water ? F_WATER : 0);
       if (r.sky) { LV.flags[idx] |= F_SKY | F_TALL; LV.ceil[idx] = fl + 14 * CELL; }
     }
   });
@@ -436,7 +461,7 @@ function buildLevel(spec) {
   for (let gz = 0; gz <= H; gz++) for (let gx = 0; gx <= W; gx++) LV.corners[gz * (W + 1) + gx] = computeCorner(gx, gz);
 
   const W2 = (gx, gz) => [gx * CELL, gz * CELL];
-  for (const p of spec.props) {
+  for (const p of spec.props.concat(scatterProps(spec))) {
     const [x, z] = W2(p.at[0], p.at[1]);
     const prop = Object.assign({}, p, { x, z, y: p.level !== undefined ? p.level : groundInfo(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6).floor });
     LV.props.push(prop);
@@ -448,6 +473,7 @@ function buildLevel(spec) {
       LV.colliders.push({ x, z, r: 0.75 });
     } else if (p.prefab === 'table') LV.colliders.push({ x, z, r: 1.15 });
     else if (p.prefab === 'heap') LV.colliders.push({ x, z, r: 2.0 });
+    else if (p.prefab === 'boulder') LV.colliders.push({ x, z, r: p.size * 0.85 });
     else if (p.prefab === 'deadhorse') { LV.colliders.push({ x, z, r: 0.75 }); if (p.cover) { const ci = cellIdx(Math.floor(p.at[0]), Math.floor(p.at[1])); if (ci >= 0) LV.flags[ci] |= F_HIDE; } }
     else if (p.prefab === 'column') LV.colliders.push({ x, z, r: 0.75 });
     else if (p.prefab === 'winch') LV.colliders.push({ x, z, r: 0.45 });
@@ -494,6 +520,26 @@ function wallIn(w) { return w === 'N' ? [0, 1] : w === 'S' ? [0, -1] : w === 'E'
 function cellIdx(gx, gz) { return (!(gx >= 0) || !(gz >= 0) || gz < 0 || gx >= LV.W || gz >= LV.H) ? -1 : gz * LV.W + gx; }
 function kindAt(gx, gz) { const i = cellIdx(gx, gz); return i < 0 ? 0 : LV.kind[i]; }
 
+// Props a level asks for in bulk, placed by hash so every load is the same: scattered dead and wreckage,
+// and lines of boulders that close an open level in (README: the plain of Shamu has no walls).
+function scatterProps(spec) {
+  const out = [];
+  (spec.scatter || []).forEach((sc, si) => {
+    for (let k = 0; k < sc.n; k++) {
+      const h = q => hrand(k, q, si + 3, 61), [x0, z0, w, d] = sc.rect;
+      out.push({ prefab: sc.prefab, at: [x0 + h(1) * w, z0 + h(2) * d], rot: h(3) * 6.283, size: sc.size ? sc.size[0] + h(4) * (sc.size[1] - sc.size[0]) : 1 });
+    }
+  });
+  (spec.boulders || []).forEach((ln, li) => {
+    const [x0, z0] = ln.from, [x1, z1] = ln.to, L = Math.hypot(x1 - x0, z1 - z0), nx = -(z1 - z0) / L, nz = (x1 - x0) / L;
+    for (let t = 0, k = 0; t <= L; k++) {
+      const h = q => hrand(k, q, li + 11, 91), r = ln.r[0] + h(1) * (ln.r[1] - ln.r[0]), off = (h(2) - 0.5) * (ln.jitter || 1.2);
+      out.push({ prefab: 'boulder', at: [x0 + (x1 - x0) * t / L + nx * off, z0 + (z1 - z0) * t / L + nz * off], size: r, rot: h(3) * 6.283 });
+      t += r / CELL * (0.75 + 0.35 * h(4));
+    }
+  });
+  return out;
+}
 function computeCorner(gx, gz) {
   let nOpen = 0, sumF = 0, nPit = 0, sumP = 0, nNS = 0, sumC = 0, maxC = -1e9, tall = false, sx = 0, sz = 0, nSolid = 0, rough = 0, vault = 0;
   for (let k = 0; k < 4; k++) {

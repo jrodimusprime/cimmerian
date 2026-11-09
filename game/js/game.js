@@ -25,7 +25,7 @@ const keys = {};
 let mouseDX = 0, mouseDY = 0, pressUse = false, pressFire = false, agentInput = null;
 let acc = 0, lastFrame = 0, gameTime = 0, fade = 1, fadeTarget = 0, flash = 0, flashCol = [0.75, 0.06, 0.02];
 let prev = { x: 0, y: 0, z: 0 }, renderAlpha = 0, hudT = 0, debugOn = false;
-let particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, pressTorch = false, wantWeapon = null;
+let skyMesh = null, particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, pressTorch = false, wantWeapon = null;
 let punchPitch = 0, punchYaw = 0;          // cosmetic view kick, never fed back into the sim
 
 const modelCache = new Map();
@@ -166,7 +166,7 @@ function newState(seed, carry) {
     wind: 0, windNow: 0, windSnd: 0,
     checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1, playTicks: carry ? carry.playTicks : 0,
     shamu: LEVEL.level === 'e1m1' ? { vt: 0, shout: false, cool: 0, woke: new Set(), phase: 'fight', t: 0, line: 0, hoof: [-1, -1, -1],
-      tsotha: { state: 'away', x: 62.8 * CELL, z: 15 * CELL, yaw: -Math.PI / 2, t: 0, walk: 0 } } : null,
+      tsotha: { state: 'away', x: LEVEL.kings.tsotha[0] * CELL, z: LEVEL.kings.tsotha[1] * CELL, yaw: -Math.PI / 2, t: 0, walk: 0 } } : null,
     paralysed: 0,
     torch: LEVEL.torch ? 'lit' : 'none',               // e1m3: lit, dropped (an ember on the ground), or out (shaken out)
     tun: LEVEL.level === 'e1m3' ? { weepT: 2, woke: false, gt: 0, side: -1, pres: 'calm', pt: 0, rises: 0, draft: [0, 0], fear: 0 } : null,
@@ -278,6 +278,7 @@ function updatePlayer(inp) {
 
 // ---------------------------------------------------------------- damage & death
 const DEATHS = {
+  drown: 'You go down the bank into the black water. The mail you fought in drags you under, and the plain goes on without you.',
   crush: 'Satha\'s coils roll over you like a landslide of white iron. Bones go like kindling.',
   blunder: 'You blunder into the great sliding body. The coils close on you like a fist, and the pits grow very quiet.',
   bite: 'The great head strikes faster than thought. The pits grow very quiet.',
@@ -785,6 +786,7 @@ const ROOM_DESC = {
   cell: 'A vault cut from the living rock, far under the hill. Straw rots on the floor. A torch burns in a niche above the ring you are chained to, and the darkness presses in on it like a living thing.',
   hall: 'The main corridor of the pits, vaulted high and narrow like the nave of a drowned temple. Its floor is worn into a smooth trough down the middle, as if something enormous passes along it often.',
   charge: 'The field of the last charge. Five thousand knights rode into Koth behind you, and here they lie, slashed and trampled, their horses with them.',
+  gully: 'A sunken gully choked with the dead of the charge. Its banks are steep, and down here the arrows cannot find you.',
   arrowground: 'Open ground under the Shemite rise, feathered with spent shafts. The dead horses are the only cover.',
   rise: 'The rise where the Shemitish bowmen stood to shoot your knights down.',
   lanes: 'The ground the enemy horse rides over, again and again, churned to mire.',
@@ -961,7 +963,7 @@ function updateShamu() {
   if (M.woke.has('heap1') && !alive('heap1').length) wake('heap2');
   for (const g of M.woke) if (S.foes.some(f => f.group === g && !f.dead && !f.alert)) alertGroup(g, true);   // the battle is on: after a fall they come again
   if (S.areas.has('line') && !alive('line').length) setFlag('line_broken');
-  if (S.x > 50 * CELL) setFlag('lanes_crossed');
+  if (S.room === 'heap') setFlag('lanes_crossed');
   // the Shemite volleys over the arrow ground
   const V = L.volley, archers = alive(V.group).filter(f => f.cls === 'archer');
   if (!M.woke.has(V.group) && V.rooms.includes(room) && archers.length && mode === 'play') {
@@ -1054,6 +1056,7 @@ function tick(inp) {
   if (inp.use) interact();
   if (inp.fire) onFire(false);
   if (inp.kick) onFire(true);
+  if ((g.flags & F_WATER) && S.y < (LEVEL.waterY || -1) - 0.6) { die('drown'); return; }
   if (g.kind === 2 && S.y < g.floor + 30 && S.y < -4) { die('fall'); return; }
   const id = roomIdAt(S.x, S.z);
   if (id && id !== S.room) {
@@ -1135,6 +1138,8 @@ function loadLevel(id, carry) {
   if (entitySpec('scripted_satha') || LEVEL.satha) buildSathaPath();
   if (levelMesh) R.deleteMesh(levelMesh);
   levelMesh = R.createMesh(buildLevelMesh());
+  if (skyMesh) { R.deleteMesh(skyMesh); skyMesh = null; }
+  if (LEVEL.open) skyMesh = R.createMesh(buildSkyMesh(LEVEL.sun || [-1, 0.05, 0.2]));
   R.haze = LEVEL.haze || [0.035, 0.026, 0.02];
   const gf = LEVEL.groundFog;                               // low fog lying on the field
   R.gfog = gf ? [gf.density, gf.falloff, gf.floor || 0, 1] : [0, 0, 0, 0]; R.gfogCol = gf ? gf.col : [0, 0, 0];
@@ -1205,7 +1210,7 @@ function updateHUD() {
 function render(alpha) {
   const px = lerp(prev.x, S.x, alpha), py = lerp(prev.y, S.y, alpha), pz = lerp(prev.z, S.z, alpha);
   const bob = Math.sin(bobPhase * 2) * 0.05 * bobAmt, eyeY = py + EYE + bob;
-  const proj = m4persp(72 * Math.PI / 180, R.aspect, 0.05, 200);
+  const proj = m4persp(72 * Math.PI / 180, R.aspect, LEVEL.open ? 0.1 : 0.05, LEVEL.open ? 2600 : 200);
   const view = m4mul(m4rx(-S.pitch - punchPitch), m4mul(m4ry(-S.yaw - punchYaw), m4t(-px, -eyeY, -pz)));
   const vp = m4mul(proj, view), f = camFwd();
   const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3];
@@ -1228,7 +1233,11 @@ function render(alpha) {
   R.voidLine = ev ? [ev.from[0] * CELL, ev.from[1] * CELL, ev.to[0] * CELL, ev.to[1] * CELL] : [0, 0, 0, 0]; R.voidW = ev ? ev.w : 0;
   R.beginScene(gameTime);
   R.lightMul(lm);
-  R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, 0.034);
+  if (skyMesh) {                                         // the open sky: drawn first, with no haze, and always at the horizon
+    R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, 0);
+    R.key = [0, 1, 0]; R.drawEntity(skyMesh, m4t(px, 0, pz), [0.3, 0.2, 0.2], 1, 1, false);
+  }
+  R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, LEVEL.fog || 0.034);
   R.drawWorld(levelMesh);
   // items
   for (const it of S.items) {
@@ -1320,13 +1329,24 @@ function render(alpha) {
       drawHorse(x, y, z, yaw, gal, l);
       drawCharacter('oknight', x, y + 0.5 + Math.abs(Math.sin(gal)) * 0.1, z - (c.dir > 0 ? 0.1 : -0.1), yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
     });
+    if (LEVEL.host) {                                  // the ranks of the host, pikes up, closing the field to the east
+      const H = LEVEL.host;
+      H.x.forEach((hx, r) => {
+        for (let hz = H.z[0] + r * H.step / 2; hz <= H.z[1]; hz += H.step) {
+          const x = hx * CELL, z = hz * CELL;
+          if (Math.hypot(x - S.x, z - S.z) > 110) continue;
+          const y = groundInfo(x, z).floor, P = poseIdle({}, gameTime * 0.7 + hz);
+          drawCharacter('spearman', x, y, z, -Math.PI / 2 + Math.sin(hz * 3.1) * 0.15, Object.assign(P, { we: 1.35 }), sampleLight(x, y + 1.5, z));
+        }
+      });
+    }
     if (M.phase !== 'fight') {                         // the kings, watching from their horses
-      for (const [kx, kz, who] of [[63.6, 12.5, 'kknight'], [63.6, 17.5, 'oknight']]) {
+      for (const [kx, kz, who] of LEVEL.kings.riders) {
         const x = kx * CELL, z = kz * CELL, y = groundInfo(x, z).floor, l = sampleLight(x, y + 1.5, z);
         drawHorse(x, y, z, -Math.PI / 2, 0, l); drawCharacter(who, x, y + 0.5, z, -Math.PI / 2, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, unarmed: true, noShield: true }, l);
       }
       const ts = M.tsotha, tl = sampleLight(ts.x, 2, ts.z);
-      drawHorse(63.2 * CELL, groundInfo(63.2 * CELL, 15 * CELL).floor, 15 * CELL, -Math.PI / 2, 0, tl);
+      const th = LEVEL.kings.horse; drawHorse(th[0] * CELL, groundInfo(th[0] * CELL, th[1] * CELL).floor, th[1] * CELL, -Math.PI / 2, 0, tl);
       if (ts.state !== 'away') {
         const P = poseIdle({}, gameTime);
         if (ts.state === 'walk') poseWalk(P, ts.walk * 3, 0.7);

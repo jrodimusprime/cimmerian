@@ -101,7 +101,7 @@ void main() {
     vec3 rd = vWPos - uCamPos; float L = length(rd), ry = rd.y, b = uGFog.y;
     float bank = texture(uTex, vec3(vWPos.xz * 0.012 + vec2(uTime * 0.006, uTime * 0.0025), ${T.GRIME}.0)).r;
     float a = uGFog.x * (0.45 + 1.1 * bank);
-    float ray = abs(ry * b) > 1e-3 ? (1.0 - exp(-b * ry)) / (b * ry) : 1.0;
+    float ray = min(abs(ry * b) > 1e-3 ? (1.0 - exp(-b * ry)) / (b * ry) : 1.0, 1.6);   // a ditch holds mist, but not a solid slab of it
     float amt = a * L * exp(-b * (uCamPos.y - uGFog.z)) * ray;
     rgb = mix(rgb, uGFogCol, clamp(1.0 - exp(-amt), 0.0, 0.92));
   }

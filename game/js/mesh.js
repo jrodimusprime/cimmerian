@@ -257,6 +257,12 @@ function addPrefab(mb, p) {
       addBox(mb, p.x + Math.sin(yaw) * 1.3 + Math.cos(yaw) * 0.5, p.y + 0.04, p.z + Math.cos(yaw) * 1.3 - Math.sin(yaw) * 0.5, 0.5, 0.02, 0.45, T.BANNER, yaw);
       break;
     }
+    case 'boulder': {                                     // a weathered boulder, sunk into the turf, often with a smaller one leaning on it
+      const r = p.size, sd = Math.floor(p.x * 13 + p.z * 7);
+      addRock(mb, p.x, p.y + r * 0.3, p.z, r, r * (0.6 + 0.3 * hrand(sd, 1, 2, 3)), r * (0.8 + 0.3 * hrand(sd, 2, 2, 3)), sd, T.ROCK, 0.45);
+      if (hrand(sd, 3, 2, 3) < 0.6) { const a = p.rot, q = r * 0.55; addRock(mb, p.x + Math.cos(a) * r * 0.9, p.y + q * 0.25, p.z + Math.sin(a) * r * 0.9, q, q * 0.7, q, sd + 5, T.ROCK, 0.5); }
+      break;
+    }
     case 'heap': {                                        // "a heap of dead horses and men"
       for (let k = 0; k < 9; k++) {
         const a = k * 2.399, r = 0.4 + (k % 4) * 0.45, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, hgt = 0.9 - r * 0.35;
@@ -323,19 +329,62 @@ function buildLevelMesh() {
     const f0 = P(c0, fy(c0)), f1 = P(c1, fy(c1)), f2 = P(c2, fy(c2)), f3 = P(c3, fy(c3));
     if (diag) { mb.tri(f0, f1, f2, fLayer, 0, 1, 0); mb.tri(f0, f2, f3, fLayer, 0, 1, 0); }
     else { mb.tri(f0, f1, f3, fLayer, 0, 1, 0); mb.tri(f1, f2, f3, fLayer, 0, 1, 0); }
+    const open = LEVEL.open && (fl & F_SKY);              // under the open sky: no ceiling, and no wall at the world's edge
+    if (fl & F_WATER) {                                   // the moat: still black water a little below the banks
+      const wy = LEVEL.waterY || -1;
+      mb.quad([c0.x, wy, c0.z], [c1.x, wy, c1.z], [c2.x, wy, c2.z], [c3.x, wy, c3.z], T.WATER, 0, 1, 0);
+    }
     const cLayer = (fl & F_SKY) ? (tex.ceil === 'SUNSET' ? T.SUNSET : T.SKY) : T[tex.ceil];
     const e0 = P(c0, c0.c), e1 = P(c1, c1.c), e2 = P(c2, c2.c), e3 = P(c3, c3.c);
-    if (diag) { mb.tri(e0, e1, e2, cLayer, 0, -1, 0); mb.tri(e0, e2, e3, cLayer, 0, -1, 0); }
-    else { mb.tri(e0, e1, e3, cLayer, 0, -1, 0); mb.tri(e1, e2, e3, cLayer, 0, -1, 0); }
+    if (!open) {
+      if (diag) { mb.tri(e0, e1, e2, cLayer, 0, -1, 0); mb.tri(e0, e2, e3, cLayer, 0, -1, 0); }
+      else { mb.tri(e0, e1, e3, cLayer, 0, -1, 0); mb.tri(e1, e2, e3, cLayer, 0, -1, 0); }
+    }
     for (const d of DIRS) {
       const nk = kindAt(i + d[0], j + d[1]);
       const ca = corner(i + d[2], j + d[3]), cb = corner(i + d[4], j + d[5]);
+      if (nk === 0 && open) continue;
       if (nk === 0) wallStrip(mb, ca, cb, fy(ca), fy(cb), ca.c, cb.c, T[tex.wall], -d[0], -d[1]);
       else if (k === 2 && nk === 1) mb.quad(P(ca, ca.fp), P(cb, cb.fp), P(cb, cb.fo), P(ca, ca.fo), T[tex.wall], -d[0], 0, -d[1]);
     }
   }
   for (const p of LV.props) addPrefab(mb, p);
+  if (LEVEL.open) {                                       // the plain runs on past the boulders to the horizon, with low hills far off
+    const X = W * CELL, Z = H * CELL, F = 1600, g = -0.05, ring = [[-F, -F], [X + F, -F], [X + F, Z + F], [-F, Z + F]], inner = [[0, 0], [X, 0], [X, Z], [0, Z]];
+    for (let k = 0; k < 4; k++) {
+      const a = inner[k], b = inner[(k + 1) % 4], c = ring[(k + 1) % 4], d = ring[k];
+      mb.quad([a[0], g, a[1]], [b[0], g, b[1]], [c[0], g, c[1]], [d[0], g, d[1]], T.TURF, 0, 1, 0);
+    }
+    for (let k = 0; k < 26; k++) {
+      const a = k / 26 * Math.PI * 2 + hrand(k, 1, 4, 4) * 0.2, rr = 260 + 260 * hrand(k, 2, 4, 4), cx = X / 2 + Math.cos(a) * rr, cz = Z / 2 + Math.sin(a) * rr * 0.8;
+      addRock(mb, cx, -6, cz, 50 + 60 * hrand(k, 3, 4, 4), 10 + 16 * hrand(k, 4, 4, 4), 40 + 50 * hrand(k, 5, 4, 4), 300 + k, k % 3 ? T.TURF : T.ROCK, 0.3);
+    }
+  }
   bakeLights(mb, LV.lights, LEVEL.ambient || AMBIENT);
+  return mb.finish();
+}
+
+// ---- the sky over an open level: a dome graded from a burning horizon to a dark zenith, and the sun going down
+function buildSkyMesh(sunDir) {
+  const mb = new MeshBuilder(8192), R = 1000, rings = 44, seg = 36;
+  const grade = e => e < 0.12 ? [1.25, 0.55, 0.32] : e < 0.35 ? [lerp(1.25, 0.62, (e - 0.12) / 0.23), lerp(0.55, 0.15, (e - 0.12) / 0.23), lerp(0.32, 0.12, (e - 0.12) / 0.23)]
+    : [lerp(0.62, 0.2, Math.min(1, (e - 0.35) / 0.65)), lerp(0.15, 0.035, Math.min(1, (e - 0.35) / 0.65)), lerp(0.12, 0.05, Math.min(1, (e - 0.35) / 0.65))];
+  const pt = (el, az) => [Math.cos(el) * Math.cos(az) * R, Math.sin(el) * R, Math.cos(el) * Math.sin(az) * R];
+  for (let r = 0; r < rings; r++) {
+    const e0 = -0.25 + (Math.PI / 2 + 0.25) * r / rings, e1 = -0.25 + (Math.PI / 2 + 0.25) * (r + 1) / rings, col = grade(Math.max(0, (e0 + e1) / 2) / (Math.PI / 2));
+    for (let k = 0; k < seg; k++) {
+      const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2;
+      mb.quad(pt(e0, a0), pt(e0, a1), pt(e1, a1), pt(e1, a0), T.SUNSET, 0, -1, 0, col);
+    }
+  }
+  const d = norm3(sunDir), up = [0, 1, 0], u = norm3(cross3(up, d)), w = cross3(d, u);
+  for (const [rad, col, dist] of [[150, [0.9, 0.18, 0.08], 960], [80, [1.6, 0.55, 0.22], 950], [52, [1.9, 0.95, 0.45], 940]]) {   // a halo, then the disc
+    const c = [d[0] * dist, d[1] * dist, d[2] * dist];
+    for (let k = 0; k < 24; k++) {
+      const a0 = k / 24 * Math.PI * 2, a1 = (k + 1) / 24 * Math.PI * 2, p = a => [c[0] + (u[0] * Math.cos(a) + w[0] * Math.sin(a)) * rad, c[1] + (u[1] * Math.cos(a) + w[1] * Math.sin(a)) * rad, c[2] + (u[2] * Math.cos(a) + w[2] * Math.sin(a)) * rad];
+      mb.tri(c, p(a0), p(a1), T.SUNSET, -d[0], -d[1], -d[2], col);
+    }
+  }
   return mb.finish();
 }
 

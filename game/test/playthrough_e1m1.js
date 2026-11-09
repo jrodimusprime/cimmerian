@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 8821, hash: '7b58280b' };
+const EXPECTED = { tick: 11776, hash: 'b94019fb' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -97,24 +97,25 @@ window.__lane = (i, x, z) => {
 true`);
 let o = await O('(CIM.load("e1m1"), CIM.step({}, 1))');
 // THE BROKEN CHARGE (action)
-o = await O('__fight(["charge"], 9000, 40)'); log('charge:', brief(o));
-await O('__heal()');
-// THE ARROW GROUND (puzzle): cover to cover between volleys
-await O('__route([[15.3, 15]])'); o = await O('__jumpTo(21, 15)'); log('gully:', brief(o));
-for (const [x, z] of [[21.7, 10.5], [23.7, 15.5], [27.7, 12.5], [29.7, 17.5], [31.7, 9.6]]) o = await O(`__dash(${x}, ${z})`);
+o = await O('__fight(["charge"], 12000, 70)'); log('charge:', brief(o));
+await O('__heal(33)');
+// THE GULLY OF DEAD (agility): drop into the ditch, jump the far bank
+await O('__route([[32, 31]])'); o = await O('__jumpTo(38.6, 31)'); log('gully:', brief(o));
+// THE ARROW GROUND (puzzle): dead horse to dead horse between volleys
+for (const [x, z] of [[38.1, 34], [44.6, 28], [50.1, 33], [54.1, 27], [58.1, 33]]) o = await O(`__dash(${x}, ${z})`);
 log('arrows:', brief(o));
 // THE SHEMITE LINE (action)
-await O('__route([[34.5, 11]])');
-o = await O('__fight(["line"], 9000, 30)'); log('line:', brief(o));
-await O('__heal(42)');
+await O('__route([[60.4, 31]])');
+o = await O('__fight(["line"], 12000, 50)'); log('line:', brief(o));
+await O('__heal(69)');
 // THE RIDERLESS HORSES (puzzle): cross the three lanes between charges
-await O('__route([[42.4, 15]])');
-for (const [i, x] of [[0, 44.75], [1, 47.25], [2, 50.4]]) { o = await O(`__lane(${i}, ${x}, 15)`); log(' lane', i, brief(o)); } log('lanes:', brief(o));
+await O('__route([[70.2, 31]])');
+for (const [i, x] of [[0, 73.75], [1, 77.25], [2, 81.2]]) { o = await O(`__lane(${i}, ${x}, 31)`); log(' lane', i, brief(o)); }
 // THE HEAP OF DEAD (action): two waves, then the kings and the wizard
 await O('__heal()');
-await O('__route([[53.5, 15]])');
-o = await O('__fight(["heap1", "heap2"], 15000, 40)'); log('heap:', brief(o));
-o = await O('__fight(["heap1", "heap2"], 15000, 40)');
+await O('__route([[88, 31]])');
+o = await O('__fight(["heap1", "heap2"], 15000, 60)'); log('heap:', brief(o));
+o = await O('__fight(["heap1", "heap2"], 15000, 60)');
 for (let i = 0; i < 60 && await ev('CIM.state.shamu.tsotha.state') !== 'offer'; i++) await O('__wait(72)');
 const ts = await O('[CIM.state.shamu.tsotha.x, CIM.state.shamu.tsotha.z]');
 await O(`__face(${ts[0]}, ${ts[1]}, 0.1)`);
