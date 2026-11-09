@@ -2,7 +2,7 @@
 
 Three playable levels, told out of joint as README §9 plans: **e1m2, The Pits** opens cold in the chains (milestone M4), **e1m1, The Plain of Shamu** is the flashback to how the king got there, and **e1m3, The Tunnels Below** jumps forward again. All three are built on the engine from **The Endless Cave** (`colossal_cave_adventure_3d`): pure JavaScript and WebGL2, no build step and no asset files. It is drawn in the Quake manner: low resolution, every pixel snapped to the game's palette, banded light and a dark haze.
 
-**Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game), or open `index.html` in a browser. Everything is generated at load time. A five-second title card opens the game, and each level opens with its story splash. `?level=e1m1` or `?level=e1m3` starts at that level. `?cheat=true` turns on god mode (no damage; a fatal fall puts you back at the last checkpoint) and lets **N** skip to the next level.
+**Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game), or open `index.html` in a browser. Everything is generated at load time. A five-second title card opens the game, and each level opens with its story splash. `?level=e1m1` or `?level=e1m3` starts at that level. `?cheat=true` turns on god mode (no damage; a fatal fall puts you back at the last checkpoint) and lets **N** skip to the next level. `?cast` opens the **cast gallery**: every creature and person the campaign uses, prologue to the Tybor, front and profile in the game's own renderer (left and right arrows step through them; `?cast=gromel` starts at one). The rendered sheets are in [`docs/cast/`](../docs/cast/).
 
 | Key | Action |
 |---|---|
@@ -133,7 +133,12 @@ This shows the design working. It is not the production pipeline:
 |---|---|
 | `js/util.js`, `js/renderer.js` | Engine core from The Endless Cave. The renderer adds UV-mapped models, key lights, haze, gamma and the palette-snapping post pass |
 | `js/mesh.js` | Mesh builder and primitives, the level mesher, prefabs, Satha, the view-model hand |
-| `js/characters.js` | The cast: rig, part builders, poses |
+| `js/chars/cast.js` | The cast as data: one entry per character, grouped by level, each with Howard's words for them |
+| `js/chars/rig.js` | The 14-bone humanoid rig, the loft helpers, `drawCharacter` and the pose library |
+| `js/chars/humanoid.js` | The shared part builder: heads and helms, outfits, limbs, weapons, shields |
+| `js/chars/pitthing.js`, `weeper.js`, `demon.js`, `yothga.js`, `horse.js`, `eagle.js` | One builder per creature that isn't a man: the pit-things, the weeping thing, Thoth-Amon's baboon-shape, Yothga, the horses and Tsotha's steed, Pelias's eagle |
+| `js/chars/broken.js` | Broken gear that dead men drop |
+| `js/gallery.js` | The cast gallery (`?cast`): every creature and person in the campaign, front and profile |
 | `js/combat.js` | Weapons, kicks, enemy AI, flow-field pathing |
 | `js/textures.js` | Ramp-locked procedural textures and the game palette |
 | `js/level.js` | The e1m2, e1m1 and e1m3 specs, the puzzle solver and the grid queries |

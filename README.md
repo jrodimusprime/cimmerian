@@ -4,11 +4,21 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 
 **Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game). [`game/`](game/README.md) is a playable vertical slice of e1m2 *The Pits*, prototyped on The Endless Cave's WebGL2 engine.
 
-## The two absolute rules
+## The three absolute rules
 
 > **1. The game is the book.** Every level is a stretch of Howard's *The Scarlet Citadel*. Inside a level, the beats happen in the order Howard tells them, with the people and creatures Howard puts there, in the places he puts them. Nothing may change *what* happens, *who* is there, or *where the story goes next*. A level may only add *how* a beat is played: the shape of a fight, a puzzle built from the story's own objects, more of the opposition the book already puts in that stretch. When in doubt, read the chapter (section 9 quotes every beat) and do what it says.
 >
-> **2. Every level lasts as long as a Quake level.** About 5–10 minutes for a first-time player, a dozen or more encounters, and a run of distinct spaces, like Quake's E1M1. Where the book's beat is short, the level is made longer **inside the story**: more of the place the book describes (its corridors, side tunnels, turrets, battle lines), filled with the opposition the book puts there. Combat corridors are welcome; invented scenes, characters and detours out of the story are not.
+> **2. Every level lasts as long as a Quake level.** About 10–15 minutes for a first-time player (rule 3 sets the floor), a dozen or more encounters, and a run of distinct spaces, like Quake's E1M1. Where the book's beat is short, the level is made longer **inside the story**: more of the place the book describes (its corridors, side tunnels, turrets, battle lines), filled with the opposition the book puts there. Combat corridors are welcome; invented scenes, characters and detours out of the story are not.
+
+> **3. The game lasts at least an hour and a half.** The campaign, `e1m1` to `e1m8`, must take a first-time player at least **90 minutes** in total; the optional prologue doesn't count toward it. That's at least **11–12 minutes a level** on average. Lengthen a short level the rule-2 way: more of the place the book describes, more of the opposition it puts there, more agility over its own ground. Never pad with invented scenes. Each level's length is checked at build time against its recorded solution (section 11): a first-time player is assumed to take about **4×** the bot's recorded run (an estimate until playtests measure it), so each golden run should last about **3 minutes or more** of game time.
+>
+> | Level | Budget (first-time) | Golden run now | Est. first-time now |
+> |---|---|---|---|
+> | `e1m1` The Plain of Shamu | 11 min | 2:44 | ~11 min |
+> | `e1m2` The Pits | 12 min | 2:11 | ~9 min (needs more) |
+> | `e1m3` The Tunnels Below | 12 min | 2:13 | ~9 min (needs more) |
+> | `e1m4`–`e1m8` | 11 min each | not built | |
+> | **Total** | **≥ 90 min** | | |
 
 **The telling is out of joint.** The game opens *in medias res*, in the pits, chained in the dark, the best possible first level. When the pits are behind you it flashes back to the plain of Shamu: *how did we get here?* Then it jumps forward again into the tunnels and follows the book to the end. This changes only the order in which levels are **played**, never what happens inside them; each level is still its stretch of the book, beat for beat. (Howard does the same: chapter III opens with the chained king remembering.)
 
@@ -340,7 +350,7 @@ Quotes are from the Wikisource text of the story (public domain in Australia).
 
 ### Levels: the story and the areas of each
 
-Each level below tells its stretch of the book, then lists its areas in play order, marked `<<combat>>` or `<<puzzle>>`. Every area cites what in the book it is built from. Sizes and length follow rule 2: about 5–10 minutes, six to eight areas, a dozen or more encounters.
+Each level below tells its stretch of the book, then lists its areas in play order, marked `<<combat>>` or `<<puzzle>>`. Every area cites what in the book it is built from. Sizes and length follow rules 2 and 3: about 11–15 minutes, six to eight areas, a dozen or more encounters.
 
 The book has no Tamar street level for Conan (he arrives on the tower by air), so the campaign is eight levels after the optional prologue.
 

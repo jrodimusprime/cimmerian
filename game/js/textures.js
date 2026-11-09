@@ -16,7 +16,9 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL',
   'MAIL', 'LEATHER', 'TABARD', 'HAIR', 'SHIELD', 'BLOOD', 'BANNER', 'FACE',
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
-  'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW'];
+  'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
+  'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -469,8 +471,44 @@ const TEXGEN = {
     return { v: 0.35 + 0.5 * band, ramp: 'scarlet', lo: 0.35, hi: 0.95, e: 0.9 };
   } },
   FACE: { f: (x, y, s) => ({ v: 0.6 + 0.2 * tfbm(x / 64, y / 64, 8, 3, s) - (hrand(Math.floor(x), Math.floor(y), s, 4) > 0.9 ? 0.12 : 0), ramp: 'earth', lo: 0.25, hi: 0.78, h: 0.05 }) },
+  // ---- the later cast's liveries (the book names no colours for these hosts; ours keep each side apart at a glance)
+  LIVERY_POITAIN: { f: (x, y, s) => livery(x, y, s, 'night', 'bronze', 'cross') },   // Trocero's Poitanians: night-blue, a bronze cross
+  LIVERY_PELLIA: { f: (x, y, s) => livery(x, y, s, 'bronze', 'ink', 'halves') },     // Arpello's Pellians: tawny and black, per pale
+  LIVERY_BOSSON: { f: (x, y, s) => ({ v: 0.4 + 0.3 * tfbm(x / 64, y / 64, 8, 3, s) - (Math.abs(((y / 16) % 1) - 0.5) < 0.04 ? 0.25 : 0), ramp: 'jade', lo: 0.08, hi: 0.5, h: 0.12 }) },   // a green jerkin
+  LIVERY_GUNDER: { f: (x, y, s) => livery(x, y, s, 'ink', 'scarlet', 'bars') },       // Gunderland: grey-white, scarlet bars
+  VELVET: { f: (x, y, s) => ({ v: 0.45 + 0.25 * tfbm(x / 64, y / 64, 8, 3, s) - 0.2 * tfbm(x / 64, y / 64, 2, 2, s + 9), ramp: 'scarlet', lo: 0.02, hi: 0.4, h: 0.08 }) },   // Ascalante's worn velvet
+  TAWNY: { f: (x, y, s) => ({ v: 0.35 + 0.5 * Math.abs(Math.sin(TAU * (x / 3 + tfbm(x / 64, y / 64, 4, 2, s) * 2))), ramp: 'bronze', lo: 0.1, hi: 0.7 }) },   // "their tawny locks"
+  DEMON_HIDE: { f: (x, y, s) => {                       // the baboon-shape: grey pelt, shadow in the fur
+    const fur = Math.abs(Math.sin(TAU * (x / 2.5 + tfbm(x / 64, y / 64, 4, 2, s) * 3)));
+    return { v: 0.25 + 0.35 * fur + 0.2 * tfbm(x / 64, y / 64, 8, 3, s + 1), ramp: 'night', lo: 0.02, hi: 0.55, h: 0.06 };
+  } },
+  YOTHGA_STEM: { f: (x, y, s) => {                      // "a repulsively supple stalk": pale, veined, wet
+    const vein = Math.abs(Math.sin(TAU * (x / 64 * 3 + tfbm(x / 64, y / 64, 4, 2, s) * 1.5))) < 0.08;
+    return vein ? { v: 0.4, ramp: 'scarlet', lo: 0.1, hi: 0.6, e: 0.15 } : { v: 0.5 + 0.3 * tfbm(x / 64, y / 64, 8, 3, s), ramp: 'jade', lo: 0.2, hi: 0.85, h: 0.05 };
+  } },
+  YOTHGA_BLOOM: { f: (x, y, s) => {                     // "a livid, unnatural crimson, like a perversity of flower-life"
+    const u = x / 64, v = y / 64, rib = Math.abs(Math.sin(TAU * u * 5)) < 0.12;
+    return { v: 0.55 + 0.3 * tfbm(u, v, 8, 2, s) - (rib ? 0.3 : 0) + 0.25 * v, ramp: 'scarlet', lo: 0.15, hi: 1, e: 0.35 };
+  } },
+  YOTHGA_LEAF: { f: (x, y, s) => {                      // "strangely pointed leaves"
+    const u = x / 64, v = y / 64, vein = Math.abs(((u * 6) % 1) - 0.5) < 0.05 || Math.abs(u - 0.5) < 0.02;
+    return { v: vein ? 0.75 : 0.3 + 0.3 * tfbm(u, v, 8, 2, s), ramp: 'jade', lo: 0.05, hi: 0.6 };
+  } },
+  FEATHER: { f: (x, y, s) => {                          // the eagle: barred brown feathers
+    const u = x / 64, v = y / 64, bar = ((v * 9 + tfbm(u, v, 4, 2, s) * 0.6) % 1) < 0.25;
+    return { v: (bar ? 0.2 : 0.55) + 0.2 * tfbm(u, v, 8, 2, s), ramp: 'earth', lo: 0.04, hi: 0.7, h: 0.05 };
+  } },
 };
 
+// a herald's coat: field and charge from two ramps; worn, stained, hatched like the rest
+function livery(x, y, s, field, charge, kind) {
+  const u = (x / 64) % 1, v = (y / 64) % 1;
+  const on = kind === 'cross' ? (Math.abs(u - 0.5) < 0.07 || Math.abs(v - 0.45) < 0.07) : kind === 'halves' ? u > 0.5 : Math.floor(v * 6) % 2 === 1;
+  if (v < 0.04 || v > 0.96) return { v: 0.15, ramp: 'ink', lo: 0, hi: 0.3 };
+  const dirt = tfbm(u, v, 4, 3, s + 40) > 0.64;
+  if (dirt) return { v: 0.3 + 0.3 * tfbm(u, v, 16, 1, s), ramp: 'earth', lo: 0.02, hi: 0.35 };
+  return { v: 0.55 + 0.3 * tfbm(u, v, 8, 2, s) + 0.1 * Math.sin(TAU * x / 4) - 0.25 * v * v, ramp: on ? charge : field, lo: 0.15, hi: 0.85, h: 0.12 };
+}
 function tallyTex(x, y, s, n) {                      // n deep vertical cuts, slightly crooked
   const px = x / 64, py = y / 64;
   for (let k = 0; k < n; k++) {
@@ -500,6 +538,7 @@ function paintFace(x, y, s, F) {
   const sock = ell(a, v, 0.062, 0.61, F.sock[0], F.sock[1]);
   if (sock < 1) {
     const eye = ell(a, v, 0.062, 0.608, F.eye[0], F.eye[1]);
+    if (eye < 1 && F.blue) return { v: eye < 0.45 ? 0.05 : 0.75, ramp: 'night', lo: 0.1, hi: 1, e: eye < 0.45 ? 0 : 0.25 };
     if (eye < 1) return F.glow ? { v: 0.6 + 0.4 * (1 - eye), ramp: 'fire', lo: 0.25, hi: 1, e: F.glow } : { v: eye < 0.45 ? 0.05 : 0.8, ramp: 'ink', lo: 0, hi: 0.9 };
     t -= 0.45 * (1 - sock * 0.6);
   }
@@ -533,6 +572,18 @@ const FACES = {
   FACE_VULTURE: { brow: 0.2, hollow: 0.3, nose: 0.03, sock: [0.045, 0.038], eye: [0.013, 0.009], glow: 0.9, scars: [],
     mouth: (du, v) => Math.abs(du) < 0.04 && Math.abs(v - 0.42) < 0.004 ? { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 } : null,
     skin: (t, du, v) => (Math.abs(du) < 0.08 && v > 0.72 && v < 0.82 && Math.abs(((v * 90) % 1) - 0.5) < 0.08) ? { v: t - 0.2, ramp: 'ink', lo: 0.2, hi: 0.6 } : { v: t, ramp: 'ink', lo: 0.28, hi: 0.72, h: 0.04 } },
+  // Conan: "his dark scarred face", "the savage blue eyes blazing", under "the tangled black mane"
+  FACE_CONAN: { brow: 0.32, hollow: 0.08, nose: 0.026, sock: [0.042, 0.03], eye: [0.016, 0.008], glow: 0, blue: true, scars: [[0.05, 0.66, 0.1, 0.5], [-0.03, 0.4, 0.02, 0.36]],
+    mouth: (du, v) => Math.abs(du) < 0.045 && Math.abs(v - 0.425 + 2 * du * du) < 0.006 ? { v: 0.06, ramp: 'scarlet', lo: 0, hi: 0.25 } : null,
+    skin: (t) => ({ v: t, ramp: 'earth', lo: 0.12, hi: 0.68, h: 0.05 }) },
+  // Pelias freed: "the worn face", "a high splendid forehead", eyes "dark and meditative"
+  FACE_SAGE: { brow: 0.08, hollow: 0.35, nose: 0.024, sock: [0.04, 0.03], eye: [0.012, 0.008], glow: 0, scars: [],
+    mouth: (du, v) => Math.abs(du) < 0.035 && Math.abs(v - 0.42 - 0.8 * du * du) < 0.004 ? { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 } : null,
+    skin: (t, du, v) => ({ v: t + 0.08 * smoothstep(0.7, 0.9, v), ramp: 'ink', lo: 0.3, hi: 0.78, h: 0.04 }) },
+  // Ascalante: "a sardonic countenance", the outlaw count
+  FACE_OUTLAW: { brow: 0.18, hollow: 0.22, nose: 0.028, sock: [0.04, 0.026], eye: [0.013, 0.007], glow: 0, scars: [[-0.09, 0.62, -0.05, 0.4]],
+    mouth: (du, v) => { const a = du, lip = 0.425 + 0.35 * Math.max(0, a) - 0.1 * Math.max(0, -a); return Math.abs(du) < 0.045 && Math.abs(v - lip) < 0.005 ? { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 } : null; },   // a one-sided smile
+    skin: (t, du, v) => v < 0.42 && Math.abs(du) < 0.1 && tfbm(du * 6, v * 6, 16, 1, 7) > 0.55 ? { v: 0.12, ramp: 'ink', lo: 0, hi: 0.3 } : { v: t, ramp: 'earth', lo: 0.22, hi: 0.72, h: 0.05 } },   // a dark stubble
 };
 for (const k in FACES) TEXGEN[k] = { f: (x, y, s) => paintFace(x, y, s, FACES[k]) };
 

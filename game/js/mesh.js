@@ -406,6 +406,8 @@ function buildModel(name) {
   if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
   if (name.startsWith('weeper:')) return buildWeeperPart(name.split(':')[1]);
   if (name.startsWith('horse:')) return buildHorsePart(name.split(':')[1]);
+  if (name.startsWith('yothga:')) return buildYothgaPart(name.split(':')[1]);
+  if (name.startsWith('eagle:')) return buildEaglePart(name.split(':')[1]);
   if (name.startsWith('broken:')) return buildBroken(name.split(':')[1]);
   if (name.startsWith('bars:')) {
     // a run of iron bars along +x, from 0 to len, base at y=0

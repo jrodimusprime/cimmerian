@@ -1454,7 +1454,7 @@ function render(alpha) {
   for (const pd of S.puddles) drawM('puddle', m4trs(pd.x, pd.y, pd.z, 0, 0, 0, 0.6 + 0.4 * Math.min(1, (6 - pd.t) * 3)), sampleLight(pd.x, pd.y + 0.5, pd.z), 0.1, Math.min(0.6, pd.t * 0.5));
   R.blend(false);
   // view-model: the hero's manacled right hand, with whatever is in it
-  if (mode === 'play' || mode === 'paused') {
+  if ((mode === 'play' || mode === 'paused') && !window.NO_VIEWMODEL) {   // NO_VIEWMODEL: for the gallery's photographs
     R.clearDepth(); R.lightMul(1);
     R.setCamera(m4persp(60 * Math.PI / 180, R.aspect, 0.01, 10), [0, 0, 0], [0.1, 0.2, 0.3], [0, 0, 0], 1, 0);
     const am = sampleLight(px, py + 1.2, pz), vl = [am[0] + 0.05, am[1] + 0.045, am[2] + 0.04];
@@ -1520,6 +1520,7 @@ function updateParticles(dt) {
 function frame(now) {
   const dt = Math.min(0.1, (now - lastFrame) / 1000 || 0.016);
   lastFrame = now; gameTime += dt;
+  if (window.GALLERY_ON) { renderGallery(dt); requestAnimationFrame(frame); return; }   // index.html?cast: the cast gallery
   if (S) {
     if (mode === 'play' && !agentInput) {
       const sens = BASE_SENS * sensMul;
@@ -1602,6 +1603,7 @@ function boot() {
     loadLevel(LEVELS[q.get('level')] ? q.get('level') : 'e1m2');
     lastFrame = performance.now();
     requestAnimationFrame(frame);
+    if (q.has('cast')) { startGallery(q.get('cast')); return; }
     if (q.has('agent')) { mode = 'splash'; return; }
     showIntro();
   }, 30);
