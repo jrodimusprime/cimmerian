@@ -156,7 +156,7 @@ function newState(seed, carry) {
     read: new Set(), visited: new Set(), room: '', hints: carry ? new Set(carry.hints) : new Set(),
     items: LV.items.map(it => Object.assign({}, it, { taken: false })),
     door: { open: 0, target: 0 }, grille: { open: 0, target: 0 },
-    giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0, arms: 0, grabT: 0, fall: 0 },
+    giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0,  wp: 0, arms: 0, grabT: 0, fall: 0 },
     satha: { start: entitySpec('scripted_satha') ? Math.round(3 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
     proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, combo: 0, lastSwing: -999, pendingHit: null,
@@ -212,6 +212,11 @@ function dynColliders(self) {
   const g = S.giant; if (g.state !== 'crushed') c.push({ x: g.x, z: g.z, r: 0.6 });
   for (const f of S.foes) if (!f.dead && f !== self) c.push({ x: f.x, z: f.z, r: 0.42 });
   if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
+  // Satha's body is solid: you cannot walk through her coils (only lie still while she passes)
+  else if (S.satha.pts && (!entitySpec('scripted_satha') || S.flags.free)) {
+    const py = S.y + 0.9;
+    for (const p of S.satha.pts) if (Math.abs(p.y - py) < p.r + 1.0) c.push({ x: p.x, z: p.z, r: p.r });
+  }
   return c;
 }
 const GRILLE_CELLS = new Set();
@@ -479,7 +484,10 @@ function updateGiant() {
       break;
     case 'enter':
       if (g.z > 8.6 * CELL && S.door.target === 1) { S.door.target = 0.35; Sfx.clank(); }      // "pulling the grille partly to behind it"
-      if (moveTo(8.7 * CELL, 9.9 * CELL, 1.9)) { g.state = 'gloat'; g.t = 0; g.line = 0; }
+      // through the middle of the grille's doorway (cell 7,7), not through the rock beside it
+      g.wp = g.wp || 0;
+      { const WP = [[7.5, 6.6], [7.5, 8.5], [8.7, 9.9]], w = WP[g.wp];
+        if (moveTo(w[0] * CELL, w[1] * CELL, 1.9)) { if (++g.wp >= WP.length) { g.state = 'gloat'; g.t = 0; g.line = 0; } } }
       break;
     case 'gloat':
       face();
@@ -557,8 +565,14 @@ function updateSatha() {
   for (const p of sa.pts) {                             // crushing contact with any part of the body
     if (Math.abs(p.y - py) > p.r + 1.0) continue;
     const dx = S.x - p.x, dz = S.z - p.z, d = Math.hypot(dx, dz);
-    if (d < p.r + RADIUS) { hurt(4.5, 'crush'); if (mode !== 'play') return; }
+    if (d < p.r + RADIUS + 0.12 && !(sa.touch > 0)) {    // a heavy blow: the coils lash, and fling you off
+      sa.touch = 0.6; hurt(35, 'crush'); if (mode !== 'play') return;
+      log('The coils lash against you like a battering-ram, and fling you off.', 'bad');
+      S.vx += dx / (d || 1) * 7; S.vz += dz / (d || 1) * 7; S.vy = 2.5; S.onGround = false;
+      break;
+    }
   }
+  sa.touch = (sa.touch || 0) - DT;
   if (h.y < -0.5) return;
   const seesFire = LEVEL.satha && S.torch === 'lit' && hd < 7 && los(h.x, h.y + 0.5, h.z, S.x, S.y + 1.2, S.z);   // she goes for the light
   if (((!hidden && hd < 3.3) || seesFire) && Math.abs(S.y - h.y) < 2.5 && sa.cool <= 0) {
@@ -1272,7 +1286,7 @@ function render(alpha) {
   }
   const nt = feature('niche_torch');
   if (nt && !S.flags.has_torch) {
-    const tm = m4trs(nt.x + 0.25, nt.y - 0.25, nt.z, 0, 0, -0.25, 3.2), ll = [1, 0.7, 0.45]; ll.d = [0, 1, 0];
+    const tm = m4trs(nt.x + 0.16, nt.y + 0.1, nt.z, 0, 0, -0.25, 1.3), ll = [1, 0.7, 0.45]; ll.d = [0, 1, 0];   // a hand torch, about a metre long
     drawM('vm_torch', tm, ll);
     for (let k = 0; k < 3; k++) drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(tm, m4trs(0, 0.33, 0, gameTime * (1.5 + k) + k, 0.08 * Math.sin(gameTime * 9 + k), 0, [1.05, 0.8, 0.55][k] * (1 + 0.2 * Math.sin(gameTime * (13 + k * 5))))), ll, k === 2 ? 0.6 : 0.3);
   }
