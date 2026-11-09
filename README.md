@@ -6,9 +6,20 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 
 ## The two absolute rules
 
-> **1. The game is the book.** Every level is a stretch of Howard's *The Scarlet Citadel*, in the book's order. Inside a level, the beats happen in the order Howard tells them, with the people and creatures Howard puts there, in the places he puts them. Nothing may change *what* happens, *who* is there, or *where the story goes next*. A level may only add *how* a beat is played: the shape of a fight, a puzzle built from the story's own objects, more of the opposition the book already puts in that stretch. When in doubt, read the chapter (section 9 quotes every beat) and do what it says.
+> **1. The game is the book.** Every level is a stretch of Howard's *The Scarlet Citadel*. Inside a level, the beats happen in the order Howard tells them, with the people and creatures Howard puts there, in the places he puts them. Nothing may change *what* happens, *who* is there, or *where the story goes next*. A level may only add *how* a beat is played: the shape of a fight, a puzzle built from the story's own objects, more of the opposition the book already puts in that stretch. When in doubt, read the chapter (section 9 quotes every beat) and do what it says.
 >
 > **2. Every level lasts as long as a Quake level.** About 5–10 minutes for a first-time player, a dozen or more encounters, and a run of distinct spaces, like Quake's E1M1. Where the book's beat is short, the level is made longer **inside the story**: more of the place the book describes (its corridors, side tunnels, turrets, battle lines), filled with the opposition the book puts there. Combat corridors are welcome; invented scenes, characters and detours out of the story are not.
+
+**The telling is out of joint.** The game opens *in medias res*, in the pits, chained in the dark, the best possible first level. When the pits are behind you it flashes back to the plain of Shamu: *how did we get here?* Then it jumps forward again into the tunnels and follows the book to the end. This changes only the order in which levels are **played**, never what happens inside them; each level is still its stretch of the book, beat for beat. (Howard does the same: chapter III opens with the chained king remembering.)
+
+| Play order | Map | Level | Book | Frame |
+|---|---|---|---|---|
+| 1 | `e1m2` | The Pits | II–III | Opens cold: chained in the vault |
+| 2 | `e1m1` | The Plain of Shamu | I | Flashback: a splash asks how the king came to be in Tsotha's pits; the level ends at the ring's fang and cuts back to the dark |
+| 3 | `e1m3` | The Tunnels Below | III | Forward again: the weeping in the dark |
+| 4–8 | `e1m4`–`e1m8` | Yothga to the Tybor | III–V | In order |
+
+Map names keep the book's numbering; the play order is the table above. The optional prologue `e0m1` stands outside it.
 
 Every level plan in section 9 marks its areas `<<combat>>` or `<<puzzle>>`, and alternates them.
 
