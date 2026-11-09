@@ -458,9 +458,9 @@ Exit: the eagle takes the head (ending splash).
 | Where | Book | Current build | Fix |
 |---|---|---|---|
 | e1m1 | The plain of Shamu | Not built | Build it (above) |
-| e1m2 | Keys gripped with his toes; Shukeli slams the grille; trapped; the pits behind | A rusted-link puzzle, a bone lure, then soldiers in a guardroom, barracks and landing | **Rebuilt now** to the plan above |
+| e1m2 | Keys gripped with his toes; Shukeli slams the grille; trapped; the pits behind | *(was: a rusted-link puzzle, a bone lure, soldiers in the pits)* | **Done**: rebuilt to the plan above |
 | e1m3 | The weeping, the well and the presence, the torch blown out, Satha returns | Marked ways, a vent puzzle, a hanging sigil-stone and a sigil gate | Rebuild to the plan above |
-| Satha | "the great shimmering white form"; venom drips | Green; spits | White; drips |
+| Satha | "the great shimmering white form"; venom drips | *(was: green; spat)* | **Done**: white; drips |
 
 ---
 

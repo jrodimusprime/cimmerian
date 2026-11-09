@@ -57,25 +57,36 @@ function entitySpec(cls) { return LEVEL.entities.find(e => e.class === cls); }
 
 // Satha's track: up out of the well, along the hall, into the serpent's hole
 // and down into the rock. Corners are rounded so the body flows through them.
-let SATHA_PATH = null;
-function buildSathaPath() {
-  const wx = 4 * CELL, tx = 28 * CELL, y = 0.85;
-  const pts = [[wx, -36, HALL_Z], [wx, y, HALL_Z], [tx, y, HALL_Z], [tx, y, 12.3 * CELL], [tx, -14 + y, 4.5 * CELL], [tx, -52, 3.6 * CELL]];
+let SATHA_PATH = null, SATHA_PATHS = {};
+function roundedPath(pts, rad) {
   const out = [pts[0]];
   for (let i = 1; i < pts.length - 1; i++) {
-    const a = pts[i - 1], b = pts[i], c = pts[i + 1], rad = 2.6;
+    const a = pts[i - 1], b = pts[i], c = pts[i + 1];
     const d1 = norm3([b[0] - a[0], b[1] - a[1], b[2] - a[2]]), d2 = norm3([c[0] - b[0], c[1] - b[1], c[2] - b[2]]);
     const p0 = [b[0] - d1[0] * rad, b[1] - d1[1] * rad, b[2] - d1[2] * rad], p2 = [b[0] + d2[0] * rad, b[1] + d2[1] * rad, b[2] + d2[2] * rad];
-    for (let k = 0; k <= 5; k++) {
-      const t = k / 5, u = 1 - t;
-      out.push([0, 1, 2].map(j => u * u * p0[j] + 2 * u * t * b[j] + t * t * p2[j]));
-    }
+    for (let k = 0; k <= 5; k++) { const t = k / 5, u = 1 - t; out.push([0, 1, 2].map(j => u * u * p0[j] + 2 * u * t * b[j] + t * t * p2[j])); }
   }
   out.push(pts[pts.length - 1]);
   const cum = [0];
   for (let i = 1; i < out.length; i++) cum.push(cum[i - 1] + Math.hypot(out[i][0] - out[i - 1][0], out[i][1] - out[i - 1][1], out[i][2] - out[i - 1][2]));
-  SATHA_PATH = { pts: out, cum, len: cum[cum.length - 1] };
+  return { pts: out, cum, len: cum[cum.length - 1] };
 }
+function buildSathaPath() {
+  const wx = 4 * CELL, tx = 28 * CELL, y = 0.85, ax = 7.5 * CELL;
+  const tail = [[tx, y, HALL_Z], [tx, y, 12.3 * CELL], [tx, -14 + y, 4.5 * CELL], [tx, -52, 3.6 * CELL]];
+  SATHA_PATHS.regular = roundedPath([[wx, -36, HALL_Z], [wx, y, HALL_Z]].concat(tail), 2.6);
+  // "Satha came out of the dark ... the head was poised high above his own, as the monster
+  // investigated the torch": up the arch, a slow circle round the vault, and out again
+  SATHA_PATHS.vault = roundedPath([[wx, -36, HALL_Z], [wx, y, HALL_Z], [ax, y, HALL_Z], [ax, y, 11.6 * CELL], [9.0 * CELL, y, 10.4 * CELL],
+    [8.4 * CELL, y, 8.9 * CELL], [7.0 * CELL, y, 9.5 * CELL], [7.3 * CELL, y, 11.0 * CELL], [ax, y, 12.6 * CELL], [9.5 * CELL, y, HALL_Z]].concat(tail), 1.1);
+  SATHA_PATH = SATHA_PATHS.regular;
+}
+function sathaCycle() { const st = S.satha.start; return st === null || S.tick < st ? -1 : Math.floor((S.tick - st) / (SATHA_PERIOD * SIM_HZ)); }
+function selectSathaPath() {
+  const sp = entitySpec('scripted_satha'), c = sathaCycle();
+  SATHA_PATH = sp && c >= 0 && c < (sp.vaultPasses || 0) ? SATHA_PATHS.vault : SATHA_PATHS.regular;
+}
+function inVault(x, z) { const i = cellIdx(Math.floor(x / CELL), Math.floor(z / CELL)); const r = i >= 0 && LV.room[i] >= 0 ? LV.rooms[LV.room[i]].id : ''; return r === 'cell' || r === 'arch'; }
 function pathAt(s) {
   const P = SATHA_PATH;
   if (s <= 0) { const p = P.pts[0]; return [p[0], p[1] + s, p[2]]; }
@@ -98,7 +109,7 @@ function spineAt(s) {
   const p = pathAt(s), q = pathAt(s + 0.3), r = pathAt(s - 0.3);
   const tx = q[0] - r[0], tz = q[2] - r[2], th = Math.hypot(tx, tz), tl = Math.hypot(tx, q[1] - r[1], tz) || 1;
   // integrating heading alpha*sin(ks) gives a lateral offset of (alpha/k) * (1 - cos(ks)); centre it on the path
-  const horiz = th / tl, ramp = smoothstep(0, 6, s - 36);            // straight while she rises out of the well
+  const horiz = th / tl, ramp = smoothstep(0, 6, s - 36) * (inVault(p[0], p[2]) ? 0.12 : 1);   // straight out of the well, and in the narrow vault
   const lat = -SERP_AMP * Math.cos(SERP_K * s) * horiz * ramp;
   return th > 1e-4 ? [p[0] - tz / th * lat, p[1], p[2] + tx / th * lat] : p;
 }
@@ -140,8 +151,8 @@ function newState(seed, carry) {
     items: LV.items.map(it => Object.assign({}, it, { taken: false })),
     door: { open: 0, target: 0 }, grille: { open: 0, target: 0 },
     giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0, arms: 0, grabT: 0, fall: 0 },
-    satha: { start: null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1 },
-    shukeli: { state: sh ? 'idle' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
+    satha: { start: entitySpec('scripted_satha') ? Math.round(3 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
+    shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
     proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, combo: 0, lastSwing: -999, pendingHit: null,
     weapons: carry ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }, weapon: carry ? carry.weapon : 'fists', hits: 0,
     foes: newFoes(), alerted: new Set(), areas: new Set([LEVEL.areas[0].id]), portc: { open: 0, target: 0, dropT: 0 },
@@ -298,7 +309,6 @@ function respawn() {
   // the living go back to their posts, but keep their wounds, as Quake's monsters did
   for (const f of S.foes) if (!f.dead && f.state !== 'dormant' && f.state !== 'lurk') Object.assign(f, { x: f.homeX, z: f.homeZ, yaw: f.homeYaw, state: 'idle', alert: false, t: 0, vx: 0, vz: 0, combo: 0, y: groundInfo(f.homeX, f.homeZ).floor });
   S.pendingHit = null; S.swing = S.kickT = 0;
-  if (S.flags.shukeli_dead) alertGroup('barracks', true);      // the alarm has been raised; it stays raised
   mode = 'play'; fade = 1; fadeTarget = 0;
   log('You come to yourself again, cold and aching, at the last safe place.', 'dim');
   if (!agentInput) lockPointer();
@@ -322,14 +332,14 @@ function interact() {
   const f = t.f;
   switch (f.type) {
     case 'ring':
-      if (S.flags.free) { log('The broken chain hangs from the ring like a dead snake.', 'dim'); return; }
-      if (!S.read.has('insc_cell')) {
-        Sfx.chain();
-        log('You haul on the chain until the veins stand out on your neck. The ring does not so much as creak. There must be a weaker place.');
-        if (!S.hints.has('ring')) { S.hints.add('ring'); log('(Something is scratched into the west wall.)', 'dim'); }
-        return;
-      }
-      freeFromChain(); return;
+      if (S.flags.free) { log('The open shackle hangs from the ring.', 'dim'); return; }
+      Sfx.chain(); log('The chain is short and fast to a ring set deep in the stone. No man could work it loose.', 'dim');
+      return;
+    case 'niche_torch':
+      if (!S.flags.free) { log('The torch burns in its niche, above your head and out of reach of your chained hands.', 'dim'); return; }
+      if (!S.flags.shukeli_dead) { log('Not now. The grille!', 'dim'); return; }
+      setFlag('has_torch'); Sfx.pickup(); log('You take the torch from its niche, and go to seek another way out of the vault: through the dark arch, into the pits.', 'good');
+      return;
     case 'clue':
       log(f.text, 'clue'); S.read.add(f.id); Sfx.blip(); return;
     case 'bones':
@@ -338,11 +348,8 @@ function interact() {
       log('You pull a long thighbone from the heap. It is heavy enough to make a fine clatter. (Click to throw it.)');
       return;
     case 'door':
-      if (S.door.open >= 0.5) return;
-      if (S.flags.has_cellkey) {
-        S.door.target = 1; setFlag('cell_open'); Sfx.clank(); Sfx.bars();
-        log('The second key turns, and the barred door grinds open on the hall.', 'good');
-      } else log('The door is barred iron and locked. The bars are as thick as your thumb.', 'dim');
+      if (S.flags.shukeli_dead) log('Your keys are futile against the bolt: it can be worked only from the outside. The bars are as hard as your sword.', 'dim');
+      else log('The grille is iron, and dented with marks like the marks of incredible fangs.', 'dim');
       return;
     case 'grille':
       if (S.grille.target > 0) return;
@@ -426,12 +433,15 @@ function takeItem(it) {
     S.weapons.sword = true; S.weapon = 'sword';
     if (S.flags.has_sword === false) {
       setFlag('has_sword');
-      log('You take up the strangler\'s sword: a huge blade, Kushite-forged, and your hand knows it at once. (Click, click, click for a three-blow combination; right-click or F to kick.)', 'good');
+      log('You take up the black\'s huge sword, and your hand knows it at once. Now for the grille! (Click to strike; click, click, click for a combination; right-click or F to kick.)', 'good');
       const w0 = S.foes.find(f => f.id === 'w0');
       if (w0 && !w0.dead && !w0.alert) { w0.state = 'investigate'; w0.tx = 26.5 * CELL; w0.tz = 14.6 * CELL; w0.alert = true; S.alerted.add('scout'); log(ALERT_LINES.scout, 'warn'); }
     } else log('You take up the sword.', 'good');
   } else if (it.kind === 'cellkey') {
-    setFlag('has_cellkey'); log('You snatch up the strangler\'s keys. Shukeli\'s keys: he stole them to come and gloat.', 'good');
+    if (!S.hints.has('stoop')) { it.taken = false; S.hints.add('stoop'); Sfx.chain(); log('You try to bend to them, but the chain is too short.', 'dim'); return; }
+    setFlag('free'); Sfx.chain(); setTimeout(() => Sfx.snap(), 500);
+    S.checkpoint = { x: 8.5 * CELL, z: 10.5 * CELL, yaw: Math.PI };
+    log('Almost suffocated by the mad pounding of your heart, you slip one foot from its sandal and grip the keys with your toes. You draw them up, find the key, and the shackles fall away.', 'good');
   } else if (it.kind === 'crank') {
     setFlag('has_crank'); log('You pull the windlass crank from the dead apprentice\'s grip. His fingers do not want to let it go.', 'good');
   } else if (it.kind === 'sigil') {
@@ -457,35 +467,52 @@ function throwBone() {
 
 // ---------------------------------------------------------------- the black giant
 // The strangler (ch. III): "a gigantic black man, stark naked, bearing in one hand a huge
-// sword and in the other a bunch of keys". He stands in the hall to gloat. When the chain
-// parts he swings the sword up, and the keys fly from his fist through the bars; then Satha.
+// sword and in the other a bunch of keys". He comes through the grille, pulls it partly to
+// behind him, taunts "Amra", names his price, raises the sword; Satha takes him from behind.
+const BLACK_LINES = [
+  '"Long have I wished to meet you, Amra," says the black, in the sea-coast tongue of Kush. His eyes glint redly in the torchlight.',
+  '"I have dared much for this meeting! Look! The keys to your chains! I stole them from Shukeli. What will you give me for them?"',
+  'He yells and stamps in a frenzy. "Aye, you white dog: to a black man gold can never pay for blood. The price I ask is your head!"',
+];
 function updateGiant() {
   if (S.giant.state === 'gone') return;
   const g = S.giant; g.t += DT;
+  const moveTo = (tx, tz, speed) => {
+    const dx = tx - g.x, dz = tz - g.z, d = Math.hypot(dx, dz);
+    if (d < 0.05) return true;
+    const st = Math.min(d, speed * DT);
+    g.x += dx / d * st; g.z += dz / d * st; g.walk += st; g.yaw = Math.atan2(dx, dz);
+    return false;
+  };
+  const enterAt = S.satha.start + Math.round((SATHA_PERIOD - 13) * SIM_HZ), face = () => { g.yaw = Math.atan2(S.x - g.x, S.z - g.z); };
   switch (g.state) {
-    case 'wait': g.yaw = Math.PI; break;
+    case 'wait':
+      g.yaw = 0;
+      if (S.tick >= enterAt) { g.state = 'enter'; g.t = 0; S.door.target = 1; Sfx.clank(); Sfx.bars(); log('The grille creaks. A gigantic black man pads into the vault, stark naked, a huge sword in one hand and a bunch of keys in the other.', 'warn'); }
+      break;
+    case 'enter':
+      if (g.z > 8.6 * CELL && S.door.target === 1) { S.door.target = 0.35; Sfx.clank(); }      // "pulling the grille partly to behind it"
+      if (moveTo(8.7 * CELL, 9.9 * CELL, 1.9)) { g.state = 'gloat'; g.t = 0; g.line = 0; }
+      break;
+    case 'gloat':
+      face();
+      if (g.line < BLACK_LINES.length && g.t > 0.4 + g.line * 3.2) { log(BLACK_LINES[g.line], 'voice'); Sfx.voice(0); g.line++; }
+      if (g.line >= BLACK_LINES.length && S.satha.pts && Math.hypot(S.satha.pts[0].x - g.x, S.satha.pts[0].z - g.z) < 9) { g.state = 'raise'; g.t = 0; Sfx.scream(); log('He swings the huge sword up for your head, and freezes, for over his shoulder something vast is rising out of the dark.', 'warn'); }
+      break;
     case 'raise':
-      g.yaw = Math.PI;
-      g.arms = Math.min(1, g.arms + DT * 2.5);
-      if (g.t > 0.35 && !S.items.some(i => i.kind === 'cellkey')) {
-        const kx = 7.5 * CELL + 0.3, kz = 11.7 * CELL;
-        S.items.push({ id: 'cellkey', kind: 'cellkey', name: 'strangler\'s keys', x: kx, z: kz, y: groundInfo(kx, kz).floor, taken: false });
-        Sfx.clatter(); Sfx.chain();
-        log('The black giant roars and swings up his huge sword, and the keys fly from his other fist, skitter through the bars and lie almost at your feet.', 'warn');
-      }
+      face(); g.arms = Math.min(1, g.arms + DT * 2.5);
       break;
     case 'crushed':
       g.fall = Math.min(1, g.fall + DT * 2.2);
       break;
   }
-  if (g.state === 'raise' && S.satha.pts) {
-    const h = S.satha.pts[0];
-    if (h.y > -0.5 && Math.hypot(h.x - g.x, h.z - g.z) < 2.6) {
-      g.state = 'crushed'; g.t = 0; Sfx.crush(); Sfx.scream();
-      S.items.push({ id: 'giant_sword', kind: 'sword', name: 'strangler\'s sword', x: g.x + 0.6, z: 36.9, y: groundInfo(g.x + 0.6, 36.9).floor, taken: false });
-      log('Behind him the great head rises out of the dark. Satha takes him with his sword still raised. Bones crack like green wood, and the sword rings away across the flagstones.', 'warn');
-      for (let k = 0; k < 18; k++) particles.push({ m: 'blood', x: g.x, y: 1 + Math.random(), z: g.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 9, s: 1.4 });
-    }
+  if ((g.state === 'raise' || g.state === 'gloat') && S.satha.pts && S.satha.pts[0].y > -0.5 && Math.hypot(S.satha.pts[0].x - g.x, S.satha.pts[0].z - g.z) < 2.6) {
+    g.state = 'crushed'; g.t = 0; Sfx.crush(); Sfx.scream(); setFlag('keys_down');
+    const ring = feature('ring');
+    S.items.push({ id: 'cellkey', kind: 'cellkey', name: 'keys to your chains', x: ring.x + 2.3, z: ring.z + 1.0, y: groundInfo(ring.x + 2.3, ring.z + 1.0).floor, taken: false });
+    S.items.push({ id: 'giant_sword', kind: 'sword', name: 'black\'s sword', x: g.x + 1.2, z: g.z + 1.6, y: groundInfo(g.x + 1.2, g.z + 1.6).floor, taken: false });
+    log('The gigantic sinuous shape whips round him in glistening coils that hide him from view, and the snap and splintering of bones comes plainly to your ears. The sword and the keys fly from his hands to crash and jangle on the stone, and the keys lie almost at your feet.', 'warn');
+    for (let k = 0; k < 18; k++) particles.push({ m: 'blood', x: g.x, y: 1 + Math.random(), z: g.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 9, s: 1.4 });
   }
   g.y = groundInfo(g.x, g.z).floor;
 }
@@ -497,13 +524,14 @@ function sathaPhase() {
   return ((S.tick - st) % (SATHA_PERIOD * SIM_HZ)) / SIM_HZ;
 }
 function updateSatha() {
+  selectSathaPath();
   const sa = S.satha, t = sathaPhase();
   sa.cool -= DT; sa.spitCool -= DT;
   if (t < 0) { sa.active = false; sa.pts = null; return; }
   // warnings: README rule 4 (period stated in a clue, and visible in the world)
   if (sa.lastPhase > t || sa.lastPhase < 0) {
     sa.warned++; Sfx.rumble();
-    if (sa.warned <= 2) log(sa.warned === 1 ? 'Every torch in the hall bows and gutters at once. Under your feet the stone begins to shiver.' : 'The torches bow and gutter. Something vast is coming up out of the well.', 'warn');
+    if (sa.warned <= 2) log(sa.warned === 1 ? 'Every flame in the pits bows and gutters at once. Under you the stone shivers, as if something vast were moving in it.' : 'The flames bow and gutter. Something vast is coming up out of the well.', 'warn');
   }
   if (sa.lastPhase < 3.0 && t >= 3.0) Sfx.hiss(clamp((4 * CELL - S.x) / 30, -1, 1));
   sa.lastPhase = t;
@@ -517,40 +545,45 @@ function updateSatha() {
     for (const p of sa.pts) if (Math.abs(p.y - (f.y + 0.9)) < p.r + 1.0 && Math.hypot(f.x - p.x, f.z - p.z) < p.r + 0.42) { killFoe(f, 'crush'); break; }
   }
   if (mode !== 'play') return;
+  const h = sa.pts[0], hdx = S.x - h.x, hdz = S.z - h.z, hd = Math.hypot(hdx, hdz), moving = Math.hypot(S.vx, S.vz) > 0.6;
+  const vaultPass = sathaCycle() < ((entitySpec('scripted_satha') || {}).vaultPasses || 0);
+  if (!S.flags.free || vaultPass) {
+    // in the vault (ch. III): "the monster would strike like lightning" at the first movement
+    if (h.y > -0.5 && hd < 3.6) {
+      if (moving && sa.cool <= 0) { sa.cool = 1.4; hurt(14, 'venom'); log('You stir, and the great head swings to the movement. Venom spatters you like white-hot iron.', 'bad'); }
+      else if (!moving && sa.dripCycle !== sathaCycle()) {
+        sa.dripCycle = sathaCycle(); hurt(3, 'venom');
+        log('The head is poised high above your own. A drop of venom falls on your naked thigh, like a white-hot dagger driven into the flesh. You do not move.', 'warn');
+      }
+    }
+    return;
+  }
   const hidden = hiddenAt(S.x, S.z), py = S.y + 0.9;
-  // crushing contact with any part of the body
-  for (const p of sa.pts) {
+  for (const p of sa.pts) {                             // crushing contact with any part of the body
     if (Math.abs(p.y - py) > p.r + 1.0) continue;
     const dx = S.x - p.x, dz = S.z - p.z, d = Math.hypot(dx, dz);
     if (d < p.r + RADIUS) { hurt(4.5, 'crush'); if (mode !== 'play') return; }
   }
-  const h = sa.pts[0];
   if (h.y < -0.5) return;
-  const dx = S.x - h.x, dz = S.z - h.z, d = Math.hypot(dx, dz);
-  if (!hidden && d < 3.3 && Math.abs(S.y - h.y) < 2.5 && sa.cool <= 0) {
+  if (!hidden && hd < 3.3 && Math.abs(S.y - h.y) < 2.5 && sa.cool <= 0) {
     sa.cool = 1.3; hurt(45, 'bite');
     if (mode !== 'play') return;
-    log('The great head strikes, and you are flung across the hall!', 'bad');
-    S.vx += dx / (d || 1) * 9; S.vz += dz / (d || 1) * 9; S.vy = 3; S.onGround = false;
+    log('The great head strikes, and you are flung across the corridor!', 'bad');
+    S.vx += hdx / (hd || 1) * 9; S.vz += hdz / (hd || 1) * 9; S.vy = 3; S.onGround = false;
   }
-  const hx = Math.sin(h.yaw), hz = Math.cos(h.yaw), ahead = (dx * hx + dz * hz) / (d || 1);
-  if (!hidden && sa.spitCool <= 0 && d > 3 && d < 22 && ahead > -0.2 && los(h.x, h.y + 0.6, h.z, S.x, S.y + 1.4, S.z)) {
-    sa.spitCool = 2.3;
-    const lead = d / 15;
-    const tx = S.x + S.vx * lead + (S.rng.next() - 0.5) * 0.6, tz = S.z + S.vz * lead + (S.rng.next() - 0.5) * 0.6, ty = S.y + 1.1;
-    const ox = h.x + hx * 1.3, oy = h.y + 0.4, oz = h.z + hz * 1.3, dd = Math.hypot(tx - ox, ty - oy, tz - oz) || 1;
-    S.proj.push({ type: 'venom', x: ox, y: oy, z: oz, vx: (tx - ox) / dd * 15, vy: (ty - oy) / dd * 15 + 0.6, vz: (tz - oz) / dd * 15, life: 3, spin: 0 });
-    Sfx.spit(clamp((h.x - S.x) / 20, -1, 1));
-    if (!S.hints.has('venom')) { S.hints.add('venom'); log('She spits! Get out of her sight: into the wall, into an alcove!', 'bad'); }
+  // her venom drips as she goes ("From them dripped a colorless liquid that he instinctively knew was death")
+  if (sa.spitCool <= 0 && hd < 8) {
+    sa.spitCool = 1.1;
+    const hx = Math.sin(h.yaw), hz = Math.cos(h.yaw);
+    S.proj.push({ type: 'venom', x: h.x + hx * 1.1, y: h.y + 0.1, z: h.z + hz * 1.1, vx: hx * 0.6, vy: 0, vz: hz * 0.6, life: 2, spin: 0 });
   }
 }
 
 // ---------------------------------------------------------------- Shukeli, the jailer
 const TAUNTS = [
-  '"Ah, the lion of Aquilonia comes to sniff at my door! Back to your straw, lion."',
-  '"Satha will be along presently, my king. She is never late."',
-  'Shukeli giggles into his wine. "Closer, closer. Let me see the face of a king."',
-  '"My master feeds his pets well. Tonight, he feeds them a king."',
+  'Shukeli squeals with laughter through the bars. "The lion of Aquilonia, loose in my vault! Satha will be along presently, my king."',
+  '"Closer, closer," titters the eunuch, his fat face pressed to the bars. "Let me see the face of a king."',
+  '"My master feeds his pets well," he wheezes. "Tonight he feeds them a king."',
 ];
 function shukeliSees() {
   const sh = S.shukeli;
@@ -581,6 +614,19 @@ function updateShukeli() {
     return false;
   };
   switch (sh.state) {
+    case 'away':                                         // he follows his stolen keys
+      if (S.flags.free) { sh.state = 'come'; sh.t = 0; sh.x = 7.5 * CELL; sh.z = 4.2 * CELL; }
+      break;
+    case 'come':
+      if (moveTo(7.5 * CELL, 7.6 * CELL, 3.2)) {
+        sh.state = 'gloat'; sh.t = 0; sh.tauntT = 2.5; S.door.target = 0; S.door.open = 0; Sfx.clank(); Sfx.bars(); Sfx.voice(0);
+        log('A squeal of high-pitched laughter shrills through the vaults, and the grille shoots home; the bolt crashes down. Through the bars peers a face like a fiendishly mocking carven gargoyle: Shukeli the eunuch, who has followed his stolen keys.', 'bad');
+      }
+      break;
+    case 'gloat':
+      sh.yaw = Math.atan2(S.x - sh.x, S.z - sh.z);
+      if (sh.tauntT <= 0) { sh.tauntT = 6; Sfx.voice(0); log(TAUNTS[Math.floor(S.rng.next() * TAUNTS.length)], 'voice'); }
+      break;
     case 'idle':
       sh.yaw = -Math.PI / 2;
       if (sh.tauntT <= 0 && S.x > 24 * CELL && shukeliSees()) {
@@ -607,7 +653,7 @@ function updateShukeli() {
       }
       break;
     case 'return': case 'retreat':
-      if (moveTo(sh.homeX, sh.homeZ, sh.state === 'retreat' ? 3.0 : 1.9)) sh.state = 'idle';
+      if (moveTo(sh.homeX, sh.homeZ, sh.state === 'retreat' ? 3.0 : 1.9)) { sh.state = LEVEL.level === 'e1m2' ? 'away' : 'idle'; }
       break;
     case 'dead':
       sh.fall = Math.min(1, sh.fall + DT * 2);
@@ -620,10 +666,9 @@ function killShukeli() {
   S.flags.shukeli_at_bars = false; setFlag('shukeli_dead');
   Sfx.stab(); Sfx.voice(0.2);
   for (let k = 0; k < 14; k++) particles.push({ m: 'drop', x: sh.x - 0.3, y: 1.4, z: sh.z, vx: -Math.random() * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 0.8, max: 0.8, g: 9, s: 1.2 });
-  const kx = GRILLE_X - 0.75, kz = sh.z;
-  S.items.push({ id: 'keys', kind: 'keys', name: 'jailer\'s ring of keys', x: kx, z: kz, y: groundInfo(kx, kz).floor, taken: false });
-  log('Your blade finds the soft place under his ear. Shukeli sags against the grille with a sigh like a punctured wineskin, and his ring of keys clinks onto the flagstones on your side of the bars.', 'good');
-  alertGroup('barracks');
+  log('With a terrible curse you strike as a cobra strikes, and the great blade hisses between the bars. The fat eunuch bends at the middle, as if bowing to his killer, and crumples like tallow, his pudgy hands clutching at his belly.', 'good');
+  log('But the bolt can be worked only from the outside. You are trapped. There is but one thing to do: seek some other outlet.', 'warn');
+  S.checkpoint = { x: 8.5 * CELL, z: 10.5 * CELL, yaw: Math.PI };
 }
 
 // ---------------------------------------------------------------- projectiles & hazards
@@ -696,6 +741,7 @@ function findTarget() {
   for (const it of S.items) if (!it.taken) consider({ type: 'item', it }, it.x, it.y, it.z, 2.4);
   for (const f of LV.features) {
     if (f.type === 'ring' && S.flags.free) continue;
+    if (f.type === 'niche_torch' && S.flags.has_torch) continue;
     if (f.type === 'door' && S.door.open > 0.5) continue;
     if (f.type === 'grille' && S.grille.target > 0) continue;
     if (f.type === 'bones' && S.flags.has_bone) continue;
@@ -709,12 +755,14 @@ function findTarget() {
 }
 function promptText(t) {
   if (!t) return '';
+  if (t.type === 'item' && t.it.kind === 'cellkey') return S.hints.has('stoop') ? '[E] slip your foot from its sandal and grip the keys with your toes' : '[E] bend to the keys';
   if (t.type === 'item') return t.it.heal ? '[E] ' + (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name : '[E] take the ' + t.it.name;
   switch (t.type) {
-    case 'ring': return S.read.has('insc_cell') ? '[E] grind the rusted link against the stone' : '[E] strain at the chain';
+    case 'ring': return '[E] strain at the chain';
+    case 'niche_torch': return '[E] take the torch';
     case 'clue': return t.f.id.startsWith('mark') ? '[E] look at the marks' : '[E] read the scratches';
     case 'bones': return '[E] take a thighbone';
-    case 'door': return S.flags.has_cellkey ? '[E] unlock the cell door' : '[E] try the cell door';
+    case 'door': return '[E] try the grille';
     case 'grille': return S.flags.has_keys ? '[E] unlock the grille' : '[E] try the grille';
     case 'spear_rack': return '[E] take a spear';
     case 'valve': return S.valves[t.f.idx] ? '[E] shut the vent' : '[E] open the vent';
@@ -728,8 +776,13 @@ function promptText(t) {
 
 // ---------------------------------------------------------------- rooms & objective
 const ROOM_DESC = {
-  cell: 'A cell cut from the living rock, four paces square. Straw rots on the floor. Far above, a grating lets down one grey thread of daylight.',
-  hall: 'A long hall, vaulted high and narrow like the nave of a drowned temple. Its floor is worn into a smooth trough down the middle, as if something enormous passes along it often.',
+  cell: 'A vault cut from the living rock, far under the hill. Straw rots on the floor. A torch burns in a niche above the ring you are chained to, and the darkness presses in on it like a living thing.',
+  hall: 'The main corridor of the pits, vaulted high and narrow like the nave of a drowned temple. Its floor is worn into a smooth trough down the middle, as if something enormous passes along it often.',
+  south_passage: 'A low passage, its walls gnawed. Something whimpers in the dark at the bottom of it.',
+  post: 'A hall of the ancient works, older than the citadel. Its floor is gnawed bone.',
+  den: 'A low den, heaped with bones. Things have been living here, many things.',
+  slope: 'The floor ahead is broken by pits. Watch where you put your feet.',
+  bonepit: 'A pit of bones. Beyond it, down a smaller tunnel, a woman is weeping.',
   a2: 'Bones are heaped in this alcove: the leavings of the pits. Most of them are human.',
   niche: 'A deep niche beside the iron grille, black with shadow. From here you can hear the jailer breathing.',
   guard: 'Shukeli\'s guardroom: a table, a stool, a brazier, a jug of wine. The jailer lived well.',
@@ -759,15 +812,14 @@ function objective() {
     if (!f.gate_open) return 'Hold them off until the gate is open.';
     return 'Through the gate.';
   }
-  if (!f.free) return 'Free yourself from the chain.';
-  if (!f.cell_open) return f.has_cellkey ? 'Unlock the cell door.' : S.giant.state === 'crushed' ? 'Take the keys.' : 'Survive.';
-  if (!f.has_sword) return 'Take the strangler\'s sword.';
-  if (live('scout') || live('post')) return 'Fight! Kick shields aside.';
-  if (!f.shukeli_dead) return 'Reach the grille at the end of the hall. Deal with the jailer.';
-  if (!f.has_keys) return 'Take the jailer\'s keys.';
-  if (live('barracks')) return 'The guards are coming! Fight them at the bars.';
-  if (!f.grille_open) return 'Unlock the grille.';
-  if (!f.portcullis_open) return 'Raise the portcullis on the stair.';
+  if (!f.keys_down) return S.satha.active && !S.flags.free && S.satha.pts && inVault(S.satha.pts[0].x, S.satha.pts[0].z) ? 'Lie still.' : 'You are chained. Wait.';
+  if (!f.free) return 'The keys lie almost at your feet.';
+  if (!f.has_sword) return 'Take the black\'s sword.';
+  if (!f.shukeli_dead) return S.shukeli.state === 'gloat' ? 'Strike through the bars!' : 'The grille!';
+  if (!f.has_torch) return 'Take the torch. Seek another way out.';
+  if (live('post') || live('vaults') || live('bonepit') || live('pits')) return 'Fight!';
+  if (S.areas.has('bonepit')) return 'Somewhere ahead, a woman is weeping.';
+  if (S.areas.has('pits')) return 'Watch the floor ahead.';
   return live('landing') ? 'Cut your way through the captain\'s men.' : 'Climb to the citadel.';
 }
 // first entry to an area: a checkpoint, and the area's name
@@ -909,8 +961,8 @@ async function showIntro() {
   if (mode === 'splash') startPlay(false);
 }
 const LEVEL_INTRO = {
-  e1m2: [['THE PITS', 'title'], ['You wake on wet straw with iron on your ankle and the taste of the wizard\'s poison still in your mouth.', ''],
-    ['Beyond the bars of your cell door, a black giant watches you, and grins.', 'warn'], ['(E to use things. Read whatever the dead have left you.)', 'dim']],
+  e1m2: [['THE PITS', 'title'], ['Chained to a ring in a vault far beneath the hill. A torch burns in a niche above your head; the darkness presses in on it like a living thing.', ''],
+    ['Out in the black beyond the arch, something vast is moving.', 'warn'], ['(E to use things. Read whatever the dead have left you.)', 'dim']],
   e1m3: [['THE TUNNELS BELOW', 'title'], ['The grille is bolted from the outside, and Shukeli lies dead against it. The only way left is down: into the pits, where the made stone ends.', ''],
     ['Somewhere far off, a woman is weeping.', 'warn']],
 };
@@ -1000,7 +1052,7 @@ function render(alpha) {
   const vp = m4mul(proj, view), f = camFwd();
   const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3];
   let lc = [0.24, 0.215, 0.18], lampRange = 10;
-  if (LEVEL.torch) {                                   // the torch in his left hand: warm, flickering, guttering in the draft
+  if (LEVEL.torch || S.flags.has_torch) {                    // the torch in his left hand: warm, flickering, guttering in the draft
     const gutter = 1 - Math.min(0.55, Math.abs(S.windNow) * 0.3) * (0.6 + 0.4 * Math.sin(gameTime * 23));
     const fl = (0.88 + 0.08 * Math.sin(gameTime * 11.3) + 0.05 * Math.sin(gameTime * 29.1)) * gutter;
     lc = [1.0 * fl, 0.62 * fl, 0.3 * fl]; lampRange = 15;
@@ -1028,11 +1080,12 @@ function render(alpha) {
     drawM(mesh, m, light, 0.06 + 0.05 * Math.sin(gameTime * 3));
   }
   // ring and chain
-  const ring = feature('ring') || { x: -1e4, y: 0, z: -1e4 }, rl = sampleLight(ring.x, 1, ring.z + 1);
-  drawM('ring', m4trs(ring.x, ring.y, ring.z + 0.08, 0, 0, 0, 1.4), rl);
-  const A = [ring.x, ring.y - 0.22, ring.z + 0.12];
+  const ring = feature('ring') || { x: -1e4, y: 0, z: -1e4, wall: 'N' }, rn = wallIn(ring.wall), rl = sampleLight(ring.x + rn[0], 1, ring.z + rn[1]);
+  drawM('ring', m4trs(ring.x + rn[0] * 0.08, ring.y, ring.z + rn[1] * 0.08, Math.atan2(rn[0], rn[1]), 0, 0, 1.4), rl);
+  const A = [ring.x + rn[0] * 0.12, ring.y - 0.22, ring.z + rn[1] * 0.12];
   if (feature('ring')) {
-  const B = S.flags.free ? [ring.x + 0.5, groundInfo(ring.x + 0.5, ring.z + 1.6).floor + 0.03, ring.z + 1.6] : [px, py + 0.12, pz];
+  const fx = ring.x + rn[0] * 1.6 + rn[1] * 0.5, fz = ring.z + rn[1] * 1.6 + rn[0] * 0.5;
+  const B = S.flags.free ? [fx, groundInfo(fx, fz).floor + 0.03, fz] : [px, py + 0.12, pz];
   const dist = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]), n = Math.max(4, Math.ceil(dist / 0.17)), sag = Math.sqrt(Math.max(0, 3.6 * 3.6 - dist * dist)) * 0.45;
   let lp = A;
   for (let i = 1; i <= n; i++) {
@@ -1043,10 +1096,16 @@ function render(alpha) {
     lp = [x, y, z];
   }
   }
+  const nt = feature('niche_torch');
+  if (nt && !S.flags.has_torch) {
+    const tm = m4trs(nt.x + 0.25, nt.y - 0.25, nt.z, 0, 0, -0.25, 3.2), ll = [1, 0.7, 0.45]; ll.d = [0, 1, 0];
+    drawM('vm_torch', tm, ll);
+    for (let k = 0; k < 3; k++) drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(tm, m4trs(0, 0.33, 0, gameTime * (1.5 + k) + k, 0.08 * Math.sin(gameTime * 9 + k), 0, [1.05, 0.8, 0.55][k] * (1 + 0.2 * Math.sin(gameTime * (13 + k * 5))))), ll, k === 2 ? 0.6 : 0.3);
+  }
   // the cell door (swings into the hall) and the grille (slides up)
   const dl = sampleLight(8 * CELL, 1.5, 12.2 * CELL);
   const has = n => LEVEL.links.some(l => l.name === n);
-  if (has('cell_door')) drawM('bars:2.5:3.2', m4trs(7 * CELL, 0, 12 * CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // swings into the cell
+  if (has('cell_door')) drawM('bars:2.5:3.2', m4trs(7 * CELL, 0, LEVEL.links.find(l => l.name === 'cell_door').cells[0][1] * CELL + CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // the vault's grille, swinging out
   const gl2 = sampleLight(GRILLE_X, 2, HALL_Z);
   if (has('grille_gate')) drawM('bars:5:7.5', m4trs(GRILLE_X, S.grille.open * 6.6, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), gl2);
   if (has('portcullis')) drawM('bars:5:6', m4trs(45 * CELL, 0.4 + S.portc.open * 5.2, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), sampleLight(45 * CELL, 2, HALL_Z));
@@ -1066,21 +1125,26 @@ function render(alpha) {
       uxL: 0.02, uzL: 0.12, fxL: -0.35 - 0.1 * Math.sin(gameTime * 2.1) });          // the keys jingling in the other fist
     if (g.arms > 0) Object.assign(P, { uxR: lerp(0.05, -2.9, g.arms), fxR: lerp(-0.2, -0.5, g.arms), uzR: lerp(0.14, 0.3, g.arms), we: lerp(-1.35, 2.5, g.arms),
       uxL: lerp(0.02, -0.6, g.arms), fxL: lerp(-0.35, -0.4, g.arms), lean: lerp(-0.06, -0.12, g.arms), headX: lerp(0.12, -0.25, g.arms), headY: P.headY * (1 - g.arms), twist: P.twist * (1 - g.arms) });
+    if (g.state === 'enter') poseWalk(P, g.walk * 2.2, 0.9, false);
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
   // Shukeli, the jailer
   const sh = S.shukeli, sl = sampleLight(sh.x, 1.5, sh.z), shy = groundInfo(sh.x, sh.z).floor;
   if (sh.state === 'gone') { /* not in this level */ } else if (sh.state === 'dead') {
     const k = smoothstep(0, 1, sh.fall);
-    drawCharacter('shukeli', sh.x + 0.3 * k, shy, sh.z, -Math.PI / 2, { pitch: 0.5 * k, roll: 0.3 * k, drop: -0.35 * k, headX: 0.5 * k, uzL: 0.6 * k, uzR: 0.6 * k }, sl);
+    const e2 = LEVEL.level === 'e1m2';
+    drawCharacter('shukeli', sh.x + (e2 ? 0 : 0.3 * k), shy, sh.z + (e2 ? 0.25 * k : 0), e2 ? 0 : -Math.PI / 2, { pitch: 0.5 * k, roll: 0.3 * k, drop: -0.35 * k, headX: 0.5 * k, uzL: 0.6 * k, uzR: 0.6 * k }, sl);
   } else {
     const P = poseIdle({}, gameTime * 0.8);
-    const moving = sh.state === 'walk' || sh.state === 'return' || sh.state === 'retreat';
+    if (sh.state === 'away') { /* still up the stair */ } else {
+    const moving = sh.state === 'walk' || sh.state === 'return' || sh.state === 'retreat' || sh.state === 'come';
     if (moving) poseWalk(P, sh.walk * 3, 0.7);
     P.fxL = -1.0; P.fxR = -1.0; P.uxL = -0.3; P.uxR = -0.3;                                                // hands clasped over the belly
     if (sh.state === 'peer') Object.assign(P, { lean: 0.22, headX: 0.25, uxL: -0.9, uxR: -0.9, fxL: -0.9, fxR: -0.9 });
     if (sh.state === 'idle' && sh.tauntT > 9) Object.assign(P, { uxR: -1.6, fxR: -0.6, headX: -0.2 });      // a mocking wave
+    if (sh.state === 'gloat') Object.assign(P, { lean: 0.15, headX: 0.2, uxL: -1.0, fxL: -1.2, uxR: sh.tauntT > 4.5 ? -1.7 : -0.3, fxR: -0.7 });   // gripping the bars, mocking
     drawCharacter('shukeli', sh.x, shy, sh.z, sh.yaw, P, sl);
+    }
   }
   drawFoes();
   // writing scratched into the walls wherever there is something to read
@@ -1119,12 +1183,14 @@ function render(alpha) {
   // Satha (README MODELS §5.2): sculpted head and jaw, and one smooth body tube
   // rebuilt each frame along her spine, drawn in chunks so each is lit locally.
   if (t >= 0) {
+    selectSathaPath();
     const sHead = sathaS(t + alpha * DT);
     if (sHead - BODY_LEN < SATHA_PATH.len) {
       const raw = spineAt(sHead), ahead = spineAt(sHead + SERP_LAMBDA / 4), behind = spineAt(sHead - 0.8);
       const h = [lerp(raw[0], (ahead[0] + behind[0]) / 2, 0.45), raw[1], lerp(raw[2], (ahead[2] + behind[2]) / 2, 0.45)];   // the head rides steadier than the body
       const hg = groundInfo(h[0], h[2]);
-      if (hg.kind === 1 && h[1] < hg.floor + 2.5) h[1] = hg.floor + 0.62 + 0.1 * Math.sin(gameTime * 2.3);                // held up, gently bobbing
+      const rear = inVault(h[0], h[2]) ? 1.7 : 0;                                                                         // in the vault she rears over the king
+      if (hg.kind === 1 && h[1] < hg.floor + 2.5) h[1] = hg.floor + 0.62 + rear + 0.1 * Math.sin(gameTime * 2.3);       // held up, gently bobbing
       const fa = [ahead[0], h[1], ahead[2]], fb = behind;
       const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
       const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
@@ -1141,7 +1207,7 @@ function render(alpha) {
       let B = down;
       for (let c = 0; c < SATHA_CHUNKS; c++) {
         const d0 = c * cl, mid = onFloor(spineAt(sHead - 0.55 - d0 - cl / 2), 0.8);
-        const data = buildSathaTube(d => onFloor(spineAt(sHead - 0.55 - d0 - d), sathaRadius(Math.min(1, (d0 + Math.max(0, d)) / L))), cl, 0.75, B, tt => sathaRadius((d0 + tt * cl) / L));
+        const data = buildSathaTube(d => { const p = onFloor(spineAt(sHead - 0.55 - d0 - d), sathaRadius(Math.min(1, (d0 + Math.max(0, d)) / L))); p[1] += rear * Math.max(0, 1 - (d0 + d) / 3.5); return p; }, cl, 0.75, B, tt => sathaRadius((d0 + tt * cl) / L));
         // carry the frame across chunks: recompute 'down' at the chunk end from the last ring
         const e = onFloor(spineAt(sHead - 0.55 - d0 - cl), sathaRadius(Math.min(1, (d0 + cl) / L))), e2 = onFloor(spineAt(sHead - 0.55 - d0 - cl - 0.2), sathaRadius(Math.min(1, (d0 + cl + 0.2) / L))), Tn = norm3([e2[0] - e[0], e2[1] - e[1], e2[2] - e[2]]);
         const bd = B[0] * Tn[0] + B[1] * Tn[1] + B[2] * Tn[2]; B = norm3([B[0] - Tn[0] * bd, B[1] - Tn[1] * bd, B[2] - Tn[2] * bd]);
@@ -1173,7 +1239,7 @@ function render(alpha) {
     R.clearDepth(); R.lightMul(1);
     R.setCamera(m4persp(60 * Math.PI / 180, R.aspect, 0.01, 10), [0, 0, 0], [0.1, 0.2, 0.3], [0, 0, 0], 1, 0);
     const am = sampleLight(px, py + 1.2, pz), vl = [am[0] + 0.05, am[1] + 0.045, am[2] + 0.04];
-    if (LEVEL.torch) { vl[0] += 0.42 * lc[0]; vl[1] += 0.42 * lc[1]; vl[2] += 0.42 * lc[2]; am.d = norm3([am.d[0] - Math.cos(S.yaw) * 2, am.d[1] + 1, am.d[2] + Math.sin(S.yaw) * 2]); }   // his own torch lights the sword hand
+    if (LEVEL.torch || S.flags.has_torch) { vl[0] += 0.42 * lc[0]; vl[1] += 0.42 * lc[1]; vl[2] += 0.42 * lc[2]; am.d = norm3([am.d[0] - Math.cos(S.yaw) * 2, am.d[1] + 1, am.d[2] + Math.sin(S.yaw) * 2]); }   // his own torch lights the sword hand
     vl.d = rotDir(m4mul(m4rx(-S.pitch), m4ry(-S.yaw)), am.d);
     const sb = Math.sin(bobPhase) * 0.012 * bobAmt, cb = Math.abs(Math.cos(bobPhase)) * 0.012 * bobAmt;
     const prog = S.swing > 0 ? 1 - S.swing / S.swingLen : 0, sw = S.swing > 0 ? Math.sin(prog * Math.PI) : 0, th = S.throwT > 0 ? Math.sin((1 - S.throwT / 0.35) * Math.PI) : 0;
@@ -1197,7 +1263,7 @@ function render(alpha) {
     if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
     else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
     else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
-    if (LEVEL.torch) {                     // the torch in his left fist: the right hand's model, mirrored
+    if (LEVEL.torch || S.flags.has_torch) {                     // the torch in his left fist: the right hand's model, mirrored
       const tf = norm3([-0.32 + sb * 2, 1.3, -0.7]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
       const td = tarm[0] * TX[0] + tarm[1] * TX[1] + tarm[2] * TX[2], TZ = norm3([tarm[0] - TX[0] * td, tarm[1] - TX[1] * td, tarm[2] - TX[2] * td]), TY = cross3(TZ, TX);
       const tpos = [0.5 - sb, -0.47 + cb, -0.52];

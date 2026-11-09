@@ -20,17 +20,18 @@ Each level alternates puzzle areas and action areas (README §9). The HUD names 
 
 ### e1m2, The Pits
 
-About 5–10 minutes, with 12 enemies plus the jailer.
+The book's chapter III, in its order (README §9). It opens cold, chained in the vault.
 
 | # | Area | Type | What happens |
 |---|---|---|---|
-| 1 | The Cell | puzzle | You wake chained, with the black strangler gloating in the hall with his sword and keys. An inscription names the rusted link; grinding it frees you. He roars and swings the sword up, and the keys fly from his fist through the bars to your feet (as in the book) |
-| 2 | The Hall of the Serpent | puzzle (timing) | Satha's first pass takes the strangler, sword still raised. Unlock your cell with his keys. **She passes every 40 seconds**: the torches gutter and the floor rumbles about 5 seconds before her head comes up out of the well. She fills the hall and spits at anything she can see, so get into an alcove. Take his sword |
-| 3 | The Wardens' Post | action | Picking up the sword brings a Kothian guard up the south passage. Beyond it is the post: a guard, a Kothian spearman, and a Shemite archer on a gallery |
-| 4 | The Grille | puzzle | Throw a bone against the bars from the dark niche. Shukeli waddles over to look; if he can't see you, strike him through the bars. Take his keys |
-| 5 | The Guardroom and Barracks | action | His death-squeal raises the alarm. Four guards come to the bars and fight you through them, then in the guardroom |
-| 6 | The Winch | puzzle | The portcullis winch's pawl is broken, so the portcullis falls when you let go. Jam the ratchet with a spear from the barracks rack |
-| 7 | The Captain's Landing | action | One of Tsotha's black giants with a long-shafted axe (he blocks every frontal blow until kicked) and three soldiers, then the stair |
+| 1 | The Vault | puzzle | Chained to a ring, a torch in the niche above. Satha comes out of the dark and rears over you: lie still, because moving draws her venom. The black comes in through the grille with a huge sword and Shukeli's stolen keys, taunts "Amra", and raises the sword; Satha takes him. The keys land almost at your feet, too far to bend to, so slip your foot free and grip them with your toes |
+| 2 | The Grille | combat | Take the black's sword. Shukeli, who followed his stolen keys, slams the grille and gloats through the bars; strike through them. The bolt works only from outside: you are trapped |
+| 3 | The Main Corridor | puzzle | Take the torch and go out through the dark arch. Satha's hunting ground: she passes every forty breaths, and you hide in the side tunnels |
+| 4 | The Gnawed Tunnels | combat | The pits' nameless things in a side passage and an old hall |
+| 5 | The Corridor East | puzzle | Back along the corridor past the serpent's hole, between her passes |
+| 6 | The Old Vaults | combat | Pillared vaults of the ancient works, and the things' den |
+| 7 | The Pitted Way | puzzle | A floor broken by bottomless pits, faintly lit from below; one dropping from the roof |
+| 8 | The Bone Pit | combat | Things among the bones; beyond, a woman is weeping |
 
 ### e1m3, The Tunnels Below
 
@@ -86,7 +87,7 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *21 states*, e1m3 *9 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14470`, `0c763bea`; e1m3: `5870`, `8bbc707f`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `10360`, `21a65357`; e1m3: `5870`, `8bbc707f`) |
 
 ## Not the real build
 

@@ -180,7 +180,7 @@ const TEXGEN = {
     const d = Math.hypot(fx - 0.5, fy * 0.9);
     let v = 0.85 - d * 0.9 + 0.15 * tfbm(x / 64, y / 64, 4, 2, s);
     if (d > 0.52) v = 0.08;
-    return { v, ramp: 'jade', lo: 0.12, hi: 1, h: 0.2 };
+    return { v, ramp: 'ink', lo: 0.4, hi: 1, h: 0.12 };   // Satha's head plates: shimmering white
   } },
   BELLY: { f: (x, y, s) => ({ v: 0.55 + 0.3 * ((Math.floor(y / 8)) % 2) + 0.15 * tfbm(x / 64, y / 64, 4, 2, s), ramp: 'jade', lo: 0.4, hi: 1 }) },
   SKIN: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 4, s), ramp: 'ink', lo: 0.35, hi: 0.62, h: 0.15 }) },
@@ -228,10 +228,11 @@ const TEXGEN = {
     const du = Math.abs(u - 0.5);
     // dorsal saddles: dark diamonds with pale rims down the spine
     const dd = du / 0.2 + Math.abs(((v * 2) % 1) - 0.5) * 2.2;
-    let lo = 0.12, hi = 0.95;
-    if (dd < 0.9) { lo = 0.02; hi = 0.45; } else if (dd < 1.1) { lo = 0.35; hi = 1; }
-    if (du > 0.3) { lo += 0.08; hi = Math.min(1, hi + 0.05); }   // paler flanks
-    return { v: t, ramp: 'jade', lo, hi, h: 0.12 };
+    // "the great shimmering white form of Satha" (ch. III): pale scales, a faint grey saddle down the spine
+    let lo = 0.42, hi = 1;
+    if (dd < 0.9) { lo = 0.3; hi = 0.82; } else if (dd < 1.1) { lo = 0.5; hi = 1; }
+    if (du > 0.3) { lo += 0.06; }
+    return { v: t, ramp: 'ink', lo, hi, h: 0.08 };
   } },
   // The hero's right forearm: u around (0.5 = back of the arm), v from wrist (0) to elbow (1).
   ARM: { f: (x, y, s) => {

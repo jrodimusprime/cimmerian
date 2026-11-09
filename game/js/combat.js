@@ -28,7 +28,10 @@ const FOES = {
 };
 const ALERT_LINES = {
   scout: '"Who screamed? Who\'s there?" A Kothian guard comes up the south passage with his sword out.',
-  post: '"The king is loose! To me, to me!" The guards at the post scramble for their weapons.',
+  post: 'Something whimpers in the dark of the passage, and something else answers it.',
+  vaults: 'The dark between the pillars is full of movement.',
+  bonepit: 'The bones shift. Things uncurl from among them, all dripping jaws.',
+  pits: 'Something drops from the roof of the way.',
   barracks: 'Shukeli\'s death-squeal rings through the pits. Boots thunder in the barracks!',
   landing: 'One of Tsotha\'s black giants bars the stair, his long-shafted axe across his chest, and the guards close in around him.',
   warren: 'Something whimpers in the dark, and something else answers it. The things of the pits are coming.',

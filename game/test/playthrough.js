@@ -1,7 +1,6 @@
-// Golden playthrough of e1m2 through the CIM agent API (README §11).
-// It plays the whole level, fights included, using only player inputs.
-// The final state hash must match EXPECTED on every run.
-const EXPECTED = { tick: 14470, hash: '0c763bea' };
+// Golden playthrough of e1m2, The Pits, through the CIM agent API (README §11).
+// It plays the level in the book's order, using only player inputs.
+const EXPECTED = { tick: 10360, hash: '21a65357' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -71,43 +70,38 @@ true`);
 const O = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health)} wep=${o.weapon} kills=${o.kills} satha=${typeof o.satha.phase === 'number' ? o.satha.phase.toFixed(1) : o.satha.phase} flags=${Object.entries(o.flags).filter(([, v]) => v).map(([k]) => k).join(',')}`;
 let o = await O('CIM.step({}, 1)');
-// THE CELL (puzzle)
-await O('__go(16.0, 23.0, false)'); await O('__use(15.1 / 2.5, 23.0 / 2.5)');
-await O('__go(17.5, 21.6, false)'); o = await O('__use(7, 8.08, -0.3)'); log('free:', brief(o));
-await O('__go(22.5, 22.5, false)'); o = await O('__wait(1100)'); log('giant:', brief(o), await ev('CIM.state.giant.state'));
-// THE HALL (timing): wait for Satha to clear, take the dagger; the scout comes
-o = await O('__waitPhase(19, 20)');
-o = await O('(__take("cellkey"), CIM.obs())'); log('keys:', brief(o));
-await O('__go(18.75, 28.4, false)'); await O('__use(7.5, 12.1)'); await O('__wait(100)');
-await O('__route([[7.5, 11.2], [7.5, 13.9]])'); o = await O('(__take("sword"), CIM.obs())'); log("sword:", brief(o));
-// WARDENS' POST (action): meet the scout in the passage mouth, then the post
-await O('__route([[26.5, 14.1], [26.5, 15.8]])');
-o = await O('__fight(["scout"])'); log('scout:', brief(o));
-await O('__route([[26.5, 19.5]])');
-o = await O('__fight(["post"], 9000)'); log('post:', brief(o));
+// THE VAULT (puzzle): lie still while Satha passes; the black; the keys at your feet
+for (let i = 0; i < 120 && !o.flags.keys_down; i++) o = await O('__wait(36)');
+log('keys down:', brief(o));
+for (let i = 0; i < 60 && await ev('!!(CIM.state.satha.pts && inVault(CIM.state.satha.pts[CIM.state.satha.pts.length - 1].x, CIM.state.satha.pts[CIM.state.satha.pts.length - 1].z) || (CIM.state.satha.pts && inVault(CIM.state.satha.pts[0].x, CIM.state.satha.pts[0].z)))'); i++) o = await O('__wait(24)');
+o = await O('(() => { const k = __item("cellkey"); __face(k.x, k.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 2); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 2); return CIM.obs(); })()');
+log('free:', brief(o));
 o = await O('(__take("sword"), CIM.obs())'); log('sword:', brief(o));
+// THE GRILLE (combat): Shukeli slams it; strike through the bars
+await O('__go(18.75, 21.0, true)');
+for (let i = 0; i < 40 && o.shukeli !== 'gloat'; i++) o = await O('__wait(12)');
+await O('__face(CIM.state.shukeli.x, CIM.state.shukeli.z, 0.1)');
+o = await O('CIM.step({attack: true, yaw: CIM.state.yaw, pitch: 0.1}, 40)'); log('shukeli:', brief(o));
+await O('__go(16.6, 23.4, false)'); o = await O('__use(6.12, 9.4, 0.6)'); log('torch:', brief(o));
+// THE MAIN CORRIDOR (puzzle): out through the arch between Satha's passes
+o = await O('__waitPhase(19, 20)');
+await O('__route([[7.5, 12.5], [7.5, 14], [26.5, 14.1], [26.5, 15.8]])');
+// THE GNAWED TUNNELS (combat)
+o = await O('__fight(["post"], 9000, 30)'); log('post:', brief(o));
 await O('__heal()');
-// THE GRILLE (puzzle): bone, niche, lure, strike, keys
+// THE CORRIDOR EAST (puzzle)
 await O('__route([[26.5, 16]])'); o = await O('__waitPhase(18, 19)');
-await O('__route([[26.5, 14], [17.9, 14.2], [17.9, 15.4]])'); await O('__use(17.9, 16, -0.4)');
-await O('__route([[17.9, 14.2], [33.6, 14.2], [33.6, 15.35]])');
-await O('__face(85.2, 36.6, 0.1)'); o = await O('CIM.step({attack: true, yaw: CIM.state.yaw, pitch: 0.1}, 1)');
-for (let i = 0; i < 60 && o.shukeli !== 'peer'; i++) o = await O('__wait(10)');
-const sh = await O('({x: CIM.state.shukeli.x, z: CIM.state.shukeli.z})');
-await O(`__face(${sh.x}, ${sh.z}, 0.1)`); o = await O('CIM.step({attack: true, yaw: CIM.state.yaw, pitch: 0.1}, 1)'); o = await O('__wait(30)'); log('shukeli:', brief(o));
-// GUARDROOM (action): the barracks come to the bars; fight through them, then take the keys
-o = await O('__fight(["barracks"], 9000, 40)'); log('barracks:', brief(o));
-o = await O('(__take("keys"), CIM.obs())');
-await O('__route([[33.6, 14]])'); o = await O('__use(34, 14)'); o = await O('__wait(100)'); log('grille:', brief(o));
-o = await O('__fight(["barracks"], 6000, 60)');
+await O('__route([[26.5, 14], [33.6, 14.2], [36, 14]])');
+// THE OLD VAULTS (combat)
+o = await O('__fight(["vaults"], 9000, 30)'); log('vaults:', brief(o));
 await O('__heal()');
-// THE WINCH (puzzle): a spear from the barracks rack, then jam the ratchet
-await O('__route([[40, 10], [40, 7.6], [43.6, 6]])'); o = await O('__use(44.6, 6)'); log('spear:', brief(o));
-await O('__route([[40, 7.6], [40, 12], [44.6, 17]])'); o = await O('__use(45.5, 17.2)'); o = await O('__wait(120)'); log('winch:', brief(o));
-// THE LANDING (action), then out
-await O('__route([[44, 14], [52.5, 14]])');
-o = await O('__fight(["landing"], 12000)'); log('landing:', brief(o));
+// THE PITTED WAY (puzzle): the flow field keeps to solid floor
+o = await O('__route([[45.5, 14], [52.5, 14], [60.5, 14]])'); log('pits:', brief(o));
+o = await O('__fight(["pits"], 3000, 20)');
+// THE BONE PIT (combat), then the weeping tunnel
+await O('__route([[62, 14]])');
+o = await O('__fight(["bonepit"], 9000, 20)'); log('bonepit:', brief(o));
 await O('__heal()');
-o = await O('__route([[60, 14], [69, 14]])'); log('end:', brief(o));
+o = await O('__route([[66, 14], [69.5, 14]])'); log('end:', brief(o));
 const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
 log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED));
