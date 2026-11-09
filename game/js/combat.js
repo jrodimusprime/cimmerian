@@ -150,7 +150,7 @@ function updateFoes() {
       f.x = r[0]; f.z = r[1]; f.vx *= Math.pow(0.02, DT); f.vz *= Math.pow(0.02, DT);
     }
     const g = groundInfo(f.x, f.z);
-    if (g.kind === 2 && !st.invulnerable) { killFoe(f, 'fall'); f.falling = 1; f.vy = 0; continue; }
+    if (g.kind === 2 && !st.invulnerable && g.floor < f.y - 3) { killFoe(f, 'fall'); f.falling = 1; f.vy = 0; continue; }
     f.y += (g.floor - f.y) * Math.min(1, DT * 12);
     const dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz), want = Math.atan2(dx, dz);
     if (!f.alert && !f.hold && mode === 'play' && foeSees(f)) alertGroup(f.group);
@@ -440,7 +440,8 @@ function drawFoes() {
     if (f.cls === 'weeper') { drawWeeper(f); continue; }
     const l = sampleLight(f.x, f.y + 1.4, f.z);
     const yaw = f.dead && f.dieYaw !== undefined && f.cls !== 'thing' ? f.dieYaw : f.yaw;
-    drawCharacter(f.cls, f.x, f.y, f.z, yaw, foePose(f), l, f.flash > 0 ? 0.55 : 0);
+    const cid = f.cls === 'thing' ? ['thing', 'thing_b', 'thing_c'][Math.floor(hrand(Math.round(f.homeX * 10), Math.round(f.homeZ * 10), 7, 1) * 3)] : f.cls;   // each malformed its own way
+    drawCharacter(cid, f.x, f.y, f.z, yaw, foePose(f), l, f.flash > 0 ? 0.55 : 0);
     if (f.debris) for (const d of f.debris) {               // the weapon falls from his hand, and lies broken
       const k = smoothstep(0, 0.45, f.deathT), fl = groundInfo(d.x, d.z).floor;
       const x = lerp(f.x, d.x, k), z = lerp(f.z, d.z, k), y = lerp(f.y + 1.1, fl + 0.03, k * k);

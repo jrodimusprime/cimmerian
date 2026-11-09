@@ -493,7 +493,7 @@ function loft(mb, st, sides, layer, vScale = 1, shade = null, axis = 'z', vOff =
     }
     ring.push(r);
   }
-  const uv = layer === T.SATHA || layer === T.SATHA_HEAD || layer === T.SATHA_JAW || layer === T.ARM || layer === T.MANACLE || layer === T.FACE_BRUTE || layer === T.FACE_EUNUCH || layer === T.FACE_VULTURE;   // UV skins carry (u, v, shade); others a grey tint
+  const uv = layer === T.SATHA || layer === T.SATHA_HEAD || layer === T.SATHA_JAW || layer === T.PIT_HIDE || layer === T.PIT_HEAD || layer === T.PIT_JAW || layer === T.ARM || layer === T.MANACLE || layer === T.FACE_BRUTE || layer === T.FACE_EUNUCH || layer === T.FACE_VULTURE;   // UV skins carry (u, v, shade); others a grey tint
   for (let i = 0; i < ring.length - 1; i++) for (let k = 0; k < sides; k++) {
     const a = ring[i][k], b = ring[i][k + 1], c = ring[i + 1][k + 1], d = ring[i + 1][k];
     for (const q of [a, b, c, a, c, d]) { mb.ensure(1); mb.v(q.p, q.n[0], q.n[1], q.n[2], uv ? [q.u, q.v, q.sh] : [q.sh, q.sh, q.sh], layer); }

@@ -2,7 +2,7 @@
 
 Three playable levels, told out of joint as README §9 plans: **e1m2, The Pits** opens cold in the chains (milestone M4), **e1m1, The Plain of Shamu** is the flashback to how the king got there, and **e1m3, The Tunnels Below** jumps forward again. All three are built on the engine from **The Endless Cave** (`colossal_cave_adventure_3d`): pure JavaScript and WebGL2, no build step and no asset files. It is drawn in the Quake manner: low resolution, every pixel snapped to the game's palette, banded light and a dark haze.
 
-**Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game), or open `index.html` in a browser. Everything is generated at load time. A five-second title card opens the game, and each level opens with its story splash. `?level=e1m1` or `?level=e1m3` starts at that level.
+**Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game), or open `index.html` in a browser. Everything is generated at load time. A five-second title card opens the game, and each level opens with its story splash. `?level=e1m1` or `?level=e1m3` starts at that level. `?cheat=true` turns on god mode (no damage; a fatal fall puts you back at the last checkpoint) and lets **N** skip to the next level.
 
 | Key | Action |
 |---|---|
@@ -33,7 +33,7 @@ The book's chapter III, in its order (README §9). It opens cold, chained in the
 | 4 | The Gnawed Tunnels | combat | The pits' nameless things in a side passage and an old hall |
 | 5 | The Corridor East | puzzle | Back along the corridor past the serpent's hole, between her passes |
 | 6 | The Old Vaults | combat | Pillared vaults of the ancient works, and the things' den |
-| 7 | The Pitted Way | puzzle | A floor broken by bottomless pits, faintly lit from below; one dropping from the roof |
+| 7 | The Pitted Way | agility | The pits span the way from wall to wall, faintly lit from below. Leap the first, hop across the second on a single stone left standing in it, leap the third. A thing drops from the roof onto the strip between them |
 | 8 | The Bone Pit | combat | Things among the bones; beyond, a woman is weeping |
 
 ### e1m1, The Plain of Shamu (the flashback)
@@ -57,9 +57,9 @@ The book's chapter III, after the grille. About 5–10 minutes, with 16 pit-thin
 | # | Area | Type | What happens |
 |---|---|---|---|
 | 1 | The Weeping | puzzle | A woman weeping, somewhere ahead. Follow the sound through the forks: down a wrong turning it grows fainter, and things wait on the roof of the blind tunnels |
-| 2 | The Weeping Thing | combat (flight) | In the low cave the weeping stops, then starts again behind you: the quaking jelly-thing with a frog's head comes out of its wallow by the tunnel mouth. No blade can harm it. Flee down the far tunnel and cut through the things it drives ahead of it. It won't leave its tunnels |
+| 2 | The Weeping Thing | combat (flight) | In the low cave the weeping stops, then starts again behind you: the quaking jelly-thing with a frog's head comes out of its wallow by the tunnel mouth. No blade can harm it. Flee down the far tunnel and cut through the things it drives ahead of it. The tunnel floor has fallen in: drop into the break and jump the far ledge, with the things at your back. It won't follow past the break |
 | 3 | The Well | puzzle | A well cuts across the chamber where the tunnels cross, too wide to step over. It breathes: the torch flame leans as the wind rises, then a gust blows you back the way you came. Run and leap between its breaths |
-| 4 | The Dark | combat | On the far side the presence floats up out of the well, blows the torch out and tears it from your hand. Its wind drives you south into the black tunnels; fight the things there by their red eyes, round and back to the chamber |
+| 4 | The Dark | combat | On the far side the presence floats up out of the well, blows the torch out and tears it from your hand. Its wind drives you south into the black tunnels; fight the things there by their red eyes, leap the gap in the black tunnel, pale from below, and come round back to the chamber |
 | 5 | The Crossing | puzzle | Find the torch by its ember on the well's rim and blow it alight. The dead's scratches say to go where the air comes from: the flame leans away from the one tunnel with a draft in it. Leap the well again, and when the presence comes up again you have five breaths to be in the right tunnel, or it takes the torch again |
 | 6 | The Side Tunnels | combat | Back in the main corridor; things in the tunnels off it |
 | 7 | Satha Returns | puzzle | Every torch bows: Satha comes up out of her hole between you and the far glow and crawls down the corridor toward you. Get into a side tunnel and shake out your torch (T). If she sees fire, she strikes into the tunnel mouth |
@@ -91,12 +91,14 @@ Only characters and creatures from Howard's text (README §1, *Canon cast only*)
 | Shemite archer | A deep leather hood with the face lost in shadow, leathers, quiver, recurve bow |
 | Black axeman | One of Tsotha's black giants: a horned great helm with a scarlet crest, a scarlet cloak, spiked pauldrons, a long-shafted axe |
 | The presence | What floats up out of the well: no body, a few faint wavering columns of pallor over the shaft, felt more than seen |
-| Pit-thing | The pits' nameless things: pale, gaunt and rib-thin, long-armed and clawed, on all fours, with ember pin-prick eyes and dripping jaws. They cling to the roof and drop |
+| Pit-thing | Tsotha's nameless pets, as Howard half-shows them: "shadowy forms, monstrous and abnormal in outline", "slavering lips", "the burning glare of hungry eyes". Low, hunched and spurred down the spine, a long skull with the jaw hanging agape on fangs and strings of slaver, a cluster of burning eyes, long knuckled arms ending in hooks. The hide is near-black and wet, painted Quake-style, so in torchlight you see mostly eyes and maw. Three builds, each malformed its own way. They cling to the roof and drop |
 | Weeping thing | A quaking jelly mass with short tentacles, a frog's head, great unstable eyes and blubbery lips. It weeps like a woman and titters when it sees you |
 | Satha | A smooth head and hinged jaw with everything painted into the skin, as Quake did it: crown shields, glowing amber eyes with slit pupils, nostrils, a lip line with fangs, a red mouth and a forked tongue. Her body is one smooth, scaled tube rebuilt every frame along her spine, and it grows out of the back of her skull. Her scales carry a faint shimmer, so she stays white under orange torchlight |
 | The hero (first person) | His manacled right hand: a muscled forearm with veins and a scar, a riveted cuff with a broken chain, jointed fingers with nails |
 
 Every human enemy stands like Quake's killers: hunched, knees bent, head thrust forward. All of them are built from compact specs, as README §8 and MODELS.md require: a 14-bone humanoid rig with rigid parts, smooth lofts and lathes for the body, and outfits as per-role overlays. They're posed procedurally (idle, walk, wind-up, strike, block, pain, stagger and death) and lit from the direction of their strongest nearby light, as Quake lit its alias models.
+
+Walk into Satha and you die; lying still as she passes is the only safe way to be near her.
 
 The title card is John Martin's *Pandemonium* (public domain, processed by `tools/splashgen.sh`; credits in `story/credits.json`). Each level's splash is painted procedurally: a tonal Piranesi-style scene engraved with hatching, with one scarlet accent. Each level ends in a black corridor that fades out as you walk into it.
 
@@ -110,7 +112,7 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *6 states*, e1m1 *5 states*, e1m3 *6 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `10360`, `21a65357`; e1m1: `8821`, `7b58280b`; e1m3: `10012`, `bb20221c`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `9412`, `22196563`; e1m3: `9569`, `7aaa8a39`; e1m1's is being re-recorded for the open plain) |
 
 ## Not the real build
 

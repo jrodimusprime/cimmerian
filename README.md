@@ -21,7 +21,9 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 
 Map names keep the book's numbering; the play order is the table above. The optional prologue `e0m1` stands outside it.
 
-Every level plan in section 9 marks its areas `<<combat>>` or `<<puzzle>>`, and alternates them.
+Every level plan in section 9 marks its areas `<<combat>>`, `<<puzzle>>` or `<<agility>>`, and alternates fights with the other two.
+
+**Agility (a standing rule).** Conan is a leaper and a climber, and every level has jumping in it: at least one `<<agility>>` beat per level, and more where the place allows. Gaps to leap, ledges you must jump to climb, leaps timed against a hazard, narrow ways over drops, often with something coming at you. Like a fight, agility is only *how* a beat is played: it is set in the book's own places (a floor broken by pits, a broken stair, the roofs of Tamar, the barge bridge on the Tybor), never in an invented detour.
 
 Two design pillars:
 
@@ -53,7 +55,7 @@ This was the first Conan story published, and *Scarlet Citadel* follows on from 
 **Every character and creature in the game must appear in Howard's text.** Nobody is invented to fill a level.
 
 - **Cite it.** Each enemy, NPC and boss is traced to a passage in the story (the cast tables in `game/js/combat.js` and `MODELS.md` cite chapter and line). If you can't cite it, it doesn't go in.
-- **Nameless monsters only where the text puts them.** Howard says Tsotha's pits hold nameless things ("monsters with dripping jaws agape"; "something whimpered in fear and slunk away in the darkness"; the grille's bars bear "marks of incredible fangs"). So the pits may hold nameless *pit-things*. A named creature that Howard never wrote may not be added.
+- **Nameless monsters only where the text puts them.** Howard's pits hold Tsotha's nameless "pets" and "demons", glimpsed and heard but never shown whole: "in the mouths of the tunnels caught glimpses of shadowy forms, monstrous and abnormal in outline"; "the greedy sucking-in of slavering lips, and ... the burning glare of hungry eyes"; "something whimpered in fear and slunk away in the darkness"; the chapter's verse has "monsters with dripping jaws agape". So the pits may hold nameless *pit-things*, drawn as Howard gives them: dark, misshapen shapes, each abnormal in its own way, with only burning eyes and a wet maw catching the light. In the book they keep out of Satha's corridor and never close with Conan; fighting them is rule 2's "more of the opposition the book puts there". A named creature that Howard never wrote may not be added.
 - **Soldiers come from the armies in the story.** That means Kothian guards and spearmen, Shemitish archers, Tsotha's black giants with their long-shafted axes, Ophirean knights and Aquilonian troops, each where the story could plausibly put them.
 - **Monsters behave as the text says.** The weeping thing can't be killed with a sword, because Conan "doubted the power of man-made weapons to harm it" and fled. The strangler brings a huge sword and Shukeli's stolen keys.
 - **Only puzzles are invented.** Puzzle mechanics (section 10) and the pacing of action areas (section 9) are the only additions to Howard's plot. They decide *how* a beat plays, never *who* is in it.
@@ -349,9 +351,10 @@ The book has no Tamar street level for Conan (he arrives on the tower by air), s
 1. `<<puzzle>>` **The Dream Crypt.** Light the braziers in the order shown on the frieze; the sage marks your sword.
 2. `<<combat>>` **The Bedchamber Door.** The first rush of assassins.
 3. `<<combat>>` **The Broken Sword.** Gromel, Volmana and Rinaldo; the sword snaps on Gromel's helm.
-4. `<<puzzle>>` **The Axe on the Wall.** It hangs out of reach; knock its mount loose with the broken hilt.
-5. `<<combat>>` **The Last Assassins.** Hold the room with the axe.
-6. `<<combat>>` **The Demon.** Only the phoenix-marked blade harms it.
+4. `<<agility>>` **The Crypt Stair.** In the dream, the stair down to the sage's tomb under Golamira is broken: leap the fallen flights.
+5. `<<puzzle>>` **The Axe on the Wall.** It hangs out of reach; knock its mount loose with the broken hilt.
+6. `<<combat>>` **The Last Assassins.** Hold the room with the axe.
+7. `<<combat>>` **The Demon.** Only the phoenix-marked blade harms it.
 
 #### `e1m1` The Plain of Shamu (ch. I)
 
@@ -360,12 +363,13 @@ The book has no Tamar street level for Conan (he arrives on the tower by air), s
 The level is the end of the battle, fought across the field toward the heap of dead where the book places the last stand. It can't be won; the more you kill, the closer the kings ride.
 
 1. `<<combat>>` **The Broken Charge.** You come to among the dead of the last charge; Kothian knights on foot finish the wounded.
-2. `<<puzzle>>` **The Arrow Ground.** Shemite archers sweep the open field in volleys on a fixed cadence ("feathering them with shafts that found every crevice"). Cross it by the dead horses and the toppled standards, between volleys.
-3. `<<combat>>` **The Shemite Line.** Close with the archers before they close the range; their spearmen screen them.
-4. `<<puzzle>>` **The Riderless Horses.** Ophirean knights charge through the wreck ("Ophirean knights in gilded mail leaped their horses over mounds of corpses"). Read their lanes from the churned ground and step aside at the last moment; a knight unhorsed is a knight on foot.
-5. `<<combat>>` **The Heap of Dead.** Your back to the heap, the ring of attackers: Kothian and Ophirean knights, Shemites, wave on wave; "about his iron-clad feet grew a ring of mangled corpses."
-6. `<<combat>>` **The Kings Ride Up.** Strabonus, Amalrus and Tsotha ride in behind the pikemen ("giants in their steel caps and mail brigandines"); you can't reach the kings.
-7. `<<puzzle>>` **The Wizard.** Tsotha walks to you through the pikemen and offers you life. You answer with the sword, as Conan did, and the ring's fang ends the level (scripted), fading to the Khorshemish splash.
+2. `<<agility>>` **The Gully of Dead.** A ditch choked with the fallen of the charge: cover from the first volleys, but its banks are steep, so leap down and jump the far bank.
+3. `<<puzzle>>` **The Arrow Ground.** Shemite archers sweep the open field in volleys on a fixed cadence ("feathering them with shafts that found every crevice"). Cross it by the dead horses and the toppled standards, between volleys.
+4. `<<combat>>` **The Shemite Line.** Close with the archers before they close the range; their spearmen screen them.
+5. `<<puzzle>>` **The Riderless Horses.** Ophirean knights charge through the wreck ("Ophirean knights in gilded mail leaped their horses over mounds of corpses"). Read their lanes from the churned ground and step aside at the last moment; a knight unhorsed is a knight on foot.
+6. `<<combat>>` **The Heap of Dead.** Your back to the heap, the ring of attackers: Kothian and Ophirean knights, Shemites, wave on wave; "about his iron-clad feet grew a ring of mangled corpses."
+7. `<<combat>>` **The Kings Ride Up.** Strabonus, Amalrus and Tsotha ride in behind the pikemen ("giants in their steel caps and mail brigandines"); you can't reach the kings.
+8. `<<puzzle>>` **The Wizard.** Tsotha walks to you through the pikemen and offers you life. You answer with the sword, as Conan did, and the ring's fang ends the level (scripted), fading to the Khorshemish splash.
 
 #### `e1m2` The Pits (ch. II–III)
 
@@ -377,7 +381,7 @@ The level is the end of the battle, fought across the field toward the heap of d
 4. `<<combat>>` **The Gnawed Tunnels.** A side passage and an old hall where the pits' nameless things den ("monsters with dripping jaws agape"); they scatter when Satha passes and come back when she's gone.
 5. `<<puzzle>>` **The Corridor East.** Back along the main corridor past the serpent's hole on the next cycle.
 6. `<<combat>>` **The Old Vaults.** Pillared vaults of the ancient works ("He did not dig them ... three thousand years ago"), full of things.
-7. `<<puzzle>>` **The Pitted Way.** "Watching the floor ahead of him carefully, lest he fall into some pit": a stretch of floor broken by pits that only your torch shows.
+7. `<<agility>>` **The Pitted Way.** "Watching the floor ahead of him carefully, lest he fall into some pit": the pits span the way from wall to wall. Leap the first, cross the second on a single stone left standing in it, leap the third, while a thing drops from the roof between them.
 8. `<<combat>>` **The Bone Pit.** The things' den at the end of the way.
 Exit: the sound of a woman weeping down a smaller, dank tunnel.
 
@@ -386,9 +390,9 @@ Exit: the sound of a woman weeping down a smaller, dank tunnel.
 **Story.** Conan follows the weeping down a dank tunnel and finds no woman but a quaking jelly-thing with a frog's head, weeping from its blubbery lips; it titters and flounders after him, and he flees, doubting any blade could harm it. He takes a wrong tunnel and finds a well in the floor. A wind rises out of it, something bodiless floats up, and he flees in the dark. His torch is blown out, and he finds it again by its ember, back in the chamber where the tunnels cross. The presence comes again and he gets out. Back in the main corridor, Satha comes crawling, "sluggish from its recent grisly meal"; he leaps into a side tunnel and shakes out his torch. Beyond, he finds a cage of bars with a garden in it.
 
 1. `<<puzzle>>` **The Weeping.** Follow the sound through a branching dank tunnel; it moves when you do.
-2. `<<combat>>` **The Weeping Thing.** It can't be harmed. Flee back up the tunnels while the pits' things, driven ahead of it, block the way.
-3. `<<puzzle>>` **The Well.** A shaft across the tunnel floor, narrow enough to leap. The wind rises from below and leans your torch flame; something comes up out of it.
-4. `<<combat>>` **The Dark.** The presence blows your torch out. Fight blind toward the red ember of the fallen torch.
+2. `<<combat>>` **The Weeping Thing.** It can't be harmed. Flee down the far tunnel while the pits' things, driven ahead of it, block the way; the tunnel floor has fallen in, so drop into the break and jump the far ledge with them at your back.
+3. `<<agility>>` **The Well.** A shaft across the tunnel floor, narrow enough to leap. The wind rises from below and leans your torch flame; something comes up out of it.
+4. `<<combat>>` **The Dark.** The presence blows your torch out. Fight blind toward the red ember of the fallen torch; a gap in the black tunnel, faintly pale from below, has to be leapt in the dark.
 5. `<<puzzle>>` **The Crossing.** The chamber where the tunnels cross. Relight the torch and find the tunnel back to the main corridor, read from the draft and the marks of the dead.
 6. `<<combat>>` **The Side Tunnels.** Things in the tunnels off the main corridor.
 7. `<<puzzle>>` **Satha Returns.** She comes up the corridor: get into a side tunnel and put your torch out before she reaches you.
@@ -400,7 +404,7 @@ Exit: the cage of bars with a garden in it.
 
 1. `<<puzzle>>` **The Cage.** Which of Shukeli's keys fits: the lock and the ring tell you.
 2. `<<combat>>` **Yothga.** Its tendrils lash and regrow; cut through to the stem. Touching the roots is death.
-3. `<<puzzle>>` **Pelias.** He wakes and talks, and leads you by ways only he knows.
+3. `<<agility>>` **Pelias.** He wakes and talks, and leads you by ways only he knows: ledges over the pits and breaks in the old works that you leap behind him.
 4. `<<combat>>` **The Way Back.** The pits' things come at you both; Pelias is weak from his long sleep, so keep them off him.
 5. `<<puzzle>>` **Satha.** She rises across the corridor. Stand by Pelias and do not strike; she flees from what she sees in him.
 6. `<<combat>>` **The Last Tunnels.** Things scattered by her flight.
@@ -417,7 +421,7 @@ Exit: the long stair up.
 4. `<<combat>>` **The Guard Hall.** A hall of Tsotha's black giants with their long axes, half-woken.
 5. `<<puzzle>>` **Tsotha's Chambers.** The wine; the crystal globe, which shows Tamar.
 6. `<<combat>>` **The Tower Stair.** The last waking guards on the stair to the roof.
-7. `<<puzzle>>` **The Roof.** Pelias calls the winged beast.
+7. `<<agility>>` **The Roof.** Across the citadel's battlements, leaping the gaps between them to the tower where Pelias calls the winged beast.
 Exit: the flight to Tamar (splash).
 
 #### `e1m6` The Tower of Tamar (ch. IV)
@@ -425,7 +429,7 @@ Exit: the flight to Tamar (splash).
 **Story.** Word of the king's death reached Tamar within hours. The barons deserted, the mob turned on Count Trocero, and Prince Arpello of Pellia took the city and proclaimed himself king. At dawn Arpello stands on the turrets of the great tower beside the palace, laughing down at the mob, with archers about him. Out of the crimson dawn a speck grows into a winged shape that swoops over the tower; a man drops onto the turret, and the crowd roars "The king!" Arpello leaps at Conan; Conan parries, seizes him "by crotch and neck" and hurls him a hundred and fifty feet to the pave. The archers break and flee, and the city rises against the Pellians.
 
 1. `<<combat>>` **The Turret.** You land among Arpello's archers.
-2. `<<puzzle>>` **The Leads.** Cross the tower roofs and bridges between turrets toward Arpello, under arrows from the far turret.
+2. `<<agility>>` **The Leads.** Cross the tower roofs and the bridges between turrets toward Arpello, leaping the gaps under arrows from the far turret.
 3. `<<combat>>` **The Archers' Turret.** Clear the archers who shoot down at the mob.
 4. `<<puzzle>>` **The Broken Parapet.** Find the open edge where a man could be thrown.
 5. `<<combat>>` **Arpello.** He leaps at you. Parry, then seize and hurl him from the parapet.
@@ -436,7 +440,7 @@ Exit: the flight to Tamar (splash).
 **Story.** Shamar on the Tybor is under siege by Strabonus and Amalrus, with Tsotha beside them. The invaders have bridged the river with chained barges, and their siege towers, hung with raw bull-hides, roll against the walls. Conan comes with Trocero's Poitanian knights, Prospero, and a second army on ponies: stolid Bossonian archers and Gunderman pikemen. "It is King Conan!" Tsotha shrieks of sorcery. The Shemite archers, then the Kothian spearmen, then the mailed knights go in; Conan cuts through to Strabonus among his palace troops, takes an axe-blow on his helm and crushes the king's skull. Prospero kills Amalrus. The host breaks.
 
 1. `<<combat>>` **The Ridge.** Down onto the plain with the Bossonians loosing over your head.
-2. `<<puzzle>>` **The Siege Towers.** The towers mask any sortie from the city ("The men on the battle-towers can mask any sorties"). Fire or topple one, and Shamar's garrison sallies.
+2. `<<agility>>` **The Siege Towers.** The towers mask any sortie from the city ("The men on the battle-towers can mask any sorties"). Fire or topple one, and Shamar's garrison sallies. Climb a tower's ladders and platforms to fire it from the top.
 3. `<<combat>>` **The Shemite Archers.** The first of Arbanus's lines.
 4. `<<combat>>` **The Kothian Spearmen.** With the Gunderman pikes beside you.
 5. `<<puzzle>>` **The Press of Knights.** Find the gap the book's charge made, through the milling, disordered host.
@@ -447,7 +451,7 @@ Exit: the flight to Tamar (splash).
 **Story.** The rout runs down to the river. The men of Shamar cut the barge bridge adrift and the fugitives drown. Tsotha has crossed already, riding hard across the meadow on "a gaunt weird-looking steed whose stride no natural horse could match". An eagle swoops at his steed and throws him. He faces Conan, swears his flesh will reunite, and hurls a globe that explodes in fire; Conan beheads him before he throws the second. The eagle takes the head, laughing in Pelias's voice, and the headless body staggers away after it.
 
 1. `<<combat>>` **The Rout.** Along the river among breaking Kothians and Shemites.
-2. `<<puzzle>>` **The Barge Bridge.** The men of Shamar are cutting it adrift. Cross barge to barge while it breaks up.
+2. `<<agility>>` **The Barge Bridge.** The men of Shamar are cutting it adrift. Leap from barge to barge while it breaks up under you.
 3. `<<combat>>` **The Far Bank.** Fugitives who crossed ahead of you turn at bay.
 4. `<<puzzle>>` **The Meadow.** Follow Tsotha's track across the sunset meadow; the eagle throws him.
 5. `<<combat>>` **Tsotha.** His fire globes; close the distance and behead him.

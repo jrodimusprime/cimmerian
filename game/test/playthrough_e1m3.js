@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10012, hash: 'bb20221c' };
+const EXPECTED = { tick: 9569, hash: '7aaa8a39' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -33,12 +33,13 @@ window.__take = (k) => { const it = __item(k); if (!it) return false; __nav(it.x
 window.__use = (x, z, pitch = 0) => { __face(x * C, z * C, pitch); return CIM.step({ use: true, yaw: CIM.state.yaw, pitch }, 1); };
 // fight: close with the nearest foe that knows we're here; kick shields, strike, step back from a wound-up blow
 window.__fight = (groups, maxTicks = 6000, radius = 30) => {
-  let blocked = 0, lastHits = -1;
+  let blocked = 0, lastHits = -1, reachable = null;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
-    if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); continue; }
+    if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); reachable = null; continue; }
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
-    const live = s.foes.filter(f => !f.dead && groups.includes(f.group) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
+    const live = s.foes.filter(f => !f.dead && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     if (!live.length) break;
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
     const f = live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
@@ -65,6 +66,18 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   return CIM.obs();
 };
 window.__heal = () => { for (const it of CIM.state.items) if (!it.taken && it.heal && CIM.state.health < 80 && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+// run at (x, z), leaping any gap and jumping up any ledge on the way
+window.__jumpTo = (x, z, maxTicks = 400) => {
+  x *= C; z *= C;
+  for (let i = 0; i < maxTicks; i++) {
+    const s = CIM.state, dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
+    if (CIM.obs().mode !== 'play' || (d < 0.5 && s.onGround)) break;
+    const g = groundInfo(s.x + dx / d * 0.6, s.z + dz / d * 0.6);
+    const jump = s.onGround && ((g.kind === 2 && g.floor < s.y - 3) || g.floor > s.y + 0.6);
+    CIM.step({ forward: 1, run: true, jump, yaw: Math.atan2(-dx, -dz), pitch: 0 }, 1);
+  }
+  return CIM.obs();
+};
 true`);
 const O = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health)} kills=${o.kills} flags=${Object.entries(o.flags).filter(([, v]) => v).map(([k]) => k).join(',')}`;
@@ -90,6 +103,7 @@ o = await O('__route([[10, 17], [16, 17], [22, 17], [22, 10], [22, 4.2]])'); log
 // THE WEEPING THING (combat, flight): it comes out behind you; cut through the things it drives ahead
 o = await O('__route([[27, 4], [30, 4]])');
 o = await O('__fight(["driven"], 6000, 25)'); log('flight:', brief(o));
+o = await O('__jumpTo(35, 4)'); o = await O('__fight(["driven"], 6000, 25)'); log('break:', brief(o));
 o = await O('__route([[39, 4], [39, 12], [39, 15.4]])'); log('well:', brief(o));
 // THE WELL (puzzle): leap it between its breaths; the presence takes the torch
 o = await O('__leap(39, 15.4, 1)'); log('leapt:', brief(o), await ev('CIM.state.torch'));
@@ -97,7 +111,9 @@ o = await O('__leap(39, 15.4, 1)'); log('leapt:', brief(o), await ev('CIM.state.
 o = await O('__route([[41, 24]])');
 o = await O('__fight(["dark"], 9000, 30)'); log('dark:', brief(o));
 await O('__heal()');
-o = await O('__route([[41, 27.8], [47, 27.8], [47, 15], [44.5, 15], [41, 15.2]])');
+o = await O('__route([[41, 27.8], [43.3, 27.8]])'); o = await O('__jumpTo(46, 27.8)'); log('gap:', brief(o));
+o = await O('__fight(["dark"], 9000, 30)');
+o = await O('__route([[47, 27.8], [47, 15], [44.5, 15], [41, 15.2]])');
 // THE CROSSING (puzzle): the ember; go where the air comes from
 o = await O('(__take("ember"), CIM.obs())'); log('ember:', brief(o), await ev('CIM.state.torch'));
 o = await O('__leap(35, 15.4, 1)');

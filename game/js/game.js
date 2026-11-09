@@ -10,6 +10,7 @@
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl'), hud = $('hud'), logEl = $('log'), promptEl = $('prompt'), overlay = $('overlay');
+const CHEAT = new URLSearchParams(location.search).get('cheat') === 'true';   // ?cheat=true: god mode, and N skips the level
 const SIM_HZ = 72, DT = 1 / SIM_HZ, EYE = 1.6, RADIUS = 0.42, REACH = 2.7, TETHER = 3.2;
 const BASE_SENS = 0.0022, RES_STEPS = [200, 240, 300, 360, 480, 600], SENS_KEY = 'cimmerian-sens', BRIGHT_KEY = 'cimmerian-bright';
 const SATHA_SPEED = 7.5, SATHA_SPACING = 2.0, SATHA_SEGS = 12, SATHA_PERIOD = 40;
@@ -36,7 +37,7 @@ function getModel(name) {
 // draw a cached model; `light` comes from sampleLight and carries its key direction
 function drawM(name, m, light, glow = 0, alpha = 1) {
   R.key = light.d || [0.3, 0.9, 0.3];
-  R.drawEntity(getModel(name), m, light, glow, alpha, UV_MODELS.has(name) || name.endsWith(':face'));
+  R.drawEntity(getModel(name), m, light, glow, alpha, UV_MODELS.has(name) || name.endsWith(':face') || name.startsWith('char:thing'));
 }
 
 // ---------------------------------------------------------------- text log
@@ -277,7 +278,8 @@ function updatePlayer(inp) {
 
 // ---------------------------------------------------------------- damage & death
 const DEATHS = {
-  crush: 'Satha\'s coils roll over you like a landslide of green iron. Bones go like kindling.',
+  crush: 'Satha\'s coils roll over you like a landslide of white iron. Bones go like kindling.',
+  blunder: 'You blunder into the great sliding body. The coils close on you like a fist, and the pits grow very quiet.',
   bite: 'The great head strikes faster than thought. The pits grow very quiet.',
   venom: 'The venom eats through you like fire through dry grass. You die on the flagstones of the hall.',
   fall: 'You go over the lip of the serpent\'s well. The dark below has no bottom that you live to find.',
@@ -292,6 +294,7 @@ const DEATHS = {
 };
 function hurt(n, why) {
   if (mode !== 'play') return;
+  if (CHEAT) { flash = Math.min(0.3, flash + n / 140); flashCol = [0.75, 0.06, 0.02]; return; }   // god mode: you feel it, and nothing more
   S.health -= n;
   if (why === 'venom') flashCol = [0.12, 0.55, 0.3]; else flashCol = [0.75, 0.06, 0.02];
   flash = Math.min(0.6, flash + n / 70);
@@ -300,6 +303,10 @@ function hurt(n, why) {
 }
 function die(why) {
   if (mode !== 'play') return;
+  if (CHEAT) {                                           // god mode: a fatal fall puts you back at the last safe place
+    const c = S.checkpoint; S.x = c.x; S.z = c.z; S.y = groundInfo(c.x, c.z).floor; S.vx = S.vy = S.vz = 0; prev = { x: S.x, y: S.y, z: S.z };
+    return;
+  }
   mode = 'dead'; S.deaths++;
   Sfx.die(); fadeTarget = 0.75;
   log(DEATHS[why] || 'You are slain.', 'bad');
@@ -526,6 +533,14 @@ function updateSatha() {
   if (mode !== 'play') return;
   const h = sa.pts[0], hdx = S.x - h.x, hdz = S.z - h.z, hd = Math.hypot(hdx, hdz), moving = Math.hypot(S.vx, S.vz) > 0.6;
   const vaultPass = sathaCycle() < ((entitySpec('scripted_satha') || {}).vaultPasses || 0);
+  // walk into her and you die: lying still as she passes is the only safe way to be near her
+  if (moving && (!entitySpec('scripted_satha') || S.flags.free)) {
+    const py0 = S.y + 0.9;
+    for (const p of sa.pts) {
+      const dx = p.x - S.x, dz = p.z - S.z;
+      if (Math.abs(p.y - py0) < p.r + 1.0 && Math.hypot(dx, dz) < p.r + RADIUS + 0.15 && dx * S.vx + dz * S.vz > 0) { die('blunder'); return; }
+    }
+  }
   if (entitySpec('scripted_satha') && (!S.flags.free || vaultPass)) {
     // in the vault (ch. III): "the monster would strike like lightning" at the first movement
     if (h.y > -0.5 && hd < 3.6) {
@@ -1110,6 +1125,7 @@ function startPlay(agent) {
   hideOverlay(); hud.classList.remove('hidden');
   mode = 'play'; fade = 1; fadeTarget = 0; acc = 0;
   for (const [t, c] of LEVEL_INTRO[LEVEL.level] || []) log(t, c);
+  if (CHEAT && !agent) log('Cheat mode: god mode is on. N skips to the next level.', 'dim');
   if (!agent) lockPointer();
 }
 // load a level; `carry` brings the hero's state across (health, weapons, tally)
@@ -1447,7 +1463,7 @@ function render(alpha) {
       const lean = clamp(S.tun ? fwd * 0.9 : S.windNow * 0.4, -0.9, 0.9), roll = clamp(-lat * 0.9, -0.9, 0.9);
       for (let k = 0; k < 3 && torchLit(); k++) {
         const fl = 1 + 0.22 * Math.sin(gameTime * (13 + k * 5) + k * 2) + 0.1 * Math.sin(gameTime * (31 + k * 7));
-        drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(m4mul(torch, m4trs(0, 0.33, 0, 0, lean + 0.08 * Math.sin(gameTime * 9 + k), roll + 0.06 * Math.sin(gameTime * 7 + k * 3))), m4trs(0, 0, 0, gameTime * (1.5 + k) + k, 0, 0, [1.05, 0.8, 0.55][k] * fl)), tl, k === 2 ? 0.5 : 0.15);
+        drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(m4mul(torch, m4trs(0, 0.33, 0, 0, lean + 0.08 * Math.sin(gameTime * 9 + k), roll + 0.06 * Math.sin(gameTime * 7 + k * 3))), m4trs(0, 0, 0, gameTime * (1.5 + k) + k, 0, 0, [1.05, 0.8, 0.55][k] * fl)), tl, 0.6);
       }
     }
     if (S.kickT > 0) {                     // the kick: a boot comes up from below
@@ -1506,6 +1522,7 @@ addEventListener('keydown', e => {
   switch (e.code) {
     case 'KeyE': pressUse = true; break;
     case 'KeyT': pressTorch = true; break;
+    case 'KeyN': if (CHEAT && mode === 'play') finishLevel(); break;
     case 'KeyF': case 'KeyQ': pressKick = true; break;
     case 'Digit1': wantWeapon = 'fists'; break;
     case 'Digit2': wantWeapon = 'dagger'; break;

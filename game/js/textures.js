@@ -16,7 +16,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL',
   'MAIL', 'LEATHER', 'TABARD', 'HAIR', 'SHIELD', 'BLOOD', 'BANNER', 'FACE',
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
-  'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW'];
+  'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -198,7 +198,7 @@ const TEXGEN = {
     return { v: 0.5 + 0.4 * tfbm(x / 64, py, 4, 3, s) + 0.1 * Math.sin(TAU * x / 8), ramp: 'ink', lo: 0.35, hi: 0.85, h: 0.3 };
   } },
   BONE: { f: (x, y, s) => ({ v: 0.5 + tfbm(x / 64, y / 64, 8, 3, s) * 0.5 - (hrand(x, y, s, 2) > 0.95 ? 0.4 : 0), ramp: 'ink', lo: 0.45, hi: 1, h: 0.15 }) },
-  FIRE: { f: (x, y, s) => ({ v: 0.2 + 0.8 * tfbm(x / 64, y / 64, 4, 3, s), ramp: 'fire', e: 1 }) },
+  FIRE: { f: (x, y, s) => ({ v: 0.08 + 0.72 * tfbm(x / 64, y / 64, 4, 3, s), ramp: 'fire', hi: 0.85, e: 1 }) },   // orange and red, never pale
   EYE: { f: (x, y, s) => ({ v: 0.4 + 0.6 * tfbm(x / 64, y / 64, 8, 2, s), ramp: 'fire', lo: 0.4, e: 1 }) },
   VENOM: { f: (x, y, s) => ({ v: 0.3 + 0.7 * tfbm(x / 64, y / 64, 4, 3, s), ramp: 'jade', lo: 0.4, hi: 1, e: 0.7 }) },
   BLACK: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 2, s), ramp: 'ink', hi: 0.08 }) },
@@ -270,6 +270,41 @@ const TEXGEN = {
     }
     const su = u * 30, sv = (z + 2) * 7, row = Math.floor(sv), fu = (su + (row % 2) * 0.5) % 1, fv = sv - row;
     return { v: 0.65 - Math.hypot((fu - 0.5) * 1.2, fv - 0.35) * 0.9 + 0.2 * (1 - fv) + 0.1 * n - (fv < 0.1 ? 0.25 : 0), ramp: 'ink', lo: 0.3, hi: 0.95, e: 0.12 };
+  } },
+  // The pits' things: "shadowy forms, monstrous and abnormal in outline", "slavering lips", "the burning
+  // glare of hungry eyes" (ch. III). Near-black wet hide; only the eyes and the maw catch the light.
+  PIT_HIDE: { f: (x, y, s) => {
+    const u = x / 64, v = y / 64, n = tfbm(u, v, 8, 3, s), n2 = tfbm(u, v, 20, 2, s + 7), vein = Math.abs(tfbm(u, v, 6, 3, s + 3) * 2 - 1);
+    const band = (v * 13 + 0.2 * n) % 1;
+    if (n2 > 0.7) return { v: 0.35 + 0.5 * (n2 - 0.7) / 0.3, ramp: 'jade', lo: 0.15, hi: 0.6 };                // a wet sheen
+    if (vein < 0.035) return { v: 0.45 + n * 0.2, ramp: 'ink', lo: 0.15, hi: 0.55 };                         // veins and old scars
+    const t = 0.16 + 0.22 * n - (band < 0.16 ? 0.12 : 0) + 0.06 * (1 - band);                                  // ridged like ribs
+    return { v: t, ramp: 'ink', lo: 0, hi: 0.42, h: 0.06 };
+  } },
+  PIT_HEAD: { f: (x, y, s) => {
+    const u = x / 64, z = y / 64, a = Math.abs(u - 0.5), n = tfbm(u, z, 8, 3, s);
+    // a cluster of eyes on each side of the crown, burning
+    for (const [ea, ez, ra, rz] of [[0.07, 0.6, 0.022, 0.05], [0.12, 0.54, 0.018, 0.04], [0.15, 0.63, 0.014, 0.033], [0.1, 0.71, 0.013, 0.03], [0.045, 0.73, 0.01, 0.024]]) {
+      const e = ell(a, z, ea, ez, ra, rz);
+      if (e < 1) return { v: 0.55 + 0.45 * (1 - e), ramp: 'fire', lo: 0.4, hi: 1, e: 1 };
+      if (e < 1.5) return { v: 0.04, ramp: 'ink', lo: 0, hi: 0.2 };
+    }
+    if (a > 0.33 && z > 0.25) {                         // under the lip: jagged teeth, then the wet red maw
+      const below = a - 0.33, tooth = below < 0.05 && Math.abs(((z * 11) % 1) - 0.5) < 0.42 * (1 - below / 0.05);
+      if (tooth) return { v: 0.8 + 0.15 * n, ramp: 'ink', lo: 0.5, hi: 0.95 };
+      return { v: 0.3 + 0.35 * n, ramp: 'scarlet', lo: 0.05, hi: 0.7, e: 0.15 };
+    }
+    const t = 0.15 + 0.25 * n - 0.1 * smoothstep(0.2, 0.33, a) + 0.08 * Math.max(0, 1 - Math.abs(a - 0.13) / 0.04) * (z > 0.45 && z < 0.8 ? 1 : 0);   // a brow over the eyes
+    return { v: t, ramp: 'ink', lo: 0, hi: 0.45, h: 0.06 };
+  } },
+  PIT_JAW: { f: (x, y, s) => {
+    const u = x / 64, z = y / 64, a = Math.abs(u - 0.5), n = tfbm(u, z, 8, 3, s);
+    if (a < 0.17) return { v: 0.25 + 0.4 * n - 0.2 * smoothstep(0.1, 0.17, a), ramp: 'scarlet', lo: 0.05, hi: 0.75, e: 0.15 };   // the gullet
+    if (a < 0.23) {
+      const tooth = z > 0.15 && Math.abs(((z * 10) % 1) - 0.5) < 0.42 * (1 - (a - 0.17) / 0.06);
+      return tooth ? { v: 0.85, ramp: 'ink', lo: 0.5, hi: 0.95 } : { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 };
+    }
+    return { v: 0.14 + 0.24 * n, ramp: 'ink', lo: 0, hi: 0.4, h: 0.06 };
   } },
   SATHA: { f: (x, y, s) => {
     const u = x / 64, v = y / 64, bu = Math.min(u, 1 - u);

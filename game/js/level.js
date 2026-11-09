@@ -25,7 +25,7 @@ const LEVEL_E1M2 = {
     { id: 'post', type: 'action', name: 'The Gnawed Tunnels', rooms: ['south_passage', 'post', 'gallery', 'gsteps'], cp: [26.8, 16.5, Math.PI] },
     { id: 'east', type: 'puzzle', name: 'The Corridor East', rooms: ['niche', 'narrows'], cp: [32.6, 16, 0] },
     { id: 'vaults', type: 'action', name: 'The Old Vaults', rooms: ['guard', 'breach', 'den'], cp: [36.5, 14, -Math.PI / 2] },
-    { id: 'pits', type: 'puzzle', name: 'The Pitted Way', rooms: ['nook', 'narrow', 'slope', 'landing'], cp: [44.2, 14, -Math.PI / 2] },
+    { id: 'pits', type: 'puzzle', name: 'The Pitted Way', rooms: ['nook', 'narrow', 'slope', 'landing', 'stone'], cp: [44.2, 14, -Math.PI / 2] },
     { id: 'bonepit', type: 'action', name: 'The Bone Pit', rooms: ['bonepit', 'exit'], cp: [60.6, 14, -Math.PI / 2] },
   ],
   rooms: [
@@ -54,9 +54,11 @@ const LEVEL_E1M2 = {
     { id: 'narrow', name: 'the Narrow Way', at: [45, 13], size: [1, 2], h: 2.4, floor: 0.4, style: 'rough' },
     { id: 'slope', name: 'the Pitted Way', at: [46, 13], size: [7, 2], h: 2.6, floor: 1.4, rise: 1.0, style: 'rough' },
     { id: 'landing', name: 'the Pitted Way', at: [53, 9], size: [8, 10], h: 3.4, floor: 7.4, vault: 1.2, style: 'hewn' },
-    { id: 'pit1', name: 'a pit', at: [55, 9], size: [1, 6], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
-    { id: 'pit2', name: 'a pit', at: [57, 13], size: [1, 6], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
-    { id: 'pit3', name: 'a pit', at: [59, 9], size: [1, 6], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
+    // the pits span the way from wall to wall: leap the first, cross the second on a single stone, leap the third
+    { id: 'pit1', name: 'a pit', at: [54, 9], size: [1, 10], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
+    { id: 'pit2', name: 'a pit', at: [56, 9], size: [3, 10], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
+    { id: 'stone', name: 'a stone left standing', at: [57, 11], size: [1, 1], h: 3.4, floor: 7.4, style: 'rough' },
+    { id: 'pit3', name: 'a pit', at: [60, 9], size: [1, 10], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
     { id: 'bonepit', name: 'the Bone Pit', at: [61, 11], size: [4, 6], h: 3, floor: 7.4, style: 'rough' },
     { id: 'exit', name: 'a dank tunnel', at: [65, 13], size: [6, 2], h: 1.6, floor: 7.4, style: 'rough' },
   ],
@@ -81,14 +83,14 @@ const LEVEL_E1M2 = {
     { prefab: 'bones', at: [40, 14], big: true }, { prefab: 'skull', at: [36.2, 17.6] },
     { prefab: 'bones', at: [37, 4], big: true }, { prefab: 'bones', at: [41.5, 3.5], big: true }, { prefab: 'bones', at: [43.5, 6.5] }, { prefab: 'skull', at: [39.5, 2.6] },
     // the pitted way and the bone pit
-    { prefab: 'bones', at: [54, 17.5] }, { prefab: 'skull', at: [60.3, 9.6] },
+    { prefab: 'bones', at: [55.5, 17.6] }, { prefab: 'skull', at: [59.4, 9.5] },
     { prefab: 'bones', at: [62, 12], big: true }, { prefab: 'bones', at: [63.6, 15.6], big: true }, { prefab: 'skull', at: [64.3, 11.7] },
   ],
   lights: [
     { at: [4, 14], y: -4, col: [0.25, 0.55, 0.38], rad: 10, i: 0.9 },             // slime glow in the well
     { at: [28, 7], y: -8, col: [0.25, 0.55, 0.38], rad: 9, i: 0.6 },              // slime glow in the serpent's hole
     { at: [6.4, 9.4], y: 2.4, col: [1.0, 0.6, 0.28], rad: 11, i: 1.5 },           // the torch in the niche above the king
-    { at: [55.5, 12], y: -3, col: [0.25, 0.6, 0.4], rad: 6, i: 0.8 }, { at: [57.5, 16], y: -3, col: [0.25, 0.6, 0.4], rad: 6, i: 0.8 }, { at: [59.5, 12], y: -3, col: [0.25, 0.6, 0.4], rad: 6, i: 0.8 },
+    { at: [54.5, 12], y: -3, col: [0.25, 0.6, 0.4], rad: 6, i: 0.8 }, { at: [57.5, 15], y: -3, col: [0.25, 0.6, 0.4], rad: 7, i: 0.9 }, { at: [60.5, 12], y: -3, col: [0.25, 0.6, 0.4], rad: 6, i: 0.8 },
   ],
   features: [
     { type: 'ring', at: [6.08, 9.4], y: 1.0, wall: 'W' },
@@ -108,7 +110,7 @@ const LEVEL_E1M2 = {
     { kind: 'wine', name: 'dead man\'s water-skin', at: [23.8, 16.3], heal: 15 },
     { kind: 'bread', name: 'gnawed crust', at: [22.6, 27.6], heal: 25 },
     { kind: 'wine', name: 'rotted water-skin', at: [36.2, 17.6], heal: 25 },
-    { kind: 'bread', name: 'dead prisoner\'s crust', at: [54.6, 9.6], heal: 25 },
+    { kind: 'bread', name: 'dead prisoner\'s crust', at: [53.5, 9.6], heal: 25 },
     { kind: 'wine', name: 'acolyte\'s water-skin', at: [63.6, 12.4], heal: 25 },
   ],
   entities: [
@@ -129,7 +131,7 @@ const LEVEL_E1M2 = {
     { class: 'thing', id: 'v4', at: [37.5, 4], group: 'vaults', yaw: Math.PI },
     { class: 'thing', id: 'v5', at: [40.5, 5], group: 'vaults', lurk: true },
     { class: 'thing', id: 'v6', at: [43.5, 3], group: 'vaults', yaw: Math.PI },
-    { class: 'thing', id: 'l1', at: [56, 16.5], group: 'pits', lurk: true },
+    { class: 'thing', id: 'l1', at: [55.5, 15.5], group: 'pits', lurk: true },
     { class: 'thing', id: 'b1', at: [62, 12.5], group: 'bonepit', yaw: -Math.PI / 2 },
     { class: 'thing', id: 'b2', at: [63.5, 15.2], group: 'bonepit', yaw: -Math.PI / 2 },
     { class: 'thing', id: 'b3', at: [62.6, 13.8], group: 'bonepit', lurk: true },
@@ -163,9 +165,9 @@ const LEVEL_E1M3 = {
   torch: true,                                             // "lifting his torch" (ch. III): Conan carries the torch from the vault
   areas: [
     { id: 'weeping', type: 'puzzle', name: 'The Weeping', rooms: ['dank', 'fork1', 'dead_n', 'weep1', 'fork2', 'dead_s', 'weep2'] },
-    { id: 'weeper', type: 'action', name: 'The Weeping Thing', rooms: ['weep_den', 'hollow', 'flight', 'flight2'], cp: [22, 10, 0] },
+    { id: 'weeper', type: 'action', name: 'The Weeping Thing', rooms: ['weep_den', 'hollow', 'flight', 'flight_break', 'flight2'], cp: [22, 10, 0] },
     { id: 'well', type: 'puzzle', name: 'The Well', rooms: ['cross_n'], cp: [39, 14, Math.PI] },
-    { id: 'dark', type: 'action', name: 'The Dark', rooms: ['cross_s', 'blind', 'loop1', 'loop2', 'loop3'], cp: [41, 25, Math.PI] },
+    { id: 'dark', type: 'action', name: 'The Dark', rooms: ['cross_s', 'blind', 'loop1', 'loop2', 'loop_gap', 'loop3'], cp: [41, 25, Math.PI] },
     { id: 'crossing', type: 'puzzle', name: 'The Crossing', rooms: ['loop4'], cp: [44.5, 15, Math.PI / 2] },
     { id: 'side', type: 'action', name: 'The Side Tunnels', rooms: ['out1', 'out2', 'corridor_w', 'side1', 'side2', 'side3'], cp: [28, 24, Math.PI] },
     { id: 'satha', type: 'puzzle', name: 'Satha Returns', rooms: ['corridor_e', 'alcove1', 'alcove2'], cp: [40.5, 31.5, -Math.PI / 2] },
@@ -182,6 +184,7 @@ const LEVEL_E1M3 = {
     { id: 'weep_den', name: 'a low cave', at: [16, 1], size: [12, 6], h: 4, style: 'rough', tex: CAVE_TEX },
     { id: 'hollow', name: 'a wallow', at: [24, 7], size: [2, 3], h: 2.4, style: 'rough', tex: { wall: 'CAVE', floor: 'SLIME', ceil: 'CAVE' } },
     { id: 'flight', name: 'a tunnel', at: [28, 3], size: [12, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
+    { id: 'flight_break', name: 'a break in the tunnel floor', at: [31, 3], size: [3, 2], h: 2.4, pit: 1.8, style: 'rough', tex: CAVE_TEX },   // drop in, jump the far ledge
     { id: 'flight2', name: 'a tunnel', at: [38, 5], size: [2, 8], h: 2.4, style: 'rough', tex: CAVE_TEX },
     // the well, in the chamber where the tunnels cross
     { id: 'cross_n', name: 'the chamber where the tunnels cross', at: [34, 13], size: [10, 4], h: 6, style: 'rough', tex: CAVE_TEX },
@@ -190,6 +193,7 @@ const LEVEL_E1M3 = {
     { id: 'blind', name: 'a tunnel choked with fallen rock', at: [35, 23], size: [2, 4], h: 2.2, style: 'rough', tex: CAVE_TEX },
     { id: 'loop1', name: 'a black tunnel', at: [40, 23], size: [2, 4], h: 2.2, style: 'rough', tex: CAVE_TEX },
     { id: 'loop2', name: 'a black tunnel', at: [40, 27], size: [8, 2], h: 2.2, style: 'rough', tex: CAVE_TEX },
+    { id: 'loop_gap', name: 'a black tunnel', at: [44, 27], size: [1, 2], h: 2.2, pit: 40, style: 'rough', tex: CAVE_TEX },   // leapt in the dark
     { id: 'loop3', name: 'a black tunnel', at: [46, 14], size: [2, 13], h: 2.4, style: 'rough', tex: CAVE_TEX },
     { id: 'loop4', name: 'a black tunnel', at: [44, 14], size: [2, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
     // the way back to the main corridor, and the things in its side tunnels
@@ -220,6 +224,7 @@ const LEVEL_E1M3 = {
   lights: [
     { at: [60, 31.5], y: 2.5, col: [0.55, 0.85, 0.35], rad: 14, i: 1.8 }, { at: [59.5, 29.8], y: 3.5, col: [0.8, 0.7, 0.4], rad: 8, i: 0.9 },    // the garden glows behind its bars
     { at: [39, 17.5], y: -3, col: [0.5, 0.55, 0.6], rad: 7, i: 0.4 },       // a cold pallor down the well
+    { at: [44.5, 28], y: -3, col: [0.45, 0.5, 0.55], rad: 5, i: 0.6 },      // and down the gap in the black tunnel
   ],
   // the weeping, "piteously, like a woman": where it seems to come from, until the thing shows itself
   weeping: { from: [22, 2.5], wake: { room: 'weep_den', z: 4.6 } },
@@ -252,7 +257,7 @@ const LEVEL_E1M3 = {
     { class: 'thing', id: 'd2', at: [36, 3.6], group: 'driven', yaw: Math.PI / 2, hold: true },
     { class: 'thing', id: 'd3', at: [39, 8], group: 'driven', yaw: 0, hold: true },
     { class: 'thing', id: 'k1', at: [41, 25.5], group: 'dark', lurk: true },
-    { class: 'thing', id: 'k2', at: [44, 28], group: 'dark', yaw: Math.PI / 2 },
+    { class: 'thing', id: 'k2', at: [46.3, 28], group: 'dark', yaw: Math.PI / 2 },
     { class: 'thing', id: 'k3', at: [47, 25], group: 'dark', lurk: true },
     { class: 'thing', id: 'k4', at: [47, 19], group: 'dark', yaw: Math.PI },
     { class: 'thing', id: 'k5', at: [36, 25.5], group: 'dark', lurk: true },
@@ -295,7 +300,7 @@ const LEVEL_E1M1 = {
   ],
   rooms: [
     { id: 'charge', name: 'the field of the last charge', at: [2, 9], size: [14, 12], sky: true, tex: FIELD },
-    { id: 'gully', name: 'a gully of dead', at: [16, 12], size: [4, 6], sky: true, tex: FIELD },
+    { id: 'gully', name: 'a gully of dead', at: [16, 12], size: [4, 6], pit: 1.8, hide: true, sky: true, tex: { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' } },   // drop in; jump the far bank
     { id: 'arrowground', name: 'the arrow ground', at: [20, 7], size: [14, 16], sky: true, tex: FIELD },
     { id: 'rise', name: 'the Shemite rise', at: [34, 9], size: [8, 12], floor: 1.0, sky: true, tex: FIELD },
     { id: 'lanes', name: 'the riders\' ground', at: [42, 5], size: [8, 20], floor: 1.0, sky: true, tex: FIELD },

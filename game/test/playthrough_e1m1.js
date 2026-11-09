@@ -33,12 +33,13 @@ window.__take = (k) => { const it = __item(k); if (!it) return false; __nav(it.x
 window.__use = (x, z, pitch = 0) => { __face(x * C, z * C, pitch); return CIM.step({ use: true, yaw: CIM.state.yaw, pitch }, 1); };
 // fight: close with the nearest foe that knows we're here; kick shields, strike, step back from a wound-up blow
 window.__fight = (groups, maxTicks = 6000, radius = 30) => {
-  let blocked = 0, lastHits = -1;
+  let blocked = 0, lastHits = -1, reachable = null;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
-    if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); continue; }
+    if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); reachable = null; continue; }
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
-    const live = s.foes.filter(f => !f.dead && groups.includes(f.group) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
+    const live = s.foes.filter(f => !f.dead && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     if (!live.length) break;
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
     const f = live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
@@ -65,6 +66,18 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   return CIM.obs();
 };
 window.__heal = (maxX = 1e9) => { for (const it of CIM.state.items) if (!it.taken && it.heal && it.x < maxX * C && CIM.state.health < 80 && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+// run at (x, z), leaping any gap and jumping up any ledge on the way
+window.__jumpTo = (x, z, maxTicks = 400) => {
+  x *= C; z *= C;
+  for (let i = 0; i < maxTicks; i++) {
+    const s = CIM.state, dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
+    if (CIM.obs().mode !== 'play' || (d < 0.5 && s.onGround)) break;
+    const g = groundInfo(s.x + dx / d * 0.6, s.z + dz / d * 0.6);
+    const jump = s.onGround && ((g.kind === 2 && g.floor < s.y - 3) || g.floor > s.y + 0.6);
+    CIM.step({ forward: 1, run: true, jump, yaw: Math.atan2(-dx, -dz), pitch: 0 }, 1);
+  }
+  return CIM.obs();
+};
 true`);
 const O = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health)} kills=${o.kills} flags=${Object.entries(o.flags).filter(([, v]) => v).map(([k]) => k).join(',')}`;
@@ -87,7 +100,7 @@ let o = await O('(CIM.load("e1m1"), CIM.step({}, 1))');
 o = await O('__fight(["charge"], 9000, 40)'); log('charge:', brief(o));
 await O('__heal()');
 // THE ARROW GROUND (puzzle): cover to cover between volleys
-await O('__route([[17, 15], [19.5, 15]])');
+await O('__route([[15.3, 15]])'); o = await O('__jumpTo(21, 15)'); log('gully:', brief(o));
 for (const [x, z] of [[21.7, 10.5], [23.7, 15.5], [27.7, 12.5], [29.7, 17.5], [31.7, 9.6]]) o = await O(`__dash(${x}, ${z})`);
 log('arrows:', brief(o));
 // THE SHEMITE LINE (action)

@@ -1,6 +1,6 @@
 // Golden playthrough of e1m2, The Pits, through the CIM agent API (README §11).
 // It plays the level in the book's order, using only player inputs.
-const EXPECTED = { tick: 10360, hash: '21a65357' };
+const EXPECTED = { tick: 9412, hash: '22196563' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -34,12 +34,13 @@ window.__take = (k) => { const it = __item(k); if (!it) return false; __nav(it.x
 window.__use = (x, z, pitch = 0) => { __face(x * C, z * C, pitch); return CIM.step({ use: true, yaw: CIM.state.yaw, pitch }, 1); };
 // fight: close with the nearest foe that knows we're here; kick shields, strike, step back from a wound-up blow
 window.__fight = (groups, maxTicks = 6000, radius = 30) => {
-  let blocked = 0, lastHits = -1;
+  let blocked = 0, lastHits = -1, reachable = null;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
-    if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); continue; }
+    if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); reachable = null; continue; }
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
-    const live = s.foes.filter(f => !f.dead && groups.includes(f.group) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
+    const live = s.foes.filter(f => !f.dead && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     if (!live.length) break;
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
     const f = live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
@@ -66,6 +67,18 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   return CIM.obs();
 };
 window.__heal = () => { for (const it of CIM.state.items) if (!it.taken && it.heal && CIM.state.health < 80 && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+// run at (x, z), leaping any gap and jumping up any ledge on the way
+window.__jumpTo = (x, z, maxTicks = 400) => {
+  x *= C; z *= C;
+  for (let i = 0; i < maxTicks; i++) {
+    const s = CIM.state, dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
+    if (CIM.obs().mode !== 'play' || (d < 0.5 && s.onGround)) break;
+    const g = groundInfo(s.x + dx / d * 0.6, s.z + dz / d * 0.6);
+    const jump = s.onGround && ((g.kind === 2 && g.floor < s.y - 3) || g.floor > s.y + 0.6);
+    CIM.step({ forward: 1, run: true, jump, yaw: Math.atan2(-dx, -dz), pitch: 0 }, 1);
+  }
+  return CIM.obs();
+};
 true`);
 const O = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health)} wep=${o.weapon} kills=${o.kills} satha=${typeof o.satha.phase === 'number' ? o.satha.phase.toFixed(1) : o.satha.phase} flags=${Object.entries(o.flags).filter(([, v]) => v).map(([k]) => k).join(',')}`;
@@ -95,11 +108,13 @@ await O('__route([[26.5, 14], [33.6, 14.2], [36, 14]])');
 // THE OLD VAULTS (combat)
 o = await O('__fight(["vaults"], 9000, 30)'); log('vaults:', brief(o));
 await O('__heal()');
-// THE PITTED WAY (puzzle): the flow field keeps to solid floor
-o = await O('__route([[45.5, 14], [52.5, 14], [60.5, 14]])'); log('pits:', brief(o));
-o = await O('__fight(["pits"], 3000, 20)');
+// THE PITTED WAY (agility): leap the first pit, hop the stone across the second, leap the third
+o = await O('__route([[45.5, 14], [52.5, 14], [53.4, 14]])');
+o = await O('__jumpTo(55.5, 14)');
+o = await O('__fight(["pits"], 3000, 20)'); log('pits:', brief(o));
+o = await O('(__nav(55.5 * C, 11.5 * C), __jumpTo(59.5, 11.5))'); log('stone:', brief(o));
+o = await O('(__nav(59.5 * C, 14 * C), __jumpTo(62, 14))');
 // THE BONE PIT (combat), then the weeping tunnel
-await O('__route([[62, 14]])');
 o = await O('__fight(["bonepit"], 9000, 20)'); log('bonepit:', brief(o));
 await O('__heal()');
 o = await O('__route([[66, 14], [69.5, 14]])'); log('end:', brief(o));
