@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3 through the CIM agent API (README §11).
-const EXPECTED = { tick: 5870, hash: 'd64ae18c' };
+const EXPECTED = { tick: 5870, hash: '8bbc707f' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };

@@ -1056,12 +1056,16 @@ function render(alpha) {
     const k = smoothstep(0, 1, g.fall);
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, { unarmed: true, pitch: -1.5 * k, roll: 0.3 * k, drop: 0.1 * k, uzL: 1.2 * k, uzR: 1.2 * k, txL: -0.4 * k, sxL: 0.8 * k, headX: -0.4 * k }, gl);
   } else {
-    const P = poseMenace(poseIdle({}, gameTime), gameTime);
-    P.uxR = -0.3; P.fxR = -0.9; P.we = 0.3;                                     // the huge sword held low, point toward you
-    P.uxL = -0.5; P.fxL = -1.2;                                                 // the keys jangled in the other fist
-    if (g.state === 'wait') P.headX = 0.15 + 0.05 * Math.sin(gameTime * 1.3);   // grinning down at you
-    if (g.arms > 0) Object.assign(P, { uxR: lerp(-0.3, -2.9, g.arms), fxR: lerp(-0.9, -0.5, g.arms), uzR: 0.25 * g.arms, we: lerp(0.3, 2.5, g.arms),
-      uxL: lerp(-0.5, -0.2, g.arms), fxL: lerp(-1.2, -0.3, g.arms), lean: lerp(0.2, -0.12, g.arms), headX: -0.25 * g.arms });
+    // at rest he stands tall and easy, gloating: sword point-down, keys dangling, weight shifting, eyes on you
+    const P = poseIdle({}, gameTime), sway = Math.sin(gameTime * 0.7);
+    let look = Math.atan2(S.x - g.x, S.z - g.z) - g.yaw; look = Math.atan2(Math.sin(look), Math.cos(look));
+    Object.assign(P, { breathe: Math.sin(gameTime * 1.3) * 0.012, lean: -0.06, roll: sway * 0.03, twist: clamp(look, -0.5, 0.5) * 0.3,
+      headY: clamp(look, -1.1, 1.1) * 0.6, headX: 0.12 + 0.04 * Math.sin(gameTime * 0.9),
+      txL: 0.05 + sway * 0.04, txR: -0.05 - sway * 0.04, tzL: 0.08, tzR: 0.08, sxL: 0.05 + Math.max(0, sway) * 0.15, sxR: 0.05 + Math.max(0, -sway) * 0.15,
+      uxR: 0.05, uzR: 0.14, fxR: -0.2, we: -1.35,                                    // the huge sword hanging point-down at his side
+      uxL: 0.02, uzL: 0.12, fxL: -0.35 - 0.1 * Math.sin(gameTime * 2.1) });          // the keys jingling in the other fist
+    if (g.arms > 0) Object.assign(P, { uxR: lerp(0.05, -2.9, g.arms), fxR: lerp(-0.2, -0.5, g.arms), uzR: lerp(0.14, 0.3, g.arms), we: lerp(-1.35, 2.5, g.arms),
+      uxL: lerp(0.02, -0.6, g.arms), fxL: lerp(-0.35, -0.4, g.arms), lean: lerp(-0.06, -0.12, g.arms), headX: lerp(0.12, -0.25, g.arms), headY: P.headY * (1 - g.arms), twist: P.twist * (1 - g.arms) });
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
   // Shukeli, the jailer
@@ -1169,6 +1173,7 @@ function render(alpha) {
     R.clearDepth(); R.lightMul(1);
     R.setCamera(m4persp(60 * Math.PI / 180, R.aspect, 0.01, 10), [0, 0, 0], [0.1, 0.2, 0.3], [0, 0, 0], 1, 0);
     const am = sampleLight(px, py + 1.2, pz), vl = [am[0] + 0.05, am[1] + 0.045, am[2] + 0.04];
+    if (LEVEL.torch) { vl[0] += 0.42 * lc[0]; vl[1] += 0.42 * lc[1]; vl[2] += 0.42 * lc[2]; am.d = norm3([am.d[0] - Math.cos(S.yaw) * 2, am.d[1] + 1, am.d[2] + Math.sin(S.yaw) * 2]); }   // his own torch lights the sword hand
     vl.d = rotDir(m4mul(m4rx(-S.pitch), m4ry(-S.yaw)), am.d);
     const sb = Math.sin(bobPhase) * 0.012 * bobAmt, cb = Math.abs(Math.cos(bobPhase)) * 0.012 * bobAmt;
     const prog = S.swing > 0 ? 1 - S.swing / S.swingLen : 0, sw = S.swing > 0 ? Math.sin(prog * Math.PI) : 0, th = S.throwT > 0 ? Math.sin((1 - S.throwT / 0.35) * Math.PI) : 0;
@@ -1193,9 +1198,9 @@ function render(alpha) {
     else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
     else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
     if (LEVEL.torch) {                     // the torch in his left fist: the right hand's model, mirrored
-      const tf = norm3([-0.22 + sb * 2, 1.15, -1]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
+      const tf = norm3([-0.32 + sb * 2, 1.3, -0.7]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
       const td = tarm[0] * TX[0] + tarm[1] * TX[1] + tarm[2] * TX[2], TZ = norm3([tarm[0] - TX[0] * td, tarm[1] - TX[1] * td, tarm[2] - TX[2] * td]), TY = cross3(TZ, TX);
-      const tpos = [0.25 - sb, -0.21 + cb, -0.46];
+      const tpos = [0.5 - sb, -0.47 + cb, -0.52];
       const handR = new Float32Array([TX[0], TX[1], TX[2], 0, TY[0], TY[1], TY[2], 0, TZ[0], TZ[1], TZ[2], 0, tpos[0], tpos[1], tpos[2], 1]);
       const handL = m4mul(m4s3(-1, 1, 1), handR), tl = [0.85, 0.55, 0.3];
       tl.d = [0.2, 1, 0.3];
@@ -1206,7 +1211,7 @@ function render(alpha) {
       const lean = clamp(S.windNow * 0.4, -0.9, 0.9);
       for (let k = 0; k < 3; k++) {
         const fl = 1 + 0.22 * Math.sin(gameTime * (13 + k * 5) + k * 2) + 0.1 * Math.sin(gameTime * (31 + k * 7));
-        drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(torch, m4trs(0, 0.33, 0, gameTime * (1.5 + k) + k, lean + 0.08 * Math.sin(gameTime * 9 + k), 0.06 * Math.sin(gameTime * 7 + k * 3), [1.5, 1.15, 0.75][k] * fl)), tl, k === 2 ? 0.7 : 0.35);
+        drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(torch, m4trs(0, 0.33, 0, gameTime * (1.5 + k) + k, lean + 0.08 * Math.sin(gameTime * 9 + k), 0.06 * Math.sin(gameTime * 7 + k * 3), [1.05, 0.8, 0.55][k] * fl)), tl, k === 2 ? 0.5 : 0.15);
       }
     }
     if (S.kickT > 0) {                     // the kick: a boot comes up from below

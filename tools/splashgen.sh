@@ -29,9 +29,6 @@ plate() { # src out crop accentx accenty
   magick "$TMP/t.png" "$TMP/m.png" -alpha off -compose CopyOpacity -composite "$TMP/ta.png"
   magick "$TMP/p.png" "$TMP/ta.png" -compose over -composite -quality 84 "$OUT/$2"
 }
-plate piranesi_carceri_07_drawbridge.jpg e1m2.jpg 1226x1639+152+182 0.61 0.37
-plate piranesi_carceri_14_gothic_arch.jpg e1m3.jpg 1577x1201+177+119 0.5 0.42
-plate piranesi_carceri_10_prisoners_platform.jpg e1m4.jpg 1576x1202+175+127 0.48 0.55
 # Martin's Pandemonium: already ink and fire; lock it to the ink, scarlet and fire ramps
 magick "$SRC/martin_pandemonium.jpg" -modulate 95,115 -dither FloydSteinberg -remap "$TMP/fire.png" -quality 86 "$OUT/title.jpg"
 rm -rf "$TMP"

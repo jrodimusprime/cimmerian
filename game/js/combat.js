@@ -40,7 +40,7 @@ const ALERT_LINES = {
 function newFoes() {
   return LEVEL.entities.filter(e => FOES[e.class]).map(e => {
     const p = { x: e.at[0] * CELL, z: e.at[1] * CELL };
-    return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw, yaw: e.yaw,
+    return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw || 0, yaw: e.yaw || 0,
       hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
       dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0 };
   });
@@ -300,11 +300,75 @@ function killFoe(f, how) {
   f.dead = true; f.state = 'dead'; f.deathT = 0; f.how = how; f.hp = 0; S.kills++;
   Sfx.grunt(); if (how === 'fall') Sfx.scream();
   log(DEATH_LINES[how](FOES[f.cls].name), 'good');
-  const drop = (kind, name) => S.items.push({ id: 'drop_' + f.id, kind, name, x: f.x, z: f.z, y: groundInfo(f.x, f.z).floor, taken: false });
-  if (how !== 'fall' && how !== 'crush') {
-    if (f.cls === 'warden' && !S.weapons.sword && !S.items.some(i => i.kind === 'sword' && !i.taken)) drop('sword', 'Kothian sword');
-    else if (f.cls === 'spearman') drop('spear', 'spear');
+  if (how === 'fall') return;
+  fitDeath(f);
+  // his weapon leaves his hand: a pickup if you can use it, otherwise it lies broken beside him
+  const c = CAST[f.cls], w = c.weapon, tip = deathPoint(f, 0.9), side = deathPoint(f, 0.5, 0.9), far = deathPoint(f, 1.15, -0.7);
+  const drop = (kind, name) => S.items.push({ id: 'drop_' + f.id, kind, name, x: side[0], z: side[1], y: groundInfo(side[0], side[1]).floor, taken: false });
+  const free = k => !S.items.some(i => i.kind === k && !i.taken);
+  f.debris = [];
+  const deb = (m, p, k, s = 1) => f.debris.push({ m, x: p[0], z: p[1], yaw: f.dieYaw + k, s });
+  if (w === 'sword' && !S.weapons.sword && free('sword')) drop('sword', 'Kothian sword');
+  else if (w === 'spear' && LEVEL.links.some(l => l.name === 'portcullis') && !S.flags.has_spear && !S.flags.portcullis_open && free('spear')) drop('spear', 'spear');
+  else if (w === 'sword') { deb('broken:sword_hilt', side, 1.1); deb('broken:sword_tip', far, 2.3); }
+  else if (w === 'spear') { deb('broken:spear_butt', side, 0.4); deb('broken:spear_head', far, 1.9); }
+  else if (w === 'axe') { deb('broken:axe_head', side, 0.8); deb('broken:axe_haft', far, 2.6); }
+  else if (w === 'bow') deb('broken:bow', side, 0.6);
+  if (c.shield) { deb('broken:shield_half', tip, 0.5); deb('broken:shield_half', deathPoint(f, 0.6, -1.1), 3.4); }
+}
+// ---- falling well: a body must land on open floor, not through a wall ------------
+// The body lies along a direction from the feet. Try his natural fall first (back if kicked,
+// otherwise by a per-man hash), then sweep round; if nothing fits he slumps where he stands.
+function fitDeath(f) {
+  const c = CAST[f.cls], L = 1.95 * c.scale, h = k => hrand(Math.round(f.homeX * 10), Math.round(f.homeZ * 10), k, 77);
+  const base = f.y, sPref = f.how === 'kick' ? -1 : (h(1) < 0.55 ? -1 : 1);
+  const clear = A => {
+    const dx = Math.sin(A), dz = Math.cos(A), px = -dz, pz = dx;
+    for (let t = 0.25; t <= L + 0.15; t += 0.3) for (const w of [-0.4, 0, 0.4]) {
+      const x = f.x + dx * t + px * w, z = f.z + dz * t + pz * w, g = groundInfo(x, z);
+      if (g.kind !== 1 || (g.flags & F_NOPASS) || Math.abs(g.floor - base) > 0.45) return false;
+      if (LV.colliders.some(cl => Math.hypot(cl.x - x, cl.z - z) < cl.r + 0.15)) return false;
+    }
+    return true;
+  };
+  const offs = [0, 0.45, -0.45, 0.9, -0.9, 1.35, -1.35, 1.8, -1.8, 2.3, -2.3, Math.PI];
+  for (const s of [sPref, -sPref]) for (const o of offs) {
+    const A = f.yaw + (s < 0 ? Math.PI : 0) + o;       // the direction the body will lie along
+    if (clear(A)) { f.dieS = s; f.dieYaw = A - (s < 0 ? Math.PI : 0); f.slump = false; return; }
   }
+  f.dieS = -1; f.dieYaw = f.yaw; f.slump = true;
+}
+// a point along (t, in body lengths) and beside (w, metres) where the body will lie
+function deathPoint(f, t, w = 0) {
+  const L = 1.9 * CAST[f.cls].scale, A = f.dieYaw + (f.dieS < 0 ? Math.PI : 0), dx = Math.sin(A), dz = Math.cos(A);
+  return [f.x + dx * L * t - dz * w, f.z + dz * L * t + dx * w];
+}
+// The collapse: the knees go, then he topples and settles, each man differently.
+function deathPose(f, P) {
+  const t = f.deathT, h = k => hrand(Math.round(f.homeX * 10), Math.round(f.homeZ * 10), k, 91);
+  const buckle = smoothstep(0, 0.28, t), fall = Math.pow(smoothstep(0.18, 0.72, t), 1.6);
+  const settle = t > 0.72 ? Math.exp(-(t - 0.72) * 9) * Math.sin((t - 0.72) * 26) * 0.07 : 0;
+  const kneel = buckle * (1 - fall);
+  if (f.slump) {                                        // cornered: he slides down the wall and sits
+    const k = smoothstep(0, 0.6, t);
+    return Object.assign(P, { drop: -0.52 * k, lean: -0.35 * k, txL: -1.45 * k, txR: -1.3 * k, sxL: 1.6 * k, sxR: 1.5 * k, tzL: 0.15 * k, tzR: 0.25 * k,
+      uzL: 0.5 * k, uzR: 0.6 * k, uxL: 0.3 * k, uxR: 0.1 * k, fxL: -0.4, fxR: -0.6, headX: 0.7 * k, headY: (h(2) - 0.5) * 0.8 * k, unarmed: true, noShield: true });
+  }
+  const sp = f.dieS;
+  // limbs relax toward the floor: on his back the knees fall up and out, face down the legs trail straight
+  const back = sp < 0;
+  const fin = { uzL: 0.3 + h(3) * 1.1, uzR: 0.3 + h(4) * 1.1,
+    uxL: back ? -0.35 + h(5) * 0.5 : -0.2 + h(5) * 0.45, uxR: back ? -0.35 + h(6) * 0.5 : -0.2 + h(6) * 0.45, fxL: -0.15 - h(7) * 0.9, fxR: -0.15 - h(8) * 0.9,
+    txL: back ? -0.15 - h(9) * 0.35 : 0.05 + h(9) * 0.15, txR: back ? -h(10) * 0.2 : h(10) * 0.12,
+    sxL: back ? 0.15 + h(11) * 0.55 : h(11) * 0.35, sxR: back ? h(12) * 0.3 : h(12) * 0.2,
+    tzL: 0.08 + h(13) * 0.3, tzR: 0.08 + h(14) * 0.25, headY: (h(15) - 0.5) * 1.5, headX: back ? -0.25 : 0.2 };
+  for (const k in fin) P[k] = lerp(P[k] || 0, fin[k], fall);
+  P.sxL += 1.3 * kneel; P.sxR += 1.3 * kneel; P.txL -= 0.8 * kneel; P.txR -= 0.8 * kneel;    // knees buckle
+  P.lean = 0.45 * kneel + (sp > 0 ? 0.1 : -0.1) * fall; P.headX = (P.headX || 0) + 0.5 * kneel;
+  P.pitch = sp * (1.52 * fall + settle); P.roll = (h(16) - 0.5) * 0.6 * fall;
+  P.drop = -0.32 * kneel + (back ? 0.12 : 0.1) * fall;                  // down onto the knees, then lying on the floor, not in it
+  P.unarmed = true; P.noShield = true;
+  return P;
 }
 function punchView(p, y) { punchPitch += p; punchYaw += y; }
 
@@ -312,7 +376,10 @@ function punchView(p, y) { punchPitch += p; punchYaw += y; }
 function foePose(f) {
   const st = FOES[f.cls], P = poseIdle({}, gameTime + f.homeX), c = CAST[f.cls];
   if (f.cls === 'thing') {
-    if (f.dead) { const k = smoothstep(0, 0.6, f.deathT); return Object.assign(poseCrawl(P, 0, 0, gameTime), { roll: 1.4 * k, drop: -0.42 - 0.1 * k }); }
+    if (f.dead) {                                     // rolls over, limbs curling up like a dead spider's
+      const k = smoothstep(0, 0.5, f.deathT), sd = hrand(Math.round(f.homeX * 10), 3, 5, 5) < 0.5 ? -1 : 1;
+      return Object.assign(poseCrawl(P, 0, 0, gameTime), { roll: sd * 2.6 * k, drop: -0.42 + 0.3 * k, uxL: 0.55 - 1.6 * k, uxR: 0.55 - 1.4 * k, fxL: -0.35 - 1.2 * k, fxR: -0.35 - 1.0 * k, sxL: 1.55 + 0.4 * k, sxR: 1.55 + 0.3 * k, headX: -1 + 0.8 * k });
+    }
     poseCrawl(P, f.walk * 3.2, f.moving ? 1 : 0.15, gameTime + f.homeX);
     if (f.state === 'lurk' || f.state === 'drop') { P.pitch = Math.PI; P.drop = 0.42; }   // hanging from the roof
     if (f.state === 'windup') Object.assign(P, { lean: 0.55, headX: -0.4, uxL: -1.6, uxR: -1.6, fxL: -0.9, fxR: -0.9, drop: -0.2 });   // rears up
@@ -326,9 +393,8 @@ function foePose(f) {
   else if (c.weapon === 'sword') { P.uxR = -0.25; P.fxR = -0.9; P.we = 0.45; }
   else if (c.weapon === 'bow') { P.uxL = -0.2; P.fxL = -0.6; }
   if (f.dead) {
-    const k = smoothstep(0, 0.7, f.deathT);
-    Object.assign(P, { pitch: -1.45 * k, drop: (f.falling ? 0 : 0.12) * k, uzL: 0.3 + 0.9 * k, uzR: 0.3 + 0.9 * k, uxL: -0.3 * k, uxR: -0.3 * k, txL: -0.5 * k, txR: -0.2 * k, sxL: 0.8 * k, sxR: 0.3 * k, headX: -0.3 * k });
-    return P;
+    if (f.falling) return Object.assign(P, { uzL: 1.4, uzR: 1.4, uxL: -2, uxR: -2.4, txL: -0.6, sxL: 0.8, unarmed: true });   // flailing down the well
+    return deathPose(f, P);
   }
   if (f.moving) poseWalk(P, f.walk * 2.6, Math.min(1, 1), !c.shield && c.weapon !== 'spear');
   const t = f.t;
@@ -361,6 +427,12 @@ function drawFoes() {
     if (f.state === 'dormant' || (f.dead && f.falling && f.y < -12)) continue;
     if (f.cls === 'weeper') { drawWeeper(f); continue; }
     const l = sampleLight(f.x, f.y + 1.4, f.z);
-    drawCharacter(f.cls, f.x, f.y, f.z, f.yaw, foePose(f), l, f.flash > 0 ? 0.55 : 0);
+    const yaw = f.dead && f.dieYaw !== undefined && f.cls !== 'thing' ? f.dieYaw : f.yaw;
+    drawCharacter(f.cls, f.x, f.y, f.z, yaw, foePose(f), l, f.flash > 0 ? 0.55 : 0);
+    if (f.debris) for (const d of f.debris) {               // the weapon falls from his hand, and lies broken
+      const k = smoothstep(0, 0.45, f.deathT), fl = groundInfo(d.x, d.z).floor;
+      const x = lerp(f.x, d.x, k), z = lerp(f.z, d.z, k), y = lerp(f.y + 1.1, fl + 0.03, k * k);
+      drawM(d.m, m4trs(x, y, z, d.yaw + (1 - k) * 4, Math.PI / 2 * k, (1 - k) * 2, d.s), sampleLight(x, y + 0.5, z));
+    }
   }
 }

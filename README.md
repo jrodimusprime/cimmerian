@@ -192,7 +192,7 @@ Use scans that the holding institution has released as public domain or CC0 (the
 
 **Splash processing (`tools/splashgen.sh`, ImageMagick):** crop the scan to the plate, convert to greyscale, apply levels so ink is ink and paper is bone, map onto the palette's ramps with error-diffusion dither, then add one soft scarlet accent where the eye should land. Sources live untouched in `art/src/`, outputs in `game/art/`, and every source is in `story/credits.json`.
 
-In use now: John Martin's *Pandemonium* (1841) for the title card; Piranesi's *Carceri d'Invenzione* (1761) plates VII *The Drawbridge* (e1m2), XIV *The Gothic Arch* (e1m3) and X *Prisoners on a Projecting Platform* (e1m4).
+In use now: John Martin's *Pandemonium* (1841) for the title card. The level splashes are painted procedurally (`game/js/splash.js`): a tonal Piranesi-style scene engraved with hatching, with one scarlet accent. The `plate()` step in `splashgen.sh` can turn *Carceri* scans into level plates if wanted.
 
 **Why not Conan's own illustrators:** the *Weird Tales* Conan artists (Margaret Brundage, Hugh Rankin, J. Allen St. John) died after 1955, so their work isn't public domain in Australia yet.
 

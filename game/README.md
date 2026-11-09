@@ -52,6 +52,8 @@ About 5–10 minutes, with 14 pit-things and the weeping thing. Conan carries a 
 - **Kicks.** Knockback can put a man into the serpent's well, and Satha crushes wardens as readily as you.
 - **Archers.** They keep their distance and lead their shots.
 - **Pathing.** Enemies path with a flow field over the level grid.
+- **Deaths.** A dying man's knees buckle, then he topples and settles, each one differently. Before he falls, the game tests the floor his body will cover. It tries his natural fall (backwards if kicked) and then sweeps around, so he never lies through a wall, a pillar or a drop. If he's cornered, he slides down the wall and sits.
+- **Weapons.** A dead man's weapon leaves his hand. If you can use it (a sword you lack, a spear the winch needs), it drops as a pickup; otherwise it lies broken beside him: a snapped blade, a split shield, a broken bow, a cracked axe-haft.
 
 ## The cast
 
@@ -72,7 +74,7 @@ Only characters and creatures from Howard's text (README §1, *Canon cast only*)
 
 Every human enemy stands like Quake's killers: hunched, knees bent, head thrust forward. All of them are built from compact specs, as README §8 and MODELS.md require: a 14-bone humanoid rig with rigid parts, smooth lofts and lathes for the body, and outfits as per-role overlays. They're posed procedurally (idle, walk, wind-up, strike, block, pain, stagger and death) and lit from the direction of their strongest nearby light, as Quake lit its alias models.
 
-The title card is John Martin's *Pandemonium*, and each level's splash is a Piranesi *Carceri* plate. All are public domain, processed by `tools/splashgen.sh` onto the palette with one scarlet accent (README §6, credits in `story/credits.json`). Each level ends in a black corridor that fades out as you walk into it.
+The title card is John Martin's *Pandemonium* (public domain, processed by `tools/splashgen.sh`; credits in `story/credits.json`). Each level's splash is painted procedurally: a tonal Piranesi-style scene engraved with hatching, with one scarlet accent. Each level ends in a black corridor that fades out as you walk into it.
 
 ## How it maps to the design
 
@@ -84,7 +86,7 @@ The title card is John Martin's *Pandemonium*, and each level's splash is a Pira
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *21 states*, e1m3 *9 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14470`, `0c763bea`; e1m3: `5870`, `d64ae18c`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14470`, `0c763bea`; e1m3: `5870`, `8bbc707f`) |
 
 ## Not the real build
 

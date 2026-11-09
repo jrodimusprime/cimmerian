@@ -324,6 +324,7 @@ function buildModel(name) {
   const mb = new MeshBuilder(512);
   if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
   if (name.startsWith('weeper:')) return buildWeeperPart(name.split(':')[1]);
+  if (name.startsWith('broken:')) return buildBroken(name.split(':')[1]);
   if (name.startsWith('bars:')) {
     // a run of iron bars along +x, from 0 to len, base at y=0
     const [, len, h] = name.split(':').map(Number);

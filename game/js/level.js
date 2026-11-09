@@ -211,18 +211,16 @@ const LEVEL_E1M3 = {
     { prefab: 'candles', at: [8.2, 16.2] }, { prefab: 'candles', at: [11.6, 21.6] },
     { prefab: 'bones', at: [10.5, 30.6], big: true }, { prefab: 'skull', at: [9.1, 30.2] },
     { prefab: 'stal', at: [24, 15] }, { prefab: 'stal', at: [29, 14.5] }, { prefab: 'stal', at: [26.5, 21] }, { prefab: 'stal', at: [31, 22.5] }, { prefab: 'stal', at: [22.5, 19.5] },
-    { prefab: 'fungus', at: [21.6, 13] }, { prefab: 'fungus', at: [32.2, 18] }, { prefab: 'fungus', at: [25, 24.2] }, { prefab: 'bones', at: [27.5, 17.5], big: true },
-    { prefab: 'bones', at: [34.2, 22.6] }, { prefab: 'fungus', at: [33.4, 15] },
-    { prefab: 'fungus', at: [50, 17.2] }, { prefab: 'bones', at: [58.5, 19.5], big: true }, { prefab: 'skull', at: [60.5, 12.4] }, { prefab: 'fungus', at: [61.4, 15] },
+    { prefab: 'bones', at: [21.6, 13] }, { prefab: 'bones', at: [32.2, 18] }, { prefab: 'bones', at: [25, 24.2] }, { prefab: 'bones', at: [27.5, 17.5], big: true },
+    { prefab: 'bones', at: [34.2, 22.6] }, { prefab: 'bones', at: [33.4, 15] },
+    { prefab: 'bones', at: [50, 17.2] }, { prefab: 'bones', at: [58.5, 19.5], big: true }, { prefab: 'skull', at: [60.5, 12.4] }, { prefab: 'bones', at: [61.4, 15] },
     { prefab: 'winch', at: [53, 25.4] }, { prefab: 'post', at: [54, 27] }, { prefab: 'torch', at: [56.5, 32], wall: 'S' },
     { prefab: 'torch', at: [44, 31.5], wall: 'W' }, { prefab: 'brazier', at: [47, 28.4] }, { prefab: 'brazier', at: [47, 31.6] },
   ],
   lights: [
     { at: [8.2, 16.2], y: 0.6, col: [1.0, 0.65, 0.3], rad: 6, i: 0.8 }, { at: [11.6, 21.6], y: 0.6, col: [1.0, 0.65, 0.3], rad: 6, i: 0.8 },
-    { at: [21.6, 13], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.9 }, { at: [32.2, 18], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.9 }, { at: [25, 24.2], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.9 },
-    { at: [33.4, 15], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.8 }, { at: [40.5, 19], y: -6, col: [0.25, 0.6, 0.45], rad: 14, i: 0.9 },
+    { at: [40.5, 19], y: -6, col: [0.25, 0.6, 0.45], rad: 14, i: 0.9 },
     { at: [36.5, 17.4], y: 2.2, col: [1, 0.6, 0.28], rad: 9, i: 1.1 }, { at: [40.5, 17.4], y: 2.2, col: [1, 0.6, 0.28], rad: 9, i: 1.1 }, { at: [43.8, 18.6], y: 2.2, col: [1, 0.6, 0.28], rad: 9, i: 1.1 },
-    { at: [50, 17.2], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.8 }, { at: [61.4, 15], y: 0.8, col: [0.3, 0.8, 0.55], rad: 9, i: 0.9 },
     { at: [56, 27], y: -4, col: [0.4, 0.9, 0.6], rad: 10, i: 0.9 },
   ],
   flames: [[36.5, 17.4], [40.5, 17.4], [43.8, 18.6]],      // they lean with the draft over the ledge
@@ -400,7 +398,7 @@ function checkWallMounts(spec) {
 function wallIn(w) { return w === 'N' ? [0, 1] : w === 'S' ? [0, -1] : w === 'E' ? [-1, 0] : w === 'W' ? [1, 0] : [0, 0]; }
 
 // ---- queries ----------------------------------------------------------------
-function cellIdx(gx, gz) { return (gx < 0 || gz < 0 || gx >= LV.W || gz >= LV.H) ? -1 : gz * LV.W + gx; }
+function cellIdx(gx, gz) { return (!(gx >= 0) || !(gz >= 0) || gz < 0 || gx >= LV.W || gz >= LV.H) ? -1 : gz * LV.W + gx; }
 function kindAt(gx, gz) { const i = cellIdx(gx, gz); return i < 0 ? 0 : LV.kind[i]; }
 
 function computeCorner(gx, gz) {

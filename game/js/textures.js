@@ -184,7 +184,7 @@ const TEXGEN = {
   } },
   BELLY: { f: (x, y, s) => ({ v: 0.55 + 0.3 * ((Math.floor(y / 8)) % 2) + 0.15 * tfbm(x / 64, y / 64, 4, 2, s), ramp: 'jade', lo: 0.4, hi: 1 }) },
   SKIN: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 4, s), ramp: 'ink', lo: 0.35, hi: 0.62, h: 0.15 }) },
-  DARKSKIN: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 4, s), ramp: 'ink', lo: 0.1, hi: 0.42, h: 0.1 }) },
+  DARKSKIN: { f: (x, y, s) => ({ v: 0.5 + 0.5 * tfbm(x / 64, y / 64, 8, 3, s), ramp: 'earth', lo: 0.04, hi: 0.26, h: 0.06 }) },
   CLOTH: { f: (x, y, s) => ({ v: 0.35 + ((Math.floor(x / 2) + Math.floor(y / 2)) % 2) * 0.15 + tfbm(x / 64, y / 64, 8, 2, s) * 0.35, ramp: 'ink', lo: 0.04, hi: 0.3 }) },
   ROBE: { f: (x, y, s) => {                           // Shukeli's robe: bone cloth, jade hem stripes
     const py = y / 64;
