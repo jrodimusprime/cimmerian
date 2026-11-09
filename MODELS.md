@@ -134,8 +134,8 @@ The game is first person, so the hero is mostly seen as **view-models**. A full-
 | Model | Rig / build | Tier | Tris | Frames | Special set | Levels | Notes |
 |---|---|---|---|---|---|---|---|
 | `knight_ophir.mdl` | humanoid / heavy | C | **300** | 64 | `shield_block` 4 | e1m1 | Kite shield on `prop_L`, lance or sword on `prop_R` |
-| `spear_koth.mdl` | humanoid / lean | C | **290** | 60 | — | e1m1, e1m8 | Conical helm, scale shirt, spear and round shield |
-| `archer_shem.mdl` | humanoid / lean | C | **280** | 60 | `draw_loose` 8 | e1m1, e1m8 | Curled beard, short bow |
+| `spear_koth.mdl` | humanoid / lean | C | **290** | 60 | — | e1m1, e1m7 | Conical helm, scale shirt, spear and round shield |
+| `archer_shem.mdl` | humanoid / lean | C | **280** | 60 | `draw_loose` 8 | e1m1, e1m7 | Curled beard, short bow |
 | `shukeli.mdl` | humanoid_robed / heavy | N | **340** | 64 | `taunt` 6 | e1m2, e1m4 | The eunuch jailer. Lured to the grille. His corpse is raised by Pelias (`special` stagger 8) |
 | `black_giant.mdl` | humanoid / giant | N | **330** | 40 | `crushed` 12 | e1m2 | Scripted victim of Satha: stand, walk, crushed |
 | `satha_head.mdl` | serpent_head | B | **300** | 36 | `strike` 8, `recoil` 6 | e1m2, e1m4 | Invulnerable set piece. Spits venom (damage zones) |
@@ -147,11 +147,10 @@ The game is first person, so the hero is mostly seen as **view-models**. A full-
 | `yothga_stem.mdl` | stem | B | **380** | 30 | `expose` 8, `wither` 12 | e1m4 | Boss core, struck once all three tendrils are cut |
 | `yothga_tendril.mdl` | tendril | S | **120** × 3 | 24 | `grab` 8, `sever` 6 | e1m4 | Regrows on a fixed 6 s timer (puzzle, README §10) |
 | `citadel_slave.mdl` | humanoid / normal | C | **280** | 58 | — | e1m5 | Tsotha's slaves: Conan "expected a rush of slaves" (ch. III). Scarlet livery. (Replaces an invented servant: README §1, canon cast only) |
-| `looter.mdl` | humanoid / normal | C | **270** | 58 | `loot` 6 | e1m6 | 3 skins |
-| `soldier_pellia.mdl` | humanoid / normal | C | **300** | 60 | — | e1m6, e1m7 | The usurper's soldiers |
-| `arpello.mdl` | humanoid / heavy | B | **400** | 76 | `disarmed` 6, `fall` 10 | e1m7 | Tower duel. Disarmed by parries, then kicked off |
-| `strabonus.mdl` | humanoid / heavy | B | **420** | 78 | `charge` 8, `overhead` 8 | e1m8 | King of Koth. Axe |
-| `tsotha.mdl` | humanoid_robed / lean | B | **420** | 80 | `throw_globe` 8, `dust` 6, `blink` 6, `behead` 10 | e1m1 (cameo), e1m9 | Final boss |
+| `soldier_pellia.mdl` | humanoid / normal | C | **300** | 60 | — | e1m6 | The usurper's men-at-arms and the archers on Tamar's tower (ch. IV) |
+| `arpello.mdl` | humanoid / heavy | B | **400** | 76 | `seized` 6, `fall` 10 | e1m6 | Conan parries him, then "heaved him high above his head by crotch and neck" and hurls him from the tower (ch. IV) |
+| `strabonus.mdl` | humanoid / heavy | B | **420** | 78 | `charge` 8, `overhead` 8 | e1m7 | King of Koth. Axe: "It clanged on Conan's helmet" (ch. V) |
+| `tsotha.mdl` | humanoid_robed / lean | B | **420** | 80 | `throw_globe` 8, `dust` 6, `blink` 6, `behead` 10 | e1m1 (cameo), e1m8 | Final boss. Flees on "a gaunt weird-looking steed", throws fire globes, beheaded (ch. V) |
 
 ### 5.3 Allies and NPCs
 
@@ -179,7 +178,7 @@ The winged beast, Pelias's eagle, the crystal-globe vision of Tamar, and the mar
 | `w_dagger.mdl` | P | 24 | 1 | Throwable |
 | `arrow.mdl` | P | 16 | 1 | |
 | `globe.mdl` | P | 24 | 4 | Tsotha's explosive globe. Fullbright `magic` ramp |
-| `venom.mdl` | P | 20 | 4 | Satha spit (projectile and decal blob) |
+| `venom.mdl` | P | 20 | 4 | Satha's venom: a drop that burns where it lands ("like a white-hot dagger", ch. III) |
 | `wineskin.mdl` | P | 60 | 1 | +15 health |
 | `bread.mdl` | P | 40 | 1 | +25 health |
 | `mail.mdl` | P | 80 | 1 | Armour |
@@ -190,7 +189,7 @@ The winged beast, Pelias's eagle, the crystal-globe vision of Tamar, and the mar
 | `brazier.mdl` | P | 80 | 1 | Puzzle (e0m1). Lit and unlit skins |
 | `chains.mdl` | P | 60 | 4 | Wall-ring chains. Swing frames |
 | `crystal_globe.mdl` | P | 80 | 1 | Turnable (e1m5) |
-| `standard.mdl` | P | 60 | 4 | `cloth` rig. Tsotha's ward standards (e1m9) and the rally standards (e1m1) |
+| `standard.mdl` | P | 60 | 4 | `cloth` rig. The banners of Koth and Ophir "flying side by side" (ch. V) and Conan's standard (e1m1) |
 | `h_human.mdl` | P | 48 | 1 | Head gib. 4 skins (bare, helm, hood, beard) |
 | `h_beast.mdl` | P | 56 | 1 | Head gib for the demon and the pit-things |
 | `gib1–3.mdl` | P | 12, 18, 24 | 1 | Flesh and bone chunks in the `scarlet` and `bone` ramps |

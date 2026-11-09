@@ -911,7 +911,7 @@ async function showIntro() {
 const LEVEL_INTRO = {
   e1m2: [['THE PITS', 'title'], ['You wake on wet straw with iron on your ankle and the taste of the wizard\'s poison still in your mouth.', ''],
     ['Beyond the bars of your cell door, a black giant watches you, and grins.', 'warn'], ['(E to use things. Read whatever the dead have left you.)', 'dim']],
-  e1m3: [['THE TUNNELS BELOW', 'title'], ['Shukeli\'s keys open the door at the foot of the gaol stair. Beyond it the made stone ends, and the tunnels go down into the dark.', ''],
+  e1m3: [['THE TUNNELS BELOW', 'title'], ['The grille is bolted from the outside, and Shukeli lies dead against it. The only way left is down: into the pits, where the made stone ends.', ''],
     ['Somewhere far off, a woman is weeping.', 'warn']],
 };
 function startPlay(agent) {

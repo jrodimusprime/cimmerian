@@ -22,7 +22,7 @@ This is the best Conan story for a level-based game. Its five chapters already p
 | 1 | King Conan's army is betrayed on the plain of Shamu. He fights on until the wizard Tsotha-lanti paralyses him with a poisoned ring | Unwinnable last stand |
 | 2 | He's carried in chains to Khorshemish, spits defiance at the enemy kings, and is thrown into the pits under Tsotha's Scarlet Citadel | Story splash |
 | 3 | The pits: Satha the giant serpent, the jailer Shukeli, things in the tunnels, the man-eating vine Yothga, and the captive sorcerer Pelias. Then the climb up through the citadel and a flight home on a winged beast | Dungeon crawl, stealth, boss |
-| 4 | The capital, Tamar, has fallen to riot and to the usurper Arpello. Conan duels him on a tower | Urban level, tower duel |
+| 4 | The capital, Tamar, has fallen to riot and to the usurper Arpello. Conan lands on the great tower and hurls Arpello from it | Tower level |
 | 5 | The relief of besieged Shamar, the death of King Strabonus, the rout at the river Tybor, and Tsotha's end | Battle, two bosses |
 
 ### Optional prologue: *The Phoenix on the Sword* (1932)
@@ -286,51 +286,77 @@ The full list of models, with bones, triangle counts, skins and animation frames
 
 ---
 
-## 9. Level plan
+## 9. Level plan: the story map
 
-| # | Map | Title | Story beat | Play | Size |
-|---|---|---|---|---|---|
-| 0 | `e0m1` | The Phoenix *(optional)* | *Phoenix on the Sword* | Dream crypt (explore; the dead sage marks your sword), then wake and hold the bedchamber against assassin waves. Your sword breaks on Gromel, so take the axe from the wall. The demon kills Ascalante, then you kill the demon | S |
-| 1 | `e1m1` | The Plain of Shamu | Ch. 1 | Valley last stand against knights, spearmen and archers in waves. It's unwinnable: after wave 4 Tsotha appears and the ring fang fades the screen to the splash | M |
-| 2 | `e1m2` | The Pits | Ch. 2–3 | Wake chained, Satha passes (hide from the venom), the giant dies and you get free. Lure Shukeli to the grille and kill him | M |
-| 3 | `e1m3` | The Tunnels Below | Ch. 3 | Horror maze: the marked ways, the nameless things of the pits, the crossing chamber and the presence that rises from the well, the weeping thing (which can't be killed: you run), the hanging sigil-stone | M |
-| 4 | `e1m4` | Yothga | Ch. 3 | Boss arena: free Pelias. On the way back Satha returns and Pelias drives it off, then raises Shukeli's corpse to open the grille | S |
-| 5 | `e1m5` | The Scarlet Citadel | Ch. 2–3 | Climb through the mosaic corridor, the jet corridor, the brass skull-door and the gold-domed chamber, where the crystal globe shows Tamar burning. Reach the roof and mount the winged beast (splash) | M |
-| 6 | `e1m6` | Tamar Burning | Ch. 4 | Streets of looting and riot, the market-square speech (ambient event), Trocero's camp as a resupply hub | L |
-| 7 | `e1m7` | The Tower | Ch. 4 | Climb the great tower and duel Arpello on the turrets | S |
-| 8 | `e1m8` | The Siege of Shamar | Ch. 5 | Siege lines, walls, then the battle plain with a few allied archers. Cut through to Strabonus | L |
-| 9 | `e1m9` | The Tybor | Ch. 5 | Rout across the barge bridge, then the sunset meadow and the Tsotha boss. The finisher is his beheading, followed by the eagle ending splash | M |
+**Rule: the game is the book, in the book's order.** Every level is a stretch of *The Scarlet Citadel*, and inside each level the beats happen in the order Howard tells them. A level may add *how* a beat is played (a puzzle, a fight's shape), never *what* happens, *who* is there, or *where* the story goes next. Each level's exit is the book's next scene. This section is the reference for every level: check a level against it before building or changing it.
+
+Quotes are from the Wikisource text of the story (public domain in Australia).
+
+### The book, beat by beat
+
+| Ch. | Beat | Book anchor |
+|---|---|---|
+| I | The trap on the plain of Shamu: Conan's five thousand knights die to the last man; he stands alone on a heap of dead | "his back against a heap of dead horses and men" |
+| I | Kothian knights, Ophirean knights and Shemite archers ring him; Tsotha says take him alive and fells him with a poisoned ring | "Strabonus called on his Shemitish archers to loose their arrows"; "Take him alive" |
+| II | In chains to Khorshemish; before Strabonus and Amalrus, Conan defies them | "naked slave-boys beside them pouring wine" |
+| II | Tsotha's black giants take him down through the citadel: the censer corridor, the jet corridor, the brass skull door where Shukeli waits with his keys, the long stair, the iron door to the pits | "a dozen black giants, grasping their long-shafted axes"; "a brass door, over whose arch a human skull grinned" |
+| III | Chained to a ring in a vault, a torch in a niche above. Satha comes and goes; her venom burns his thigh; he stays still | "A drop of venom fell on his naked thigh" |
+| III | The black strangler comes through the grille with a huge sword and Shukeli's stolen keys, taunts "Amra", raises the sword for his head; Satha takes him from behind | "bearing in one hand a huge sword and in the other a bunch of keys" |
+| III | The keys land at his feet; the chain is too short to bend; he grips them with his toes and frees himself, and takes the black's sword | "slipped one foot from its sandal, and gripped them with his toes" |
+| III | Shukeli, following his keys, slams the grille shut under his fingers; Conan runs him through the bars; the bolt works only from outside, so he is trapped in the pits | "Shukeli the eunuch, who had followed his stolen keys"; "a bolt which can be worked only from the outside" |
+| III | The main corridor, Satha's hunting ground, with pits in the floor and side tunnels; the other monsters give her room | "monsters with dripping jaws agape"; "something whimpered in fear and slunk away" |
+| III | The weeping: a woman's sobs lead to the jelly-thing; it titters and flounders after him; he flees, doubting any blade could harm it | "an amorphic bulk ... a frog-like head" |
+| III | The crossing chamber and the well: wind rises from below, a presence floats up, his torch is blown out and he finds his way back by its ember | "a shadowy wind, rising from the well" |
+| III | Satha returns down the corridor; he hides in a side tunnel with his torch out | "he leaped to the darkness of a near-by tunnel, shaking out his torch" |
+| III | A cage of bars with a garden in it: Yothga holds Pelias; one of Shukeli's keys opens the cage; Conan cuts the stem and does not touch the roots | "found a key among the keys he carried"; "why did you cut the stem ... instead of tearing it up by the roots?" |
+| III | Satha meets them, sees Pelias's soul, and flees in fear | "the hate died out in a glitter of pure fear" |
+| III | Pelias raises Shukeli's corpse, which works the bolt and falls dead again | "Rise, Shukeli! Rise from hell" |
+| III | Up the long stair, through the skull door; the citadel is silent, its men under Pelias's spell; Tsotha's chambers: wine, the crystal globe shows Tamar and Shamar | "expecting a rush of slaves, but silence gripped the citadel"; "Tsotha's crystal" |
+| III | The tower roof: Pelias calls the winged beast and Conan flies for Tamar | "a huge bat-like creature alighted beside him" |
+| IV | Tamar at dawn: Arpello has seized the crown; Conan lands on the great tower among Arpello's archers, parries Arpello and hurls him to the pave; the city rises | "heaved him high above his head by crotch and neck" |
+| V | The relief of Shamar: Bossonian archers and Gunderman pikes beside Trocero's and Prospero's knights, against Shemite archers, Kothian spearmen and the knights of Koth and Ophir; Conan cuts through to Strabonus and kills him; Prospero kills Amalrus | "stolid Bossonian archers, and keen pikemen from Gunderland"; "The five-foot blade crushed Strabonus' casque" |
+| V | The rout: the men of Shamar cut the barge bridge adrift; Tsotha flees across it on an unnatural steed; Pelias's eagle throws him; he hurls a fire globe; Conan beheads him; the eagle takes the head, laughing in Pelias's voice | "riding like the wind on a gaunt weird-looking steed"; "Conan's sword sheared through his lean neck" |
+
+### Levels
+
+| # | Map | Title | Book | Beats, in order | Where the action comes from (in the book) | Exit = next scene |
+|---|---|---|---|---|---|---|
+| 0 | `e0m1` | The Phoenix *(optional)* | *Phoenix on the Sword* | Dream crypt, the sage marks the sword; the assassins in the bedchamber; Gromel breaks the sword; the axe from the wall; the demon kills Ascalante; Conan kills the demon | Ascalante's band, the demon | The splash for Shamu |
+| 1 | `e1m1` | The Plain of Shamu | I | The last stand on the heap of dead; it can't be won; Tsotha's ring | Kothian and Ophirean knights, Kothian spearmen, Shemite archers | The ring's sting: fade to the Khorshemish splash (ch. II is told in the splash) |
+| 2 | `e1m2` | The Pits | II–III | Chained in the vault; Satha passes and her venom burns; the black strangler, his sword raised; Satha takes him; the keys at your feet, gripped with your toes; the black's sword; Shukeli slams the grille, and you kill him through the bars; trapped | Satha's venom; the strangler; Shukeli at the bars | Down into the pits behind the vault |
+| 3 | `e1m3` | The Tunnels Below | III | The main corridor and its pits; Satha's hunting ground; the weeping thing (flee); the crossing chamber, the well's wind and presence, the torch blown out; Satha returns, and you hide with the torch out | The pits' nameless monsters; the weeping thing; Satha | The cage of bars with a garden in it |
+| 4 | `e1m4` | Yothga | III | Open the cage with Shukeli's keys; Yothga (cut the stem, don't tear the roots); Pelias freed; Satha meets you and flees from Pelias; Pelias raises Shukeli to work the bolt | Yothga's tendrils; the pits' monsters on the way back | Up the long stair |
+| 5 | `e1m5` | The Scarlet Citadel | II–III | The skull door; the jet and censer corridors (the ones you were dragged down in ch. II); Tsotha's chambers, the wine, the crystal globe showing Tamar and Shamar; the tower roof; the winged beast | Tension, not swordplay: Tsotha's men sleep under Pelias's spell, and you pass them. Fighting is only for when one wakes | The flight to Tamar (splash) |
+| 6 | `e1m6` | The Tower of Tamar | IV | Land on the great tower at dawn; Arpello's archers on the turrets; Arpello himself; hurl him from the tower; his men break | Arpello's archers and Pellian men-at-arms on the tower | The splash for the march south (told in the splash) |
+| 7 | `e1m7` | The Relief of Shamar | V | The plain before Shamar; Bossonian archers and Gunderman pikes alongside you; through the Shemite archers, the Kothian spearmen and the knights; Strabonus and his axe | The armies of Koth and Ophir | The rout to the river |
+| 8 | `e1m8` | The Tybor | V | The rout; the men of Shamar cut the barge bridge adrift; Tsotha's flight on his weird steed; the eagle; the fire globes; the beheading; the eagle takes the head | Routed soldiers; Tsotha | The ending splash: the eagle laughing in Pelias's voice |
+
+The book has no Tamar street level for Conan (he arrives on the tower by air), so the old `Tamar Burning` level is gone and the campaign has eight levels after the optional prologue.
 
 Sizes: S is about 8–15 rooms, M about 15–30, L about 30–45 (rooms or areas, as counted in the level spec). The yardstick is Quake's E1M1: about 5–10 minutes to play, a dozen or more enemies, and a few distinct spaces.
 
 ### Pacing: puzzle areas and action areas
 
-Every level alternates **puzzle areas** (read, think, time things, use objects) and **action areas** (fight). An action area follows each puzzle, and the level never asks for two puzzles back to back without a fight in between, or the reverse for long. Each area is declared in the level spec (`areas:`, with `type: puzzle | action`), the HUD names it when you enter, and entering it sets a checkpoint.
+Every level alternates **puzzle areas** (read, think, time things, use objects) and **action areas** (fight or flee). Each area is declared in the level spec (`areas:`, with `type: puzzle | action`), the HUD names it when you enter, and entering it sets a checkpoint.
 
-e1m2, The Pits (playable in [`game/`](game/README.md)):
+**The book decides who you fight.** Action areas use only the opposition the book puts in that stretch of the story (the table above, *Where the action comes from*). If the book has no fight in a stretch (the silent citadel), the action is tension instead: being seen, being heard, running. Pacing never adds soldiers, monsters or scenes the book doesn't have.
 
-| # | Area | Type | What happens |
+### Audit: the current build against the book
+
+The playable build (`game/`) was made before this rule and departs from the book in places. Each must be fixed:
+
+| Where | Book | Current build | Fix |
 |---|---|---|---|
-| 1 | The Cell | puzzle | Chained to a ring. An inscription names the rusted link; grind it and you're free |
-| 2 | The Hall of the Serpent | puzzle (timing) | The strangler comes with a huge sword to gloat, and Satha takes him. She passes every 40 s; hide in alcoves; take his sword |
-| 3 | The Wardens' Post | action | A lone warden comes to investigate, then the post: a warden, a spearman, an archer on a gallery. The first warden drops a sword |
-| 4 | The Grille | puzzle | Lure Shukeli to the bars with a thrown bone, strike from the dark niche, take his keys |
-| 5 | The Guardroom and Barracks | action | His death raises the alarm. Four guards fight you through the bars, then in the guardroom |
-| 6 | The Winch | puzzle | The portcullis winch's pawl is broken; jam the ratchet with a spear from the barracks rack |
-| 7 | The Captain's Landing | action | One of Tsotha's black giants with a long-shafted axe, and three Kothian and Shemite soldiers, then the stair |
+| e1m2 freeing | Satha's venom drop; the keys at his feet; gripped with his toes | A rusted link, ground through after reading a clue | The keys land beyond reach of your hands; a toe-grip action picks them up |
+| e1m2 Shukeli | He slams the grille as you reach it and you strike through the bars, at once | A thrown-bone lure from a niche, much later | Shukeli comes after the giant dies, slams the vault grille, and you have seconds to strike |
+| e1m2 after the grille | You are trapped; the pits behind you are the way on | You take Shukeli's keys, open the grille, and fight up through a guardroom, barracks, winch and landing | Remove the guardroom, barracks, winch and landing fights; the level ends going down into the pits |
+| e1m2 soldiers | No soldiers in the pits | Kothian guards, spearmen, Shemite archers and a black axeman | Move them to the levels where the book has them (e1m1, e1m6, e1m7) |
+| e1m3 entry | Through the pits, from the vault | "Shukeli's keys open the door at the foot of the gaol stair" | Rewrite: you enter from the vault |
+| e1m3 Yothga's cage | Opened with a key from Shukeli's ring | A sigil-stone lowered on a windlass, a gate | Replace with the cage of bars and the keys (the hanging-stone puzzle can't stay as a key) |
+| e1m3 the presence | The wind from the well and a bodiless presence; the torch blown out | A draft puzzle (four vents) that pushes you off a ledge | Keep the draft (it is the book's wind), add the torch going out |
+| Satha | "the great shimmering white form" | Green scales; she spits venom | Make her white; her venom drips (the book), she doesn't spit |
 
-e1m3, The Tunnels Below:
-
-| # | Area | Type | What happens |
-|---|---|---|---|
-| 1 | The Marked Ways | puzzle | Three tunnels, marked with one, two and three cuts. One cut is a drop under rotten planks, two cuts hides something on the roof, and three cuts is the road |
-| 2 | The Warren | action | The nameless things of the pits: a pack, some dropping from the ceiling |
-| 3 | The Crossing | puzzle | Four vents and a draft from the well (the presence). Set them until the flames over the ledge stand straight. Closing them all pushes the other way |
-| 4 | The Weeper's Lair | action (flight) | The weeping thing can't be harmed. Snatch the windlass crank from a dead apprentice and run; it won't leave its tunnels |
-| 5 | The Hanging Stone | puzzle | Swing the boom over the floor before you lower the stone, or the shaft takes it |
-| 6 | The Sigil Gate | action | Set the sigil-stone. The slab sinks slowly while the roof comes alive above you |
-
-The puzzle mechanics in section 10 are the only additions to Howard's plot; the cast is the book's (section 1, *Canon cast only*). Everything else follows the text's own sequence of places and fights.
+The puzzle mechanics in section 10 decide how a beat plays; the cast and the order of events are the book's (section 1, *Canon cast only*).
 
 ---
 
@@ -357,14 +383,13 @@ Each level is a **gated chain**: explore, find a clue, act on it, open the way o
 |---|---|
 | `e0m1` The Phoenix | The crypt frieze shows four braziers in an order → light them in that order → the sage wakes and marks your sword (the only weapon that hurts the demon). In the bedchamber, the axe is mounted high, so knock its wall mount loose with the broken hilt to drop it |
 | `e1m1` Plain of Shamu | Light puzzle (a combat level). Three rally standards: holding each in turn delays the waves and opens the next fallback position. The level always ends with the scripted fang |
-| `e1m2` The Pits | Chain-length radius → slip the wall ring at the rusted link (inscription) → **Satha passes on a fixed 40 s cycle**, so time your dash between alcoves → take a bone → throw it to make noise and draw Shukeli to the bars → strike through the grille → keys → a spear from the barracks jams the broken winch pawl to hold the portcullis up |
-| `e1m3` The Tunnels | Scratches left by Pelias's dead apprentices mark safe routes (three cuts). In the crossing chamber, set four tunnel valves so the draft (shown by leaning flames) stops the presence pushing you into the well. Lower a hanging stone, which is the sigil-key for Yothga's cell |
-| `e1m4` Yothga | Three tendrils regrow on a fixed timer. Cut all three within one 6 s window to expose the stem, then strike it. Pelias tells you the word that drives Satha off; say it at the right moment (an interaction) when Satha returns. He raises Shukeli's corpse, which unbars the grille from the inside |
-| `e1m5` The Scarlet Citadel | The mosaic corridor shows a sequence of four beasts → set the brass skull-door's four rotating jaws to match → in the gold-domed chamber, turn the crystal globe to find Tamar (it reveals the beast's command word) → on the roof, speak the word to call the winged beast |
-| `e1m6` Tamar Burning | A hub with a dependency graph. Find Athemides and escort him to the market square → his speech turns the mob → the mob opens the barricaded west gate → Trocero's knights enter → the tower gate unlocks. A side branch puts out the granary fire for extra supplies (optional, not on the critical path) |
-| `e1m7` The Tower | Raise the lift with a counterweight in two stages (move two weights between pans). Arpello can't be killed with the sword: parry three times to disarm him, then manoeuvre him to the broken parapet (marked by a stain) and kick him off |
-| `e1m8` Siege of Shamar | Turn two winches on the walls (each guarded) to raise the sally-port portcullis. The garrison sorties, the enemy lines break, and Strabonus is reachable on the plain |
-| `e1m9` The Tybor | Cut the barge bridge's mooring ropes in the order the ferryman calls (downstream first) to break the bridge. Tsotha's ward is fed by three ensorcelled standards; cut them to drop the ward, dodge the globes, then finish him |
+| `e1m2` The Pits | Lie still while Satha passes (moving under her draws the venom); the strangler's keys land beyond your hands, so slip your foot free and grip them with your toes; Shukeli slams the grille, so strike through the bars before he flees |
+| `e1m3` The Tunnels | Satha's corridor on a fixed cycle (hide in side tunnels with your torch out); flee the weeping thing; in the crossing chamber the well's wind blows your torch out, so find your way back by its ember. (The current build's marked ways, vents and hanging stone predate this plan; see the audit in §9) |
+| `e1m4` Yothga | Open the cage with one of Shukeli's keys. Cut Yothga's stem, never its roots (the book: touching the roots is death). Pelias needs no puzzle to scare Satha off; he raises Shukeli to work the bolt |
+| `e1m5` The Scarlet Citadel | Pass Tsotha's sleeping men without waking them; read the crystal globe (Tamar and Shamar, as in the book); on the roof, Pelias calls the winged beast |
+| `e1m6` The Tower of Tamar | Clear Arpello's archers from the turrets; parry Arpello, then seize and hurl him from the tower (a grapple action, as in the book) |
+| `e1m7` The Relief of Shamar | Fight beside the Bossonian archers and Gunderman pikes; break the Kothian line where it wavers; reach Strabonus and his axe |
+| `e1m8` The Tybor | The barge bridge is cut adrift (the men of Shamar do it); chase Tsotha across the meadow; dodge his fire globes; behead him before he throws again |
 
 **Token cost.** A `puzzle:` block is 10–30 lines, and `solve.js` checks it instantly. The AI fixes failures from the solver's report, which names the stuck state and the missing step, without re-reading the map.
 
@@ -456,7 +481,7 @@ The splash screens are HTML overlays drawn over the WebGL canvas. They're shown 
 | Broken hilt | Prologue only |
 | Axe | Slower and heavier |
 | Thrown axe/dagger | Pick it back up after throwing |
-| Kick | Knockback, used to throw Arpello off the tower |
+| Kick | Knockback and guard-breaking. (Arpello is seized and hurled, as in the book, not kicked) |
 
 There are no ammo weapons.
 
@@ -479,7 +504,7 @@ There are no ammo weapons.
 
 - Monster AI starts from LibreQuake's GPL `ai.qc` state machine. Every `random()` call is routed through the entity's seeded stream (section 11).
 - Interaction uses a dedicated `use` button that fires a traceline at 64 units. Levers, valves, jaws, ropes, globes and speech all go through it, so puzzles have one consistent verb for both players and agents.
-- A `team` field lets factions fight each other: looters against soldiers, and allies against invaders at Shamar.
+- A `team` field lets factions fight each other: Bossonians and Gundermen beside you against the invaders at Shamar.
 - Set pieces are built from standard entities (`trigger_relay`, `func_train`, `path_corner`, `trigger_push`, `trigger_hurt`) plus a small `script.qc` that `mapgen.js` fills from each level's `script:` block.
 - Armies are faked. Keep at most 16 live monsters near the player, and use billboard sprite crowds plus ambient battle audio beyond that.
 
