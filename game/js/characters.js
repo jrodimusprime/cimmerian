@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 
 const CAST = {
-  giant: { scale: 1.34, bulk: 1.38, belly: 0, skin: 'DARKSKIN', head: 'brute', torso: 'bare', hips: 'loin', arms: 'bare', legs: 'bare', feet: 'bare', arm: 1.08 },
+  giant: { scale: 1.34, bulk: 1.38, belly: 0, skin: 'DARKSKIN', head: 'brute', torso: 'bare', hips: 'loin', arms: 'bare', legs: 'bare', feet: 'bare', weapon: 'sword' },
   shukeli: { scale: 0.98, bulk: 1.2, belly: 1.25, skin: 'SICK', head: 'eunuch', torso: 'robe', hips: 'robe', arms: 'sleeves', legs: 'none', feet: 'slippers' },
   warden: { scale: 1.02, bulk: 1.1, belly: 0.1, skin: 'FACE', head: 'helm_great', torso: 'mail', hips: 'mail', arms: 'mail', legs: 'trousers', feet: 'boots', weapon: 'sword', shield: true, pauldrons: true, spikes: true },
   spearman: { scale: 1.02, bulk: 1.0, belly: 0.15, skin: 'FACE', head: 'coif', torso: 'mail', hips: 'mail', arms: 'mail', legs: 'trousers', feet: 'boots', weapon: 'spear' },

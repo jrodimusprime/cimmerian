@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3 through the CIM agent API (README §11).
-const EXPECTED = { tick: 5710, hash: '31e0ac69' };
+const EXPECTED = { tick: 5870, hash: 'd64ae18c' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -94,6 +94,6 @@ o = await O('(__take("sigil"), CIM.obs())'); log('sigil:', brief(o));
 await O('__route([[52.5, 30], [45, 30]])'); o = await O('__use(44.1, 30)'); log('set:', brief(o));
 o = await O('__fight(["gatewave"], 9000, 30)'); log('wave:', brief(o));
 o = await O('__wait(600)');
-o = await O('__route([[42, 30], [39, 30]])'); log('end:', brief(o));
+o = await O('__route([[42, 30], [31.5, 30]])'); log('end:', brief(o));
 const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
 log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED));

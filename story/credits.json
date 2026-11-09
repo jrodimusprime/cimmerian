@@ -1,0 +1,53 @@
+{
+  "note": "Splash art sources (README §6). Every artist died before 1955, so the works are public domain in Australia; Wikimedia Commons marks each scan public domain. Processed by tools/splashgen.sh into game/art/.",
+  "art": [
+    {
+      "used_for": "game/art/title.jpg",
+      "source_file": "art/src/martin_pandemonium.jpg",
+      "artist": "John Martin",
+      "artist_lived": "1789–1854",
+      "work": "Pandemonium",
+      "year": "1841",
+      "scan": "https://commons.wikimedia.org/wiki/File:John_Martin_-_Pandemonium_-_WGA14149.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m2.jpg",
+      "source_file": "art/src/piranesi_carceri_07_drawbridge.jpg",
+      "artist": "Giovanni Battista Piranesi",
+      "artist_lived": "1720–1778",
+      "work": "The Drawbridge, Carceri d'Invenzione plate VII (2nd ed.)",
+      "year": "1761",
+      "scan": "https://commons.wikimedia.org/wiki/File:Giovanni_Battista_Piranesi_-_Le_Carceri_d%27Invenzione_-_Second_Edition_-_1761_-_07_-_The_Drawbridge.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m3.jpg",
+      "source_file": "art/src/piranesi_carceri_14_gothic_arch.jpg",
+      "artist": "Giovanni Battista Piranesi",
+      "artist_lived": "1720–1778",
+      "work": "The Gothic Arch, Carceri d'Invenzione plate XIV (2nd ed.)",
+      "year": "1761",
+      "scan": "https://commons.wikimedia.org/wiki/File:Giovanni_Battista_Piranesi_-_Le_Carceri_d%27Invenzione_-_Second_Edition_-_1761_-_14_-_The_Gothic_Arch.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m4.jpg",
+      "source_file": "art/src/piranesi_carceri_10_prisoners_platform.jpg",
+      "artist": "Giovanni Battista Piranesi",
+      "artist_lived": "1720–1778",
+      "work": "Prisoners on a Projecting Platform, Carceri d'Invenzione plate X (2nd ed.)",
+      "year": "1761",
+      "scan": "https://commons.wikimedia.org/wiki/File:Giovanni_Battista_Piranesi_-_Le_Carceri_d%27Invenzione_-_Second_Edition_-_1761_-_10_-_Prisoners_on_a_Projecting_Platform.jpg",
+      "licence": "Public domain"
+    }
+  ],
+  "text": [
+    {
+      "work": "Robert E. Howard, The Scarlet Citadel (Weird Tales, January 1933)",
+      "author_lived": "1906–1936",
+      "licence": "Public domain in Australia",
+      "used_for": "story, cast and setting"
+    }
+  ]
+}

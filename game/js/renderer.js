@@ -58,6 +58,8 @@ uniform float uUV;
 uniform vec3 uKeyDir;
 uniform vec3 uHaze;
 uniform float uDecal;
+uniform vec4 uVoid;
+uniform float uVoidW;
 in vec3 vWPos;
 in vec3 vNor;
 in vec3 vCol;
@@ -91,7 +93,15 @@ void main() {
   float fd = length(vWPos - uCamPos);
   float f = exp(-fd * uFog);
   f = mix(f, sqrt(f), e);
-  outColor = vec4(mix(uHaze, col, f), uAlpha);          // distance fades into the pits' haze
+  vec3 rgb = mix(uHaze, col, f);                         // distance fades into the pits' haze
+  // the way out: a corridor that goes black as it goes on (uVoid = from.xz, to.xz)
+  vec2 vd = uVoid.zw - uVoid.xy; float vl = length(vd);
+  if (vl > 0.0) {
+    vec2 vn = vd / vl, rel = vWPos.xz - uVoid.xy;
+    float along = dot(rel, vn) / vl, lat = abs(dot(rel, vec2(-vn.y, vn.x)));
+    if (lat < uVoidW && along > 0.0) rgb *= 1.0 - smoothstep(0.0, 1.0, along) * (1.0 - smoothstep(uVoidW - 1.0, uVoidW, lat));
+  }
+  outColor = vec4(rgb, uAlpha);
 }`;
 
 const POST_VS = `#version 300 es
@@ -132,14 +142,14 @@ class Renderer {
     this.prog = this.program(SCENE_VS, SCENE_FS);
     this.post = this.program(POST_VS, POST_FS);
     this.u = {};
-    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir', 'uHaze', 'uDecal'])
+    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir', 'uHaze', 'uDecal', 'uVoid', 'uVoidW'])
       this.u[n] = gl.getUniformLocation(this.prog, n);
     this.pu = {};
     for (const n of ['uScene', 'uFade', 'uFlash', 'uFlashCol', 'uGamma', 'uLut', 'uPal']) this.pu[n] = gl.getUniformLocation(this.post, n);
     this.ident = m4ident();
     this.postVao = gl.createVertexArray();
     this.fbo = null; this.aspect = 1; this.lw = 1; this.lh = 1;
-    this.key = [0.3, 0.9, 0.3]; this.gamma = 1.3; this.haze = [0.035, 0.026, 0.02]; this.palette = true;
+    this.key = [0.3, 0.9, 0.3]; this.gamma = 1.3; this.haze = [0.035, 0.026, 0.02]; this.palette = true; this.voidLine = [0, 0, 0, 0]; this.voidW = 0;
   }
   program(vs, fs) {
     const gl = this.gl;
@@ -238,6 +248,7 @@ class Renderer {
     gl.uniform1f(this.u.uTime, time);
     gl.uniform1f(this.u.uLightMul, 1);
     gl.uniform3fv(this.u.uHaze, this.haze);
+    gl.uniform4fv(this.u.uVoid, this.voidLine); gl.uniform1f(this.u.uVoidW, this.voidW);
   }
   lightMul(v) { this.gl.uniform1f(this.u.uLightMul, v); }
   setCamera(vp, camPos, lampPos, lampCol, lampRange, fog) {

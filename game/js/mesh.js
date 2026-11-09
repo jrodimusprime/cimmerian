@@ -320,7 +320,7 @@ function buildModel(name) {
   if (name.startsWith('satha_head') || name.startsWith('satha_jaw')) return buildSathaHead(name);
   if (name === 'vm_hand_grip') return buildHand('grip');
   if (name === 'vm_hand_open') return buildHand('open');
-  if (name.startsWith('vm_') && name !== 'vm_arm' || name === 'dagger2') return buildViewModel(name);
+  if (['vm_forearm', 'vm_manacle', 'vm_chain', 'dagger2'].includes(name)) return buildViewModel(name);
   const mb = new MeshBuilder(512);
   if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
   if (name.startsWith('weeper:')) return buildWeeperPart(name.split(':')[1]);
@@ -386,11 +386,18 @@ function buildModel(name) {
     case 'flame':                                         // a standing flame on a short iron stand: it leans with the draft
       for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; addSpike(mb, Math.cos(a) * 0.06, 0, Math.sin(a) * 0.06, [Math.cos(a) * 0.15, 1, Math.sin(a) * 0.15], 0.45 + (k % 2) * 0.25, 0.1, 4, T.FIRE); }
       break;
-    case 'vm_torch':                                      // a pitch-soaked torch: a stick with rag wound round its head
-      smoothLathe(mb, 0, 0, 0, [[0.026, -0.3], [0.028, 0], [0.03, 0.26]], 6, T.WOOD, ONE3, [0, 1, 0]);
-      smoothLathe(mb, 0, 0, 0, [[0.042, 0.24], [0.05, 0.29], [0.045, 0.35], [0.03, 0.37]], 7, T.CLOTH, ONE3, [0, 1, 0]);
-      addRock(mb, 0.05, -0.2, 0.02, 0.035, 0.05, 0.035, 3, T.HANDSKIN, 0.05);
+    case 'vm_torch':                                      // a pitch torch: a tapered haft, an iron collar, a fat head of tarred rag
+      smoothLathe(mb, 0, 0, 0, [[0.016, -0.42], [0.021, -0.1], [0.026, 0.2]], 7, T.WOOD, ONE3, [0, 1, 0]);
+      smoothLathe(mb, 0, 0, 0, [[0.03, 0.19], [0.032, 0.2], [0.032, 0.225], [0.03, 0.235]], 8, T.IRON, ONE3, [0, 1, 0]);
+      for (let k = 0; k < 4; k++) smoothLathe(mb, 0.004 * Math.sin(k * 2), 0, 0.004 * Math.cos(k * 2), [[0.03, 0.22 + k * 0.03], [0.045 - k * 0.003, 0.235 + k * 0.03], [0.04 - k * 0.003, 0.255 + k * 0.03]], 8, T.CLOTH, ONE3, [0.05 * Math.sin(k), 1, 0]);
+      smoothLathe(mb, 0, 0, 0, [[0.036, 0.33], [0.028, 0.345], [0, 0.35]], 8, T.BLACK, ONE3, [0, 1, 0]);
       break;
+    case 'vm_flame': case 'vm_flame_core': {              // a twisted teardrop of fire, ragged at the top
+      const core = name === 'vm_flame_core';
+      loft(mb, [S_(0, 0.045, 0.045, 0.045, 0), S_(0.05, 0.06, 0.06, 0.06, 0), S_(0.11, 0.045, 0.045, 0.045, 0.005), S_(0.17, 0.025, 0.025, 0.025, 0.012), S_(0.22, 0.004, 0.004, 0.004, 0.02)].map(st => Object.assign(st, { x: 0 })), 7, T.FIRE, 1, null, 'y');
+      for (let k = 0; k < (core ? 0 : 4); k++) { const a = k / 4 * Math.PI * 2; addSpike(mb, Math.cos(a) * 0.03, 0.06, Math.sin(a) * 0.03, [Math.cos(a) * 0.35, 1, Math.sin(a) * 0.35], 0.12 + 0.03 * (k % 2), 0.018, 4, T.FIRE); }
+      break;
+    }
     case 'rope': smoothLathe(mb, 0, 0, 0, [[0.03, 0], [0.03, 1]], 5, T.WOOD, ONE3, [0, 1, 0]); break;
     case 'stand': addLathe(mb, 0, 0, 0, [[0.2, 0], [0.05, 0.1], [0.04, 1.8], [0.18, 1.9], [0.2, 2.0], [0, 2.0]], 6, T.IRON); break;
     case 'valve':                                         // a vent in the rock with an iron lever beside it

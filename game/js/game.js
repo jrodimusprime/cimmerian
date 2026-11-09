@@ -309,7 +309,7 @@ function setFlag(f) { if (!S.flags[f]) { S.flags[f] = true; Sfx.blip(); } }
 function freeFromChain() {
   setFlag('free');
   S.timeFree = S.tick;
-  S.giant.state = 'unlock'; S.giant.t = 0;
+  S.giant.state = 'raise'; S.giant.t = 0;
   S.satha.start = S.tick + Math.round(2.5 * SIM_HZ);     // the first pass is scripted to meet the giant
   S.checkpoint = { x: 8.5 * CELL, z: 10 * CELL, yaw: Math.PI };
   Sfx.grind(); setTimeout(() => Sfx.snap(), 700);
@@ -338,7 +338,11 @@ function interact() {
       log('You pull a long thighbone from the heap. It is heavy enough to make a fine clatter. (Click to throw it.)');
       return;
     case 'door':
-      if (S.door.open < 0.5) log('The door is barred iron and locked. The bars are as thick as your thumb.', 'dim');
+      if (S.door.open >= 0.5) return;
+      if (S.flags.has_cellkey) {
+        S.door.target = 1; setFlag('cell_open'); Sfx.clank(); Sfx.bars();
+        log('The second key turns, and the barred door grinds open on the hall.', 'good');
+      } else log('The door is barred iron and locked. The bars are as thick as your thumb.', 'dim');
       return;
     case 'grille':
       if (S.grille.target > 0) return;
@@ -426,6 +430,8 @@ function takeItem(it) {
       const w0 = S.foes.find(f => f.id === 'w0');
       if (w0 && !w0.dead && !w0.alert) { w0.state = 'investigate'; w0.tx = 26.5 * CELL; w0.tz = 14.6 * CELL; w0.alert = true; S.alerted.add('scout'); log(ALERT_LINES.scout, 'warn'); }
     } else log('You take up the sword.', 'good');
+  } else if (it.kind === 'cellkey') {
+    setFlag('has_cellkey'); log('You snatch up the strangler\'s keys. Shukeli\'s keys: he stole them to come and gloat.', 'good');
   } else if (it.kind === 'crank') {
     setFlag('has_crank'); log('You pull the windlass crank from the dead apprentice\'s grip. His fingers do not want to let it go.', 'good');
   } else if (it.kind === 'sigil') {
@@ -450,62 +456,35 @@ function throwBone() {
 }
 
 // ---------------------------------------------------------------- the black giant
+// The strangler (ch. III): "a gigantic black man, stark naked, bearing in one hand a huge
+// sword and in the other a bunch of keys". He stands in the hall to gloat. When the chain
+// parts he swings the sword up, and the keys fly from his fist through the bars; then Satha.
 function updateGiant() {
   if (S.giant.state === 'gone') return;
   const g = S.giant; g.t += DT;
-  const moveTo = (tx, tz, speed) => {
-    const dx = tx - g.x, dz = tz - g.z, d = Math.hypot(dx, dz);
-    if (d < 0.05) return true;
-    const st = Math.min(d, speed * DT);
-    g.x += dx / d * st; g.z += dz / d * st; g.walk += st; g.yaw = Math.atan2(dx, dz);
-    return false;
-  };
-  const door = feature('door');
   switch (g.state) {
     case 'wait': g.yaw = Math.PI; break;
-    case 'unlock':
-      if (g.t > 1.0 && S.door.target === 0) {
-        S.door.target = 1; Sfx.clank(); Sfx.bars();
-        log('The black giant at your door grins, turns a key, and swings the bars wide. He ducks inside, flexing hands like shovels.', 'warn');
+    case 'raise':
+      g.yaw = Math.PI;
+      g.arms = Math.min(1, g.arms + DT * 2.5);
+      if (g.t > 0.35 && !S.items.some(i => i.kind === 'cellkey')) {
+        const kx = 7.5 * CELL + 0.3, kz = 11.7 * CELL;
+        S.items.push({ id: 'cellkey', kind: 'cellkey', name: 'strangler\'s keys', x: kx, z: kz, y: groundInfo(kx, kz).floor, taken: false });
+        Sfx.clatter(); Sfx.chain();
+        log('The black giant roars and swings up his huge sword, and the keys fly from his other fist, skitter through the bars and lie almost at your feet.', 'warn');
       }
-      if (g.t > 1.8) { g.state = 'enter'; g.t = 0; }
-      break;
-    case 'enter':
-      g.arms = Math.min(1, g.arms + DT * 1.5);
-      if (moveTo(door.x, 11.3 * CELL, 2.2)) { g.state = 'stalk'; g.t = 0; }
-      break;
-    case 'stalk': {
-      g.arms = 1;
-      const d = Math.hypot(S.x - g.x, S.z - g.z);
-      if (d > 1.3) moveTo(S.x, S.z, 1.7);
-      else {
-        g.yaw = Math.atan2(S.x - g.x, S.z - g.z);
-        g.grabT -= DT;
-        if (g.grabT <= 0) { g.grabT = 1.1; hurt(11, 'strangle'); log('His fingers close on your throat...', 'bad'); }
-      }
-      break;
-    }
-    case 'flee':
-      g.arms = Math.max(0, g.arms - DT * 3);
-      if (g.leg === 0) { if (moveTo(door.x, HALL_Z, 5.2)) g.leg = 1; }
-      else moveTo(GRILLE_X - 1, HALL_Z, 5.0);
       break;
     case 'crushed':
       g.fall = Math.min(1, g.fall + DT * 2.2);
       break;
   }
-  // the serpent stirs: the giant forgets you and runs
-  if ((g.state === 'stalk' || g.state === 'enter') && S.satha.start !== null && S.tick >= S.satha.start + Math.round(2.6 * SIM_HZ)) {
-    g.state = 'flee'; g.leg = 0; g.t = 0;
-    log('The giant freezes. From the hall comes a sound like wind through dry reeds, and the floor shivers. He forgets you entirely, and runs.', 'warn');
-  }
-  if (g.state === 'flee' && S.satha.pts) {
+  if (g.state === 'raise' && S.satha.pts) {
     const h = S.satha.pts[0];
-    if (h.y > -0.5 && Math.hypot(h.x - g.x, h.z - g.z) < 2.4) {
+    if (h.y > -0.5 && Math.hypot(h.x - g.x, h.z - g.z) < 2.6) {
       g.state = 'crushed'; g.t = 0; Sfx.crush(); Sfx.scream();
       S.items.push({ id: 'giant_sword', kind: 'sword', name: 'strangler\'s sword', x: g.x + 0.6, z: 36.9, y: groundInfo(g.x + 0.6, 36.9).floor, taken: false });
-      log('Satha takes him from behind. There is a crack like an oak going over, then only the long rasp of scales on stone. The sword flies from the black\'s hand and rings on the stone.', 'warn');
-      for (let k = 0; k < 18; k++) particles.push({ m: 'drop', x: g.x, y: 1 + Math.random(), z: g.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 9, s: 1.4 });
+      log('Behind him the great head rises out of the dark. Satha takes him with his sword still raised. Bones crack like green wood, and the sword rings away across the flagstones.', 'warn');
+      for (let k = 0; k < 18; k++) particles.push({ m: 'blood', x: g.x, y: 1 + Math.random(), z: g.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 9, s: 1.4 });
     }
   }
   g.y = groundInfo(g.x, g.z).floor;
@@ -735,7 +714,7 @@ function promptText(t) {
     case 'ring': return S.read.has('insc_cell') ? '[E] grind the rusted link against the stone' : '[E] strain at the chain';
     case 'clue': return t.f.id.startsWith('mark') ? '[E] look at the marks' : '[E] read the scratches';
     case 'bones': return '[E] take a thighbone';
-    case 'door': return '[E] try the cell door';
+    case 'door': return S.flags.has_cellkey ? '[E] unlock the cell door' : '[E] try the cell door';
     case 'grille': return S.flags.has_keys ? '[E] unlock the grille' : '[E] try the grille';
     case 'spear_rack': return '[E] take a spear';
     case 'valve': return S.valves[t.f.idx] ? '[E] shut the vent' : '[E] open the vent';
@@ -781,7 +760,8 @@ function objective() {
     return 'Through the gate.';
   }
   if (!f.free) return 'Free yourself from the chain.';
-  if (!f.has_sword) return S.giant.state === 'crushed' ? 'Find something to fight with.' : 'Survive.';
+  if (!f.cell_open) return f.has_cellkey ? 'Unlock the cell door.' : S.giant.state === 'crushed' ? 'Take the keys.' : 'Survive.';
+  if (!f.has_sword) return 'Take the strangler\'s sword.';
   if (live('scout') || live('post')) return 'Fight! Kick shields aside.';
   if (!f.shukeli_dead) return 'Reach the grille at the end of the hall. Deal with the jailer.';
   if (!f.has_keys) return 'Take the jailer\'s keys.';
@@ -1032,6 +1012,8 @@ function render(alpha) {
   const LS = 'mmnmmommommnonmmonqnmmo', lsv = (LS.charCodeAt(Math.floor(gameTime * 10) % LS.length) - 97) / 12;
   let lm = 1 + (lsv - 1) * 0.35;
   if (t >= 0 && t < 6.5) lm *= 1 - 0.5 * smoothstep(0, 0.6, t) * (1 - smoothstep(5, 6.5, t)) * (0.75 + 0.25 * Math.sin(gameTime * 37));
+  const ev = LEVEL.exitVoid;
+  R.voidLine = ev ? [ev.from[0] * CELL, ev.from[1] * CELL, ev.to[0] * CELL, ev.to[1] * CELL] : [0, 0, 0, 0]; R.voidW = ev ? ev.w : 0;
   R.beginScene(gameTime);
   R.lightMul(lm);
   R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, 0.034);
@@ -1040,8 +1022,8 @@ function render(alpha) {
   for (const it of S.items) {
     if (it.taken) continue;
     const light = sampleLight(it.x, it.y + 0.5, it.z);
-    const mesh = it.kind === 'wine' && it.name.startsWith('jug') ? 'jug' : it.kind === 'dagger' ? 'dagger2' : it.kind;
-    const flat = it.kind === 'dagger' || it.kind === 'bone' || it.kind === 'keys' || it.kind === 'sword' || it.kind === 'spear';
+    const mesh = it.kind === 'wine' && it.name.startsWith('jug') ? 'jug' : it.kind === 'dagger' ? 'dagger2' : it.kind === 'cellkey' ? 'keys' : it.kind;
+    const flat = it.kind === 'dagger' || it.kind === 'bone' || it.kind === 'keys' || it.kind === 'cellkey' || it.kind === 'sword' || it.kind === 'spear';
     const m = flat ? m4trs(it.x, it.y + 0.05, it.z, hrand(it.x * 10, it.z * 10, 1, 1) * 6, Math.PI / 2, 0, it.kind === 'dagger' ? 2.2 : it.kind === 'sword' || it.kind === 'spear' ? 1 : 1.2) : m4trs(it.x, it.y, it.z, 0.6, 0, 0, 1.3);
     drawM(mesh, m, light, 0.06 + 0.05 * Math.sin(gameTime * 3));
   }
@@ -1072,13 +1054,14 @@ function render(alpha) {
   const g = S.giant, gl = sampleLight(g.x, 1.5, g.z);
   if (g.state === 'gone') { /* not in this level */ } else if (g.state === 'crushed') {
     const k = smoothstep(0, 1, g.fall);
-    drawCharacter('giant', g.x, g.y, g.z, g.yaw, { pitch: -1.5 * k, roll: 0.3 * k, drop: 0.1 * k, uzL: 1.2 * k, uzR: 1.2 * k, txL: -0.4 * k, sxL: 0.8 * k, headX: -0.4 * k }, gl);
+    drawCharacter('giant', g.x, g.y, g.z, g.yaw, { unarmed: true, pitch: -1.5 * k, roll: 0.3 * k, drop: 0.1 * k, uzL: 1.2 * k, uzR: 1.2 * k, txL: -0.4 * k, sxL: 0.8 * k, headX: -0.4 * k }, gl);
   } else {
-    const P = poseIdle({}, gameTime);
-    const moving = g.state === 'enter' || g.state === 'flee' || (g.state === 'stalk' && Math.hypot(S.x - g.x, S.z - g.z) > 1.3);
-    if (moving) poseWalk(P, g.walk * 2.2, g.state === 'flee' ? 1.3 : 0.9, g.arms < 0.5);
-    if (g.arms > 0) Object.assign(P, { uxL: -1.4 * g.arms, uxR: -1.4 * g.arms, fxL: -0.4, fxR: -0.4, uzL: 0.05, uzR: 0.05, lean: 0.15 * g.arms });
-    if (g.state === 'wait') { P.uxL = -0.2; P.fxL = -1.6; P.uxR = -0.2; P.fxR = -1.6; P.headX = 0.1; }       // arms folded, grinning
+    const P = poseMenace(poseIdle({}, gameTime), gameTime);
+    P.uxR = -0.3; P.fxR = -0.9; P.we = 0.3;                                     // the huge sword held low, point toward you
+    P.uxL = -0.5; P.fxL = -1.2;                                                 // the keys jangled in the other fist
+    if (g.state === 'wait') P.headX = 0.15 + 0.05 * Math.sin(gameTime * 1.3);   // grinning down at you
+    if (g.arms > 0) Object.assign(P, { uxR: lerp(-0.3, -2.9, g.arms), fxR: lerp(-0.9, -0.5, g.arms), uzR: 0.25 * g.arms, we: lerp(0.3, 2.5, g.arms),
+      uxL: lerp(-0.5, -0.2, g.arms), fxL: lerp(-1.2, -0.3, g.arms), lean: lerp(0.2, -0.12, g.arms), headX: -0.25 * g.arms });
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
   // Shukeli, the jailer
@@ -1209,11 +1192,22 @@ function render(alpha) {
     if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
     else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
     else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
-    if (LEVEL.torch) {                     // the torch, held low in the left hand
-      const tm = m4trs(-0.22 + sb, -0.36 + cb, -0.46, 0.25, 0.25, -0.18, 1), tl = [0.75, 0.48, 0.26];
-      tl.d = [0, 1, 0];
-      drawM('vm_torch', tm, tl);
-      drawM('flame', m4mul(tm, m4trs(0, 0.37, 0, 0, clamp(S.windNow * 0.5, -1, 1) + Math.sin(gameTime * 14) * 0.08, 0, 0.075 + 0.006 * Math.sin(gameTime * 19))), vl, 0.7);
+    if (LEVEL.torch) {                     // the torch in his left fist: the right hand's model, mirrored
+      const tf = norm3([-0.22 + sb * 2, 1.15, -1]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
+      const td = tarm[0] * TX[0] + tarm[1] * TX[1] + tarm[2] * TX[2], TZ = norm3([tarm[0] - TX[0] * td, tarm[1] - TX[1] * td, tarm[2] - TX[2] * td]), TY = cross3(TZ, TX);
+      const tpos = [0.25 - sb, -0.21 + cb, -0.46];
+      const handR = new Float32Array([TX[0], TX[1], TX[2], 0, TY[0], TY[1], TY[2], 0, TZ[0], TZ[1], TZ[2], 0, tpos[0], tpos[1], tpos[2], 1]);
+      const handL = m4mul(m4s3(-1, 1, 1), handR), tl = [0.85, 0.55, 0.3];
+      tl.d = [0.2, 1, 0.3];
+      drawM('vm_forearm', handL, tl); drawM('vm_hand_grip', handL, tl);
+      const torch = m4mul(handL, m4trs(0.0, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.5));
+      drawM('vm_torch', torch, tl);
+      // the flame: three nested tongues, each flickering on its own, leaning with the draft
+      const lean = clamp(S.windNow * 0.4, -0.9, 0.9);
+      for (let k = 0; k < 3; k++) {
+        const fl = 1 + 0.22 * Math.sin(gameTime * (13 + k * 5) + k * 2) + 0.1 * Math.sin(gameTime * (31 + k * 7));
+        drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(torch, m4trs(0, 0.33, 0, gameTime * (1.5 + k) + k, lean + 0.08 * Math.sin(gameTime * 9 + k), 0.06 * Math.sin(gameTime * 7 + k * 3), [1.5, 1.15, 0.75][k] * fl)), tl, k === 2 ? 0.7 : 0.35);
+      }
     }
     if (S.kickT > 0) {                     // the kick: a boot comes up from below
       const k = Math.sin((1 - S.kickT / KICK.period) * Math.PI);

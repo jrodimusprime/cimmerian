@@ -24,8 +24,8 @@ About 5–10 minutes, with 12 enemies plus the jailer.
 
 | # | Area | Type | What happens |
 |---|---|---|---|
-| 1 | The Cell | puzzle | You wake chained. An inscription names the rusted link; grinding it frees you |
-| 2 | The Hall of the Serpent | puzzle (timing) | The black strangler comes with a huge sword and Shukeli's stolen keys to gloat over "Amra", and Satha's first pass takes him instead. **She passes every 40 seconds**: the torches gutter and the floor rumbles about 5 seconds before her head comes up out of the well. She fills the hall and spits at anything she can see, so get into an alcove. Take his sword |
+| 1 | The Cell | puzzle | You wake chained, with the black strangler gloating in the hall with his sword and keys. An inscription names the rusted link; grinding it frees you. He roars and swings the sword up, and the keys fly from his fist through the bars to your feet (as in the book) |
+| 2 | The Hall of the Serpent | puzzle (timing) | Satha's first pass takes the strangler, sword still raised. Unlock your cell with his keys. **She passes every 40 seconds**: the torches gutter and the floor rumbles about 5 seconds before her head comes up out of the well. She fills the hall and spits at anything she can see, so get into an alcove. Take his sword |
 | 3 | The Wardens' Post | action | Picking up the sword brings a Kothian guard up the south passage. Beyond it is the post: a guard, a Kothian spearman, and a Shemite archer on a gallery |
 | 4 | The Grille | puzzle | Throw a bone against the bars from the dark niche. Shukeli waddles over to look; if he can't see you, strike him through the bars. Take his keys |
 | 5 | The Guardroom and Barracks | action | His death-squeal raises the alarm. Four guards come to the bars and fight you through them, then in the guardroom |
@@ -72,7 +72,7 @@ Only characters and creatures from Howard's text (README §1, *Canon cast only*)
 
 Every human enemy stands like Quake's killers: hunched, knees bent, head thrust forward. All of them are built from compact specs, as README §8 and MODELS.md require: a 14-bone humanoid rig with rigid parts, smooth lofts and lathes for the body, and outfits as per-role overlays. They're posed procedurally (idle, walk, wind-up, strike, block, pain, stagger and death) and lit from the direction of their strongest nearby light, as Quake lit its alias models.
 
-Story splashes (README §12) bracket the level. Each is painted as a tonal scene (a Piranesi-style vaulted arcade with a stair, a bridge and chains, plus Satha or a torch-bearer), then engraved with anti-aliased hatching whose line weight carries the tone. Each has one scarlet accent.
+The title card is John Martin's *Pandemonium*, and each level's splash is a Piranesi *Carceri* plate. All are public domain, processed by `tools/splashgen.sh` onto the palette with one scarlet accent (README §6, credits in `story/credits.json`). Each level ends in a black corridor that fades out as you walk into it.
 
 ## How it maps to the design
 
@@ -84,7 +84,7 @@ Story splashes (README §12) bracket the level. Each is painted as a tonal scene
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *21 states*, e1m3 *9 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14315`, `345192a9`; e1m3: `5710`, `31e0ac69`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14473`, `2a94b3d9`; e1m3: `5870`, `d64ae18c`) |
 
 ## Not the real build
 

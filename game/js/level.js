@@ -17,7 +17,7 @@ const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32
 //   grille (puzzle) -> guardroom + barracks (action) -> winch (puzzle) ->
 //   captain's landing (action) -> exit.
 const LEVEL_E1M2 = {
-  level: 'e1m2', next: 'e1m3', ambient: [0.07, 0.064, 0.056], title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [64, 32],
+  level: 'e1m2', next: 'e1m3', ambient: [0.07, 0.064, 0.056], exitVoid: { from: [61.5, 14], to: [70, 14], w: 3.5 }, title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [72, 32],
   areas: [
     { id: 'cell', type: 'puzzle', name: 'The Cell', rooms: ['cell', 'cell_door'] },
     { id: 'hall', type: 'puzzle', name: 'The Hall of the Serpent', rooms: ['hall', 'well', 'a1', 'a2', 'a3', 'n1', 'n2'] , cp: [7.5, 12.4, Math.PI] },
@@ -51,7 +51,7 @@ const LEVEL_E1M2 = {
     { id: 'portcullis', name: 'the Portcullis', at: [45, 13], size: [1, 2], h: 2.4, floor: 0.4, style: 'hewn' },
     { id: 'stair', name: 'the Stair', at: [46, 13], size: [7, 2], h: 2.6, floor: 1.4, rise: 1.0, style: 'hewn' },
     { id: 'landing', name: 'the Captain\'s Landing', at: [53, 9], size: [8, 10], h: 3.4, floor: 7.4, vault: 1.2, style: 'hewn' },
-    { id: 'exit', name: 'the Citadel Stair', at: [61, 13], size: [2, 2], h: 1.6, floor: 7.4, style: 'hewn' },
+    { id: 'exit', name: 'the Way Up', at: [61, 13], size: [10, 2], h: 1.6, floor: 7.4, style: 'hewn' },
   ],
   // the cell's grating: one tall cell open to a grey thread of daylight
   shafts: [{ at: [8, 9], h: 9 }],
@@ -63,7 +63,7 @@ const LEVEL_E1M2 = {
   props: [
     // the hall
     { prefab: 'torch', at: [5.5, 13], wall: 'N' }, { prefab: 'torch', at: [10.5, 13], wall: 'N' }, { prefab: 'torch', at: [22.5, 13], wall: 'N' },
-    { prefab: 'torch', at: [30.5, 13], wall: 'N' }, { prefab: 'torch', at: [15.5, 15], wall: 'S' }, { prefab: 'torch', at: [8.6, 15], wall: 'S' }, { prefab: 'torch', at: [29.5, 15], wall: 'S' },
+    { prefab: 'torch', at: [30.5, 13], wall: 'N', dim: 0.5 }, { prefab: 'torch', at: [15.5, 15], wall: 'S' }, { prefab: 'torch', at: [8.6, 15], wall: 'S' }, { prefab: 'torch', at: [29.5, 15], wall: 'S', dim: 0.5 },
     { prefab: 'bones', at: [17.6, 16.3], big: true }, { prefab: 'bones', at: [5.6, 14.6] }, { prefab: 'bones', at: [12.4, 16.4] },
     { prefab: 'bones', at: [29.2, 13.5] }, { prefab: 'skull', at: [5.2, 13.4] }, { prefab: 'skull', at: [24.6, 16.5] },
     { prefab: 'chains', at: [13, 13], wall: 'N' }, { prefab: 'chains', at: [19.5, 15], wall: 'S' }, { prefab: 'chains', at: [25.5, 13], wall: 'N' },
@@ -75,8 +75,8 @@ const LEVEL_E1M2 = {
     { prefab: 'brazier', at: [26, 25] }, { prefab: 'table', at: [21.8, 21.6] }, { prefab: 'stool', at: [23.2, 21.4] },
     { prefab: 'bunk', at: [21.2, 27.8] }, { prefab: 'rack', at: [20, 25], wall: 'W' }, { prefab: 'chains', at: [30, 20], wall: 'N' },
     // the guardroom and barracks
-    { prefab: 'torch', at: [35, 16.5], wall: 'W' }, { prefab: 'torch', at: [45, 10.5], wall: 'E' }, { prefab: 'torch', at: [42, 19], wall: 'S' },
-    { prefab: 'brazier', at: [38, 15.5] }, { prefab: 'table', at: [39.5, 12] }, { prefab: 'stool', at: [38.2, 12.9] },
+    { prefab: 'torch', at: [45, 10.5], wall: 'E', dim: 0.55 }, { prefab: 'torch', at: [42, 19], wall: 'S', dim: 0.55 },
+    { prefab: 'brazier', at: [38, 15.5], dim: 0.4 }, { prefab: 'table', at: [39.5, 12] }, { prefab: 'stool', at: [38.2, 12.9] },
     { prefab: 'column', at: [42.5, 12] }, { prefab: 'column', at: [42.5, 16] },
     { prefab: 'torch', at: [35, 4.5], wall: 'W' }, { prefab: 'torch', at: [45, 3.5], wall: 'E' },
     { prefab: 'bunk', at: [36.3, 2.9] }, { prefab: 'bunk', at: [38.9, 2.9] }, { prefab: 'bunk', at: [41.5, 2.9] }, { prefab: 'table', at: [40, 5.6] },
@@ -93,7 +93,6 @@ const LEVEL_E1M2 = {
     { at: [4, 14], y: -4, col: [0.25, 0.55, 0.38], rad: 10, i: 0.9 },             // slime glow in the well
     { at: [28, 7], y: -8, col: [0.25, 0.55, 0.38], rad: 9, i: 0.6 },              // slime glow in the serpent's hole
     { at: [39.5, 12.2], y: 1.6, col: [1.0, 0.6, 0.3], rad: 5, i: 0.7 },           // Shukeli's candle
-    { at: [62, 14], y: 9.5, col: [0.6, 0.62, 0.7], rad: 12, i: 1.4 },             // daylight down the citadel stair
   ],
   features: [
     { type: 'ring', at: [7, 8.08], y: 1.0 },
@@ -140,14 +139,16 @@ const LEVEL_E1M2 = {
     { class: 'warden', id: 'w4', at: [56.5, 10.8], group: 'landing', yaw: -Math.PI / 2 },
     { class: 'spearman', id: 's3', at: [56.5, 17.2], group: 'landing', yaw: -Math.PI / 2 },
     { class: 'archer', id: 'a3', at: [60.2, 10.2], group: 'landing', yaw: -Math.PI / 2 },
-    { class: 'trigger_exit', rect: [61.6, 0, 64, 32] },
+    { class: 'trigger_exit', rect: [68, 0, 72, 32] },
   ],
   // README §10: flags and actions. solve() below proves it can't softlock.
   puzzle: {
-    flags: ['free', 'has_sword', 'has_bone', 'shukeli_at_bars', 'shukeli_dead', 'has_keys', 'grille_open', 'has_spear', 'portcullis_open'],
+    flags: ['free', 'has_cellkey', 'cell_open', 'has_sword', 'has_bone', 'shukeli_at_bars', 'shukeli_dead', 'has_keys', 'grille_open', 'has_spear', 'portcullis_open'],
     actions: [
       { id: 'slip_chain', needs: [], sets: 'free', at: 'cell', clue: 'insc_cell' },
-      { id: 'take_sword', needs: ['free'], sets: 'has_sword', at: 'hall' },
+      { id: 'take_keys_cell', needs: ['free'], sets: 'has_cellkey', at: 'cell' },
+      { id: 'open_cell', needs: ['has_cellkey'], sets: 'cell_open', at: 'cell' },
+      { id: 'take_sword', needs: ['cell_open'], sets: 'has_sword', at: 'hall' },
       { id: 'take_bone', needs: ['free'], sets: 'has_bone', at: 'a2', repeatable: true },
       { id: 'throw_bone', needs: ['has_bone'], sets: 'shukeli_at_bars', clears: ['has_bone'], at: 'niche', clue: 'insc_grille' },
       { id: 'strike', needs: ['shukeli_at_bars', 'has_sword'], sets: 'shukeli_dead', at: 'niche' },
@@ -168,7 +169,7 @@ const LEVEL_E1M2 = {
 // ---------------------------------------------------------------------------
 const CAVE_TEX = { wall: 'CAVE', floor: 'MUD', ceil: 'CAVE' };
 const LEVEL_E1M3 = {
-  level: 'e1m3', title: 'The Tunnels Below', ramps: ['ink', 'jade', 'magic'], grid: [64, 34], ambient: [0.06, 0.066, 0.06],
+  level: 'e1m3', title: 'The Tunnels Below', ramps: ['ink', 'jade', 'magic'], grid: [64, 34], exitVoid: { from: [42.5, 30], to: [32, 30], w: 3.5 }, ambient: [0.06, 0.066, 0.06],
   torch: true,                                             // "lifting his torch" (ch. III): Conan carries one through the tunnels
   areas: [
     { id: 'marks', type: 'puzzle', name: 'The Marked Ways', rooms: ['foot', 'junction', 'way_one', 'drop', 'way_two', 'nook'], cp: [4.5, 19, -Math.PI / 2] },
@@ -198,7 +199,7 @@ const LEVEL_E1M3 = {
     { id: 'shaft', name: 'the Shaft', at: [55, 26], size: [2, 2], pit: 60, style: 'rough', tex: CAVE_TEX },
     { id: 'gate', name: 'the Sigil Gate', at: [44, 27], size: [8, 6], h: 3.6, vault: 1.2, style: 'hewn' },
     { id: 'gate_door', name: 'the Sigil Gate', at: [43, 29], size: [1, 2], h: 2.4, style: 'hewn' },
-    { id: 'beyond', name: 'beyond the gate', at: [38, 29], size: [5, 2], h: 2.4, style: 'hewn', tex: { floor: 'MUD' } },
+    { id: 'beyond', name: 'beyond the gate', at: [30, 29], size: [13, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
   ],
   shafts: [],
   links: [
@@ -214,7 +215,7 @@ const LEVEL_E1M3 = {
     { prefab: 'bones', at: [34.2, 22.6] }, { prefab: 'fungus', at: [33.4, 15] },
     { prefab: 'fungus', at: [50, 17.2] }, { prefab: 'bones', at: [58.5, 19.5], big: true }, { prefab: 'skull', at: [60.5, 12.4] }, { prefab: 'fungus', at: [61.4, 15] },
     { prefab: 'winch', at: [53, 25.4] }, { prefab: 'post', at: [54, 27] }, { prefab: 'torch', at: [52, 30], wall: 'W' },
-    { prefab: 'torch', at: [44, 31.5], wall: 'W' }, { prefab: 'brazier', at: [47, 28.4] }, { prefab: 'brazier', at: [47, 31.6] }, { prefab: 'torch', at: [38, 30], wall: 'W' },
+    { prefab: 'torch', at: [44, 31.5], wall: 'W' }, { prefab: 'brazier', at: [47, 28.4] }, { prefab: 'brazier', at: [47, 31.6] },
   ],
   lights: [
     { at: [8.2, 16.2], y: 0.6, col: [1.0, 0.65, 0.3], rad: 6, i: 0.8 }, { at: [11.6, 21.6], y: 0.6, col: [1.0, 0.65, 0.3], rad: 6, i: 0.8 },
@@ -267,7 +268,7 @@ const LEVEL_E1M3 = {
     { class: 'thing', id: 'g4', at: [45.0, 31.8], group: 'gatewave', lurk: true, dormant: 6.5 },
     { class: 'thing', id: 'g5', at: [50.8, 29.6], group: 'gatewave', lurk: true, dormant: 8.5 },
     { class: 'thing', id: 'g6', at: [46.6, 30.0], group: 'gatewave', lurk: true, dormant: 10.5 },
-    { class: 'trigger_exit', rect: [38, 28, 39.6, 32] },
+    { class: 'trigger_exit', rect: [30, 28, 33, 32] },
   ],
   puzzle: {
     flags: ['still_air', 'crossed', 'has_crank', 'boom_swung', 'stone_down', 'has_sigil', 'gate_open'],
@@ -351,9 +352,9 @@ function buildLevel(spec) {
     LV.props.push(prop);
     if (p.prefab === 'torch') {
       const n = wallIn(p.wall);
-      LV.lights.push({ x: x + n[0] * 0.9, y: prop.y + 2.6, z: z + n[1] * 0.9, r: 1.0, g: 0.6, b: 0.28, rad: 15, i: 1.6 });
+      LV.lights.push({ x: x + n[0] * 0.9, y: prop.y + 2.6, z: z + n[1] * 0.9, r: 1.0, g: 0.6, b: 0.28, rad: 15 * Math.sqrt(p.dim || 1), i: 1.6 * (p.dim || 1) });
     } else if (p.prefab === 'brazier') {
-      LV.lights.push({ x, y: prop.y + 1.6, z, r: 1.0, g: 0.55, b: 0.22, rad: 16, i: 1.9 });
+      LV.lights.push({ x, y: prop.y + 1.6, z, r: 1.0, g: 0.55, b: 0.22, rad: 16 * Math.sqrt(p.dim || 1), i: 1.9 * (p.dim || 1) });
       LV.colliders.push({ x, z, r: 0.75 });
     } else if (p.prefab === 'table') LV.colliders.push({ x, z, r: 1.15 });
     else if (p.prefab === 'column') LV.colliders.push({ x, z, r: 0.75 });
