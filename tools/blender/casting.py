@@ -214,7 +214,7 @@ CAST = {
                       brows=('eyebrow001', (0.06, 0.05, 0.04)),
                       outfit=armoured(dict(kind='cloak', col='velvet', length=0.95), shirt=dict(kind='cloth', col='velvet', sleeves='wrist', skirt=0.3, scale=12), legs='black', gloves=None)),
     'epemitreus': dict(macro=M(gender=1.0, age=1.0, muscle=0.2, weight=0.25, height=0.6), race=W, skin='cauc_old', skin_tint=(0.85, 0.85, 0.85),
-                       outfit=['eyes', dict(kind='robe', col='linen', name='robe'), dict(kind='hood', col='white', deep=True), dict(kind='beard', col='white', length=0.22)]),
+                       outfit=['eyes', dict(kind='robe', col='grey_white', name='robe'), dict(kind='hood', col='white', deep=True), dict(kind='beard', col='white', length=0.22)]),
     # ---- e1m1 ----
     'kknight': dict(macro=M(gender=1.0, age=0.5, muscle=0.75, weight=0.6, height=0.65), race=K, skin='cauc_mid', targets=BIG,
                     outfit=armoured(dict(kind='helm', mask=True), dict(kind='pauldrons'), dict(kind='tabard', col='scarlet'), dict(kind='shield', col='blood'), shirt=dict(sleeves='wrist', skirt=0.35))),
@@ -284,13 +284,13 @@ CAST = {
                                       shirt=dict(sleeves='elbow', skirt=0.35))),
     # ---- the pits' nameless things (README §1: "monsters with dripping jaws agape", "the burning glare of hungry eyes")
     'thing': dict(macro=M(gender=1.0, age=0.9, muscle=0.85, weight=0.0, height=0.45, proportions=0.0), race={'asian': 0.3, 'caucasian': 0.4, 'african': 0.3},
-                  skin=None, skin_tile='leather', skin_tint=(0.26, 0.26, 0.23), dirt=0.7, arm_out=0.2, targets=THING,
+                  skin=None, skin_tile='leather', skin_tint=(0.15, 0.15, 0.13), dirt=0.7, arm_out=0.2, targets=THING,
                   outfit=[dict(kind='eyes', glow=1.0), dict(kind='fangs', n=6, length=0.06), dict(kind='spurs', n=7), dict(kind='claws')]),
     'thing_b': dict(macro=M(gender=1.0, age=0.9, muscle=1.0, weight=0.35, height=0.6, proportions=0.0), race={'asian': 0.3, 'caucasian': 0.4, 'african': 0.3},
-                    skin=None, skin_tile='leather', skin_tint=(0.26, 0.26, 0.23), dirt=0.7, arm_out=0.2, targets=dict(THING, **{'torso/torso-scale-depth-incr': 1.0, 'torso/torso-vshape-incr': 1.0}),
+                    skin=None, skin_tile='leather', skin_tint=(0.15, 0.15, 0.13), dirt=0.7, arm_out=0.2, targets=dict(THING, **{'torso/torso-scale-depth-incr': 1.0, 'torso/torso-vshape-incr': 1.0}),
                     outfit=[dict(kind='eyes', glow=1.0), dict(kind='fangs', n=4, length=0.07), dict(kind='spurs', n=9, size=0.14), dict(kind='claws', length=0.1)]),
     'thing_c': dict(macro=M(gender=1.0, age=1.0, muscle=0.6, weight=0.0, height=0.3, proportions=0.0), race={'asian': 0.3, 'caucasian': 0.4, 'african': 0.3},
-                    skin=None, skin_tile='leather', skin_tint=(0.26, 0.26, 0.23), dirt=0.7, arm_out=0.2,
+                    skin=None, skin_tile='leather', skin_tint=(0.15, 0.15, 0.13), dirt=0.7, arm_out=0.2,
                     targets=dict(THING, **{'arms/l-lowerarm-scale-vert-incr': 1.0, 'arms/r-lowerarm-scale-vert-incr': 1.0, 'head/head-scale-vert-incr': 1.0}),
                     outfit=[dict(kind='eyes', glow=1.0), dict(kind='fangs', n=8, length=0.05), dict(kind='spurs', n=4, size=0.07), dict(kind='claws', length=0.16)]),
     # ---- e0m1: "not unlike that of a gigantic baboon, but no such baboon ever walked the earth"

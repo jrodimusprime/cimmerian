@@ -50,7 +50,7 @@ const RAMPS = {
 // Quake's palette.lmp. The final image is snapped to these 128 colours (renderer POST_FS).
 const PALETTE_RAMPS = [['#0b0a09', '#e8dcc0'], ['#2a0606', '#c4302b'], ['#20140a', '#d8a24a'], ['#08120c', '#7fa88a'],
   ['#0a0d14', '#6b7a96'], ['#160e08', '#b08a66'], ['#3c0600', '#ffd23c', '#d8480a'], ['#0a3020', '#e6fff0'],
-  ['#140a06', '#d6b29c'], ['#0b0c0f', '#b4b8c0']];   // flesh, and cold steel: the cast's skin and armour (Quake's palette has both)
+  ['#140a06', '#d6b29c'], ['#0b0c0f', '#b4b8c0'], ['#1c0b04', '#e8a070', '#9a4f28']];   // and torchlit skin, so flesh never snaps to fire   // flesh, and cold steel: the cast's skin and armour (Quake's palette has both)
 function gamePalette() {
   const out = [];
   for (const [lo, hi, mid] of PALETTE_RAMPS) out.push(...makeRamp(lo, hi, 16, mid ? 0.9 : 1.15, mid));

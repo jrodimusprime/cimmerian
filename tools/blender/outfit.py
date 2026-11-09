@@ -280,10 +280,11 @@ def region_shell(src, name, groups, *, offset=0.012, min_weight=0.35, keep=None,
             if loc is None:
                 continue
             d = (v.co - loc).dot(nrm)
-            if d < offset:
-                v.co = v.co + v.normal * (offset - d)
+            floor = offset if smooth < 20 else offset * 0.55        # loose cloth may sag toward the body, not into it
+            if d < floor:
+                v.co = v.co + v.normal * (floor - d)
         sb.free()
-        for _ in range(3):                               # and smooth away any spikes that push made
+        for _ in range(max(3, smooth // 4)):                               # and smooth away any spikes that push made
             bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
         bm.normal_update()
     bm.to_mesh(obj.data); bm.free()

@@ -42,7 +42,11 @@ def g_eyes(h, rig, helpers, spec, glow=0.0):
         e = helpers.get(k)
         if not e:
             continue
-        out.append(_finish(e, rig, O.recipe('eye', base=(0.08, 0.06, 0.05) if not glow else (0.9, 0.3, 0.05), grime=0, glow=glow), rigid='head', tex=64))
+        if glow:                                          # "the burning glare of hungry eyes": bigger, and lit from within
+            n = len(e.data.vertices); c = sum((v.co for v in e.data.vertices), Vector()) / max(1, n)
+            for v in e.data.vertices:
+                v.co = c + (v.co - c) * 1.7 + Vector((0, -0.006, 0))
+        out.append(_finish(e, rig, O.recipe('eye', base=(0.08, 0.06, 0.05) if not glow else (1.0, 0.45, 0.08), grime=0, glow=glow), rigid='head', tex=64))
     return out
 
 
@@ -238,18 +242,31 @@ def _tube(name, path, radii, seg=10):
 
 # ---- helms and masks ----------------------------------------------------------------------
 def face_mask(h, rig, helpers, *, top_frac=0.62, chin_drop=0.0, eye_r=0.022, mouth=True, name='mask'):
-    """A steel mask cast from the face itself, eyes cut out: the knight's face is metal."""
+    """A closed helm's faceplate: the face's own curve, forged smooth, a straight eye-slit and breaths cut through it."""
     hb = head_box(h, rig)
     ztop = hb['chin'] + (hb['top'] - hb['chin']) * top_frac
-    obj = O.region_shell(h, name, ['head'], offset=0.024, min_weight=0.3, smooth=7,
-                         keep=lambda co: co.y < hb['cy'] - hb['hd'] * 0.15 and co.z < ztop and co.z > hb['chin'] - chin_drop)
+    obj = O.region_shell(h, name, ['head'], offset=0.03, min_weight=0.3, smooth=30,
+                         keep=lambda co: co.y < hb['cy'] - hb['hd'] * 0.1 and co.z < ztop and co.z > hb['chin'] - 0.02 - chin_drop)
     eyes = eye_centres(helpers)
+    if eyes and eye_r:
+        ez = sum(e.z for e in eyes) / len(eyes)
+        bm = bmesh.new(); bm.from_mesh(obj.data)
+        kill = []
+        for f in bm.faces:
+            c = f.calc_center_median()
+            if abs(c.z - ez) < 0.011 and abs(c.x - hb['cx']) < 0.075 and abs(c.x - hb['cx']) > 0.008:
+                kill.append(f)                         # the eye-slit, split by the nose-bar
+            elif mouth and c.x > hb['cx'] + 0.015 and c.x < hb['cx'] + 0.06 and ez - 0.1 < c.z < ez - 0.04 and \
+                    (round((c.z - ez) / 0.014) % 2 == 0) and (round((c.x - hb['cx']) / 0.012) % 2 == 0):
+                kill.append(f)                         # breaths, on the right cheek as on Quake's knights
+        bmesh.ops.delete(bm, geom=list(set(kill)), context='FACES')
+        bm.to_mesh(obj.data); bm.free()
+    _solid(obj, 0.005)
     if eyes:
-        _cut_near(obj, eyes, eye_r * 1.25, squash=0.55)
-        if mouth:
-            m = (eyes[0] + eyes[1]) / 2 + Vector((0, -0.01, -0.075))
-            _cut_near(obj, [m + Vector((dx, 0, 0)) for dx in (-0.012, 0, 0.012)], 0.008)
-    _solid(obj, 0.004)
+        ez = sum(e.z for e in eyes) / len(eyes)
+        front = min(v.co.y for v in obj.data.vertices if abs(v.co.x - hb['cx']) < 0.01) - 0.004
+        ridge = _tube('ridge', [Vector((hb['cx'], front + 0.01, ez + 0.06)), Vector((hb['cx'], front, ez)), Vector((hb['cx'], front + 0.012, hb['chin'] + 0.01))], [0.008, 0.011, 0.007], seg=5)
+        obj = _join([obj, ridge], name)
     return obj
 
 
@@ -321,9 +338,6 @@ def g_helm(h, rig, helpers, spec, style='mask', metal='steel', mask=True, horns=
     eyes = eye_centres(helpers)
     if mask:
         parts.append(face_mask(h, rig, helpers, top_frac=0.68))
-        for e in eyes:                                        # a raised brow over each eye-hole (the Vendel helms' eyebrows)
-            c = e + Vector((0, -0.045, 0.03)); sx = 1 if e.x > hb['cx'] else -1
-            parts.append(_tube('browridge', [c + Vector((-sx * 0.035, 0.01, -0.006)), c + Vector((0, -0.004, 0.006)), c + Vector((sx * 0.04, 0.012, -0.01))], [0.007, 0.009, 0.006], seg=5))
     else:                                                     # an open helm: a nasal and cheek-plates
         nas = _tube('nasal', [Vector((hb['cx'], hb['front'] - 0.022, zb + 0.02)), Vector((hb['cx'], hb['front'] - 0.026, zb - 0.06))], [0.009, 0.007], seg=4)
         parts.append(nas)
@@ -476,21 +490,22 @@ def g_gloves(h, rig, helpers, spec, col='dark_leather', name='gloves'):
 
 
 def g_pauldrons(h, rig, helpers, spec, metal='steel', spikes=False):
+    """Two lames of plate over each shoulder, cut from the shoulder's own shape."""
     out = []
     for side in ('l', 'r'):
         c = O.bone_head(rig, 'upperarm_' + side)
         sx = 1 if c.x > 0 else -1
         parts = []
-        for k in range(3):                                # three lames, each overlapping the one below, stepping down the arm
-            p = _sphere('lame', c + Vector((sx * (0.025 + 0.012 * k), 0, 0.03 - 0.035 * k)), 0.078 - 0.004 * k, dims=(1.1, 1.08, 0.55), seg=20, ring=12)
-            _keep(p, lambda co, cz=c.z + 0.03 - 0.035 * k: co.z > cz - 0.02)
-            parts.append(p)
+        for k, (off, z0) in enumerate(((0.04, c.z - 0.02), (0.055, c.z - 0.085))):
+            sh = O.region_shell(h, 'lame', ['upperarm_' + side, 'clavicle_' + side], offset=off, min_weight=0.25, smooth=6,
+                                keep=lambda co, z0=z0, k=k: co.z > z0 and sx * (co.x - c.x) > -0.06 + 0.02 * k and (k == 0 or co.z < z0 + 0.09))
+            _solid(sh, 0.007)
+            parts.append(sh)
         if spikes:
             for k in range(3):
-                base = c + Vector((sx * 0.06, (k - 1) * 0.045, 0.08))
+                base = c + Vector((sx * 0.07, (k - 1) * 0.045, 0.07))
                 parts.append(_tube('sp', [base, base + Vector((sx * 0.05, 0, 0.07))], [0.014, 0.001], seg=5))
         pj = _join(parts, 'pauldron_' + side)
-        _solid(pj, 0.006)
         O.smart_uv(pj)
         out.append(_finish(pj, rig, O.recipe('pauldron', base=COL[metal], tile_kind='steel', scale=4, grime=0.35, edge_wear=0.8), rigid='upperarm_' + side, tex=256))
     return out
