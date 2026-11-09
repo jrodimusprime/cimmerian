@@ -163,6 +163,49 @@ function addPrefab(mb, p) {
       addBox(mb, bx + n[0] * 0.05, p.y + 1.5, bz + n[1] * 0.05, 0.14, 0.09, 0.14, T.IRON, yaw);   // open manacle
       break;
     }
+    case 'column': {                                     // a dressed stone pier with base and capital
+      const top = groundInfo(p.x, p.z).ceil + 0.5;
+      addLathe(mb, p.x, p.y - 0.2, p.z, [[0, 0], [0.85, 0], [0.85, 0.35], [0.66, 0.5], [0.6, top - p.y - 1.2], [0.8, top - p.y - 0.6], [0.8, top - p.y + 0.2], [0, top - p.y + 0.2]], 8, T.HEWN, Math.PI / 8);
+      break;
+    }
+    case 'bunk':                                         // plank cot with a straw pallet
+      addBox(mb, p.x, p.y + 0.42, p.z, 1.2, 0.06, 0.5, T.WOOD);
+      for (const [dx, dz] of [[-1.1, -0.42], [1.1, -0.42], [-1.1, 0.42], [1.1, 0.42]]) addBox(mb, p.x + dx, p.y + 0.2, p.z + dz, 0.06, 0.22, 0.06, T.WOOD);
+      addBox(mb, p.x, p.y + 0.53, p.z, 1.1, 0.06, 0.44, T.STRAW);
+      addRock(mb, p.x - 0.85, p.y + 0.62, p.z, 0.25, 0.08, 0.3, 3, T.CLOTH, 0.1);
+      break;
+    case 'rack': case 'spear_rack': {                    // weapons in a wall rack
+      const bx = p.x + n[0] * 0.25, bz = p.z + n[1] * 0.25, yaw = Math.atan2(n[0], n[1]);
+      const sx = Math.cos(yaw), sz = -Math.sin(yaw);
+      addBox(mb, bx, p.y + 0.5, bz, 1.0, 0.05, 0.12, T.WOOD, yaw); addBox(mb, bx, p.y + 1.6, bz, 1.0, 0.05, 0.12, T.WOOD, yaw);
+      for (let k = -2; k <= 2; k++) {
+        const x = bx + sx * k * 0.4, z = bz + sz * k * 0.4;
+        if (p.prefab === 'spear_rack') {
+          smoothLathe(mb, x, p.y + 0.1, z, [[0.017, 0], [0.017, 2.4]], 5, T.WOOD, ONE3, [0, 1, 0]);
+          loft(mb, [S_(p.y + 2.5, 0.02, 0.008, 0.008, -z, x), S_(p.y + 2.62, 0.04, 0.008, 0.008, -z, x), S_(p.y + 2.8, 0.001, 0.001, 0.001, -z, x)], 4, T.STEEL, 1, null, 'y');
+        } else {
+          smoothLathe(mb, x, p.y + 0.35, z, [[0.016, 0], [0.018, 0.1], [0.016, 0.2]], 6, T.GRIP, ONE3, [0, 1, 0]);
+          addBox(mb, x, p.y + 0.57, z, 0.09, 0.012, 0.016, T.IRON, yaw);
+          addBox(mb, x, p.y + 1.0, z, 0.025, 0.42, 0.006, T.STEEL, yaw);
+        }
+      }
+      break;
+    }
+    case 'winch': {                                      // a drum on trestles with a crank and a ratchet wheel
+      for (const dz of [-0.55, 0.55]) addBox(mb, p.x, p.y + 0.45, p.z + dz, 0.12, 0.45, 0.25, T.WOOD);
+      smoothLathe(mb, p.x, p.y + 0.85, p.z, [[0.32, -0.5], [0.34, -0.45], [0.34, 0.45], [0.32, 0.5]], 10, T.WOOD, ONE3, [0, 0, 1]);
+      smoothLathe(mb, p.x, p.y + 0.85, p.z - 0.62, [[0.3, -0.03], [0.3, 0.03]], 12, T.IRON, ONE3, [0, 0, 1]);
+      addBox(mb, p.x, p.y + 0.85, p.z + 0.68, 0.04, 0.04, 0.12, T.IRON); addBox(mb, p.x, p.y + 0.62, p.z + 0.8, 0.03, 0.25, 0.03, T.IRON);
+      addBox(mb, p.x, p.y + 0.4, p.z + 0.8, 0.05, 0.05, 0.12, T.WOOD);
+      smoothLathe(mb, p.x, p.y + 0.85, p.z, [[0.025, 0], [0.025, 3]], 5, T.WOOD, ONE3, [-1, 1, -0.6]);
+      break;
+    }
+    case 'banner': {                                     // Tsotha's scarlet serpent banner
+      const bx = p.x + n[0] * 0.08, bz = p.z + n[1] * 0.08, yaw = Math.atan2(n[0], n[1]);
+      addBox(mb, bx, p.y + 4.2, bz, 0.06, 0.06, 0.9, T.WOOD, yaw + Math.PI / 2);
+      addBox(mb, bx, p.y + 2.9, bz, 0.8, 1.25, 0.02, T.BANNER, yaw);
+      break;
+    }
     case 'grating': {
       const cx = (p.at[0] + 0.5) * CELL, cz = (p.at[1] + 0.5) * CELL, y = groundInfo(cx, cz).ceil - 0.3;
       for (let k = -2; k <= 2; k++) {
@@ -238,49 +281,6 @@ function buildLevelMesh() {
 }
 
 // ---- entity models (built at the origin, +z forward, feet at y=0) ---------
-// Character proportions for the tiny humanoid rig (README §8: rigid parts
-// per bone, Quake-style chunky deformation). Units are for a 1.85 m man.
-const CHAR_DEFS = {
-  giant: { skin: T.DARKSKIN, cloth: T.CLOTH, bulk: 1.15, scale: 1.35, legs: true },
-  shukeli: { skin: T.SKIN, cloth: T.ROBE, bulk: 1.5, scale: 1.0, legs: false, robe: true },
-};
-function buildPart(def, part) {
-  const mb = new MeshBuilder(256), b = def.bulk, sk = def.skin, cl = def.cloth;
-  switch (part) {
-    case 'torso':
-      if (def.robe) {
-        addLathe(mb, 0, 0, 0, [[0, 0.02], [0.42 * b * 0.8, 0.02], [0.36 * b * 0.8, 0.5], [0.3 * b, 0.95], [0.26 * b, 1.25], [0.2 * b, 1.48], [0, 1.5]], 8, cl);
-        addRock(mb, 0, 1.08, 0.1, 0.27 * b, 0.25, 0.22 * b, 21, cl, 0.06);          // belly
-        addBox(mb, 0, 1.0, 0, 0.29 * b, 0.05, 0.22 * b, T.IRON);                       // belt
-      } else {
-        addBox(mb, 0, 0.95, 0, 0.19 * b, 0.11, 0.12 * b, cl);                          // loincloth
-        addBox(mb, 0, 0.9, 0.12 * b, 0.1, 0.13, 0.01, cl);
-        addBox(mb, 0, 1.2, 0, 0.18 * b, 0.16, 0.12 * b, sk);                           // belly
-        addBox(mb, 0, 1.43, 0, 0.25 * b, 0.12, 0.14 * b, sk);                          // chest
-      }
-      break;
-    case 'head':
-      addLathe(mb, 0, 1.53, 0, [[0, 0], [0.06, 0], [0.06, 0.08], [0, 0.08]], 5, sk);
-      addRock(mb, 0, 1.7, 0.01, 0.12, 0.14, 0.13, def.robe ? 3 : 8, sk, 0.08);
-      addBox(mb, -0.045, 1.72, 0.12, 0.025, 0.012, 0.01, def.robe ? T.BLACK : T.BONE);
-      addBox(mb, 0.045, 1.72, 0.12, 0.025, 0.012, 0.01, def.robe ? T.BLACK : T.BONE);
-      addBox(mb, 0, 1.63, 0.12, 0.04, 0.01, 0.01, T.BLACK);
-      if (def.robe) addRock(mb, 0, 1.6, 0.06, 0.12, 0.06, 0.1, 5, sk, 0.05);          // jowls
-      break;
-    case 'uarm': addBox(mb, 0, -0.15, 0, 0.055 * b, 0.16, 0.055 * b, def.robe ? cl : sk); break;
-    case 'farm':
-      addBox(mb, 0, -0.14, 0, 0.05 * b, 0.15, 0.05 * b, sk);
-      addBox(mb, 0, -0.33, 0.01, 0.045 * b, 0.06, 0.035 * b, sk);
-      break;
-    case 'thigh': addBox(mb, 0, -0.22, 0, 0.075 * b, 0.23, 0.075 * b, sk); break;
-    case 'shin':
-      addBox(mb, 0, -0.21, 0, 0.06 * b, 0.22, 0.06 * b, sk);
-      addBox(mb, 0, -0.43, 0.06, 0.055 * b, 0.04, 0.11, sk);
-      break;
-    case 'keys': buildKeys(mb, 0.6); break;
-  }
-  return mb.finish();
-}
 function buildKeys(mb, s) {
   for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; addBox(mb, Math.cos(a) * 0.08 * s, 0.1 * s + Math.sin(a) * 0.08 * s, 0, 0.025 * s, 0.025 * s, 0.012 * s, T.IRON, 0, ONE3, 0); }
   for (let k = 0; k < 3; k++) {
@@ -295,7 +295,7 @@ function buildModel(name) {
   if (name === 'vm_hand_open') return buildHand('open');
   if (name.startsWith('vm_') && name !== 'vm_arm' || name === 'dagger2') return buildViewModel(name);
   const mb = new MeshBuilder(512);
-  if (name.startsWith('part:')) { const [, d, p] = name.split(':'); return buildPart(CHAR_DEFS[d], p); }
+  if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
   if (name.startsWith('bars:')) {
     // a run of iron bars along +x, from 0 to len, base at y=0
     const [, len, h] = name.split(':').map(Number);
@@ -342,6 +342,19 @@ function buildModel(name) {
       addRock(mb, 0.03, 0, 0.29, 0.05, 0.04, 0.04, 2, T.BONE); addRock(mb, -0.03, 0, -0.29, 0.05, 0.04, 0.04, 3, T.BONE);
       break;
     case 'keys': buildKeys(mb, 1); break;
+    case 'sword': return buildCharPart('warden', 'sword');
+    case 'spear': return buildCharPart('spearman', 'spear');
+    case 'arrow':                                        // along +z
+      smoothLathe(mb, 0, 0, 0, [[0.008, -0.4], [0.008, 0.3]], 4, T.WOOD, ONE3, [0, 0, 1]);
+      loft(mb, [S_(0.3, 0.014, 0.004, 0.004, 0), S_(0.38, 0.001, 0.001, 0.001, 0)], 4, T.STEEL);
+      addBox(mb, 0, 0.012, -0.34, 0.002, 0.014, 0.06, T.BONE); addBox(mb, 0, -0.012, -0.34, 0.002, 0.014, 0.06, T.BONE);
+      break;
+    case 'blood': addRock(mb, 0, 0, 0, 0.045, 0.045, 0.045, 4, T.BLOOD, 0.3); break;
+    case 'spark': addRock(mb, 0, 0, 0, 0.03, 0.03, 0.03, 4, T.FIRE, 0.3); break;
+    case 'vm_leg':                                       // the kick: a booted shin and foot, sole forward (+z is up the leg)
+      smoothLathe(mb, 0, 0, 0, [[0.06, -0.02], [0.068, 0.1], [0.06, 0.3], [0.055, 0.42]], 8, T.LEATHER, ONE3, [0, 0, 1]);
+      loft(mb, [S_(-0.06, 0.05, 0.05, 0.05, 0), S_(-0.1, 0.055, 0.06, 0.05, 0.03), S_(-0.16, 0.05, 0.035, 0.035, 0.08), S_(-0.2, 0.03, 0.02, 0.02, 0.1)], 10, T.LEATHER);
+      break;
     case 'bread': addRock(mb, 0, 0.09, 0, 0.17, 0.09, 0.12, 6, T.STRAW, 0.25); break;
     case 'wine':
       addRock(mb, 0, 0.14, 0, 0.17, 0.13, 0.22, 9, T.CLOTH, 0.15);

@@ -92,5 +92,16 @@ const Sfx = (() => {
     die() { tone(200, 1.6, 'triangle', 0.12, 40); noise(1.2, 0.1, 600, 'lowpass', 60); },
     sting() { [196, 233, 294, 392].forEach((f, i) => tone(f, 1.2, 'triangle', 0.05, null, i * 0.16)); },
     blip() { tone(880, 0.05, 'square', 0.02); },
+    // combat
+    shout() { const b = 150 + Math.random() * 30; for (let i = 0; i < 3; i++) tone(b * (1 + 0.15 * i), 0.22, 'sawtooth', 0.05, b * 0.8, i * 0.15); },
+    ready(pan) { tone(1400, 0.08, 'square', 0.03, 900, 0, pan); noise(0.12, 0.05, 2500, 'highpass', null, 0, 1, pan); },
+    swing() { noise(0.2, 0.11, 700, 'bandpass', 2600, 0, 2.5); },
+    bowdraw() { noise(0.6, 0.04, 1800, 'bandpass', 900, 0, 6); },
+    bow() { tone(180, 0.18, 'triangle', 0.08, 90); noise(0.15, 0.08, 3000, 'highpass'); },
+    clang() { tone(1650, 0.35, 'square', 0.05, 1500); tone(2470, 0.3, 'triangle', 0.05, 2300, 0.01); noise(0.08, 0.15, 4000, 'highpass'); },
+    hit() { noise(0.14, 0.2, 900, 'lowpass', 200); tone(90, 0.16, 'sine', 0.12, 50); },
+    grunt() { const b = 110 + Math.random() * 40; tone(b, 0.28, 'sawtooth', 0.06, b * 0.7); noise(0.2, 0.05, 600, 'bandpass'); },
+    kick() { noise(0.18, 0.28, 300, 'lowpass', 80); tone(65, 0.22, 'sine', 0.18, 40); },
+    arrow(pan) { noise(0.12, 0.06, 5000, 'highpass', null, 0, 1, pan); },
   };
 })();

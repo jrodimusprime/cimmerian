@@ -2,7 +2,7 @@
 
 A free, non-commercial browser game: a first-person sword-and-sorcery adaptation of Robert E. Howard's *The Scarlet Citadel* (Weird Tales, January 1933). It is built on a pure-JavaScript WebGL port of the Quake engine. Story splash screens sit between the levels, the art direction is a strict minimal palette, and every set, map, texture and character is generated from compact AI-written specs rather than hand-modelled.
 
-**Playable demo:** [`demo/`](demo/README.md) is a vertical slice of e1m2 *The Pits*, prototyped on The Endless Cave's WebGL2 engine. Open `demo/index.html` in a browser.
+**Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game). [`game/`](game/README.md) is a playable vertical slice of e1m2 *The Pits*, prototyped on The Endless Cave's WebGL2 engine.
 
 Two design pillars:
 
@@ -204,7 +204,8 @@ Quake uses one 256-colour palette (`palette.lmp`): 16 rows of 16 shades. Indices
 - Each level uses `ink` plus at most 2 other ramps. The level spec declares them in `ramps:`, and `budget.js` fails textures that break the rule.
 - Each texture uses at most 3 ramps, at 64×64 or 128×128, with power-of-two sizes only.
 - Texture recipes always add an engraving-style hatch layer (diagonal or cross-hatch at a 3–4 px pitch). This keeps the 3D world consistent with the engraved splash screens.
-- There is no post-process shader by default. An optional single-pass ordered dither can be toggled in the menu, and it's off on mobile.
+- **The Quake look.** The scene is drawn small (360 lines by default), then every pixel is snapped to the nearest colour of the game palette above (128 colours: the 8 ramps × 16 shades) through a 32×32×32 lookup table, and scaled up with hard edges. Flashes and fades are snapped too, as Quake's colormap did. F4 toggles it.
+- **Atmosphere.** Distance fades into a dark, warm haze rather than to black, emissive surfaces (fire, eyes) cut through the haze, and torches flicker with Quake's lightstyle strings.
 
 Area accents:
 
@@ -282,7 +283,23 @@ The full list of models, with bones, triangle counts, skins and animation frames
 | 8 | `e1m8` | The Siege of Shamar | Ch. 5 | Siege lines, walls, then the battle plain with a few allied archers. Cut through to Strabonus | L |
 | 9 | `e1m9` | The Tybor | Ch. 5 | Rout across the barge bridge, then the sunset meadow and the Tsotha boss. The finisher is his beheading, followed by the eagle ending splash | M |
 
-Sizes: S is about 8–15 rooms, M about 15–30, L about 30–45 (rooms or areas, as counted in the level spec).
+Sizes: S is about 8–15 rooms, M about 15–30, L about 30–45 (rooms or areas, as counted in the level spec). The yardstick is Quake's E1M1: about 5–10 minutes to play, a dozen or more enemies, and a few distinct spaces.
+
+### Pacing: puzzle areas and action areas
+
+Every level alternates **puzzle areas** (read, think, time things, use objects) and **action areas** (fight). An action area follows each puzzle, and the level never asks for two puzzles back to back without a fight in between, or the reverse for long. Each area is declared in the level spec (`areas:`, with `type: puzzle | action`), the HUD names it when you enter, and entering it sets a checkpoint.
+
+e1m2, The Pits (playable in [`game/`](game/README.md)):
+
+| # | Area | Type | What happens |
+|---|---|---|---|
+| 1 | The Cell | puzzle | Chained to a ring. An inscription names the rusted link; grind it and you're free |
+| 2 | The Hall of the Serpent | puzzle (timing) | The giant dies under Satha. She passes every 40 s; hide in alcoves; take the giant's dagger |
+| 3 | The Wardens' Post | action | A lone warden comes to investigate, then the post: a warden, a spearman, an archer on a gallery. The first warden drops a sword |
+| 4 | The Grille | puzzle | Lure Shukeli to the bars with a thrown bone, strike from the dark niche, take his keys |
+| 5 | The Guardroom and Barracks | action | His death raises the alarm. Four guards fight you through the bars, then in the guardroom |
+| 6 | The Winch | puzzle | The portcullis winch's pawl is broken; jam the ratchet with a spear from the barracks rack |
+| 7 | The Captain's Landing | action | The captain (shield, two-blow combo) and three men, then the stair to the citadel |
 
 The "invented filler" enemies and the puzzle mechanics in section 10 are the only additions to Howard's plot. Everything else follows the text's own sequence of places and fights.
 
@@ -311,7 +328,7 @@ Each level is a **gated chain**: explore, find a clue, act on it, open the way o
 |---|---|
 | `e0m1` The Phoenix | The crypt frieze shows four braziers in an order → light them in that order → the sage wakes and marks your sword (the only weapon that hurts the demon). In the bedchamber, the axe is mounted high, so knock its wall mount loose with the broken hilt to drop it |
 | `e1m1` Plain of Shamu | Light puzzle (a combat level). Three rally standards: holding each in turn delays the waves and opens the next fallback position. The level always ends with the scripted fang |
-| `e1m2` The Pits | Chain-length radius → slip the wall ring at the rusted link (inscription) → **Satha passes on a fixed 40 s cycle**, so time your dash between alcoves → take a bone → throw it to make noise and draw Shukeli to the bars → strike through the grille → keys |
+| `e1m2` The Pits | Chain-length radius → slip the wall ring at the rusted link (inscription) → **Satha passes on a fixed 40 s cycle**, so time your dash between alcoves → take a bone → throw it to make noise and draw Shukeli to the bars → strike through the grille → keys → a spear from the barracks jams the broken winch pawl to hold the portcullis up |
 | `e1m3` The Tunnels | Scratches left by Pelias's dead apprentices mark safe routes. In the crossing chamber, set four tunnel valves so the draft (shown by torch flames) stops the presence pushing you into the well. Lower a hanging stone, which is the sigil-key for Yothga's cell |
 | `e1m4` Yothga | Three tendrils regrow on a fixed timer. Cut all three within one 6 s window to expose the stem, then strike it. Pelias tells you the word that drives Satha off; say it at the right moment (an interaction) when Satha returns. He raises Shukeli's corpse, which unbars the grille from the inside |
 | `e1m5` The Scarlet Citadel | The mosaic corridor shows a sequence of four beasts → set the brass skull-door's four rotating jaws to match → in the gold-domed chamber, turn the crystal globe to find Tamar (it reveals the beast's command word) → on the roof, speak the word to call the winged beast |

@@ -11,8 +11,22 @@
 
 const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16;
 
+// Pacing (README §9): every level alternates PUZZLE areas (think, read,
+// time things) and ACTION areas (fight). e1m2 runs:
+//   cell (puzzle) -> hall (timing puzzle) -> wardens' post (action) ->
+//   grille (puzzle) -> guardroom + barracks (action) -> winch (puzzle) ->
+//   captain's landing (action) -> exit.
 const LEVEL = {
-  level: 'e1m2', title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [50, 24],
+  level: 'e1m2', title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [64, 32],
+  areas: [
+    { id: 'cell', type: 'puzzle', name: 'The Cell', rooms: ['cell', 'cell_door'] },
+    { id: 'hall', type: 'puzzle', name: 'The Hall of the Serpent', rooms: ['hall', 'well', 'a1', 'a2', 'a3', 'n1', 'n2'] },
+    { id: 'post', type: 'action', name: 'The Wardens\' Post', rooms: ['south_passage', 'post', 'gallery', 'gsteps'] },
+    { id: 'grille', type: 'puzzle', name: 'The Grille', rooms: ['niche', 'grille'] },
+    { id: 'guard', type: 'action', name: 'The Guardroom and Barracks', rooms: ['guard', 'barracks_door', 'barracks'] },
+    { id: 'winch', type: 'puzzle', name: 'The Winch', rooms: ['winch', 'portcullis'] },
+    { id: 'landing', type: 'action', name: 'The Captain\'s Landing', rooms: ['stair', 'landing', 'exit'] },
+  ],
   rooms: [
     { id: 'cell', name: 'the Cell', at: [6, 8], size: [4, 4], h: 2.1, style: 'hewn', tex: { floor: 'STRAW' }, hide: true },
     { id: 'cell_door', name: 'the Cell Door', at: [7, 12], size: [1, 1], h: 1.3, style: 'hewn', hide: true },
@@ -25,31 +39,61 @@ const LEVEL = {
     { id: 'n2', name: 'an alcove', at: [20, 11], size: [2, 2], h: 1.6, style: 'hewn', hide: true },
     { id: 'niche', name: 'a niche by the grille', at: [32, 15], size: [2, 2], h: 1.6, style: 'hewn', hide: true },
     { id: 'serpent', name: 'the Serpent\'s Hole', at: [27, 4], size: [2, 9], h: 2.4, style: 'rough', slope: [-14, 0], nopass: true, tex: { wall: 'ROCK', floor: 'SLIME', ceil: 'ROCK' } },
+    { id: 'south_passage', name: 'the South Passage', at: [26, 15], size: [2, 5], h: 2, style: 'hewn', hide: true },
+    { id: 'post', name: 'the Wardens\' Post', at: [20, 20], size: [12, 9], h: 3.6, vault: 1.4, style: 'hewn' },
+    { id: 'gallery', name: 'the Archers\' Gallery', at: [32, 20], size: [3, 6], h: 2.4, floor: 2.4, style: 'hewn' },
+    { id: 'gsteps', name: 'the Gallery Steps', at: [32, 26], size: [3, 3], h: 2.6, floor: 1.6, rise: -0.8, riseAxis: 'z', style: 'hewn' },
     { id: 'grille', name: 'the Grille', at: [34, 13], size: [1, 2], h: 3, style: 'hewn' },
-    { id: 'guard', name: 'Shukeli\'s Guardroom', at: [35, 10], size: [7, 8], h: 3.2, floor: 0.4, vault: 1.2, style: 'hewn' },
-    { id: 'stair', name: 'the Stair', at: [42, 13], size: [6, 2], h: 2.4, floor: 1.4, rise: 1.0, style: 'hewn' },
+    { id: 'guard', name: 'Shukeli\'s Guardroom', at: [35, 9], size: [10, 10], h: 3.4, floor: 0.4, vault: 1.2, style: 'hewn' },
+    { id: 'barracks_door', name: 'the Barracks Door', at: [39, 8], size: [2, 1], h: 1.4, floor: 0.4, style: 'hewn' },
+    { id: 'barracks', name: 'the Barracks', at: [35, 2], size: [10, 6], h: 2.6, floor: 0.4, style: 'hewn', tex: { floor: 'STRAW' } },
+    { id: 'winch', name: 'the Winch', at: [45, 16], size: [1, 2], h: 1.4, floor: 0.4, style: 'hewn' },
+    { id: 'portcullis', name: 'the Portcullis', at: [45, 13], size: [1, 2], h: 2.4, floor: 0.4, style: 'hewn' },
+    { id: 'stair', name: 'the Stair', at: [46, 13], size: [7, 2], h: 2.6, floor: 1.4, rise: 1.0, style: 'hewn' },
+    { id: 'landing', name: 'the Captain\'s Landing', at: [53, 9], size: [8, 10], h: 3.4, floor: 7.4, vault: 1.2, style: 'hewn' },
+    { id: 'exit', name: 'the Citadel Stair', at: [61, 13], size: [2, 2], h: 1.6, floor: 7.4, style: 'hewn' },
   ],
   // the cell's grating: one tall cell open to a grey thread of daylight
   shafts: [{ at: [8, 9], h: 9 }],
   links: [
-    { a: 'cell', b: 'hall', via: 'barred_door', name: 'cell_door', cells: [[7, 12]], bars: { x0: 7, x1: 8, z: 12, axis: 'x', h: 3.2 } },
-    { a: 'hall', b: 'guard', via: 'iron_grille', name: 'grille_gate', cells: [[34, 13], [34, 14]], bars: { z0: 13, z1: 15, x: 34, axis: 'z', h: 7.5 } },
+    { a: 'cell', b: 'hall', via: 'barred_door', name: 'cell_door', cells: [[7, 12]] },
+    { a: 'hall', b: 'guard', via: 'iron_grille', name: 'grille_gate', cells: [[34, 13], [34, 14]] },
+    { a: 'guard', b: 'stair', via: 'portcullis', name: 'portcullis', cells: [[45, 13], [45, 14]] },
   ],
   props: [
+    // the hall
     { prefab: 'torch', at: [5.5, 13], wall: 'N' }, { prefab: 'torch', at: [10.5, 13], wall: 'N' }, { prefab: 'torch', at: [22.5, 13], wall: 'N' },
-    { prefab: 'torch', at: [30.5, 13], wall: 'N' }, { prefab: 'torch', at: [15.5, 15], wall: 'S' }, { prefab: 'torch', at: [8.6, 15], wall: 'S' }, { prefab: 'torch', at: [27.5, 15], wall: 'S' },
-    { prefab: 'torch', at: [41.9, 11.5], wall: 'E' }, { prefab: 'torch', at: [35, 16.5], wall: 'W' }, { prefab: 'torch', at: [46.5, 13], wall: 'N' },
-    { prefab: 'brazier', at: [38, 15.5] }, { prefab: 'table', at: [39.5, 12] }, { prefab: 'stool', at: [38.2, 12.9] },
+    { prefab: 'torch', at: [30.5, 13], wall: 'N' }, { prefab: 'torch', at: [15.5, 15], wall: 'S' }, { prefab: 'torch', at: [8.6, 15], wall: 'S' }, { prefab: 'torch', at: [29.5, 15], wall: 'S' },
     { prefab: 'bones', at: [17.6, 16.3], big: true }, { prefab: 'bones', at: [5.6, 14.6] }, { prefab: 'bones', at: [12.4, 16.4] },
     { prefab: 'bones', at: [29.2, 13.5] }, { prefab: 'skull', at: [5.2, 13.4] }, { prefab: 'skull', at: [24.6, 16.5] },
     { prefab: 'chains', at: [13, 13], wall: 'N' }, { prefab: 'chains', at: [19.5, 15], wall: 'S' }, { prefab: 'chains', at: [25.5, 13], wall: 'N' },
     { prefab: 'grating', at: [8, 9] },
+    // the wardens' post
+    { prefab: 'torch', at: [20, 23], wall: 'W' }, { prefab: 'torch', at: [20, 27], wall: 'W' }, { prefab: 'torch', at: [23, 20], wall: 'N' },
+    { prefab: 'torch', at: [24, 29], wall: 'S' }, { prefab: 'torch', at: [30, 29], wall: 'S' }, { prefab: 'torch', at: [35, 22.5], wall: 'E' },
+    { prefab: 'column', at: [23.5, 23.5] }, { prefab: 'column', at: [23.5, 26.5] }, { prefab: 'column', at: [28.5, 23.5] }, { prefab: 'column', at: [28.5, 26.5] },
+    { prefab: 'brazier', at: [26, 25] }, { prefab: 'table', at: [21.8, 21.6] }, { prefab: 'stool', at: [23.2, 21.4] },
+    { prefab: 'bunk', at: [21.2, 27.8] }, { prefab: 'rack', at: [20, 25], wall: 'W' }, { prefab: 'chains', at: [30, 20], wall: 'N' },
+    // the guardroom and barracks
+    { prefab: 'torch', at: [35, 16.5], wall: 'W' }, { prefab: 'torch', at: [45, 10.5], wall: 'E' }, { prefab: 'torch', at: [42, 19], wall: 'S' },
+    { prefab: 'brazier', at: [38, 15.5] }, { prefab: 'table', at: [39.5, 12] }, { prefab: 'stool', at: [38.2, 12.9] },
+    { prefab: 'column', at: [42.5, 12] }, { prefab: 'column', at: [42.5, 16] },
+    { prefab: 'torch', at: [35, 4.5], wall: 'W' }, { prefab: 'torch', at: [45, 3.5], wall: 'E' },
+    { prefab: 'bunk', at: [36.3, 2.9] }, { prefab: 'bunk', at: [38.9, 2.9] }, { prefab: 'bunk', at: [41.5, 2.9] }, { prefab: 'table', at: [40, 5.6] },
+    { prefab: 'spear_rack', at: [45, 6], wall: 'E' },
+    { prefab: 'winch', at: [45.5, 17.5] },
+    // the stair and landing
+    { prefab: 'torch', at: [49.5, 13], wall: 'N' }, { prefab: 'torch', at: [53, 11], wall: 'W' }, { prefab: 'torch', at: [53, 16.5], wall: 'W' },
+    { prefab: 'torch', at: [61, 10.5], wall: 'E' }, { prefab: 'torch', at: [61, 17], wall: 'E' }, { prefab: 'brazier', at: [57, 13.8] },
+    { prefab: 'column', at: [55.5, 11.5] }, { prefab: 'column', at: [55.5, 16.5] }, { prefab: 'column', at: [59, 11.5] }, { prefab: 'column', at: [59, 16.5] },
+    { prefab: 'banner', at: [61, 13.5], wall: 'E' }, { prefab: 'banner', at: [61, 15.5], wall: 'E' },
   ],
   lights: [
     { at: [8.5, 9.5], y: 7, col: [0.55, 0.6, 0.7], rad: 16, i: 2.0 },          // daylight down the grating
     { at: [4, 14], y: -4, col: [0.25, 0.55, 0.38], rad: 10, i: 0.9 },             // slime glow in the well
     { at: [28, 7], y: -8, col: [0.25, 0.55, 0.38], rad: 9, i: 0.6 },              // slime glow in the serpent's hole
     { at: [39.5, 12.2], y: 1.6, col: [1.0, 0.6, 0.3], rad: 5, i: 0.7 },           // Shukeli's candle
+    { at: [62, 14], y: 9.5, col: [0.6, 0.62, 0.7], rad: 12, i: 1.4 },             // daylight down the citadel stair
   ],
   features: [
     { type: 'ring', at: [7, 8.08], y: 1.0 },
@@ -59,25 +103,48 @@ const LEVEL = {
       text: 'Tally marks, hundreds of them, then: "IT PASSES EVERY FORTY BREATHS. WHEN THE TORCHES BOW, GET INTO THE WALL. ITS SPIT FINDS ANY MAN IT CAN SEE."' },
     { type: 'clue', id: 'insc_grille', at: [32.04, 16.2], y: 1.3, wall: 'W',
       text: 'Scratched low in the niche: "The fat jailer comes to any sound, like a dog to the dish. He will not come near a man he can see. Strike from the dark."' },
+    { type: 'clue', id: 'insc_post', at: [26.96, 17.5], y: 1.3, wall: 'E',
+      text: 'Cut into the passage wall: "The wardens sleep at their post. A shield will turn a blade, but not a heel. KICK THEM OFF THEIR GUARD."' },
+    { type: 'clue', id: 'insc_winch', at: [45.96, 16.6], y: 1.3, wall: 'E',
+      text: 'A warning painted on the winch housing: "PAWL BROKEN. She will not hold. Wind her up and jam the ratchet with something long and stout before you let go."' },
     { type: 'bones', at: [17.9, 16], y: 0 },
     { type: 'door', link: 'cell_door', at: [7.5, 12.1], y: 1.2 },
     { type: 'grille', link: 'grille_gate', at: [34, 14], y: 1.2 },
+    { type: 'spear_rack', at: [44.6, 6], y: 1.2 },
+    { type: 'winch', at: [45.5, 17.2], y: 1.2 },
   ],
   items: [
     { kind: 'bread', name: 'crust of black bread', at: [9.4, 11.4], heal: 25 },
     { kind: 'wine', name: 'skin of sour wine', at: [23.8, 16.3], heal: 15 },
     { kind: 'wine', name: 'jug of the jailer\'s wine', at: [39.9, 11.8], heal: 15, y: 1.05 },
+    { kind: 'bread', name: 'warden\'s ration loaf', at: [21.4, 21.0], heal: 25, y: 1.05 },
+    { kind: 'wine', name: 'archer\'s wineskin', at: [34.2, 20.6], heal: 25 },
+    { kind: 'bread', name: 'barracks bread', at: [40.6, 5.4], heal: 25, y: 1.05 },
+    { kind: 'wine', name: 'captain\'s wine', at: [54, 17.6], heal: 25 },
   ],
   entities: [
     { class: 'info_player_start', at: [7, 9.4], yaw: Math.PI, flags: ['chained'] },
     { class: 'black_giant', at: [7.5, 13.8], yaw: 0 },
     { class: 'scripted_satha', period: 40, wake: 'free' },
     { class: 'monster_shukeli', at: [38.8, 13.2], behind: 'grille_gate' },
-    { class: 'trigger_exit', x: 47 },
+    // action areas: wardens wake on sight or on noise; 'group' wakes together
+    { class: 'warden', id: 'w0', at: [27, 21.5], group: 'scout', yaw: 0 },
+    { class: 'warden', id: 'w1', at: [22.6, 24.8], group: 'post', yaw: Math.PI / 2 },
+    { class: 'spearman', id: 's1', at: [29.5, 27.4], group: 'post', yaw: -Math.PI / 2 },
+    { class: 'archer', id: 'a1', at: [33.5, 22.0], group: 'post', yaw: -Math.PI / 2 },
+    { class: 'warden', id: 'w2', at: [36.8, 4.6], group: 'barracks', yaw: Math.PI },
+    { class: 'spearman', id: 's2', at: [39.6, 6.2], group: 'barracks', yaw: Math.PI },
+    { class: 'archer', id: 'a2', at: [43.2, 4.4], group: 'barracks', yaw: Math.PI },
+    { class: 'warden', id: 'w3', at: [41.6, 6.6], group: 'barracks', yaw: Math.PI },
+    { class: 'captain', id: 'c1', at: [58.5, 14], group: 'landing', yaw: -Math.PI / 2 },
+    { class: 'warden', id: 'w4', at: [56.5, 10.8], group: 'landing', yaw: -Math.PI / 2 },
+    { class: 'spearman', id: 's3', at: [56.5, 17.2], group: 'landing', yaw: -Math.PI / 2 },
+    { class: 'archer', id: 'a3', at: [60.2, 10.2], group: 'landing', yaw: -Math.PI / 2 },
+    { class: 'trigger_exit', x: 61.6 },
   ],
   // README §10: flags and actions. solve() below proves it can't softlock.
   puzzle: {
-    flags: ['free', 'has_dagger', 'has_bone', 'shukeli_at_bars', 'shukeli_dead', 'has_keys', 'grille_open'],
+    flags: ['free', 'has_dagger', 'has_bone', 'shukeli_at_bars', 'shukeli_dead', 'has_keys', 'grille_open', 'has_spear', 'portcullis_open'],
     actions: [
       { id: 'slip_chain', needs: [], sets: 'free', at: 'cell', clue: 'insc_cell' },
       { id: 'take_dagger', needs: ['free'], sets: 'has_dagger', at: 'hall' },
@@ -86,8 +153,10 @@ const LEVEL = {
       { id: 'strike', needs: ['shukeli_at_bars', 'has_dagger'], sets: 'shukeli_dead', at: 'niche' },
       { id: 'take_keys', needs: ['shukeli_dead'], sets: 'has_keys', at: 'niche' },
       { id: 'unlock', needs: ['has_keys'], sets: 'grille_open', at: 'grille' },
+      { id: 'take_spear', needs: ['grille_open'], sets: 'has_spear', at: 'barracks', repeatable: true },
+      { id: 'jam_winch', needs: ['has_spear'], sets: 'portcullis_open', clears: ['has_spear'], at: 'winch', clue: 'insc_winch' },
     ],
-    goal: 'grille_open',
+    goal: 'portcullis_open',
   },
 };
 
@@ -131,7 +200,7 @@ function buildLevel(spec) {
       const gx = r.at[0] + i, gz = r.at[1] + j, idx = gz * W + gx;
       const wx = (gx + 0.5) * CELL, wz = (gz + 0.5) * CELL;
       let fl = (r.floor || 0) + (st ? (vnoise(wx * 0.5, wz * 0.5, 7) - 0.5) * 0.06 : (vnoise(wx * 0.4, wz * 0.4, 9) - 0.5) * 0.5);
-      if (r.rise) fl = r.floor + i * r.rise;
+      if (r.rise) fl = r.floor + (r.riseAxis === 'z' ? j : i) * r.rise;
       if (r.slope) fl = r.slope[0] + (r.slope[1] - r.slope[0]) * (j / (r.size[1] - 1));
       LV.kind[idx] = r.pit ? 2 : 1;
       LV.floor[idx] = r.pit ? fl - r.pit : fl;
@@ -161,6 +230,9 @@ function buildLevel(spec) {
       LV.lights.push({ x, y: prop.y + 1.6, z, r: 1.0, g: 0.55, b: 0.22, rad: 16, i: 1.9 });
       LV.colliders.push({ x, z, r: 0.75 });
     } else if (p.prefab === 'table') LV.colliders.push({ x, z, r: 1.15 });
+    else if (p.prefab === 'column') LV.colliders.push({ x, z, r: 0.75 });
+    else if (p.prefab === 'winch') LV.colliders.push({ x, z, r: 0.45 });
+    else if (p.prefab === 'bunk') { LV.colliders.push({ x: x - 0.6, z, r: 0.55 }); LV.colliders.push({ x: x + 0.6, z, r: 0.55 }); }
     else if (p.prefab === 'stool') LV.colliders.push({ x, z, r: 0.35 });
   }
   for (const l of spec.lights) {

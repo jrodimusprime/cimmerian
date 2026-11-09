@@ -13,7 +13,8 @@
 
 const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SCALES', 'BELLY', 'SKIN', 'DARKSKIN',
   'CLOTH', 'ROBE', 'BONE', 'FIRE', 'EYE', 'VENOM', 'BLACK', 'STRAW', 'SKY',
-  'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL'];
+  'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL',
+  'MAIL', 'LEATHER', 'TABARD', 'HAIR', 'SHIELD', 'BLOOD', 'BANNER', 'FACE'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -35,6 +36,30 @@ const RAMPS = {
   scarlet: makeRamp('#2a0606', '#c4302b', 10),     // UI only in this level
   earth: makeRamp('#160e08', '#b08a66', 16),
 };
+// The game palette (README §7): 6 lit ramps and 2 fullbright ramps of 16 shades, like the rows of
+// Quake's palette.lmp. The final image is snapped to these 128 colours (renderer POST_FS).
+const PALETTE_RAMPS = [['#0b0a09', '#e8dcc0'], ['#2a0606', '#c4302b'], ['#20140a', '#d8a24a'], ['#08120c', '#7fa88a'],
+  ['#0a0d14', '#6b7a96'], ['#160e08', '#b08a66'], ['#5a1a00', '#ffd27a'], ['#0a3020', '#e6fff0']];
+function gamePalette() {
+  const out = [];
+  for (const [lo, hi] of PALETTE_RAMPS) out.push(...makeRamp(lo, hi, 16, 1.15));
+  return out;
+}
+// For every colour on a 32-step grid, the nearest palette colour, weighted for the eye (as WEaBuse3D does it).
+function paletteLut(pal) {
+  const out = new Uint8Array(1024 * 32 * 4);
+  for (let g = 0; g < 32; g++) for (let b = 0; b < 32; b++) for (let r = 0; r < 32; r++) {
+    const R = r * 255 / 31, G = g * 255 / 31, B = b * 255 / 31;
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < pal.length; i++) {
+      const dr = R - pal[i][0], dg = G - pal[i][1], db = B - pal[i][2], d = 3 * dr * dr + 4 * dg * dg + 2 * db * db;
+      if (d < bd) { bd = d; best = i; }
+    }
+    const o = (g * 1024 + b * 32 + r) * 4;
+    out[o] = pal[best][0]; out[o + 1] = pal[best][1]; out[o + 2] = pal[best][2]; out[o + 3] = 255;
+  }
+  return out;
+}
 const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16 - 0.5);
 function rampAt(name, v, lo = 0, hi = 1, px = 0, py = 0) {
   const r = RAMPS[name], t = clamp(lo + (hi - lo) * v, 0, 0.999);
@@ -124,7 +149,7 @@ const TEXGEN = {
   } },
   BELLY: { f: (x, y, s) => ({ v: 0.55 + 0.3 * ((Math.floor(y / 8)) % 2) + 0.15 * tfbm(x / 64, y / 64, 4, 2, s), ramp: 'jade', lo: 0.4, hi: 1 }) },
   SKIN: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 4, s), ramp: 'ink', lo: 0.35, hi: 0.62, h: 0.15 }) },
-  DARKSKIN: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 4, s), ramp: 'ink', lo: 0.06, hi: 0.3, h: 0.1 }) },
+  DARKSKIN: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 4, s), ramp: 'ink', lo: 0.1, hi: 0.42, h: 0.1 }) },
   CLOTH: { f: (x, y, s) => ({ v: 0.35 + ((Math.floor(x / 2) + Math.floor(y / 2)) % 2) * 0.15 + tfbm(x / 64, y / 64, 8, 2, s) * 0.35, ramp: 'ink', lo: 0.04, hi: 0.3 }) },
   ROBE: { f: (x, y, s) => {                           // Shukeli's robe: bone cloth, jade hem stripes
     const py = y / 64;
@@ -189,6 +214,35 @@ const TEXGEN = {
   MOUTH: { f: (x, y, s) => ({ v: 0.4 + 0.5 * tfbm(x / 64, y / 64, 4, 3, s) + 0.2 * Math.sin(TAU * y / 16), ramp: 'earth', lo: 0.05, hi: 0.5, e: 0.04 }) },
   GRIP: { f: (x, y) => { const band = ((x + y * 2) / 10) % 1; return { v: band < 0.15 ? 0.1 : 0.55 + 0.3 * Math.sin(band * Math.PI), ramp: 'earth', lo: 0.05, hi: 0.55 }; } },
   STEEL: { f: (x, y, s) => ({ v: 0.55 + 0.25 * tfbm(x / 64 * 0.2, y / 64 * 4, 4, 2, s) + 0.15 * Math.sin(TAU * y / 6), ramp: 'ink', lo: 0.35, hi: 1, e: 0.06 }) },
+  // ---- the cast: the citadel's wardens wear Tsotha's scarlet over mail ----
+  MAIL: { f: (x, y, s) => {                           // riveted rings, offset rows
+    const row = Math.floor(y / 3), fx = ((x + (row % 2) * 1.5) / 3) % 1, fy = (y / 3) % 1;
+    const d = Math.abs(Math.hypot(fx - 0.5, fy - 0.5) - 0.3);
+    return { v: d < 0.12 ? 0.75 - d * 3 : 0.12, ramp: 'ink', lo: 0.05, hi: 0.62 };
+  } },
+  LEATHER: { f: (x, y, s) => ({ v: 0.45 + 0.3 * tfbm(x / 64, y / 64, 8, 3, s) - (Math.abs(((y / 16) % 1) - 0.5) < 0.04 ? 0.25 : 0), ramp: 'earth', lo: 0.08, hi: 0.55, h: 0.12 }) },
+  TABARD: { f: (x, y, s) => {                         // scarlet livery, a black serpent coiled on the breast
+    const u = (x / 64) % 1, v = (y / 64) % 1, cx = u - 0.5, cy = v - 0.5, r = Math.hypot(cx, cy), a = Math.atan2(cy, cx);
+    const coil = Math.abs(r - 0.18 - 0.04 * a) < 0.035 && r < 0.3;
+    if (coil || (v < 0.06 || v > 0.94)) return { v: 0.15, ramp: 'ink', lo: 0, hi: 0.3 };
+    return { v: 0.55 + 0.3 * tfbm(u, v, 8, 2, s) + 0.1 * Math.sin(TAU * x / 4), ramp: 'scarlet', lo: 0.25, hi: 0.95, h: 0.15 };
+  } },
+  HAIR: { f: (x, y, s) => ({ v: 0.3 + 0.5 * Math.abs(Math.sin(TAU * (x / 3 + tfbm(x / 64, y / 64, 4, 2, s) * 2))), ramp: 'ink', lo: 0.02, hi: 0.3 }) },
+  SHIELD: { f: (x, y, s) => {                         // painted planks: scarlet with an ink chevron
+    const u = x / 64, v = y / 64, plank = Math.floor(u * 5);
+    if ((u * 5) % 1 < 0.06) return { v: 0.1, ramp: 'ink', lo: 0, hi: 0.3 };
+    const chev = Math.abs(Math.abs(u - 0.5) - (v - 0.3) * 0.6) < 0.08;
+    const worn = tfbm(u, v, 8, 3, s + plank) > 0.62;
+    if (worn) return { v: 0.4 + 0.3 * tfbm(u, v, 8, 2, s), ramp: 'earth', lo: 0.15, hi: 0.6 };
+    return chev ? { v: 0.3, ramp: 'ink', lo: 0.05, hi: 0.35 } : { v: 0.6 + 0.3 * tfbm(u, v, 4, 2, s), ramp: 'scarlet', lo: 0.3, hi: 0.9, h: 0.12 };
+  } },
+  BLOOD: { f: (x, y, s) => ({ v: 0.4 + 0.5 * tfbm(x / 64, y / 64, 4, 2, s), ramp: 'scarlet', lo: 0.2, hi: 0.8 }) },
+  BANNER: { f: (x, y, s) => {
+    const u = x / 64, v = y / 64, cx = u - 0.5, cy = v - 0.45, r = Math.hypot(cx, cy * 0.8);
+    if (Math.abs(r - 0.22) < 0.04 || (r < 0.1 && Math.abs(cx) < 0.03)) return { v: 0.8, ramp: 'ink', lo: 0.5, hi: 0.95 };
+    return { v: 0.5 + 0.3 * tfbm(u, v, 4, 3, s) + 0.15 * Math.sin(TAU * u * 3), ramp: 'scarlet', lo: 0.2, hi: 0.9, h: 0.12 };
+  } },
+  FACE: { f: (x, y, s) => ({ v: 0.6 + 0.2 * tfbm(x / 64, y / 64, 8, 3, s) - (hrand(Math.floor(x), Math.floor(y), s, 4) > 0.9 ? 0.12 : 0), ramp: 'earth', lo: 0.25, hi: 0.78, h: 0.05 }) },
 };
 
 function generateTextures() {

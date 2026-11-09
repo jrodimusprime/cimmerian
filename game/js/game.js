@@ -11,10 +11,10 @@
 const $ = id => document.getElementById(id);
 const canvas = $('gl'), hud = $('hud'), logEl = $('log'), promptEl = $('prompt'), overlay = $('overlay');
 const SIM_HZ = 72, DT = 1 / SIM_HZ, EYE = 1.6, RADIUS = 0.42, REACH = 2.7, TETHER = 3.2;
-const BASE_SENS = 0.0022, RES_STEPS = [240, 300, 400, 540, 720], SENS_KEY = 'cimmerian-sens', BRIGHT_KEY = 'cimmerian-bright';
+const BASE_SENS = 0.0022, RES_STEPS = [200, 240, 300, 360, 480, 600], SENS_KEY = 'cimmerian-sens', BRIGHT_KEY = 'cimmerian-bright';
 const SATHA_SPEED = 7.5, SATHA_SPACING = 2.0, SATHA_SEGS = 12, SATHA_PERIOD = 40;
 const GRILLE_X = 34 * CELL, HALL_Z = 14 * CELL;
-let resIdx = 3, R = null, levelMesh = null, sensMul = 1, brightness = 1.18;
+let resIdx = 3, R = null, levelMesh = null, sensMul = 1, brightness = 1.32;
 try { const v = parseFloat(localStorage.getItem(SENS_KEY)); if (v >= 0.1 && v <= 4) sensMul = v; } catch (e) { /* ignore */ }
 try { const v = parseFloat(localStorage.getItem(BRIGHT_KEY)); if (v >= 0.8 && v <= 2.2) brightness = v; } catch (e) { /* ignore */ }
 
@@ -24,7 +24,8 @@ const keys = {};
 let mouseDX = 0, mouseDY = 0, pressUse = false, pressFire = false, agentInput = null;
 let acc = 0, lastFrame = 0, gameTime = 0, fade = 1, fadeTarget = 0, flash = 0, flashCol = [0.75, 0.06, 0.02];
 let prev = { x: 0, y: 0, z: 0 }, renderAlpha = 0, hudT = 0, debugOn = false;
-let particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0;
+let particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, wantWeapon = null;
+let punchPitch = 0, punchYaw = 0;          // cosmetic view kick, never fed back into the sim
 
 const modelCache = new Map();
 function getModel(name) {
@@ -58,7 +59,7 @@ function entitySpec(cls) { return LEVEL.entities.find(e => e.class === cls); }
 // and down into the rock. Corners are rounded so the body flows through them.
 let SATHA_PATH = null;
 function buildSathaPath() {
-  const wx = 4 * CELL, tx = 28 * CELL, y = 1.2;
+  const wx = 4 * CELL, tx = 28 * CELL, y = 0.85;
   const pts = [[wx, -36, HALL_Z], [wx, y, HALL_Z], [tx, y, HALL_Z], [tx, y, 12.3 * CELL], [tx, -14 + y, 4.5 * CELL], [tx, -52, 3.6 * CELL]];
   const out = [pts[0]];
   for (let i = 1; i < pts.length - 1; i++) {
@@ -89,12 +90,12 @@ const BODY_LEN = (SATHA_SEGS + 1) * SATHA_SPACING + 1.2;
 function spineAt(s) {
   const p = pathAt(s), q = pathAt(s + 0.3), r = pathAt(s - 0.3);
   const tx = q[0] - r[0], tz = q[2] - r[2], th = Math.hypot(tx, tz), tl = Math.hypot(tx, q[1] - r[1], tz) || 1;
-  const wig = Math.sin(s * 0.45) * 0.38 * th / tl;
+  const wig = Math.sin(s * 0.45) * 0.62 * th / tl;
   return th > 1e-4 ? [p[0] - tz / th * wig, p[1], p[2] + tx / th * wig] : p;
 }
 const SATHA_CHUNKS = 4;
 let sathaMeshes = null;
-const sathaRadius = t => t < 0.12 ? 0.95 + 0.3 * smoothstep(0, 0.12, t) : t < 0.45 ? 1.25 + 0.05 * smoothstep(0.12, 0.45, t) : Math.max(0.05, 1.3 * Math.pow(1 - (t - 0.45) / 0.55, 0.85));
+const sathaRadius = t => t < 0.12 ? 0.68 + 0.17 * smoothstep(0, 0.12, t) : t < 0.45 ? 0.85 + 0.03 * smoothstep(0.12, 0.45, t) : Math.max(0.04, 0.88 * Math.pow(1 - (t - 0.45) / 0.55, 0.85));
 // head (i=0), segments, tail: positions with a slither offset baked into the track
 function sathaPoints(sHead) {
   const out = [];
@@ -102,12 +103,12 @@ function sathaPoints(sHead) {
     const s = sHead - (i === SATHA_SEGS + 1 ? SATHA_SEGS * SATHA_SPACING + 1.6 : i * SATHA_SPACING);
     const p = pathAt(s), q = pathAt(s + 0.3), r = pathAt(s - 0.3);
     const tx = q[0] - r[0], ty = q[1] - r[1], tz = q[2] - r[2], th = Math.hypot(tx, tz), tl = Math.hypot(tx, ty, tz) || 1;
-    const horiz = th / tl, wig = Math.sin(s * 0.45) * 0.38 * horiz;
+    const horiz = th / tl, wig = Math.sin(s * 0.45) * 0.62 * horiz;
     const px = th > 1e-4 ? -tz / th : 0, pz = th > 1e-4 ? tx / th : 0;
     // on the vertical runs the heading is undefined: face along the next horizontal leg
     const yaw = horiz < 0.2 ? (s < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx + px * Math.cos(s * 0.45) * 0.17 * horiz, tz + pz * Math.cos(s * 0.45) * 0.17 * horiz);
     out.push({ x: p[0] + px * wig, y: p[1], z: p[2] + pz * wig, yaw,
-      pitch: -Math.atan2(ty, th), r: i === 0 ? 1.35 : 1.2 * (1 - 0.35 * i / (SATHA_SEGS + 1)) });
+      pitch: -Math.atan2(ty, th), r: i === 0 ? 0.95 : 0.8 * (1 - 0.35 * i / (SATHA_SEGS + 1)) });
   }
   return out;
 }
@@ -127,7 +128,9 @@ function newState(seed) {
     giant: { state: 'wait', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0, arms: 0, grabT: 0, fall: 0 },
     satha: { start: null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1 },
     shukeli: { state: 'idle', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
-    proj: [], puddles: [], swing: 0, throwT: 0,
+    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, combo: 0, lastSwing: -999, pendingHit: null,
+    weapons: { fists: true, dagger: false, sword: false }, weapon: 'fists', hits: 0,
+    foes: newFoes(), alerted: new Set(), areas: new Set(['cell']), portc: { open: 0, target: 0, dropT: 0 },
     checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1,
   };
 }
@@ -154,24 +157,33 @@ function rotDir(m, v) { return norm3([m[0] * v[0] + m[4] * v[1] + m[8] * v[2], m
 
 // ---------------------------------------------------------------- physics
 function linkClosed(idx) {
-  for (const l of LEVEL.links) for (const [gx, gz] of l.cells) if (gz * LV.W + gx === idx) return (l.name === 'cell_door' ? S.door.open : S.grille.open) < 0.8;
+  for (const l of LEVEL.links) for (const [gx, gz] of l.cells) if (gz * LV.W + gx === idx) return (l.name === 'cell_door' ? S.door.open : l.name === 'portcullis' ? S.portc.open : S.grille.open) < 0.8;
   return false;
 }
 function blockedCell(gx, gz, feet) {
   const idx = cellIdx(gx, gz);
   if (idx < 0 || LV.kind[idx] === 0) return true;
   if (LV.flags[idx] & F_NOPASS) return true;
-  if (LV.blockers.has(idx) && linkClosed(idx)) return true;
+  if (LV.blockers.has(idx) && linkClosed(idx) && !GRILLE_CELLS.has(idx)) return true;   // the grille is a plane of bars, handled in collide()
   return LV.kind[idx] === 1 && LV.floor[idx] > feet + 1.25;
 }
-function dynColliders() {
+function dynColliders(self) {
   const c = [];
   const sh = S.shukeli; if (sh.state !== 'dead') c.push({ x: sh.x, z: sh.z, r: 0.55 });
   const g = S.giant; if (g.state !== 'crushed') c.push({ x: g.x, z: g.z, r: 0.6 });
+  for (const f of S.foes) if (!f.dead && f !== self) c.push({ x: f.x, z: f.z, r: 0.42 });
+  if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
   return c;
 }
-function collide(x, z, r, feet) {
-  const cols = LV.colliders.concat(dynColliders());
+const GRILLE_CELLS = new Set();
+function collide(x, z, r, feet, self) {
+  if (!GRILLE_CELLS.size) for (const [gx, gz] of LEVEL.links.find(l => l.name === 'grille_gate').cells) GRILLE_CELLS.add(gz * LV.W + gx);
+  const cols = LV.colliders.concat(dynColliders(self));
+  // the closed grille: bars on the plane x = GRILLE_X, so men on either side can fight through them
+  if (S.grille.open < 0.8 && z > 13 * CELL - r && z < 15 * CELL + r) {
+    const east = (self ? self.x : S.x) > GRILLE_X;
+    x = east ? Math.max(x, GRILLE_X + r) : Math.min(x, GRILLE_X - r);
+  }
   for (let it = 0; it < 3; it++) {
     for (const c of cols) {
       const dx = x - c.x, dz = z - c.z, rr = r + c.r, d2 = dx * dx + dz * dz;
@@ -231,6 +243,9 @@ const DEATHS = {
   venom: 'The venom eats through you like fire through dry grass. You die on the flagstones of the hall.',
   fall: 'You go over the lip of the serpent\'s well. The dark below has no bottom that you live to find.',
   strangle: 'The giant\'s hands close and do not open again.',
+  blade: 'A warden\'s blade finds you. The pits keep their prisoner after all.',
+  spear: 'The spear goes in under your ribs, and the dark comes up to meet you.',
+  arrow: 'The arrow takes you in the throat. You drown on dry stone.',
 };
 function hurt(n, why) {
   if (mode !== 'play') return;
@@ -257,7 +272,11 @@ function respawn() {
   const c = S.checkpoint;
   S.x = c.x; S.z = c.z; S.yaw = c.yaw; S.y = groundInfo(c.x, c.z).floor; S.vx = S.vy = S.vz = 0; S.health = 100;
   prev = { x: S.x, y: S.y, z: S.z };
-  S.puddles = []; S.proj = S.proj.filter(p => p.type !== 'venom');
+  S.puddles = []; S.proj = S.proj.filter(p => p.type === 'bone');
+  // the living go back to their posts, so a retry is a fair fight (Quake would not be so kind)
+  for (const f of S.foes) if (!f.dead) Object.assign(f, { x: f.homeX, z: f.homeZ, yaw: f.homeYaw, state: 'idle', alert: false, t: 0, vx: 0, vz: 0, hp: FOES[f.cls].hp, combo: 0 });
+  S.pendingHit = null; S.swing = S.kickT = 0;
+  if (S.flags.shukeli_dead) alertGroup('barracks', true);      // the alarm has been raised; it stays raised
   mode = 'play'; fade = 1; fadeTarget = 0;
   log('You come to yourself again, cold and aching, at the last safe place.', 'dim');
   if (!agentInput) lockPointer();
@@ -312,6 +331,23 @@ function interact() {
         if (!S.hints.has('grille')) { S.hints.add('grille'); log('(Shukeli wears the keys at his belt.)', 'dim'); }
       } else log('Locked. The jailer\'s keys lie on the flagstones at your feet.', 'dim');
       return;
+    case 'spear_rack':
+      if (S.flags.has_spear) { log('You already carry a spear.', 'dim'); return; }
+      setFlag('has_spear'); Sfx.pickup(); log('You take a spear from the rack and sling it across your back.');
+      return;
+    case 'winch':
+      if (S.flags.portcullis_open) { log('The spear shaft holds the ratchet fast. The portcullis stays up.', 'dim'); return; }
+      Sfx.grind(); Sfx.chain();
+      if (S.flags.has_spear) {
+        S.portc.target = 1; S.portc.dropT = 0; S.flags.has_spear = false; setFlag('portcullis_open');
+        S.checkpoint = { x: 44 * CELL, z: HALL_Z, yaw: -Math.PI / 2 };
+        log('You haul the crank round until the portcullis is high, then ram the spear shaft into the ratchet. It groans, and holds.', 'good');
+      } else {
+        S.portc.target = 0.75; S.portc.dropT = 2.4;
+        log('You heave the crank round and the portcullis rises, inch by inch... and the moment you ease off, the broken pawl slips.', 'warn');
+        if (!S.hints.has('winch')) { S.hints.add('winch'); log('(Something long and stout in the ratchet would hold it. Read the housing.)', 'dim'); }
+      }
+      return;
   }
 }
 function takeItem(it) {
@@ -327,30 +363,24 @@ function takeItem(it) {
   }
   it.taken = true; Sfx.pickup();
   if (it.kind === 'dagger') {
-    setFlag('has_dagger');
-    log('You take the strangler\'s dagger: a hand\'s breadth of good steel. Now you have teeth. (Click to strike.)', 'good');
+    setFlag('has_dagger'); S.weapons.dagger = true; if (S.weapon === 'fists') S.weapon = 'dagger';
+    log('You take the strangler\'s dagger: a hand\'s breadth of good steel. Now you have teeth. (Click to strike, right-click or F to kick.)', 'good');
+    const w0 = S.foes.find(f => f.id === 'w0');
+    if (w0 && !w0.dead && !w0.alert) { w0.state = 'investigate'; w0.tx = 26.5 * CELL; w0.tz = 14.6 * CELL; w0.alert = true; S.alerted.add('scout'); log(ALERT_LINES.scout, 'warn'); }
+  } else if (it.kind === 'sword') {
+    S.weapons.sword = true; S.weapon = 'sword';
+    log('You take up the warden\'s sword. It is a soldier\'s blade, plain and heavy, and your hand knows it at once. (Click, click, click: a three-blow combination.)', 'good');
+  } else if (it.kind === 'spear') {
+    if (S.flags.has_spear) { it.taken = false; log('You already carry a spear.', 'dim'); return; }
+    setFlag('has_spear'); log('You take up the dead man\'s spear and sling it across your back.');
   } else if (it.kind === 'keys') {
     setFlag('has_keys');
     log('You reach through the bars\' shadow and take up the ring of keys. They are warm from the jailer\'s belt.', 'good');
   }
 }
-function onFire() {
-  if (S.swing > 0 || S.throwT > 0) return;
-  if (S.flags.has_bone) { throwBone(); return; }
-  S.swing = 0.38;
-  const fx = -Math.sin(S.yaw), fz = -Math.cos(S.yaw);
-  const inReach = (x, z, reach) => { const dx = x - S.x, dz = z - S.z, d = Math.hypot(dx, dz); return d < reach && (dx * fx + dz * fz) / (d || 1) > 0.35; };
-  const sh = S.shukeli;
-  if (sh.state !== 'dead' && inReach(sh.x, sh.z, REACH)) {
-    if (S.flags.has_dagger) { killShukeli(); return; }
-    Sfx.miss(); log('You snatch at his robe through the bars. He squeals and tears free.', 'dim');
-    shukeliRetreat(); return;
-  }
-  const head = S.satha.pts && S.satha.active ? S.satha.pts[0] : null;
-  if (head && inReach(head.x, head.z, REACH + 1)) { Sfx.clank(); log(S.flags.has_dagger ? 'The dagger skates off her scales like a stone off a tiled roof.' : 'You might as well punch the mountain.', 'dim'); return; }
-  const g = S.giant;
-  if (g.state !== 'crushed' && g.state !== 'wait' && inReach(g.x, g.z, REACH)) { Sfx.stab(); log('You hammer at him. It is like striking an oak.', 'dim'); return; }
-  Sfx.miss();
+function onFire(kick) {
+  if (!kick && S.flags.has_bone) { if (S.swing <= 0 && S.throwT <= 0) throwBone(); return; }
+  startAttack(kick);
 }
 function throwBone() {
   const f = camFwd();
@@ -442,6 +472,10 @@ function updateSatha() {
   sa.active = sHead - BODY_LEN < SATHA_PATH.len;
   if (!sa.active) { if (wasActive) S.passes++; sa.pts = null; return; }
   sa.pts = sathaPoints(sHead);
+  for (const f of S.foes) {
+    if (f.dead) continue;
+    for (const p of sa.pts) if (Math.abs(p.y - (f.y + 0.9)) < p.r + 1.0 && Math.hypot(f.x - p.x, f.z - p.z) < p.r + 0.42) { killFoe(f, 'crush'); break; }
+  }
   if (mode !== 'play') return;
   const hidden = hiddenAt(S.x, S.z), py = S.y + 0.9;
   // crushing contact with any part of the body
@@ -547,7 +581,8 @@ function killShukeli() {
   for (let k = 0; k < 14; k++) particles.push({ m: 'drop', x: sh.x - 0.3, y: 1.4, z: sh.z, vx: -Math.random() * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 0.8, max: 0.8, g: 9, s: 1.2 });
   const kx = GRILLE_X - 0.75, kz = sh.z;
   S.items.push({ id: 'keys', kind: 'keys', name: 'jailer\'s ring of keys', x: kx, z: kz, y: groundInfo(kx, kz).floor, taken: false });
-  log('Your dagger finds the soft place under his ear. Shukeli sags against the grille with a sigh like a punctured wineskin, and his ring of keys clinks onto the flagstones on your side of the bars.', 'good');
+  log('Your blade finds the soft place under his ear. Shukeli sags against the grille with a sigh like a punctured wineskin, and his ring of keys clinks onto the flagstones on your side of the bars.', 'good');
+  alertGroup('barracks');
 }
 
 // ---------------------------------------------------------------- projectiles & hazards
@@ -561,7 +596,7 @@ function barsHit(p, nx, nz) {
 function updateProjectiles() {
   for (let i = S.proj.length - 1; i >= 0; i--) {
     const p = S.proj[i];
-    p.vy -= (p.type === 'bone' ? 10 : 4) * DT; p.spin += DT * 12; p.life -= DT;
+    p.vy -= (p.type === 'bone' ? 10 : p.type === 'arrow' ? 2 : 4) * DT; p.spin += DT * 12; p.life -= DT;
     let nx = p.x + p.vx * DT, ny = p.y + p.vy * DT, nz = p.z + p.vz * DT;
     const hit = p.type === 'bone' && !p.bounced ? barsHit(p, nx, nz) : null;
     if (hit) {
@@ -577,6 +612,8 @@ function updateProjectiles() {
           S.items.push({ id: 'b' + S.tick, kind: 'bone', name: 'thighbone', x, z, y: gg.floor, taken: false });
           if (!p.noisy) noiseAt(x, z);
         } else Sfx.clatter();
+      } else if (p.type === 'arrow') {
+        if (Math.hypot(p.x - S.x, p.z - S.z) < 12) Sfx.arrow();
       } else if (p.type === 'venom') {
         const gg = groundInfo(p.x, p.z);
         if (gg.kind === 1) S.puddles.push({ x: p.x, z: p.z, y: gg.floor, t: 6 });
@@ -585,6 +622,11 @@ function updateProjectiles() {
       S.proj.splice(i, 1); continue;
     }
     p.x = nx; p.y = ny; p.z = nz;
+    if (p.type === 'arrow' && Math.hypot(p.x - S.x, p.y - (S.y + 1.1), p.z - S.z) < 0.6) {
+      S.proj.splice(i, 1); hurt(FOES.archer.dmg, 'arrow'); punchView(0.04, (Math.random() - 0.5) * 0.08);
+      if (mode === 'play' && !S.hints.has('arrow')) { S.hints.add('arrow'); log('An arrow! Close with the archer, or put stone between you.', 'bad'); }
+      continue;
+    }
     if (p.type === 'venom' && Math.hypot(p.x - S.x, p.y - (S.y + 1.0), p.z - S.z) < 0.8) {
       S.proj.splice(i, 1); Sfx.venom(); hurt(22, 'venom');
       if (mode === 'play') log('Venom spatters you, and where it touches, it burns!', 'bad');
@@ -615,6 +657,8 @@ function findTarget() {
     if (f.type === 'door' && S.door.open > 0.5) continue;
     if (f.type === 'grille' && S.grille.target > 0) continue;
     if (f.type === 'bones' && S.flags.has_bone) continue;
+    if (f.type === 'spear_rack' && (S.flags.has_spear || S.flags.portcullis_open)) continue;
+    if (f.type === 'winch' && S.flags.portcullis_open) continue;
     consider({ type: f.type, f }, f.x, f.y - f.baseY, f.z, f.type === 'clue' ? 2.6 : f.type === 'ring' ? 3.7 : 3.0);
   }
   return best;
@@ -628,6 +672,8 @@ function promptText(t) {
     case 'bones': return '[E] take a thighbone';
     case 'door': return '[E] try the cell door';
     case 'grille': return S.flags.has_keys ? '[E] unlock the grille' : '[E] try the grille';
+    case 'spear_rack': return '[E] take a spear';
+    case 'winch': return S.flags.has_spear ? '[E] wind the winch and jam the ratchet' : '[E] wind the winch';
   }
   return '';
 }
@@ -639,16 +685,33 @@ const ROOM_DESC = {
   a2: 'Bones are heaped in this alcove: the leavings of the pits. Most of them are human.',
   niche: 'A deep niche beside the iron grille, black with shadow. From here you can hear the jailer breathing.',
   guard: 'Shukeli\'s guardroom: a table, a stool, a brazier, a jug of wine. The jailer lived well.',
-  stair: 'A stair climbs into the dark, toward the citadel and the open air.',
+  south_passage: 'A low passage runs south from the hall. Lamplight and the mutter of voices come up it.',
+  post: 'The wardens\' post: pillars, a brazier, a dice table, a rack of blades. Men live down here, in shifts, beside the serpent.',
+  barracks: 'Bunks, stale straw, a rack of spears. The guards of the pits sleep here.',
+  winch: 'A great winch on trestles, its rope running up into the wall. It raises the portcullis on the stair.',
+  stair: 'A stair climbs toward the citadel and the open air.',
+  landing: 'A wide landing under Tsotha\'s scarlet banners. Daylight, real daylight, falls down the stair beyond.',
 };
 function objective() {
-  const f = S.flags;
+  const f = S.flags, live = g => S.foes.some(x => x.group === g && !x.dead && x.alert);
   if (!f.free) return 'Free yourself from the chain.';
   if (!f.has_dagger) return S.giant.state === 'crushed' ? 'Find something to fight with.' : 'Survive.';
+  if (live('scout') || live('post')) return 'Fight! Kick shields aside.';
   if (!f.shukeli_dead) return 'Reach the grille at the end of the hall. Deal with the jailer.';
   if (!f.has_keys) return 'Take the jailer\'s keys.';
+  if (live('barracks')) return 'The guards are coming! Fight them at the bars.';
   if (!f.grille_open) return 'Unlock the grille.';
-  return 'Climb the stair.';
+  if (!f.portcullis_open) return 'Raise the portcullis on the stair.';
+  return live('landing') ? 'Cut your way through the captain\'s men.' : 'Climb to the citadel.';
+}
+// first entry to an area: a checkpoint, and the area's name
+function enterArea(a) {
+  if (S.areas.has(a.id)) return;
+  S.areas.add(a.id);
+  const cps = { hall: [7.5, 12.4, Math.PI], post: [26.8, 16.5, Math.PI], grille: [32.6, 16, 0], guard: [36.5, 14, -Math.PI / 2], winch: [44.2, 17, -Math.PI / 2], landing: [50, 13.9, -Math.PI / 2] };
+  const c = cps[a.id];
+  if (c && S.flags.free) S.checkpoint = { x: c[0] * CELL, z: c[1] * CELL, yaw: c[2] };
+  log(a.name + (a.type === 'action' ? ' · a fight' : ''), 'title');
 }
 function enterRoom(id) {
   const room = LV.rooms.find(r => r.id === id);
@@ -663,9 +726,9 @@ function humanInput() {
   const inp = {
     fwd: (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0),
     side: (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0),
-    run: !!(keys.ShiftLeft || keys.ShiftRight), jump: !!keys.Space, use: pressUse, fire: pressFire,
+    run: !!(keys.ShiftLeft || keys.ShiftRight), jump: !!keys.Space, use: pressUse, fire: pressFire, kick: pressKick, weapon: wantWeapon,
   };
-  pressUse = pressFire = false;
+  pressUse = pressFire = pressKick = false; wantWeapon = null;
   return inp;
 }
 function tick(inp) {
@@ -673,24 +736,34 @@ function tick(inp) {
   if (inp.yaw !== undefined) S.yaw = inp.yaw;
   if (inp.pitch !== undefined) S.pitch = inp.pitch;
   prev = { x: S.x, y: S.y, z: S.z };
-  chainSndT -= DT; S.swing = Math.max(0, S.swing - DT); S.throwT = Math.max(0, S.throwT - DT);
+  chainSndT -= DT; S.swing = Math.max(0, S.swing - DT); S.throwT = Math.max(0, S.throwT - DT); S.kickT = Math.max(0, S.kickT - DT);
+  if (inp.weapon && S.weapons[inp.weapon]) S.weapon = inp.weapon;
   const { g, sp } = updatePlayer(inp);
-  for (const d of [S.door, S.grille]) d.open += clamp(d.target - d.open, -DT * 0.9, DT * 0.9);
+  for (const d of [S.door, S.grille, S.portc]) d.open += clamp(d.target - d.open, -DT * 0.9, DT * (d === S.portc && d.target === 0 ? 4 : 0.9));
+  if (S.portc.dropT > 0) { S.portc.dropT -= DT; if (S.portc.dropT <= 0 && !S.flags.portcullis_open) { S.portc.target = 0; Sfx.clank(); Sfx.crush(); log('The pawl slips. The portcullis crashes down.', 'dim'); } }
   updateGiant();
   updateSatha();
   if (mode !== 'play') return;
   updateShukeli();
+  updateFoes();
   updateProjectiles();
+  if (mode !== 'play') return;
+  resolvePlayerHit();
   if (mode !== 'play') return;
   interactTarget = findTarget();
   if (inp.use) interact();
-  if (inp.fire) onFire();
+  if (inp.fire) onFire(false);
+  if (inp.kick) onFire(true);
   if (g.kind === 2 && S.y < g.floor + 30 && S.y < -4) { die('fall'); return; }
   const id = roomIdAt(S.x, S.z);
-  if (id && id !== S.room) { S.room = id; enterRoom(id); }
+  if (id && id !== S.room) {
+    S.room = id; enterRoom(id);
+    const area = LEVEL.areas.find(a => a.rooms.includes(id));
+    if (area) enterArea(area);
+  }
   if (S.onGround && sp > 0.8) { stepAcc += sp * DT; bobPhase += sp * DT * 2.2; if (stepAcc > 2.0) { stepAcc = 0; Sfx.step(hiddenAt(S.x, S.z)); } }
   bobAmt += ((S.onGround && sp > 0.8 ? Math.min(1, sp / 5) : 0) - bobAmt) * Math.min(1, DT * 8);
-  if (S.flags.grille_open && S.x > 46.6 * CELL) finishLevel();
+  if (S.x > LEVEL.entities.find(e => e.class === 'trigger_exit').x * CELL) finishLevel();
 }
 
 // ---------------------------------------------------------------- determinism helpers
@@ -699,7 +772,8 @@ function stateHash() {
   const q = v => Math.round(v * 100);
   const sh = S.shukeli, g = S.giant;
   const parts = [S.tick, q(S.x), q(S.y), q(S.z), Math.round(S.health), Object.values(S.flags).map(Number).join(''), q(S.door.open), q(S.grille.open),
-    S.satha.start, g.state, q(g.x), q(g.z), sh.state, q(sh.x), q(sh.z), S.proj.length, S.items.filter(i => i.taken).length];
+    S.satha.start, g.state, q(g.x), q(g.z), sh.state, q(sh.x), q(sh.z), S.proj.length, S.items.filter(i => i.taken).length,
+    S.foes.map(f => f.state + q(f.x) + q(f.z) + f.hp).join(','), q(S.portc.open), S.weapon];
   const s = parts.join('|');
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
   return (h >>> 0).toString(16).padStart(8, '0');
@@ -711,13 +785,14 @@ window.CIM = {
   obs() {
     return { tick: S.tick, hash: stateHash(), room: S.room, pos: [S.x, S.y, S.z], yaw: S.yaw, health: S.health, flags: Object.assign({}, S.flags),
       shukeli: S.shukeli.state, giant: S.giant.state, satha: { phase: sathaPhase(), active: S.satha.active, head: S.satha.pts ? S.satha.pts[0] : null },
-      prompt: promptText(interactTarget), clues: [...S.read].map(id => LV.features.find(f => f.id === id).text), mode };
+      prompt: promptText(interactTarget), clues: [...S.read].map(id => LV.features.find(f => f.id === id).text), mode,
+      weapon: S.weapon, kills: S.kills, foes: S.foes.map(f => ({ id: f.id, cls: f.cls, state: f.state, hp: f.hp, pos: [f.x, f.y, f.z], alert: f.alert })) };
   },
   step(action = {}, ticks = 1) {
     if (mode === 'splash') startPlay(true);
     agentInput = action;
     for (let i = 0; i < ticks && mode === 'play'; i++) tick({ fwd: action.forward || 0, side: action.side || 0, run: !!action.run, jump: !!action.jump,
-      use: !!action.use && i === 0, fire: !!action.attack && i === 0, yaw: action.yaw, pitch: action.pitch });
+      use: !!action.use && i === 0, fire: !!action.attack && i === 0, kick: !!action.kick && i === 0, weapon: i === 0 ? action.weapon : null, yaw: action.yaw, pitch: action.pitch });
     if (mode === 'dead' && action.respawn) respawn();
     return this.obs();
   },
@@ -730,7 +805,7 @@ function lockPointer() { try { const p = canvas.requestPointerLock(); if (p && p
 function hideOverlay() { overlay.className = 'hidden'; overlay.innerHTML = ''; }
 async function showIntro() {
   mode = 'splash'; hud.classList.add('hidden');
-  await showSplash('e1m2', '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Esc</b> pause</div>');
+  await showSplash('e1m2', '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> kick &nbsp; <b>1 2 3</b> weapons &nbsp; <b>Esc</b> pause</div>');
   if (mode === 'splash') startPlay(false);
 }
 function startPlay(agent) {
@@ -747,7 +822,7 @@ function showPause() {
   mode = 'paused';
   overlay.className = '';
   overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">e1m2 · The Pits · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
-    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>P</b> pixel size · <b>K</b> sound · <b>F3</b> debug</div>' +
+    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> kick · <b>1 2 3</b> fists, dagger, sword · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
     '<div class="setting"><label for="brIn">Brightness</label><input type="range" id="brIn" min="0.8" max="2.2" step="0.05" value="' + brightness + '"><span id="brVal">' + brightness.toFixed(2) + '</span></div>' +
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
     '<div class="btns"><button id="bRes">Resume</button><button id="bRestart">Restart level</button></div></div>';
@@ -764,7 +839,7 @@ async function finishLevel() {
   await new Promise(r => setTimeout(r, 900));
   hud.classList.add('hidden');
   await showSplash('e1m3', '<p class="stats">e1m2 complete · ' + Math.floor(secs / 60) + 'm ' + (secs % 60) + 's · ' + S.deaths + ' death' + (S.deaths === 1 ? '' : 's') +
-    ' · Satha passed ' + S.passes + ' time' + (S.passes === 1 ? '' : 's') + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p><p class="sub">End of the demo. The Tunnels Below is the next level in the plan (README §9).</p>', 'Click to play The Pits again');
+    ' · ' + S.kills + ' of ' + S.foes.length + ' foes slain · Satha passed ' + S.passes + ' time' + (S.passes === 1 ? '' : 's') + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p><p class="sub">End of the demo. The Tunnels Below is the next level in the plan (README §9).</p>', 'Click to play The Pits again');
   location.reload();
 }
 
@@ -772,11 +847,10 @@ async function finishLevel() {
 function updateHUD() {
   $('hpFill').style.width = Math.max(0, S.health) + '%';
   $('hpNum').textContent = Math.ceil(Math.max(0, S.health));
-  const carry = [];
-  if (S.flags.has_dagger) carry.push('dagger');
-  if (S.flags.has_bone) carry.push('thighbone');
+  const carry = [S.flags.has_bone ? 'thighbone (click to throw)' : S.weapon === 'fists' ? 'bare fists' : 'the ' + S.weapon];
+  if (S.flags.has_spear) carry.push('a spear on your back');
   if (S.flags.has_keys) carry.push('keys');
-  $('carry').textContent = carry.length ? carry.join(' · ') : 'bare hands';
+  $('carry').textContent = carry.join(' · ') + (S.kills ? '  ·  ' + S.kills + ' slain' : '');
   $('objective').textContent = objective();
   promptEl.textContent = mode === 'play' ? promptText(interactTarget) : '';
   const dbg = $('debug');
@@ -789,38 +863,18 @@ function updateHUD() {
 }
 
 // ---------------------------------------------------------------- render
-function drawHumanoid(name, x, y, z, yaw, pose, light) {
-  const def = CHAR_DEFS[name], b = def.bulk;
-  const root = m4trs(x, y, z, yaw, pose.pitch || 0, pose.roll || 0, def.scale);
-  const P = (part, m) => drawM('part:' + name + ':' + part, m, light);
-  P('torso', root);
-  P('head', m4mul(root, m4mul(m4t(0, 1.5, 0), m4mul(m4rx(pose.head || 0), m4t(0, -1.5, 0)))));
-  const ph = pose.walk || 0;
-  for (const side of [-1, 1]) {
-    const swing = -Math.sin(ph) * 0.45 * side * (pose.moving ? 1 : 0);
-    const up = pose.arms || 0;
-    const ua = m4mul(root, m4mul(m4t(side * 0.3 * b, 1.47, 0), m4mul(m4rx(swing * (1 - up) - 1.35 * up), m4rz(side * (0.12 + 0.15 * (pose.spread || 0))))));
-    P('uarm', ua);
-    P('farm', m4mul(ua, m4mul(m4t(0, -0.31, 0), m4rx(-0.25 - 0.25 * up))));
-    if (def.legs) {
-      const leg = Math.sin(ph) * 0.55 * side * (pose.moving ? 1 : 0);
-      const th = m4mul(root, m4mul(m4t(side * 0.11 * b, 0.9, 0), m4rx(leg)));
-      P('thigh', th);
-      P('shin', m4mul(th, m4mul(m4t(0, -0.45, 0), m4rx(Math.max(0, -leg) * 0.9))));
-    }
-  }
-  if (pose.keys) drawM('part:shukeli:keys', m4mul(root, m4trs(0.42, 0.98, 0.1, Math.PI / 2, 0, 0, 1)), light);
-}
 function render(alpha) {
   const px = lerp(prev.x, S.x, alpha), py = lerp(prev.y, S.y, alpha), pz = lerp(prev.z, S.z, alpha);
   const bob = Math.sin(bobPhase * 2) * 0.05 * bobAmt, eyeY = py + EYE + bob;
   const proj = m4persp(72 * Math.PI / 180, R.aspect, 0.05, 200);
-  const view = m4mul(m4rx(-S.pitch), m4mul(m4ry(-S.yaw), m4t(-px, -eyeY, -pz)));
+  const view = m4mul(m4rx(-S.pitch - punchPitch), m4mul(m4ry(-S.yaw - punchYaw), m4t(-px, -eyeY, -pz)));
   const vp = m4mul(proj, view), f = camFwd();
   const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3], lc = [0.3, 0.27, 0.23];
   // torches gutter as Satha comes (rule 4: timing visible in the world)
   const t = sathaPhase();
-  let lm = 1 + 0.035 * Math.sin(gameTime * 9.1) + 0.02 * Math.sin(gameTime * 23.7);
+  // Quake's flicker lightstyle (world.qc: 'm' is normal), ten steps a second
+  const LS = 'mmnmmommommnonmmonqnmmo', lsv = (LS.charCodeAt(Math.floor(gameTime * 10) % LS.length) - 97) / 12;
+  let lm = 1 + (lsv - 1) * 0.35;
   if (t >= 0 && t < 6.5) lm *= 1 - 0.5 * smoothstep(0, 0.6, t) * (1 - smoothstep(5, 6.5, t)) * (0.75 + 0.25 * Math.sin(gameTime * 37));
   R.beginScene(gameTime);
   R.lightMul(lm);
@@ -831,8 +885,8 @@ function render(alpha) {
     if (it.taken) continue;
     const light = sampleLight(it.x, it.y + 0.5, it.z);
     const mesh = it.kind === 'wine' && it.name.startsWith('jug') ? 'jug' : it.kind === 'dagger' ? 'dagger2' : it.kind;
-    const flat = it.kind === 'dagger' || it.kind === 'bone' || it.kind === 'keys';
-    const m = flat ? m4trs(it.x, it.y + 0.05, it.z, hrand(it.x * 10, it.z * 10, 1, 1) * 6, Math.PI / 2, 0, it.kind === 'dagger' ? 2.2 : 1.2) : m4trs(it.x, it.y, it.z, 0.6, 0, 0, 1.3);
+    const flat = it.kind === 'dagger' || it.kind === 'bone' || it.kind === 'keys' || it.kind === 'sword' || it.kind === 'spear';
+    const m = flat ? m4trs(it.x, it.y + 0.05, it.z, hrand(it.x * 10, it.z * 10, 1, 1) * 6, Math.PI / 2, 0, it.kind === 'dagger' ? 2.2 : it.kind === 'sword' || it.kind === 'spear' ? 1 : 1.2) : m4trs(it.x, it.y, it.z, 0.6, 0, 0, 1.3);
     drawM(mesh, m, light, 0.06 + 0.05 * Math.sin(gameTime * 3));
   }
   // ring and chain
@@ -854,22 +908,35 @@ function render(alpha) {
   drawM('bars:2.5:3.2', m4trs(7 * CELL, 0, 12 * CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // swings into the cell
   const gl2 = sampleLight(GRILLE_X, 2, HALL_Z);
   drawM('bars:5:7.5', m4trs(GRILLE_X, S.grille.open * 6.6, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), gl2);
-  // the giant
-  const g = S.giant;
+  drawM('bars:5:6', m4trs(45 * CELL, 0.4 + S.portc.open * 5.2, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), sampleLight(45 * CELL, 2, HALL_Z));
+  // the black giant
+  const g = S.giant, gl = sampleLight(g.x, 1.5, g.z);
   if (g.state === 'crushed') {
-    const fall = smoothstep(0, 1, g.fall);
-    drawHumanoid('giant', g.x, g.y + 0.25 * fall, g.z, g.yaw, { pitch: -1.5 * fall, roll: 0.3 * fall, spread: 1 }, sampleLight(g.x, 1, g.z));
-  } else drawHumanoid('giant', g.x, g.y, g.z, g.yaw, { walk: g.walk * 2.2, moving: g.state === 'enter' || g.state === 'flee' || (g.state === 'stalk' && Math.hypot(S.x - g.x, S.z - g.z) > 1.3), arms: g.arms }, sampleLight(g.x, 1.5, g.z));
-  // Shukeli
-  const sh = S.shukeli, sl = sampleLight(sh.x, 1.5, sh.z);
-  if (sh.state === 'dead') {
-    const fall = smoothstep(0, 1, sh.fall);
-    drawHumanoid('shukeli', sh.x + 0.25 * fall, groundInfo(sh.x, sh.z).floor, sh.z, -Math.PI / 2, { pitch: 0.55 * fall, roll: 0.25 * fall, head: 0.5 * fall, arms: 0 }, sl);
+    const k = smoothstep(0, 1, g.fall);
+    drawCharacter('giant', g.x, g.y, g.z, g.yaw, { pitch: -1.5 * k, roll: 0.3 * k, drop: 0.1 * k, uzL: 1.2 * k, uzR: 1.2 * k, txL: -0.4 * k, sxL: 0.8 * k, headX: -0.4 * k }, gl);
   } else {
-    const moving = sh.state === 'walk' || sh.state === 'return' || sh.state === 'retreat';
-    drawHumanoid('shukeli', sh.x, groundInfo(sh.x, sh.z).floor + (moving ? Math.abs(Math.sin(sh.walk * 3)) * 0.04 : 0), sh.z, sh.yaw,
-      { walk: sh.walk * 3, moving, head: sh.state === 'peer' ? 0.25 : 0, pitch: sh.state === 'peer' ? 0.12 : 0, arms: sh.state === 'peer' ? 0.35 : 0, keys: true }, sl);
+    const P = poseIdle({}, gameTime);
+    const moving = g.state === 'enter' || g.state === 'flee' || (g.state === 'stalk' && Math.hypot(S.x - g.x, S.z - g.z) > 1.3);
+    if (moving) poseWalk(P, g.walk * 2.2, g.state === 'flee' ? 1.3 : 0.9, g.arms < 0.5);
+    if (g.arms > 0) Object.assign(P, { uxL: -1.4 * g.arms, uxR: -1.4 * g.arms, fxL: -0.4, fxR: -0.4, uzL: 0.05, uzR: 0.05, lean: 0.15 * g.arms });
+    if (g.state === 'wait') { P.uxL = -0.2; P.fxL = -1.6; P.uxR = -0.2; P.fxR = -1.6; P.headX = 0.1; }       // arms folded, grinning
+    drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
+  // Shukeli, the jailer
+  const sh = S.shukeli, sl = sampleLight(sh.x, 1.5, sh.z), shy = groundInfo(sh.x, sh.z).floor;
+  if (sh.state === 'dead') {
+    const k = smoothstep(0, 1, sh.fall);
+    drawCharacter('shukeli', sh.x + 0.3 * k, shy, sh.z, -Math.PI / 2, { pitch: 0.5 * k, roll: 0.3 * k, drop: -0.35 * k, headX: 0.5 * k, uzL: 0.6 * k, uzR: 0.6 * k }, sl);
+  } else {
+    const P = poseIdle({}, gameTime * 0.8);
+    const moving = sh.state === 'walk' || sh.state === 'return' || sh.state === 'retreat';
+    if (moving) poseWalk(P, sh.walk * 3, 0.7);
+    P.fxL = -1.0; P.fxR = -1.0; P.uxL = -0.3; P.uxR = -0.3;                                                // hands clasped over the belly
+    if (sh.state === 'peer') Object.assign(P, { lean: 0.22, headX: 0.25, uxL: -0.9, uxR: -0.9, fxL: -0.9, fxR: -0.9 });
+    if (sh.state === 'idle' && sh.tauntT > 9) Object.assign(P, { uxR: -1.6, fxR: -0.6, headX: -0.2 });      // a mocking wave
+    drawCharacter('shukeli', sh.x, shy, sh.z, sh.yaw, P, sl);
+  }
+  drawFoes();
   // Satha (README MODELS §5.2): sculpted head and jaw, and one smooth body tube
   // rebuilt each frame along her spine, drawn in chunks so each is lit locally.
   if (t >= 0) {
@@ -878,7 +945,7 @@ function render(alpha) {
       const h = spineAt(sHead), fa = spineAt(sHead + 0.4), fb = spineAt(sHead - 0.4);
       const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
       const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
-      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, 1.15);
+      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, 0.82);
       const hl = sampleLight(h[0], h[1] + 1, h[2]);
       if (h[1] > -10) {
         const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
@@ -908,9 +975,13 @@ function render(alpha) {
   for (const p of S.proj) {
     const light = sampleLight(p.x, p.y, p.z);
     if (p.type === 'bone') drawM('bone', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), p.spin, 0, 1.3), light);
+    else if (p.type === 'arrow') drawM('arrow', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), -Math.atan2(p.vy, Math.hypot(p.vx, p.vz)), 0, 1.2), light);
     else drawM('venom', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), 0, p.spin, 1.2), light, 0.5);
   }
-  for (const p of particles) drawM(p.m === 'venom' ? 'venom' : 'drop', m4trs(p.x, p.y, p.z, p.life * 3, 0, 0, p.s * (p.life / p.max) * (p.m === 'venom' ? 0.4 : 1)), sampleLight(p.x, p.y, p.z), p.m === 'venom' ? 0.5 : 0);
+  for (const p of particles) {
+    const name = p.m === 'venom' ? 'venom' : p.m === 'blood' ? 'blood' : p.m === 'spark' ? 'spark' : 'drop';
+    drawM(name, m4trs(p.x, p.y, p.z, p.life * 3, 0, 0, p.s * (p.life / p.max) * (p.m === 'venom' ? 0.4 : 1)), sampleLight(p.x, p.y, p.z), p.m === 'venom' || p.m === 'spark' ? 0.6 : 0);
+  }
   R.blend(true);
   for (const pd of S.puddles) drawM('puddle', m4trs(pd.x, pd.y, pd.z, 0, 0, 0, 0.6 + 0.4 * Math.min(1, (6 - pd.t) * 3)), sampleLight(pd.x, pd.y + 0.5, pd.z), 0.1, Math.min(0.6, pd.t * 0.5));
   R.blend(false);
@@ -921,18 +992,31 @@ function render(alpha) {
     const am = sampleLight(px, py + 1.2, pz), vl = [am[0] + 0.05, am[1] + 0.045, am[2] + 0.04];
     vl.d = rotDir(m4mul(m4rx(-S.pitch), m4ry(-S.yaw)), am.d);
     const sb = Math.sin(bobPhase) * 0.012 * bobAmt, cb = Math.abs(Math.cos(bobPhase)) * 0.012 * bobAmt;
-    const sw = S.swing > 0 ? Math.sin((1 - S.swing / 0.38) * Math.PI) : 0, th = S.throwT > 0 ? Math.sin((1 - S.throwT / 0.35) * Math.PI) : 0;
-    const holding = S.flags.has_dagger || S.flags.has_bone;
-    // hand space -> view space: the grip axis (hand -x) points forward and up, the forearm runs back toward the camera
-    const fwd = norm3([-0.1 - sw * 0.05, 0.5 - sw * 0.35 + th * 0.4, -1]), X = [-fwd[0], -fwd[1], -fwd[2]];
+    const prog = S.swing > 0 ? 1 - S.swing / S.swingLen : 0, sw = S.swing > 0 ? Math.sin(prog * Math.PI) : 0, th = S.throwT > 0 ? Math.sin((1 - S.throwT / 0.35) * Math.PI) : 0;
+    const wep = S.flags.has_bone ? 'bone' : S.weapon;
+    // the swing: dagger and fists thrust; the sword cuts right-to-left, left-to-right, then overhead
+    let fwd, pos;
+    if (wep === 'sword' && S.swing > 0) {
+      const e = smoothstep(0, 1, prog), arcs = [[[0.9, 0.55, -0.6], [-1.0, -0.25, -0.7]], [[-0.9, 0.4, -0.6], [1.0, -0.3, -0.7]], [[0.05, 1.3, -0.4], [0.0, -0.9, -0.9]]][S.combo];
+      fwd = norm3(arcs[0].map((v, i) => lerp(v, arcs[1][i], e)));
+      pos = [0.15 - sb + fwd[0] * 0.06, -0.2 + cb + fwd[1] * 0.05, -0.36];
+    } else {
+      fwd = norm3([-0.1 - sw * 0.05, (wep === 'sword' ? 0.75 : 0.5) - sw * 0.35 + th * 0.4, -1]);
+      pos = [0.17 - sb + fwd[0] * sw * 0.16, -0.19 + cb + fwd[1] * sw * 0.16 + th * 0.06, -0.33 + fwd[2] * sw * 0.16];
+    }
+    const X = [-fwd[0], -fwd[1], -fwd[2]];
     const arm = [0.62, -0.5, 0.6], ad = arm[0] * X[0] + arm[1] * X[1] + arm[2] * X[2];
     const Z = norm3([arm[0] - X[0] * ad, arm[1] - X[1] * ad, arm[2] - X[2] * ad]), Y = cross3(Z, X);
-    const pos = [0.17 - sb + fwd[0] * sw * 0.16, (holding ? -0.19 : -0.2) + cb + fwd[1] * sw * 0.16 + th * 0.06, -0.33 + fwd[2] * sw * 0.16];
     const hand = new Float32Array([X[0], X[1], X[2], 0, Y[0], Y[1], Y[2], 0, Z[0], Z[1], Z[2], 0, pos[0], pos[1], pos[2], 1]);
     drawM('vm_forearm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl);
     drawM('vm_hand_grip', hand, vl);       // empty-handed, he makes a fist
-    if (S.flags.has_bone) drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
-    else if (S.flags.has_dagger) drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
+    if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
+    else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
+    else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
+    if (S.kickT > 0) {                     // the kick: a boot comes up from below
+      const k = Math.sin((1 - S.kickT / KICK.period) * Math.PI);
+      drawM('vm_leg', m4trs(0.05, -0.75 + k * 0.42, -0.55 - k * 0.15, 0, -1.35 + k * 0.4, 0, 1), vl);
+    }
   }
   R.present(fade, flash, flashCol);
 }
@@ -963,6 +1047,7 @@ function frame(now) {
     updateParticles(dt);
     fade += (fadeTarget - fade) * Math.min(1, dt * (fadeTarget > fade ? 4 : 2));
     flash = Math.max(0, flash - dt * 1.2);
+    punchPitch *= Math.pow(0.0005, dt); punchYaw *= Math.pow(0.0005, dt);
     render(renderAlpha);
     hudT -= dt;
     if (hudT <= 0 && mode !== 'splash') { hudT = 0.1; updateHUD(); }
@@ -983,8 +1068,13 @@ addEventListener('keydown', e => {
   if (e.repeat) return;
   switch (e.code) {
     case 'KeyE': pressUse = true; break;
+    case 'KeyF': case 'KeyQ': pressKick = true; break;
+    case 'Digit1': wantWeapon = 'fists'; break;
+    case 'Digit2': wantWeapon = 'dagger'; break;
+    case 'Digit3': wantWeapon = 'sword'; break;
     case 'KeyP': resIdx = (resIdx + 1) % RES_STEPS.length; onResize(); log('Render resolution: ' + RES_STEPS[resIdx] + ' lines.', 'dim'); break;
     case 'KeyK': log(Sfx.toggleMute() ? 'Sound off.' : 'Sound on.', 'dim'); break;
+    case 'F4': e.preventDefault(); R.palette = !R.palette; log(R.palette ? 'Palette on: the Quake look.' : 'Palette off: full colour.', 'dim'); break;
   }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -997,7 +1087,14 @@ canvas.addEventListener('mousedown', e => {
   if (mode !== 'play') return;
   if (document.pointerLockElement !== canvas) { lockPointer(); return; }
   if (e.button === 0) pressFire = true;
+  if (e.button === 2) pressKick = true;
 });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('wheel', e => {
+  if (mode !== 'play' || !S) return;
+  const have = WEAPON_ORDER.filter(w => S.weapons[w]), i = have.indexOf(S.weapon);
+  wantWeapon = have[(i + (e.deltaY > 0 ? 1 : have.length - 1)) % have.length];
+}, { passive: true });
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement !== canvas && mode === 'play' && !agentInput) showPause();
 });
@@ -1011,6 +1108,7 @@ function boot() {
   addEventListener('resize', onResize);
   setTimeout(() => {
     R.uploadTextures(generateTextures());
+    R.setPalette(gamePalette());
     buildLevel(LEVEL);
     buildSathaPath();
     levelMesh = R.createMesh(buildLevelMesh());

@@ -53,6 +53,7 @@ uniform float uTime;
 uniform float uLightMul;
 uniform float uUV;
 uniform vec3 uKeyDir;
+uniform vec3 uHaze;
 in vec3 vWPos;
 in vec3 vNor;
 in vec3 vCol;
@@ -82,7 +83,7 @@ void main() {
   float fd = length(vWPos - uCamPos);
   float f = exp(-fd * uFog);
   f = mix(f, sqrt(f), e);
-  outColor = vec4(col * f, uAlpha);
+  outColor = vec4(mix(uHaze, col, f), uAlpha);          // distance fades into the pits' haze
 }`;
 
 const POST_VS = `#version 300 es
@@ -99,16 +100,19 @@ uniform float uFade;
 uniform float uFlash;
 uniform vec3 uFlashCol;
 uniform float uGamma;
+uniform sampler2D uLut;
+uniform float uPal;
 in vec2 vUv;
 out vec4 outColor;
 void main() {
   vec3 c = texture(uScene, vUv).rgb;
   c = pow(max(c, vec3(0.0)), vec3(1.0 / uGamma));
-  c = floor(c * 40.0 + 0.5) / 40.0;
   vec2 d = vUv - 0.5;
   c *= 1.0 - dot(d, d) * 0.9;
   c = mix(c, uFlashCol, uFlash);
   c *= 1.0 - uFade;
+  // the Quake look: every pixel snapped to the nearest colour of the game's palette
+  if (uPal > 0.5) { vec3 q = floor(clamp(c, 0.0, 1.0) * 31.0 + 0.5); c = texture(uLut, vec2((q.r + 32.0 * q.b + 0.5) / 1024.0, (q.g + 0.5) / 32.0)).rgb; }
   outColor = vec4(c, 1.0);
 }`;
 
@@ -120,14 +124,14 @@ class Renderer {
     this.prog = this.program(SCENE_VS, SCENE_FS);
     this.post = this.program(POST_VS, POST_FS);
     this.u = {};
-    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir'])
+    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir', 'uHaze'])
       this.u[n] = gl.getUniformLocation(this.prog, n);
     this.pu = {};
-    for (const n of ['uScene', 'uFade', 'uFlash', 'uFlashCol', 'uGamma']) this.pu[n] = gl.getUniformLocation(this.post, n);
+    for (const n of ['uScene', 'uFade', 'uFlash', 'uFlashCol', 'uGamma', 'uLut', 'uPal']) this.pu[n] = gl.getUniformLocation(this.post, n);
     this.ident = m4ident();
     this.postVao = gl.createVertexArray();
     this.fbo = null; this.aspect = 1; this.lw = 1; this.lh = 1;
-    this.key = [0.3, 0.9, 0.3]; this.gamma = 1.3;
+    this.key = [0.3, 0.9, 0.3]; this.gamma = 1.3; this.haze = [0.055, 0.04, 0.03]; this.palette = true;
   }
   program(vs, fs) {
     const gl = this.gl;
@@ -193,6 +197,16 @@ class Renderer {
     gl.bindVertexArray(null);
     return { vao, vbo, count: data.length / 10 };
   }
+  setPalette(pal) {
+    const gl = this.gl;
+    this.lutTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.lutTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1024, 32, 0, gl.RGBA, gl.UNSIGNED_BYTE, paletteLut(pal));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
   updateMesh(m, data) {
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, m.vbo);
@@ -215,6 +229,7 @@ class Renderer {
     gl.uniform1i(this.u.uTex, 0);
     gl.uniform1f(this.u.uTime, time);
     gl.uniform1f(this.u.uLightMul, 1);
+    gl.uniform3fv(this.u.uHaze, this.haze);
   }
   lightMul(v) { this.gl.uniform1f(this.u.uLightMul, v); }
   setCamera(vp, camPos, lampPos, lampCol, lampRange, fog) {
@@ -262,6 +277,8 @@ class Renderer {
     gl.uniform1f(this.pu.uFlash, flash);
     gl.uniform3fv(this.pu.uFlashCol, flashCol);
     gl.uniform1f(this.pu.uGamma, this.gamma);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.lutTex);
+    gl.uniform1i(this.pu.uLut, 2); gl.uniform1f(this.pu.uPal, this.palette && this.lutTex ? 1 : 0);
     gl.bindVertexArray(this.postVao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.activeTexture(gl.TEXTURE0);
