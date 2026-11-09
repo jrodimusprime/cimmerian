@@ -250,33 +250,18 @@ parts: {head: helm_conical, torso: scale_cuirass, arms: bare, legs: greaves,
         r_hand: spear, l_hand: round_shield}
 ramps: {primary: bronze, secondary: earth, accent: scarlet}
 anims: {stand: 8, walk: 8, run: 6, attack_thrust: 6, pain: 4, death: 8}
-tris_max: 450
+tris_max: 290           # tier C (see MODELS.md)
 ```
 
 ### Cast
 
-| Character | Rig / build | Tris | Role and mechanic |
-|---|---|---|---|
-| **Player view-model** | Hands, sword, broken hilt, axe | 300 | First person, so the player model is only seen as weapons. The hero appears in full only in splash art |
-| Ophirean knight | humanoid / heavy | 500 | Shield blocks from the front, slow |
-| Kothian spearman | humanoid / lean | 450 | Reach attack, comes in groups |
-| Shemite archer | humanoid / lean | 400 | Ranged, keeps its distance |
-| Shukeli (jailer) | humanoid / heavy, robed | 450 | Taunts from behind the grille. Lure him close to the bars to strike |
-| Black giant | humanoid / giant | 550 | Scripted victim of Satha |
-| **Satha** | serpent, 12 segments | 120 per segment | Invulnerable set piece. Segments are separate entities following path corners. Its venom leaves damage zones, so you hide in alcoves |
-| Pit crawler *(invented filler)* | ape / low | 350 | Common pit enemy |
-| The Weeper / the presence at the well | none | 0 | Sound and particles only. Linger and you lose health; the presence is an invisible push toward the well |
-| **Yothga** | tendril | 800 | Boss. Tendrils grab and pull you; sever them to expose the stem |
-| Pelias | humanoid / lean, robed | 450 | Ally NPC. Drives off Satha and raises Shukeli's corpse to open the grille |
-| Citadel servant *(invented filler)* | humanoid / normal | 400 | Light resistance during the climb |
-| Tamar looter, Pellian soldier | humanoid / normal | 400 | Mob fights and street battles. Looters also fight soldiers |
-| **Arpello** | humanoid / heavy | 600 | Tower duel boss. Disarm him, then kick him off the tower |
-| **Strabonus** | humanoid / heavy, axe | 700 | Battle boss with charge and overhead attacks |
-| **Tsotha-lanti** | humanoid / lean, robed | 650 | Final boss. Throws explosive globes (arcing, like grenades), uses a blinding dust flash, and short teleports |
-| *Prologue:* assassins, Gromel, Volmana, Rinaldo, Ascalante | humanoid variants | 400–550 | Wave arena |
-| *Prologue:* Thoth-Amon's demon | ape | 600 | Can only be hurt by the phoenix-marked blade |
+The full list of models, with bones, triangle counts, skins and animation frames, is in **[MODELS.md](MODELS.md)**. In summary:
 
-The winged beast appears only in splash art, which saves a model and a flying level.
+- **Quake density.** Common enemies are about **300 triangles**, named characters 300–400, and bosses 400–600. Nothing exceeds 600 triangles or 400 vertices, though the MDL format allows 2,048.
+- **The hero is first person.** Four view-models (sword, broken hilt, axe, kick leg) at 120–250 triangles each, plus a 300-triangle body for the chase camera and death sequence.
+- **Rigs.** `humanoid` has 14 bones, with variants `robed` (16) and `ape` (15). Satha and Yothga use chain rigs and are assembled from several cheap entities.
+- **54 models** in total, about 9,750 triangles authored. Allies reuse enemy meshes with new skins.
+- The winged beast, the eagle and the globe's vision appear only in splash art, which saves a flying rig and a level.
 
 ---
 
@@ -459,7 +444,7 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 | Metric | Budget |
 |---|---|
 | World polys visible from any point | ≤ 700 |
-| Model triangles on screen | ≤ 2,500 |
+| Model triangles on screen | ≤ 6,000 (e.g. 16 × 300-tri enemies + view-model + props) |
 | Live monsters in the PVS | ≤ 16 (≤ 60 per map) |
 | Unique textures per map | ≤ 32, each ≤ 128×128 |
 | `.bsp` size | ≤ 2 MB (≈ 0.6 MB with Brotli) |
