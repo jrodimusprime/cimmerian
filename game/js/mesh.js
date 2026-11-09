@@ -398,18 +398,12 @@ function buildModel(name) {
       for (let k = -2; k <= 2; k++) addBox(mb, k * 0.17, 0.3, 0.04, 0.025, 0.33, 0.03, T.BLACK);
       break;
     case 'lever': addBox(mb, 0, 0.35, 0, 0.04, 0.38, 0.04, T.IRON); addRock(mb, 0, 0.75, 0, 0.07, 0.07, 0.07, 3, T.WOOD, 0.1); break;
-    case 'scratches': {                                   // writing scratched into the rock: unreadable cuts in rows
-      const r = new RNG(77);
-      for (let row = 0; row < 4; row++) for (let g = 0; g < 9; g++) {
-        const gx = -0.55 + g * 0.13, gy = 0.3 - row * 0.18;
-        for (let k = 0; k < r.int(2, 4); k++) {
-          const a = r.range(-1.4, 1.4), len = r.range(0.03, 0.07);
-          addBoxRot(mb, gx + r.range(-0.03, 0.03), gy + r.range(-0.04, 0.04), len, a);
-        }
-      }
+    case 'decal:scratch': case 'decal:tally1': case 'decal:tally2': case 'decal:tally3': {   // a flat quad for an alpha-tested decal
+      const layer = { 'decal:scratch': T.SCRATCH, 'decal:tally1': T.TALLY1, 'decal:tally2': T.TALLY2, 'decal:tally3': T.TALLY3 }[name];
+      const w = name === 'decal:scratch' ? 0.75 : 0.32, h = name === 'decal:scratch' ? 0.42 : 0.42, c = [[-w, -h, 0, 1], [w, -h, 1, 1], [w, h, 1, 0], [-w, h, 0, 0]];
+      for (const i of [0, 1, 2, 0, 2, 3]) mb.v([c[i][0], c[i][1], 0], 0, 0, 1, [c[i][2], c[i][3], 1], layer);
       break;
     }
-    case 'tally1': case 'tally2': case 'tally3': { const n = +name[5]; for (let k = 0; k < n; k++) addBox(mb, (k - (n - 1) / 2) * 0.13, 0, 0, 0.018, 0.28, 0.012, T.BONE); break; }
     case 'spear': return buildCharPart('spearman', 'spear');
     case 'arrow':                                        // along +z
       smoothLathe(mb, 0, 0, 0, [[0.008, -0.4], [0.008, 0.3]], 4, T.WOOD, ONE3, [0, 0, 1]);
@@ -450,7 +444,7 @@ function buildModel(name) {
 // Detailed models (Quake view-model / boss density): smooth normals, UVs.
 // UV meshes put (u, v, shade) in the colour slot and draw with uv = true.
 // ===========================================================================
-const UV_MODELS = new Set(['satha_head_uv', 'satha_jaw_uv', 'vm_forearm', 'vm_manacle']);
+const UV_MODELS = new Set(['satha_head_uv', 'satha_jaw_uv', 'vm_forearm', 'vm_manacle', 'decal:scratch', 'decal:tally1', 'decal:tally2', 'decal:tally3']);
 
 // Loft through elliptical stations along +z. Each station: {z, w, ht, hb, cy, x?}
 // (half-width, height above and below the centre). u runs around from the

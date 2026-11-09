@@ -15,7 +15,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CLOTH', 'ROBE', 'BONE', 'FIRE', 'EYE', 'VENOM', 'BLACK', 'STRAW', 'SKY',
   'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL',
   'MAIL', 'LEATHER', 'TABARD', 'HAIR', 'SHIELD', 'BLOOD', 'BANNER', 'FACE',
-  'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'SIGIL', 'PLANK'];
+  'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'SIGIL', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -325,9 +325,50 @@ const TEXGEN = {
     if (l < 0.06) return { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 };
     return { v: 0.3 + 0.3 * tfbmP(px + b * 0.25, py, 32, 2, 3, s + b) - 0.2 * smoothstep(0.55, 0.8, tfbm(px, py, 4, 2, s)), ramp: 'earth', lo: 0.04, hi: 0.5, h: 0.05 };
   } },
+  // ---- decals: alpha is a cut-out mask, so only the cuts are drawn ----------
+  // Scratched writing: rows of angular glyphs gouged by hand, uneven pressure, a few false starts.
+  SCRATCH: { pre: s => {
+    const r = new RNG(s), segs = [];
+    for (let row = 0; row < 5; row++) {
+      let x = 0.05 + r.range(0, 0.04);
+      while (x < 0.92) {
+        const gx = x, gy = 0.14 + row * 0.18 + r.range(-0.015, 0.015), w = r.range(0.035, 0.07), n = r.int(2, 4);
+        for (let k = 0; k < n; k++) {
+          const a = [gx + r.range(0, w), gy + r.range(-0.05, 0.05)], b = [gx + r.range(0, w), gy + r.range(-0.05, 0.05)];
+          segs.push([a, b, r.range(0.005, 0.009)]);
+        }
+        x += w + r.range(0.015, 0.035);
+        if (r.chance(0.12)) x += 0.05;                     // a word gap
+      }
+    }
+    return segs;
+  }, f: (x, y, s, segs) => {
+    const px = x / 64, py = y / 64;
+    let best = 1;
+    for (const [a, b, wd] of segs) {
+      const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1e-6, t = clamp(((px - a[0]) * dx + (py - a[1]) * dy) / l2, 0, 1);
+      const d = Math.hypot(px - a[0] - dx * t, py - a[1] - dy * t) / wd;
+      if (d < best) best = d;
+    }
+    if (best >= 1) return { v: 0, ramp: 'ink', e: 0, cut: false };
+    // the gouge: pale scraped stone, a dark lip on one side where the stone broke away
+    return { v: best < 0.55 ? 0.75 + 0.2 * tfbm(px, py, 16, 1, s) : 0.12, ramp: 'ink', lo: 0.1, hi: 0.85, cut: true };
+  } },
+  TALLY1: { f: (x, y, s) => tallyTex(x, y, s, 1) },
+  TALLY2: { f: (x, y, s) => tallyTex(x, y, s, 2) },
+  TALLY3: { f: (x, y, s) => tallyTex(x, y, s, 3) },
   FACE: { f: (x, y, s) => ({ v: 0.6 + 0.2 * tfbm(x / 64, y / 64, 8, 3, s) - (hrand(Math.floor(x), Math.floor(y), s, 4) > 0.9 ? 0.12 : 0), ramp: 'earth', lo: 0.25, hi: 0.78, h: 0.05 }) },
 };
 
+function tallyTex(x, y, s, n) {                      // n deep vertical cuts, slightly crooked
+  const px = x / 64, py = y / 64;
+  for (let k = 0; k < n; k++) {
+    const cx = 0.5 + (k - (n - 1) / 2) * 0.17 + (py - 0.5) * 0.06 * (k % 2 ? 1 : -1);
+    const d = Math.abs(px - cx) / (0.025 * (1 - Math.abs(py - 0.5) * 0.6));
+    if (py > 0.12 && py < 0.88 && d < 1) return { v: d < 0.5 ? 0.8 : 0.12, ramp: 'ink', lo: 0.1, hi: 0.85, cut: true };
+  }
+  return { v: 0, ramp: 'ink', cut: false };
+}
 function generateTextures() {
   const S = TEX_SIZE, out = [];
   for (let li = 0; li < TEX_NAMES.length; li++) {
@@ -340,7 +381,7 @@ function generateTextures() {
       if (r.h) v = hatch(v, x, y, r.h);
       const rgb = rampAt(r.ramp, clamp(v, 0, 1), r.lo || 0, r.hi === undefined ? 1 : r.hi, x, y);
       const o = (y * S + x) * 4;
-      data[o] = rgb[0]; data[o + 1] = rgb[1]; data[o + 2] = rgb[2]; data[o + 3] = Math.round(clamp(r.e || 0, 0, 1) * 255);
+      data[o] = rgb[0]; data[o + 1] = rgb[1]; data[o + 2] = rgb[2]; data[o + 3] = r.cut !== undefined ? (r.cut ? 255 : 0) : Math.round(clamp(r.e || 0, 0, 1) * 255);
     }
     out.push(data);
   }

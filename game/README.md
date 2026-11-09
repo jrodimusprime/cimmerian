@@ -84,7 +84,7 @@ Story splashes (README §12) bracket the level. Each is painted as a tonal scene
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *21 states*, e1m3 *9 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14312`, `e9f60ba3`; e1m3: `5710`, `31e0ac69`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14315`, `345192a9`; e1m3: `5710`, `31e0ac69`) |
 
 ## Not the real build
 

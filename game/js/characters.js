@@ -107,6 +107,7 @@ function buildCharPart(id, part) {
       loftY(mb, [[0.07, 0.055 * hw, 0.09, 0.03, 0.01], [0.11, 0.075 * hw, 0.1, 0.07], [0.16, 0.085 * hw, 0.105, 0.095], [0.21, 0.088, 0.1, 0.105],
         [0.27, 0.083, 0.085, 0.1], [0.31, 0.065, 0.05, 0.08], [0.335, 0.02, 0.015, 0.03]], 12, sk);
       const brute = c.head === 'brute', ghoul = c.head === 'crawler' || c.head === 'weeper';
+      const covered = ['coif', 'hood', 'helm_great', 'helm_horned'].includes(c.head);   // README §8: hide faces under helms
       if (brute || ghoul || c.head === 'eunuch') {
         // a face built to frighten: a heavy brow over sunken sockets, the mouth open on teeth
         addRock(mb, 0, 0.232, 0.092, 0.085, 0.024, 0.03, 4, sk, 0.06);
@@ -115,13 +116,13 @@ function buildCharPart(id, part) {
         addBox(mb, 0, 0.142, 0.1, ghoul ? 0.03 : 0.04, c.head === 'weeper' ? 0.04 : 0.018, 0.012, T.BLACK);
         for (let k = -3; k <= 3; k++) { addBox(mb, k * 0.011, 0.156, 0.108, 0.004, 0.007, 0.004, T.BONE); addBox(mb, k * 0.011, 0.128, 0.108, 0.004, 0.007, 0.004, T.BONE); }
         addBox(mb, 0, 0.185, 0.115, 0.016, 0.022, 0.016, sk, 0, ONE3, -0.4);      // a broken nose
-      } else addBox(mb, 0, 0.19, 0.112, 0.012, 0.03, 0.018, sk, 0, ONE3, -0.3);                    // nose
-      if (!(brute || ghoul || c.head === 'eunuch')) {
+      } else if (!covered) addBox(mb, 0, 0.19, 0.112, 0.012, 0.03, 0.018, sk, 0, ONE3, -0.3);                    // nose
+      if (!(brute || ghoul || covered || c.head === 'eunuch')) {
         addBox(mb, 0, 0.228, 0.098, 0.068, 0.011, 0.014, sk, 0, [0.8, 0.8, 0.8]);
         for (const sx of [-1, 1]) addBox(mb, sx * 0.034, 0.208, 0.096, 0.015, 0.007, 0.006, T.BLACK);
         addBox(mb, 0, 0.143, 0.104, 0.024, 0.004, 0.005, T.BLACK);
       }
-      if (!ghoul) for (const sx of [-1, 1]) addRock(mb, sx * 0.089, 0.2, -0.005, 0.014, 0.026, 0.02, 2 + sx, sk, 0.05);   // ears
+      if (!ghoul && !covered) for (const sx of [-1, 1]) addRock(mb, sx * 0.089, 0.2, -0.005, 0.014, 0.026, 0.02, 2 + sx, sk, 0.05);   // ears
       switch (c.head) {
         case 'brute':                                   // shaved skull, scars, iron rings in the ears
           for (const sx of [-1, 1]) addLathe(mb, sx * 0.092, 0.17, -0.005, [[0.012, 0], [0.016, 0.01], [0.012, 0.02]], 6, T.IRON, 0, ONE3, [1, 0, 0]);
@@ -152,9 +153,9 @@ function buildCharPart(id, part) {
           }
           break;
         }
-        case 'coif':                                    // mail coif and kettle hat, the face veiled to the eyes
-          addRock(mb, 0, 0.21, -0.005, 0.105, 0.115, 0.11, 6, T.MAIL, 0.04);
-          addBox(mb, 0, 0.15, 0.1, 0.075, 0.055, 0.02, T.CLOTH);
+        case 'coif':                                    // a full mail coif and kettle hat: only a dark band where the eyes are
+          loftY(mb, [[0.05, 0.12, 0.12, 0.11], [0.12, 0.11, 0.125, 0.115], [0.21, 0.106, 0.122, 0.115], [0.29, 0.096, 0.1, 0.105], [0.33, 0.06, 0.06, 0.07]], 12, T.MAIL);
+          addBox(mb, 0, 0.205, 0.117, 0.062, 0.017, 0.012, T.BLACK);
           smoothLathe(mb, 0, 0, 0, [[0.11, 0.25], [0.114, 0.29], [0.09, 0.34], [0.04, 0.37], [0, 0.375]], 12, T.STEEL, ONE3, [0, 1, 0]);
           smoothLathe(mb, 0, 0, 0, [[0.11, 0.245], [0.18, 0.222], [0.185, 0.228], [0.115, 0.26]], 12, T.STEEL, ONE3, [0, 1, 0]);
           break;

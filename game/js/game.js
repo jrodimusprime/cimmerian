@@ -87,11 +87,28 @@ function pathAt(s) {
 }
 const BODY_LEN = (SATHA_SEGS + 1) * SATHA_SPACING + 1.2;
 // the slithering spine: the track plus a lateral wave fixed to track position
+// Serpentine motion (lateral undulation): every point of the body follows the
+// same track, so the track IS the motion. The track is a serpenoid curve
+// (Hirose): heading = alpha * sin(2*pi*s / lambda) around the path, so its
+// curvature varies smoothly instead of being a sine wobble glued on top.
+// alpha ~ 35 degrees, lambda ~ half a body length: about two waves along her.
+const SERP_ALPHA = 0.6, SERP_LAMBDA = 13;
+const SERP_K = 2 * Math.PI / SERP_LAMBDA, SERP_AMP = SERP_ALPHA / SERP_K;    // lateral amplitude of that heading swing
 function spineAt(s) {
   const p = pathAt(s), q = pathAt(s + 0.3), r = pathAt(s - 0.3);
   const tx = q[0] - r[0], tz = q[2] - r[2], th = Math.hypot(tx, tz), tl = Math.hypot(tx, q[1] - r[1], tz) || 1;
-  const wig = Math.sin(s * 0.45) * 0.62 * th / tl;
-  return th > 1e-4 ? [p[0] - tz / th * wig, p[1], p[2] + tx / th * wig] : p;
+  // integrating heading alpha*sin(ks) gives a lateral offset of (alpha/k) * (1 - cos(ks)); centre it on the path
+  const horiz = th / tl, ramp = smoothstep(0, 6, s - 36);            // straight while she rises out of the well
+  const lat = -SERP_AMP * Math.cos(SERP_K * s) * horiz * ramp;
+  return th > 1e-4 ? [p[0] - tz / th * lat, p[1], p[2] + tx / th * lat] : p;
+}
+// her speed surges with each push of the body against the ground, rather than gliding at a constant rate
+function sathaS(t) { return SATHA_SPEED * t + (0.22 / SERP_K) * Math.sin(t * SATHA_SPEED * SERP_K); }   // speed swings ±22%, one push per wave
+// rest the body on the floor: belly down, whatever the radius at that point of her
+function onFloor(p, r) {
+  const g = groundInfo(p[0], p[2]);
+  if (g.kind === 1 && p[1] < g.floor + 2.5) p[1] = g.floor + r * 0.8 + 0.02;
+  return p;
 }
 const SATHA_CHUNKS = 4;
 let sathaMeshes = null;
@@ -101,14 +118,10 @@ function sathaPoints(sHead) {
   const out = [];
   for (let i = 0; i <= SATHA_SEGS + 1; i++) {
     const s = sHead - (i === SATHA_SEGS + 1 ? SATHA_SEGS * SATHA_SPACING + 1.6 : i * SATHA_SPACING);
-    const p = pathAt(s), q = pathAt(s + 0.3), r = pathAt(s - 0.3);
+    const p = spineAt(s), q = spineAt(s + 0.3), r = spineAt(s - 0.3);
     const tx = q[0] - r[0], ty = q[1] - r[1], tz = q[2] - r[2], th = Math.hypot(tx, tz), tl = Math.hypot(tx, ty, tz) || 1;
-    const horiz = th / tl, wig = Math.sin(s * 0.45) * 0.62 * horiz;
-    const px = th > 1e-4 ? -tz / th : 0, pz = th > 1e-4 ? tx / th : 0;
-    // on the vertical runs the heading is undefined: face along the next horizontal leg
-    const yaw = horiz < 0.2 ? (s < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx + px * Math.cos(s * 0.45) * 0.17 * horiz, tz + pz * Math.cos(s * 0.45) * 0.17 * horiz);
-    out.push({ x: p[0] + px * wig, y: p[1], z: p[2] + pz * wig, yaw,
-      pitch: -Math.atan2(ty, th), r: i === 0 ? 0.95 : 0.8 * (1 - 0.35 * i / (SATHA_SEGS + 1)) });
+    const yaw = th / tl < 0.2 ? (s < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
+    out.push({ x: p[0], y: p[1], z: p[2], yaw, pitch: -Math.atan2(ty, th), r: i === 0 ? 0.95 : 0.8 * (1 - 0.35 * i / (SATHA_SEGS + 1)) });
   }
   return out;
 }
@@ -515,7 +528,7 @@ function updateSatha() {
   }
   if (sa.lastPhase < 3.0 && t >= 3.0) Sfx.hiss(clamp((4 * CELL - S.x) / 30, -1, 1));
   sa.lastPhase = t;
-  const sHead = SATHA_SPEED * t;
+  const sHead = sathaS(t);
   const wasActive = sa.active;
   sa.active = sHead - BODY_LEN < SATHA_PATH.len;
   if (!sa.active) { if (wasActive) S.passes++; sa.pts = null; return; }
@@ -1087,8 +1100,8 @@ function render(alpha) {
   for (const f of LV.features) {
     if (f.type !== 'clue' || !f.wall) continue;
     const n = wallIn(f.wall), yaw = Math.atan2(n[0], n[1]), l = sampleLight(f.x + n[0], f.y, f.z + n[1]);
-    const mk = f.id.startsWith('mark') ? 'tally' + ({ mark_one: 1, mark_two: 2, mark_three: 3 })[f.id] : 'scratches';
-    drawM(mk, m4trs(f.x + n[0] * 0.03, f.y, f.z + n[1] * 0.03, yaw, 0, 0, 1), l);
+    const mk = f.id.startsWith('mark') ? 'decal:tally' + ({ mark_one: 1, mark_two: 2, mark_three: 3 })[f.id] : 'decal:scratch';
+    R.key = l.d; R.drawEntity(getModel(mk), m4trs(f.x + n[0] * 0.02, f.y, f.z + n[1] * 0.02, yaw, 0, 0, 1), l, 0, 1, true, true);
   }
   // e1m3: flames over the ledge lean with the draft; vents and their levers; the boom and its stone; the sigil slab
   if (LEVEL.flames) for (const [fx, fz] of LEVEL.flames) {
@@ -1119,9 +1132,13 @@ function render(alpha) {
   // Satha (README MODELS §5.2): sculpted head and jaw, and one smooth body tube
   // rebuilt each frame along her spine, drawn in chunks so each is lit locally.
   if (t >= 0) {
-    const sHead = SATHA_SPEED * (t + alpha * DT);
+    const sHead = sathaS(t + alpha * DT);
     if (sHead - BODY_LEN < SATHA_PATH.len) {
-      const h = spineAt(sHead), fa = spineAt(sHead + 0.4), fb = spineAt(sHead - 0.4);
+      const raw = spineAt(sHead), ahead = spineAt(sHead + SERP_LAMBDA / 4), behind = spineAt(sHead - 0.8);
+      const h = [lerp(raw[0], (ahead[0] + behind[0]) / 2, 0.45), raw[1], lerp(raw[2], (ahead[2] + behind[2]) / 2, 0.45)];   // the head rides steadier than the body
+      const hg = groundInfo(h[0], h[2]);
+      if (hg.kind === 1 && h[1] < hg.floor + 2.5) h[1] = hg.floor + 0.62 + 0.1 * Math.sin(gameTime * 2.3);                // held up, gently bobbing
+      const fa = [ahead[0], h[1], ahead[2]], fb = behind;
       const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
       const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
       const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, 0.82);
@@ -1136,10 +1153,10 @@ function render(alpha) {
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS;
       let B = down;
       for (let c = 0; c < SATHA_CHUNKS; c++) {
-        const d0 = c * cl, mid = spineAt(sHead - 0.55 - d0 - cl / 2);
-        const data = buildSathaTube(d => spineAt(sHead - 0.55 - d0 - d), cl, 0.75, B, tt => sathaRadius((d0 + tt * cl) / L));
+        const d0 = c * cl, mid = onFloor(spineAt(sHead - 0.55 - d0 - cl / 2), 0.8);
+        const data = buildSathaTube(d => onFloor(spineAt(sHead - 0.55 - d0 - d), sathaRadius(Math.min(1, (d0 + Math.max(0, d)) / L))), cl, 0.75, B, tt => sathaRadius((d0 + tt * cl) / L));
         // carry the frame across chunks: recompute 'down' at the chunk end from the last ring
-        const e = spineAt(sHead - 0.55 - d0 - cl), e2 = spineAt(sHead - 0.55 - d0 - cl - 0.2), Tn = norm3([e2[0] - e[0], e2[1] - e[1], e2[2] - e[2]]);
+        const e = onFloor(spineAt(sHead - 0.55 - d0 - cl), sathaRadius(Math.min(1, (d0 + cl) / L))), e2 = onFloor(spineAt(sHead - 0.55 - d0 - cl - 0.2), sathaRadius(Math.min(1, (d0 + cl + 0.2) / L))), Tn = norm3([e2[0] - e[0], e2[1] - e[1], e2[2] - e[2]]);
         const bd = B[0] * Tn[0] + B[1] * Tn[1] + B[2] * Tn[2]; B = norm3([B[0] - Tn[0] * bd, B[1] - Tn[1] * bd, B[2] - Tn[2] * bd]);
         // shift v so the pattern runs continuously from chunk to chunk
         for (let i = 7; i < data.length; i += 10) data[i] += d0 / 4.4;

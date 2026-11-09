@@ -57,6 +57,7 @@ uniform float uLightMul;
 uniform float uUV;
 uniform vec3 uKeyDir;
 uniform vec3 uHaze;
+uniform float uDecal;
 in vec3 vWPos;
 in vec3 vNor;
 in vec3 vCol;
@@ -70,6 +71,7 @@ void main() {
   if (abs(vLayer - ${T.SLIME}.0) < 0.5) uv += vec2(sin(uv.y * 2.0 + uTime * 0.4) * 0.04, uTime * 0.05);
   if (abs(vLayer - ${T.FIRE}.0) < 0.5) uv.y -= uTime * 1.5;
   vec4 t = texture(uTex, vec3(uv, vLayer));
+  if (uDecal > 0.5) { if (t.a < 0.5) discard; t.a = 0.0; }        // a decal: only the cuts are drawn
   vec3 n = normalize(vNor);
   vec3 light = vCol;
   if (uEnt > 0.5) { float hl = dot(n, uKeyDir) * 0.5 + 0.5; light = uEntLight * (0.38 + 1.05 * hl * hl); }
@@ -130,7 +132,7 @@ class Renderer {
     this.prog = this.program(SCENE_VS, SCENE_FS);
     this.post = this.program(POST_VS, POST_FS);
     this.u = {};
-    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir', 'uHaze'])
+    for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir', 'uHaze', 'uDecal'])
       this.u[n] = gl.getUniformLocation(this.prog, n);
     this.pu = {};
     for (const n of ['uScene', 'uFade', 'uFlash', 'uFlashCol', 'uGamma', 'uLut', 'uPal']) this.pu[n] = gl.getUniformLocation(this.post, n);
@@ -251,13 +253,13 @@ class Renderer {
     if (!m || !m.count) return;
     const gl = this.gl, u = this.u;
     gl.uniformMatrix4fv(u.uModel, false, this.ident);
-    gl.uniform1f(u.uEnt, 0); gl.uniform1f(u.uUV, 0); gl.uniform1f(u.uTexScale, 0.24); gl.uniform1f(u.uGlow, 0); gl.uniform1f(u.uAlpha, alpha);
+    gl.uniform1f(u.uEnt, 0); gl.uniform1f(u.uUV, 0); gl.uniform1f(u.uDecal, 0); gl.uniform1f(u.uTexScale, 0.24); gl.uniform1f(u.uGlow, 0); gl.uniform1f(u.uAlpha, alpha);
     gl.bindVertexArray(m.vao);
     gl.drawArrays(gl.TRIANGLES, 0, m.count);
   }
-  drawEntity(m, model, light, glow = 0, alpha = 1, uv = false) {
+  drawEntity(m, model, light, glow = 0, alpha = 1, uv = false, decal = false) {
     const gl = this.gl, u = this.u;
-    gl.uniform1f(u.uUV, uv ? 1 : 0); gl.uniform3fv(u.uKeyDir, this.key);
+    gl.uniform1f(u.uUV, uv ? 1 : 0); gl.uniform1f(u.uDecal, decal ? 1 : 0); gl.uniform3fv(u.uKeyDir, this.key);
     gl.uniformMatrix4fv(u.uModel, false, model);
     gl.uniform1f(u.uEnt, 1); gl.uniform1f(u.uTexScale, 3.0);
     gl.uniform3fv(u.uEntLight, light); gl.uniform1f(u.uGlow, glow); gl.uniform1f(u.uAlpha, alpha);
