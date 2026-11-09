@@ -86,7 +86,7 @@ const LEVEL_E1M2 = {
     { prefab: 'torch', at: [49.5, 13], wall: 'N' }, { prefab: 'torch', at: [53, 11], wall: 'W' }, { prefab: 'torch', at: [53, 16.5], wall: 'W' },
     { prefab: 'torch', at: [61, 10.5], wall: 'E' }, { prefab: 'torch', at: [61, 17], wall: 'E' }, { prefab: 'brazier', at: [57, 13.8] },
     { prefab: 'column', at: [55.5, 11.5] }, { prefab: 'column', at: [55.5, 16.5] }, { prefab: 'column', at: [59, 11.5] }, { prefab: 'column', at: [59, 16.5] },
-    { prefab: 'banner', at: [61, 13.5], wall: 'E' }, { prefab: 'banner', at: [61, 15.5], wall: 'E' },
+    { prefab: 'banner', at: [61, 11.6], wall: 'E' }, { prefab: 'banner', at: [61, 15.5], wall: 'E' },
   ],
   lights: [
     { at: [8.5, 9.5], y: 7, col: [0.55, 0.6, 0.7], rad: 16, i: 2.0 },          // daylight down the grating
@@ -102,7 +102,7 @@ const LEVEL_E1M2 = {
       text: 'Tally marks, hundreds of them, then: "IT PASSES EVERY FORTY BREATHS. WHEN THE TORCHES BOW, GET INTO THE WALL. ITS SPIT FINDS ANY MAN IT CAN SEE."' },
     { type: 'clue', id: 'insc_grille', at: [32.04, 16.2], y: 1.3, wall: 'W',
       text: 'Scratched low in the niche: "The fat jailer comes to any sound, like a dog to the dish. He will not come near a man he can see. Strike from the dark."' },
-    { type: 'clue', id: 'insc_post', at: [26.96, 17.5], y: 1.3, wall: 'E',
+    { type: 'clue', id: 'insc_post', at: [27.96, 17.5], y: 1.3, wall: 'E',
       text: 'Cut into the passage wall: "The wardens sleep at their post. A shield will turn a blade, but not a heel. KICK THEM OFF THEIR GUARD."' },
     { type: 'clue', id: 'insc_winch', at: [45.96, 16.6], y: 1.3, wall: 'E',
       text: 'A warning painted on the winch housing: "PAWL BROKEN. She will not hold. Wind her up and jam the ratchet with something long and stout before you let go."' },
@@ -115,10 +115,10 @@ const LEVEL_E1M2 = {
   items: [
     { kind: 'bread', name: 'crust of black bread', at: [9.4, 11.4], heal: 25 },
     { kind: 'wine', name: 'skin of sour wine', at: [23.8, 16.3], heal: 15 },
-    { kind: 'wine', name: 'jug of the jailer\'s wine', at: [39.9, 11.8], heal: 15, y: 1.05 },
-    { kind: 'bread', name: 'warden\'s ration loaf', at: [21.4, 21.0], heal: 25, y: 1.05 },
+    { kind: 'wine', name: 'jug of the jailer\'s wine', at: [39.75, 11.9], heal: 15, y: 1.05 },
+    { kind: 'bread', name: 'warden\'s ration loaf', at: [21.55, 21.45], heal: 25, y: 1.05 },
     { kind: 'wine', name: 'archer\'s wineskin', at: [34.2, 20.6], heal: 25 },
-    { kind: 'bread', name: 'barracks bread', at: [40.6, 5.4], heal: 25, y: 1.05 },
+    { kind: 'bread', name: 'barracks bread', at: [40.25, 5.5], heal: 25, y: 1.05 },
     { kind: 'wine', name: 'captain\'s wine', at: [54, 17.6], heal: 25 },
   ],
   entities: [
@@ -214,7 +214,7 @@ const LEVEL_E1M3 = {
     { prefab: 'fungus', at: [21.6, 13] }, { prefab: 'fungus', at: [32.2, 18] }, { prefab: 'fungus', at: [25, 24.2] }, { prefab: 'bones', at: [27.5, 17.5], big: true },
     { prefab: 'bones', at: [34.2, 22.6] }, { prefab: 'fungus', at: [33.4, 15] },
     { prefab: 'fungus', at: [50, 17.2] }, { prefab: 'bones', at: [58.5, 19.5], big: true }, { prefab: 'skull', at: [60.5, 12.4] }, { prefab: 'fungus', at: [61.4, 15] },
-    { prefab: 'winch', at: [53, 25.4] }, { prefab: 'post', at: [54, 27] }, { prefab: 'torch', at: [52, 30], wall: 'W' },
+    { prefab: 'winch', at: [53, 25.4] }, { prefab: 'post', at: [54, 27] }, { prefab: 'torch', at: [56.5, 32], wall: 'S' },
     { prefab: 'torch', at: [44, 31.5], wall: 'W' }, { prefab: 'brazier', at: [47, 28.4] }, { prefab: 'brazier', at: [47, 31.6] },
   ],
   lights: [
@@ -229,14 +229,14 @@ const LEVEL_E1M3 = {
   valves: { at: [[33.6, 14.05, 'N'], [35.6, 14.05, 'N'], [33.6, 23.95, 'S'], [35.6, 23.95, 'S']], weights: [1, 1.5, -0.5, 1], base: -1.5 },
   boom: { post: [54, 27], len: 5, over: 0, floor: Math.PI / 2 },
   features: [
-    { type: 'clue', id: 'insc_foot', at: [6.96, 18.2], y: 1.3, wall: 'E',
+    { type: 'clue', id: 'insc_foot', at: [4.5, 17.04], y: 1.3, wall: 'N',
       text: 'Scratched by a careful hand: "Pelias sent us down for him, and the dark took most of us. Those who lived marked the safe road with THREE CUTS. One cut is the drop. Two cuts is a thing that waits."' },
     { type: 'clue', id: 'mark_one', at: [8.6, 15.04], y: 1.3, wall: 'N', text: 'A single cut, gouged deep: |' },
     { type: 'clue', id: 'mark_two', at: [8.6, 22.96], y: 1.3, wall: 'S', text: 'Two cuts, side by side: | |' },
     { type: 'clue', id: 'mark_three', at: [12.96, 17.6], y: 1.3, wall: 'E', text: 'Three cuts, neat and patient: | | |' },
-    { type: 'clue', id: 'insc_crossing', at: [33.04, 19.5], y: 1.3, wall: 'W',
+    { type: 'clue', id: 'insc_crossing', at: [34.6, 23.96], y: 1.3, wall: 'S',
       text: 'Scratched beside the drop: "The presence is only the breath of the deep. It comes up through four mouths. Shut and open them until the flames over the ledge stand straight, and it will not push you."' },
-    { type: 'clue', id: 'insc_stone', at: [52.04, 28.6], y: 1.3, wall: 'W',
+    { type: 'clue', id: 'insc_stone', at: [53.5, 24.04], y: 1.3, wall: 'N',
       text: 'Cut into the wall below the windlass: "Swing the arm out over the floor before you let her down, or the deep will have her. Aram took the crank and went on alone. He did not come back."' },
     { type: 'valve', idx: 0, at: [33.6, 14.05], y: 1.3 }, { type: 'valve', idx: 1, at: [35.6, 14.05], y: 1.3 },
     { type: 'valve', idx: 2, at: [33.6, 23.95], y: 1.3 }, { type: 'valve', idx: 3, at: [35.6, 23.95], y: 1.3 },
@@ -341,6 +341,7 @@ function buildLevel(spec) {
     LV.ceil[idx] = LV.floor[idx] + s.h * CELL; LV.flags[idx] |= F_TALL | F_SKY;
   }
   for (const l of spec.links) for (const [gx, gz] of l.cells) LV.blockers.add(gz * W + gx);
+  LV.wallErrors = checkWallMounts(spec);
   // corners are shared by every cell that touches them: watertight, but jittered
   LV.corners = new Array((W + 1) * (H + 1));
   for (let gz = 0; gz <= H; gz++) for (let gx = 0; gx <= W; gx++) LV.corners[gz * (W + 1) + gx] = computeCorner(gx, gz);
@@ -376,6 +377,24 @@ function buildLevel(spec) {
     const [x, z] = W2(it.at[0], it.at[1]);
     LV.items.push(Object.assign({}, it, { id: 'i' + n, x, z, y: it.y !== undefined ? groundInfo(x, z).floor + it.y : groundInfo(x, z).floor }));
   });
+}
+// Every wall-mounted thing (clue, torch, chains, banner, rack) must have rock behind it and
+// open floor in front, or it floats in mid-air. Logged at load; test/run.sh fails on it.
+function checkWallMounts(spec) {
+  const bad = [];
+  for (const m of spec.features.concat(spec.props)) {
+    if (!m.wall) continue;
+    const n = wallIn(m.wall), front = cellIdx(Math.floor(m.at[0] + n[0] * 0.3), Math.floor(m.at[1] + n[1] * 0.3)), back = cellIdx(Math.floor(m.at[0] - n[0] * 0.3), Math.floor(m.at[1] - n[1] * 0.3));
+    if (front < 0 || LV.kind[front] === 0 || (back >= 0 && LV.kind[back] !== 0)) bad.push((m.id || m.prefab) + ' at ' + m.at.join(',') + ' wall ' + m.wall);
+  }
+  // anything set above the floor must sit on a table top (1.0 x 0.62 cells' worth of planks, in world units)
+  for (const it of spec.items) {
+    if (it.y === undefined) continue;
+    const on = spec.props.some(p => p.prefab === 'table' && Math.abs((it.at[0] - p.at[0]) * CELL) < 0.85 && Math.abs((it.at[1] - p.at[1]) * CELL) < 0.5);
+    if (!on) bad.push(it.name + ' at ' + it.at.join(',') + ' is not on a table');
+  }
+  if (bad.length) console.warn('[level] ' + spec.level + ': floating: ' + bad.join('; '));
+  return bad;
 }
 // unit vector pointing out of a wall into the room
 function wallIn(w) { return w === 'N' ? [0, 1] : w === 'S' ? [0, -1] : w === 'E' ? [-1, 0] : w === 'W' ? [1, 0] : [0, 0]; }

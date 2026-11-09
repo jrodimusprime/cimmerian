@@ -1,7 +1,7 @@
 // Golden playthrough of e1m2 through the CIM agent API (README §11).
 // It plays the whole level, fights included, using only player inputs.
 // The final state hash must match EXPECTED on every run.
-const EXPECTED = { tick: 14473, hash: '2a94b3d9' };
+const EXPECTED = { tick: 14470, hash: '0c763bea' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };

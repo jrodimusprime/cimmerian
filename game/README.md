@@ -84,7 +84,7 @@ The title card is John Martin's *Pandemonium*, and each level's splash is a Pira
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *21 states*, e1m3 *9 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14473`, `2a94b3d9`; e1m3: `5870`, `d64ae18c`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `14470`, `0c763bea`; e1m3: `5870`, `d64ae18c`) |
 
 ## Not the real build
 
