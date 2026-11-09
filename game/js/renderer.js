@@ -22,6 +22,7 @@ out vec3 vWPos;
 out vec3 vNor;
 out vec3 vCol;
 out vec2 vUv;
+out vec2 vUv2;
 flat out float vLayer;
 void main() {
   vec4 wp = uModel * vec4(aPos, 1.0);
@@ -33,6 +34,8 @@ void main() {
   vec3 an = abs(aNor);
   vUv = an.y > 0.7 ? tp.xz : (an.x > an.z ? tp.zy : tp.xy);
   if (uUV > 0.5) vUv = aCol.xy;
+  vec3 gp = wp.xyz * 0.045;                                      // large-scale grime, world space
+  vUv2 = an.y > 0.7 ? gp.xz : (an.x > an.z ? gp.zy : gp.xy);
   gl_Position = uVP * wp;
 }`;
 
@@ -58,6 +61,7 @@ in vec3 vWPos;
 in vec3 vNor;
 in vec3 vCol;
 in vec2 vUv;
+in vec2 vUv2;
 flat in float vLayer;
 out vec4 outColor;
 void main() {
@@ -80,6 +84,8 @@ void main() {
   vec3 tint = uEnt > 0.5 ? (uUV > 0.5 ? vec3(vCol.z) : vCol) : vec3(1.0);
   float e = clamp(t.a + uGlow, 0.0, 1.0);
   vec3 col = t.rgb * tint * (light * 1.9 * (1.0 - e) + e * 1.3);
+  // stains and soot at the scale of rooms, so no wall reads as one tile repeated
+  if (uEnt < 0.5) col *= mix(0.42, 1.12, texture(uTex, vec3(vUv2, ${T.GRIME}.0)).r * (1.0 - e) + e);
   float fd = length(vWPos - uCamPos);
   float f = exp(-fd * uFog);
   f = mix(f, sqrt(f), e);
@@ -131,7 +137,7 @@ class Renderer {
     this.ident = m4ident();
     this.postVao = gl.createVertexArray();
     this.fbo = null; this.aspect = 1; this.lw = 1; this.lh = 1;
-    this.key = [0.3, 0.9, 0.3]; this.gamma = 1.3; this.haze = [0.055, 0.04, 0.03]; this.palette = true;
+    this.key = [0.3, 0.9, 0.3]; this.gamma = 1.3; this.haze = [0.035, 0.026, 0.02]; this.palette = true;
   }
   program(vs, fs) {
     const gl = this.gl;
@@ -245,7 +251,7 @@ class Renderer {
     if (!m || !m.count) return;
     const gl = this.gl, u = this.u;
     gl.uniformMatrix4fv(u.uModel, false, this.ident);
-    gl.uniform1f(u.uEnt, 0); gl.uniform1f(u.uUV, 0); gl.uniform1f(u.uTexScale, 0.32); gl.uniform1f(u.uGlow, 0); gl.uniform1f(u.uAlpha, alpha);
+    gl.uniform1f(u.uEnt, 0); gl.uniform1f(u.uUV, 0); gl.uniform1f(u.uTexScale, 0.24); gl.uniform1f(u.uGlow, 0); gl.uniform1f(u.uAlpha, alpha);
     gl.bindVertexArray(m.vao);
     gl.drawArrays(gl.TRIANGLES, 0, m.count);
   }

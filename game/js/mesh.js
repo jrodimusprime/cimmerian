@@ -206,6 +206,33 @@ function addPrefab(mb, p) {
       addBox(mb, bx, p.y + 2.9, bz, 0.8, 1.25, 0.02, T.BANNER, yaw);
       break;
     }
+    case 'planks':                                       // rotten planks laid over a drop: they will not hold
+      for (let k = -2; k <= 2; k++) addBox(mb, p.x + k * 0.52, p.y - 0.06, p.z + Math.sin(k * 7) * 0.15, 0.24, 0.05, 3.3, T.PLANK, Math.sin(k * 3) * 0.05);
+      break;
+    case 'candles':                                      // the apprentices' candle stubs, burned down to puddles
+      for (let k = 0; k < 4; k++) {
+        const cx = p.x + Math.cos(k * 2.3) * 0.25, cz = p.z + Math.sin(k * 2.3) * 0.25, h = 0.08 + (k % 3) * 0.06;
+        addLathe(mb, cx, p.y, cz, [[0, 0], [0.06, 0], [0.05, h], [0, h]], 6, T.BONE);
+        addSpike(mb, cx, p.y + h, cz, [0, 1, 0], 0.08, 0.02, 4, T.FIRE);
+      }
+      break;
+    case 'stal': {                                       // a stalagmite and the stalactite reaching down to it
+      const c = groundInfo(p.x, p.z).ceil, hgt = c - p.y;
+      addLathe(mb, p.x, p.y - 0.2, p.z, [[0, 0], [0.8, 0], [0.55, hgt * 0.25], [0.3, hgt * 0.45], [0, hgt * 0.55]], 7, T.CAVE, p.x);
+      addLathe(mb, p.x + 0.1, c + 0.3, p.z, [[0, 0], [0.6, 0], [0.3, -hgt * 0.25], [0, -hgt * 0.38]], 7, T.CAVE, p.z);
+      break;
+    }
+    case 'fungus':                                       // pale glowing caps in the damp
+      for (let k = 0; k < 6; k++) {
+        const fx = p.x + Math.cos(k * 1.9) * 0.4, fz = p.z + Math.sin(k * 1.9) * 0.4, sc = 0.15 + (k % 3) * 0.08;
+        addLathe(mb, fx, p.y, fz, [[0, 0], [0.03, 0], [0.025, sc * 1.4], [0, sc * 1.4]], 5, T.BONE);
+        addLathe(mb, fx, p.y + sc * 1.2, fz, [[0, 0], [sc, 0.02], [sc * 0.7, sc * 0.5], [0, sc * 0.6]], 7, T.SLIME);
+      }
+      break;
+    case 'post':                                         // the boom's mast
+      addLathe(mb, p.x, p.y, p.z, [[0, 0], [0.3, 0], [0.26, 5.6], [0, 5.7]], 8, T.WOOD);
+      for (const y of [0.4, 5.2]) addLathe(mb, p.x, p.y + y, p.z, [[0.3, 0], [0.32, 0.06], [0.32, 0.16], [0.3, 0.22]], 8, T.IRON);
+      break;
     case 'grating': {
       const cx = (p.at[0] + 0.5) * CELL, cz = (p.at[1] + 0.5) * CELL, y = groundInfo(cx, cz).ceil - 0.3;
       for (let k = -2; k <= 2; k++) {
@@ -248,7 +275,7 @@ function bakeLights(mb, lights, amb) {
     d[o + 6] = r; d[o + 7] = g; d[o + 8] = b;
   }
 }
-const AMBIENT = [0.085, 0.08, 0.072];
+const AMBIENT = [0.07, 0.064, 0.056];
 const DIRS = [[0, -1, 0, 0, 1, 0], [1, 0, 1, 0, 1, 1], [0, 1, 1, 1, 0, 1], [-1, 0, 0, 1, 0, 0]];
 function buildLevelMesh() {
   const mb = new MeshBuilder(40000), W = LV.W, H = LV.H;
@@ -276,7 +303,7 @@ function buildLevelMesh() {
     }
   }
   for (const p of LV.props) addPrefab(mb, p);
-  bakeLights(mb, LV.lights, AMBIENT);
+  bakeLights(mb, LV.lights, LEVEL.ambient || AMBIENT);
   return mb.finish();
 }
 
@@ -296,6 +323,7 @@ function buildModel(name) {
   if (name.startsWith('vm_') && name !== 'vm_arm' || name === 'dagger2') return buildViewModel(name);
   const mb = new MeshBuilder(512);
   if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
+  if (name.startsWith('weeper:')) return buildWeeperPart(name.split(':')[1]);
   if (name.startsWith('bars:')) {
     // a run of iron bars along +x, from 0 to len, base at y=0
     const [, len, h] = name.split(':').map(Number);
@@ -343,6 +371,45 @@ function buildModel(name) {
       break;
     case 'keys': buildKeys(mb, 1); break;
     case 'sword': return buildCharPart('warden', 'sword');
+    case 'slab':                                          // the sigil gate: a stone slab along z, a socket for the stone
+      addBox(mb, 0, 1.7, 0, 0.35, 1.7, 2.5, T.HEWN);
+      smoothLathe(mb, 0.36, 1.5, 0, [[0.42, -0.02], [0.42, 0.04]], 12, T.SIGIL, ONE3, [1, 0, 0]);
+      break;
+    case 'boom':                                          // a beam out along +x with a pulley at the end
+      addBox(mb, 2.6, 0, 0, 2.7, 0.14, 0.12, T.WOOD);
+      addBox(mb, 0, 0, 0, 0.4, 0.2, 0.2, T.IRON);
+      smoothLathe(mb, 5.0, -0.15, 0, [[0.16, -0.06], [0.16, 0.06]], 8, T.IRON, ONE3, [0, 0, 1]);
+      break;
+    case 'sigilstone':                                    // Pelias's sigil-key: a carved wheel of black stone
+      smoothLathe(mb, 0, 0.5, 0, [[0, -0.18], [0.45, -0.16], [0.5, 0], [0.45, 0.16], [0, 0.18]], 14, T.SIGIL, ONE3, [0, 0, 1]);
+      break;
+    case 'flame':                                         // a standing flame on a short iron stand: it leans with the draft
+      for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; addSpike(mb, Math.cos(a) * 0.06, 0, Math.sin(a) * 0.06, [Math.cos(a) * 0.15, 1, Math.sin(a) * 0.15], 0.45 + (k % 2) * 0.25, 0.1, 4, T.FIRE); }
+      break;
+    case 'vm_torch':                                      // a pitch-soaked torch: a stick with rag wound round its head
+      smoothLathe(mb, 0, 0, 0, [[0.026, -0.3], [0.028, 0], [0.03, 0.26]], 6, T.WOOD, ONE3, [0, 1, 0]);
+      smoothLathe(mb, 0, 0, 0, [[0.042, 0.24], [0.05, 0.29], [0.045, 0.35], [0.03, 0.37]], 7, T.CLOTH, ONE3, [0, 1, 0]);
+      addRock(mb, 0.05, -0.2, 0.02, 0.035, 0.05, 0.035, 3, T.HANDSKIN, 0.05);
+      break;
+    case 'rope': smoothLathe(mb, 0, 0, 0, [[0.03, 0], [0.03, 1]], 5, T.WOOD, ONE3, [0, 1, 0]); break;
+    case 'stand': addLathe(mb, 0, 0, 0, [[0.2, 0], [0.05, 0.1], [0.04, 1.8], [0.18, 1.9], [0.2, 2.0], [0, 2.0]], 6, T.IRON); break;
+    case 'valve':                                         // a vent in the rock with an iron lever beside it
+      addBox(mb, 0, 0.3, 0, 0.45, 0.35, 0.05, T.IRON);
+      for (let k = -2; k <= 2; k++) addBox(mb, k * 0.17, 0.3, 0.04, 0.025, 0.33, 0.03, T.BLACK);
+      break;
+    case 'lever': addBox(mb, 0, 0.35, 0, 0.04, 0.38, 0.04, T.IRON); addRock(mb, 0, 0.75, 0, 0.07, 0.07, 0.07, 3, T.WOOD, 0.1); break;
+    case 'scratches': {                                   // writing scratched into the rock: unreadable cuts in rows
+      const r = new RNG(77);
+      for (let row = 0; row < 4; row++) for (let g = 0; g < 9; g++) {
+        const gx = -0.55 + g * 0.13, gy = 0.3 - row * 0.18;
+        for (let k = 0; k < r.int(2, 4); k++) {
+          const a = r.range(-1.4, 1.4), len = r.range(0.03, 0.07);
+          addBoxRot(mb, gx + r.range(-0.03, 0.03), gy + r.range(-0.04, 0.04), len, a);
+        }
+      }
+      break;
+    }
+    case 'tally1': case 'tally2': case 'tally3': { const n = +name[5]; for (let k = 0; k < n; k++) addBox(mb, (k - (n - 1) / 2) * 0.13, 0, 0, 0.018, 0.28, 0.012, T.BONE); break; }
     case 'spear': return buildCharPart('spearman', 'spear');
     case 'arrow':                                        // along +z
       smoothLathe(mb, 0, 0, 0, [[0.008, -0.4], [0.008, 0.3]], 4, T.WOOD, ONE3, [0, 0, 1]);
@@ -565,4 +632,13 @@ function buildViewModel(name) {
       break;
   }
   return mb.finish();
+}
+
+// a thin cut on the wall plane (z = 0), rotated in-plane by angle a
+function addBoxRot(mb, cx, cy, len, a) {
+  const c = Math.cos(a), sn = Math.sin(a), w = 0.007;
+  const P = (x, y, z) => [cx + x * c - y * sn, cy + x * sn + y * c, z];
+  const v = [P(-len, -w, 0), P(len, -w, 0), P(len, w, 0), P(-len, w, 0), P(-len, -w, 0.008), P(len, -w, 0.008), P(len, w, 0.008), P(-len, w, 0.008)];
+  const F = [[0, 1, 2, 3], [5, 4, 7, 6], [4, 0, 3, 7], [1, 5, 6, 2], [3, 2, 6, 7], [4, 5, 1, 0]];
+  for (const f of F) mb.quadC(v[f[0]], v[f[1]], v[f[2]], v[f[3]], T.BONE, [cx, cy, 0.004]);   // fresh cuts show pale on dirty stone
 }

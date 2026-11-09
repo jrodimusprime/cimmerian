@@ -29,6 +29,16 @@ This is the best Conan story for a level-based game. Its five chapters already p
 
 This was the first Conan story published, and *Scarlet Citadel* follows on from it. It's a single tight arena: a dream crypt, then about 20 assassins in the royal bedchamber, then a demon. That makes it a good combat tutorial (Level 0).
 
+### Canon cast only (a rule)
+
+**Every character and creature in the game must appear in Howard's text.** Nobody is invented to fill a level.
+
+- **Cite it.** Each enemy, NPC and boss is traced to a passage in the story (the cast tables in `game/js/combat.js` and `MODELS.md` cite chapter and line). If you can't cite it, it doesn't go in.
+- **Nameless monsters only where the text puts them.** Howard says Tsotha's pits hold nameless things ("monsters with dripping jaws agape"; "something whimpered in fear and slunk away in the darkness"; the grille's bars bear "marks of incredible fangs"). So the pits may hold nameless *pit-things*. A named creature that Howard never wrote may not be added.
+- **Soldiers come from the armies in the story.** That means Kothian guards and spearmen, Shemitish archers, Tsotha's black giants with their long-shafted axes, Ophirean knights and Aquilonian troops, each where the story could plausibly put them.
+- **Monsters behave as the text says.** The weeping thing can't be killed with a sword, because Conan "doubted the power of man-made weapons to harm it" and fled. The strangler brings a huge sword and Shukeli's stolen keys.
+- **Only puzzles are invented.** Puzzle mechanics (section 10) and the pacing of action areas (section 9) are the only additions to Howard's plot. They decide *how* a beat plays, never *who* is in it.
+
 ### Rights (Australia, non-commercial)
 
 - Howard died in 1936, so his text is public domain in Australia, where authors who died before 1955 are out of copyright.
@@ -244,6 +254,10 @@ Characters are built from specs rather than sculpted. `mdlgen.js` does the follo
 
 Most enemies differ from each other only by parameters, which keeps each spec to about 20 lines.
 
+**Preference: hide faces.** Wherever the text allows, cover faces with helmets, hoods, coifs, veils or masks: closed great helms with an eye-slit for Kothian guards, a mail coif and veil for spearmen, a hood whose face is only shadow for archers, a horned great helm for Tsotha's axemen. At Quake's triangle budget, a modelled face reads as cartoonish, while a helm reads as menace. A slit, a shadow or a pair of pin-prick eyes is scarier than any face we can model. Where a face must show (the strangler, Shukeli, Pelias, Tsotha), make it hard: a heavy brow over sunken sockets, teeth, scars.
+
+**Posture: Quake's killers never stand up straight.** Enemies are hunched, with knees bent and the head thrust forward, and they keep that stance in every pose.
+
 ```yaml
 id: kothian_spearman
 rig: humanoid
@@ -275,7 +289,7 @@ The full list of models, with bones, triangle counts, skins and animation frames
 | 0 | `e0m1` | The Phoenix *(optional)* | *Phoenix on the Sword* | Dream crypt (explore; the dead sage marks your sword), then wake and hold the bedchamber against assassin waves. Your sword breaks on Gromel, so take the axe from the wall. The demon kills Ascalante, then you kill the demon | S |
 | 1 | `e1m1` | The Plain of Shamu | Ch. 1 | Valley last stand against knights, spearmen and archers in waves. It's unwinnable: after wave 4 Tsotha appears and the ring fang fades the screen to the splash | M |
 | 2 | `e1m2` | The Pits | Ch. 2–3 | Wake chained, Satha passes (hide from the venom), the giant dies and you get free. Lure Shukeli to the grille and kill him | M |
-| 3 | `e1m3` | The Tunnels Below | Ch. 3 | Horror and stealth maze: the Weeper's tunnel, the crossing chamber, the ledge over the well with the invisible push, crawlers in side tunnels | M |
+| 3 | `e1m3` | The Tunnels Below | Ch. 3 | Horror maze: the marked ways, the nameless things of the pits, the crossing chamber and the presence that rises from the well, the weeping thing (which can't be killed: you run), the hanging sigil-stone | M |
 | 4 | `e1m4` | Yothga | Ch. 3 | Boss arena: free Pelias. On the way back Satha returns and Pelias drives it off, then raises Shukeli's corpse to open the grille | S |
 | 5 | `e1m5` | The Scarlet Citadel | Ch. 2–3 | Climb through the mosaic corridor, the jet corridor, the brass skull-door and the gold-domed chamber, where the crystal globe shows Tamar burning. Reach the roof and mount the winged beast (splash) | M |
 | 6 | `e1m6` | Tamar Burning | Ch. 4 | Streets of looting and riot, the market-square speech (ambient event), Trocero's camp as a resupply hub | L |
@@ -294,14 +308,25 @@ e1m2, The Pits (playable in [`game/`](game/README.md)):
 | # | Area | Type | What happens |
 |---|---|---|---|
 | 1 | The Cell | puzzle | Chained to a ring. An inscription names the rusted link; grind it and you're free |
-| 2 | The Hall of the Serpent | puzzle (timing) | The giant dies under Satha. She passes every 40 s; hide in alcoves; take the giant's dagger |
+| 2 | The Hall of the Serpent | puzzle (timing) | The strangler comes with a huge sword to gloat, and Satha takes him. She passes every 40 s; hide in alcoves; take his sword |
 | 3 | The Wardens' Post | action | A lone warden comes to investigate, then the post: a warden, a spearman, an archer on a gallery. The first warden drops a sword |
 | 4 | The Grille | puzzle | Lure Shukeli to the bars with a thrown bone, strike from the dark niche, take his keys |
 | 5 | The Guardroom and Barracks | action | His death raises the alarm. Four guards fight you through the bars, then in the guardroom |
 | 6 | The Winch | puzzle | The portcullis winch's pawl is broken; jam the ratchet with a spear from the barracks rack |
-| 7 | The Captain's Landing | action | The captain (shield, two-blow combo) and three men, then the stair to the citadel |
+| 7 | The Captain's Landing | action | One of Tsotha's black giants with a long-shafted axe, and three Kothian and Shemite soldiers, then the stair |
 
-The "invented filler" enemies and the puzzle mechanics in section 10 are the only additions to Howard's plot. Everything else follows the text's own sequence of places and fights.
+e1m3, The Tunnels Below:
+
+| # | Area | Type | What happens |
+|---|---|---|---|
+| 1 | The Marked Ways | puzzle | Three tunnels, marked with one, two and three cuts. One cut is a drop under rotten planks, two cuts hides something on the roof, and three cuts is the road |
+| 2 | The Warren | action | The nameless things of the pits: a pack, some dropping from the ceiling |
+| 3 | The Crossing | puzzle | Four vents and a draft from the well (the presence). Set them until the flames over the ledge stand straight. Closing them all pushes the other way |
+| 4 | The Weeper's Lair | action (flight) | The weeping thing can't be harmed. Snatch the windlass crank from a dead apprentice and run; it won't leave its tunnels |
+| 5 | The Hanging Stone | puzzle | Swing the boom over the floor before you lower the stone, or the shaft takes it |
+| 6 | The Sigil Gate | action | Set the sigil-stone. The slab sinks slowly while the roof comes alive above you |
+
+The puzzle mechanics in section 10 are the only additions to Howard's plot; the cast is the book's (section 1, *Canon cast only*). Everything else follows the text's own sequence of places and fights.
 
 ---
 
@@ -329,7 +354,7 @@ Each level is a **gated chain**: explore, find a clue, act on it, open the way o
 | `e0m1` The Phoenix | The crypt frieze shows four braziers in an order → light them in that order → the sage wakes and marks your sword (the only weapon that hurts the demon). In the bedchamber, the axe is mounted high, so knock its wall mount loose with the broken hilt to drop it |
 | `e1m1` Plain of Shamu | Light puzzle (a combat level). Three rally standards: holding each in turn delays the waves and opens the next fallback position. The level always ends with the scripted fang |
 | `e1m2` The Pits | Chain-length radius → slip the wall ring at the rusted link (inscription) → **Satha passes on a fixed 40 s cycle**, so time your dash between alcoves → take a bone → throw it to make noise and draw Shukeli to the bars → strike through the grille → keys → a spear from the barracks jams the broken winch pawl to hold the portcullis up |
-| `e1m3` The Tunnels | Scratches left by Pelias's dead apprentices mark safe routes. In the crossing chamber, set four tunnel valves so the draft (shown by torch flames) stops the presence pushing you into the well. Lower a hanging stone, which is the sigil-key for Yothga's cell |
+| `e1m3` The Tunnels | Scratches left by Pelias's dead apprentices mark safe routes (three cuts). In the crossing chamber, set four tunnel valves so the draft (shown by leaning flames) stops the presence pushing you into the well. Lower a hanging stone, which is the sigil-key for Yothga's cell |
 | `e1m4` Yothga | Three tendrils regrow on a fixed timer. Cut all three within one 6 s window to expose the stem, then strike it. Pelias tells you the word that drives Satha off; say it at the right moment (an interaction) when Satha returns. He raises Shukeli's corpse, which unbars the grille from the inside |
 | `e1m5` The Scarlet Citadel | The mosaic corridor shows a sequence of four beasts → set the brass skull-door's four rotating jaws to match → in the gold-domed chamber, turn the crystal globe to find Tamar (it reveals the beast's command word) → on the roof, speak the word to call the winged beast |
 | `e1m6` Tamar Burning | A hub with a dependency graph. Find Athemides and escort him to the market square → his speech turns the mob → the mob opens the barricaded west gate → Trocero's knights enter → the tower gate unlocks. A side branch puts out the granary fire for extra supplies (optional, not on the critical path) |

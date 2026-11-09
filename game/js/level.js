@@ -9,23 +9,23 @@
 // Heights in the spec are in cells, like the README's level YAML.
 // ---------------------------------------------------------------------------
 
-const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16;
+const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32;
 
 // Pacing (README §9): every level alternates PUZZLE areas (think, read,
 // time things) and ACTION areas (fight). e1m2 runs:
 //   cell (puzzle) -> hall (timing puzzle) -> wardens' post (action) ->
 //   grille (puzzle) -> guardroom + barracks (action) -> winch (puzzle) ->
 //   captain's landing (action) -> exit.
-const LEVEL = {
-  level: 'e1m2', title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [64, 32],
+const LEVEL_E1M2 = {
+  level: 'e1m2', next: 'e1m3', ambient: [0.07, 0.064, 0.056], title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [64, 32],
   areas: [
     { id: 'cell', type: 'puzzle', name: 'The Cell', rooms: ['cell', 'cell_door'] },
-    { id: 'hall', type: 'puzzle', name: 'The Hall of the Serpent', rooms: ['hall', 'well', 'a1', 'a2', 'a3', 'n1', 'n2'] },
-    { id: 'post', type: 'action', name: 'The Wardens\' Post', rooms: ['south_passage', 'post', 'gallery', 'gsteps'] },
-    { id: 'grille', type: 'puzzle', name: 'The Grille', rooms: ['niche', 'grille'] },
-    { id: 'guard', type: 'action', name: 'The Guardroom and Barracks', rooms: ['guard', 'barracks_door', 'barracks'] },
-    { id: 'winch', type: 'puzzle', name: 'The Winch', rooms: ['winch', 'portcullis'] },
-    { id: 'landing', type: 'action', name: 'The Captain\'s Landing', rooms: ['stair', 'landing', 'exit'] },
+    { id: 'hall', type: 'puzzle', name: 'The Hall of the Serpent', rooms: ['hall', 'well', 'a1', 'a2', 'a3', 'n1', 'n2'] , cp: [7.5, 12.4, Math.PI] },
+    { id: 'post', type: 'action', name: 'The Wardens\' Post', rooms: ['south_passage', 'post', 'gallery', 'gsteps'] , cp: [26.8, 16.5, Math.PI] },
+    { id: 'grille', type: 'puzzle', name: 'The Grille', rooms: ['niche', 'grille'] , cp: [32.6, 16, 0] },
+    { id: 'guard', type: 'action', name: 'The Guardroom and Barracks', rooms: ['guard', 'barracks_door', 'barracks'] , cp: [36.5, 14, -Math.PI / 2] },
+    { id: 'winch', type: 'puzzle', name: 'The Winch', rooms: ['winch', 'portcullis'] , cp: [44.2, 17, -Math.PI / 2] },
+    { id: 'landing', type: 'action', name: 'The Captain\'s Landing', rooms: ['stair', 'landing', 'exit'] , cp: [50, 13.9, -Math.PI / 2] },
   ],
   rooms: [
     { id: 'cell', name: 'the Cell', at: [6, 8], size: [4, 4], h: 2.1, style: 'hewn', tex: { floor: 'STRAW' }, hide: true },
@@ -136,21 +136,21 @@ const LEVEL = {
     { class: 'spearman', id: 's2', at: [39.6, 6.2], group: 'barracks', yaw: Math.PI },
     { class: 'archer', id: 'a2', at: [43.2, 4.4], group: 'barracks', yaw: Math.PI },
     { class: 'warden', id: 'w3', at: [41.6, 6.6], group: 'barracks', yaw: Math.PI },
-    { class: 'captain', id: 'c1', at: [58.5, 14], group: 'landing', yaw: -Math.PI / 2 },
+    { class: 'axeman', id: 'c1', at: [58.5, 14], group: 'landing', yaw: -Math.PI / 2 },
     { class: 'warden', id: 'w4', at: [56.5, 10.8], group: 'landing', yaw: -Math.PI / 2 },
     { class: 'spearman', id: 's3', at: [56.5, 17.2], group: 'landing', yaw: -Math.PI / 2 },
     { class: 'archer', id: 'a3', at: [60.2, 10.2], group: 'landing', yaw: -Math.PI / 2 },
-    { class: 'trigger_exit', x: 61.6 },
+    { class: 'trigger_exit', rect: [61.6, 0, 64, 32] },
   ],
   // README §10: flags and actions. solve() below proves it can't softlock.
   puzzle: {
-    flags: ['free', 'has_dagger', 'has_bone', 'shukeli_at_bars', 'shukeli_dead', 'has_keys', 'grille_open', 'has_spear', 'portcullis_open'],
+    flags: ['free', 'has_sword', 'has_bone', 'shukeli_at_bars', 'shukeli_dead', 'has_keys', 'grille_open', 'has_spear', 'portcullis_open'],
     actions: [
       { id: 'slip_chain', needs: [], sets: 'free', at: 'cell', clue: 'insc_cell' },
-      { id: 'take_dagger', needs: ['free'], sets: 'has_dagger', at: 'hall' },
+      { id: 'take_sword', needs: ['free'], sets: 'has_sword', at: 'hall' },
       { id: 'take_bone', needs: ['free'], sets: 'has_bone', at: 'a2', repeatable: true },
       { id: 'throw_bone', needs: ['has_bone'], sets: 'shukeli_at_bars', clears: ['has_bone'], at: 'niche', clue: 'insc_grille' },
-      { id: 'strike', needs: ['shukeli_at_bars', 'has_dagger'], sets: 'shukeli_dead', at: 'niche' },
+      { id: 'strike', needs: ['shukeli_at_bars', 'has_sword'], sets: 'shukeli_dead', at: 'niche' },
       { id: 'take_keys', needs: ['shukeli_dead'], sets: 'has_keys', at: 'niche' },
       { id: 'unlock', needs: ['has_keys'], sets: 'grille_open', at: 'grille' },
       { id: 'take_spear', needs: ['grille_open'], sets: 'has_spear', at: 'barracks', repeatable: true },
@@ -159,6 +159,132 @@ const LEVEL = {
     goal: 'portcullis_open',
   },
 };
+
+
+// ---------------------------------------------------------------------------
+// e1m3 "The Tunnels Below" (README §9-10): a horror maze under the pits.
+//   marked ways (puzzle) -> warren (action) -> crossing (puzzle) ->
+//   weeper's lair (action) -> hanging stone (puzzle) -> sigil gate (action).
+// ---------------------------------------------------------------------------
+const CAVE_TEX = { wall: 'CAVE', floor: 'MUD', ceil: 'CAVE' };
+const LEVEL_E1M3 = {
+  level: 'e1m3', title: 'The Tunnels Below', ramps: ['ink', 'jade', 'magic'], grid: [64, 34], ambient: [0.06, 0.066, 0.06],
+  torch: true,                                             // "lifting his torch" (ch. III): Conan carries one through the tunnels
+  areas: [
+    { id: 'marks', type: 'puzzle', name: 'The Marked Ways', rooms: ['foot', 'junction', 'way_one', 'drop', 'way_two', 'nook'], cp: [4.5, 19, -Math.PI / 2] },
+    { id: 'warren', type: 'action', name: 'The Warren', rooms: ['way_three', 'warren'], cp: [14, 18.9, -Math.PI / 2] },
+    { id: 'crossing', type: 'puzzle', name: 'The Crossing', rooms: ['west_shelf', 'well', 'ledge'], cp: [35, 18.5, -Math.PI / 2] },
+    { id: 'lair', type: 'action', name: 'The Weeper\'s Lair', rooms: ['east_shelf', 'weeper_way', 'lair'], cp: [45, 18.5, -Math.PI / 2] },
+    { id: 'stone', type: 'puzzle', name: 'The Hanging Stone', rooms: ['stone_way', 'stone', 'shaft'], cp: [57.5, 23, Math.PI] },
+    { id: 'gate', type: 'action', name: 'The Sigil Gate', rooms: ['gate', 'beyond'], cp: [50, 30, -Math.PI / 2] },
+  ],
+  rooms: [
+    { id: 'foot', name: 'the Foot of the Stair', at: [2, 17], size: [5, 4], h: 2.4, style: 'hewn', tex: { floor: 'FLAG' } },
+    { id: 'junction', name: 'the Junction', at: [7, 15], size: [6, 8], h: 3.2, style: 'rough', tex: CAVE_TEX },
+    { id: 'way_one', name: 'a passage marked with one cut', at: [9, 9], size: [2, 6], h: 2.2, style: 'rough', tex: CAVE_TEX },
+    { id: 'drop', name: 'a passage marked with one cut', at: [9, 6], size: [2, 3], pit: 40, style: 'rough', tex: CAVE_TEX },
+    { id: 'way_two', name: 'a passage marked with two cuts', at: [9, 23], size: [2, 6], h: 2.2, style: 'rough', tex: CAVE_TEX },
+    { id: 'nook', name: 'a dead end', at: [8, 29], size: [4, 3], h: 2.6, style: 'rough', tex: CAVE_TEX },
+    { id: 'way_three', name: 'a passage marked with three cuts', at: [13, 18], size: [8, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
+    { id: 'warren', name: 'the Warren', at: [21, 12], size: [12, 13], h: 4.4, style: 'rough', tex: CAVE_TEX },
+    { id: 'west_shelf', name: 'the Crossing', at: [33, 14], size: [4, 10], h: 7, style: 'rough', tex: CAVE_TEX },
+    { id: 'well', name: 'the Well of the Crossing', at: [37, 14], size: [7, 10], pit: 50, style: 'rough', tex: CAVE_TEX },
+    { id: 'ledge', name: 'the Ledge', at: [37, 18], size: [7, 1], h: 7, style: 'rough', wind: true, tex: CAVE_TEX },
+    { id: 'east_shelf', name: 'the Crossing', at: [44, 14], size: [2, 10], h: 7, style: 'rough', tex: CAVE_TEX },
+    { id: 'weeper_way', name: 'a weeping tunnel', at: [46, 17], size: [10, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
+    { id: 'lair', name: 'the Weeper\'s Lair', at: [56, 11], size: [6, 11], h: 4, style: 'rough', tex: CAVE_TEX },
+    { id: 'stone_way', name: 'a passage', at: [57, 22], size: [2, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
+    { id: 'stone', name: 'the Chamber of the Hanging Stone', at: [52, 24], size: [8, 8], h: 7, style: 'rough', tex: CAVE_TEX },
+    { id: 'shaft', name: 'the Shaft', at: [55, 26], size: [2, 2], pit: 60, style: 'rough', tex: CAVE_TEX },
+    { id: 'gate', name: 'the Sigil Gate', at: [44, 27], size: [8, 6], h: 3.6, vault: 1.2, style: 'hewn' },
+    { id: 'gate_door', name: 'the Sigil Gate', at: [43, 29], size: [1, 2], h: 2.4, style: 'hewn' },
+    { id: 'beyond', name: 'beyond the gate', at: [38, 29], size: [5, 2], h: 2.4, style: 'hewn', tex: { floor: 'MUD' } },
+  ],
+  shafts: [],
+  links: [
+    { a: 'gate', b: 'beyond', via: 'sigil_slab', name: 'sigil_gate', cells: [[43, 29], [43, 30]] },
+  ],
+  props: [
+    { prefab: 'torch', at: [2, 18.5], wall: 'W' }, { prefab: 'chains', at: [4, 17], wall: 'N' }, { prefab: 'bones', at: [5.5, 20.3] },
+    { prefab: 'planks', at: [10, 7.5], level: 0 },
+    { prefab: 'candles', at: [8.2, 16.2] }, { prefab: 'candles', at: [11.6, 21.6] },
+    { prefab: 'bones', at: [10.5, 30.6], big: true }, { prefab: 'skull', at: [9.1, 30.2] },
+    { prefab: 'stal', at: [24, 15] }, { prefab: 'stal', at: [29, 14.5] }, { prefab: 'stal', at: [26.5, 21] }, { prefab: 'stal', at: [31, 22.5] }, { prefab: 'stal', at: [22.5, 19.5] },
+    { prefab: 'fungus', at: [21.6, 13] }, { prefab: 'fungus', at: [32.2, 18] }, { prefab: 'fungus', at: [25, 24.2] }, { prefab: 'bones', at: [27.5, 17.5], big: true },
+    { prefab: 'bones', at: [34.2, 22.6] }, { prefab: 'fungus', at: [33.4, 15] },
+    { prefab: 'fungus', at: [50, 17.2] }, { prefab: 'bones', at: [58.5, 19.5], big: true }, { prefab: 'skull', at: [60.5, 12.4] }, { prefab: 'fungus', at: [61.4, 15] },
+    { prefab: 'winch', at: [53, 25.4] }, { prefab: 'post', at: [54, 27] }, { prefab: 'torch', at: [52, 30], wall: 'W' },
+    { prefab: 'torch', at: [44, 31.5], wall: 'W' }, { prefab: 'brazier', at: [47, 28.4] }, { prefab: 'brazier', at: [47, 31.6] }, { prefab: 'torch', at: [38, 30], wall: 'W' },
+  ],
+  lights: [
+    { at: [8.2, 16.2], y: 0.6, col: [1.0, 0.65, 0.3], rad: 6, i: 0.8 }, { at: [11.6, 21.6], y: 0.6, col: [1.0, 0.65, 0.3], rad: 6, i: 0.8 },
+    { at: [21.6, 13], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.9 }, { at: [32.2, 18], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.9 }, { at: [25, 24.2], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.9 },
+    { at: [33.4, 15], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.8 }, { at: [40.5, 19], y: -6, col: [0.25, 0.6, 0.45], rad: 14, i: 0.9 },
+    { at: [36.5, 17.4], y: 2.2, col: [1, 0.6, 0.28], rad: 9, i: 1.1 }, { at: [40.5, 17.4], y: 2.2, col: [1, 0.6, 0.28], rad: 9, i: 1.1 }, { at: [43.8, 18.6], y: 2.2, col: [1, 0.6, 0.28], rad: 9, i: 1.1 },
+    { at: [50, 17.2], y: 0.8, col: [0.3, 0.8, 0.55], rad: 8, i: 0.8 }, { at: [61.4, 15], y: 0.8, col: [0.3, 0.8, 0.55], rad: 9, i: 0.9 },
+    { at: [56, 27], y: -4, col: [0.4, 0.9, 0.6], rad: 10, i: 0.9 },
+  ],
+  flames: [[36.5, 17.4], [40.5, 17.4], [43.8, 18.6]],      // they lean with the draft over the ledge
+  valves: { at: [[33.6, 14.05, 'N'], [35.6, 14.05, 'N'], [33.6, 23.95, 'S'], [35.6, 23.95, 'S']], weights: [1, 1.5, -0.5, 1], base: -1.5 },
+  boom: { post: [54, 27], len: 5, over: 0, floor: Math.PI / 2 },
+  features: [
+    { type: 'clue', id: 'insc_foot', at: [6.96, 18.2], y: 1.3, wall: 'E',
+      text: 'Scratched by a careful hand: "Pelias sent us down for him, and the dark took most of us. Those who lived marked the safe road with THREE CUTS. One cut is the drop. Two cuts is a thing that waits."' },
+    { type: 'clue', id: 'mark_one', at: [8.6, 15.04], y: 1.3, wall: 'N', text: 'A single cut, gouged deep: |' },
+    { type: 'clue', id: 'mark_two', at: [8.6, 22.96], y: 1.3, wall: 'S', text: 'Two cuts, side by side: | |' },
+    { type: 'clue', id: 'mark_three', at: [12.96, 17.6], y: 1.3, wall: 'E', text: 'Three cuts, neat and patient: | | |' },
+    { type: 'clue', id: 'insc_crossing', at: [33.04, 19.5], y: 1.3, wall: 'W',
+      text: 'Scratched beside the drop: "The presence is only the breath of the deep. It comes up through four mouths. Shut and open them until the flames over the ledge stand straight, and it will not push you."' },
+    { type: 'clue', id: 'insc_stone', at: [52.04, 28.6], y: 1.3, wall: 'W',
+      text: 'Cut into the wall below the windlass: "Swing the arm out over the floor before you let her down, or the deep will have her. Aram took the crank and went on alone. He did not come back."' },
+    { type: 'valve', idx: 0, at: [33.6, 14.05], y: 1.3 }, { type: 'valve', idx: 1, at: [35.6, 14.05], y: 1.3 },
+    { type: 'valve', idx: 2, at: [33.6, 23.95], y: 1.3 }, { type: 'valve', idx: 3, at: [35.6, 23.95], y: 1.3 },
+    { type: 'boom', at: [54, 27], y: 1.2 }, { type: 'windlass', at: [53.4, 25.9], y: 1.2 },
+    { type: 'sigil_door', at: [44.1, 30], y: 1.3 },
+  ],
+  items: [
+    { kind: 'bread', name: 'apprentice\'s bread', at: [10.6, 31], heal: 25 },
+    { kind: 'wine', name: 'apprentice\'s wineskin', at: [28, 18.2], heal: 25 },
+    { kind: 'wine', name: 'flask of Pelias\'s cordial', at: [35.8, 22.8], heal: 25 },
+    { kind: 'crank', name: 'windlass crank', at: [58.9, 19.8] },
+    { kind: 'bread', name: 'Aram\'s last bread', at: [60, 18.6], heal: 25 },
+    { kind: 'wine', name: 'skin of wine', at: [50.5, 31.4], heal: 25 },
+  ],
+  entities: [
+    { class: 'info_player_start', at: [4.2, 19], yaw: -Math.PI / 2 },
+    { class: 'thing', id: 'k0', at: [9.8, 30.2], group: 'nook', lurk: true },
+    { class: 'thing', id: 'k1', at: [24, 16], group: 'warren', lurk: true },
+    { class: 'thing', id: 'k2', at: [29, 20.5], group: 'warren', lurk: true },
+    { class: 'thing', id: 'k3', at: [27, 23], group: 'warren', yaw: 0 },
+    { class: 'thing', id: 'k4', at: [31, 14], group: 'warren', yaw: -Math.PI / 2 },
+    { class: 'thing', id: 'k5', at: [23, 21.5], group: 'warren', yaw: Math.PI / 2 },
+    { class: 'weeper', id: 'wp', at: [59.5, 14.5], group: 'lair', yaw: -Math.PI / 2 },
+    { class: 'thing', id: 'k6', at: [57.5, 13], group: 'lair', lurk: true },
+    { class: 'thing', id: 'k7', at: [60.5, 20.6], group: 'lair', yaw: Math.PI },
+    { class: 'thing', id: 'g1', at: [45.5, 28.3], group: 'gatewave', lurk: true, dormant: 0.5 },
+    { class: 'thing', id: 'g2', at: [49.5, 31.6], group: 'gatewave', lurk: true, dormant: 2.5 },
+    { class: 'thing', id: 'g3', at: [48.5, 28.0], group: 'gatewave', lurk: true, dormant: 4.5 },
+    { class: 'thing', id: 'g4', at: [45.0, 31.8], group: 'gatewave', lurk: true, dormant: 6.5 },
+    { class: 'thing', id: 'g5', at: [50.8, 29.6], group: 'gatewave', lurk: true, dormant: 8.5 },
+    { class: 'thing', id: 'g6', at: [46.6, 30.0], group: 'gatewave', lurk: true, dormant: 10.5 },
+    { class: 'trigger_exit', rect: [38, 28, 39.6, 32] },
+  ],
+  puzzle: {
+    flags: ['still_air', 'crossed', 'has_crank', 'boom_swung', 'stone_down', 'has_sigil', 'gate_open'],
+    actions: [
+      { id: 'set_vents', needs: [], sets: 'still_air', at: 'west_shelf', clue: 'insc_crossing' },
+      { id: 'cross', needs: ['still_air'], sets: 'crossed', at: 'ledge' },
+      { id: 'take_crank', needs: ['crossed'], sets: 'has_crank', at: 'lair' },
+      { id: 'swing_boom', needs: ['crossed'], sets: 'boom_swung', at: 'stone', clue: 'insc_stone' },
+      { id: 'lower_stone', needs: ['has_crank', 'boom_swung'], sets: 'stone_down', at: 'stone' },
+      { id: 'take_sigil', needs: ['stone_down'], sets: 'has_sigil', at: 'stone' },
+      { id: 'set_sigil', needs: ['has_sigil'], sets: 'gate_open', at: 'gate' },
+    ],
+    goal: 'gate_open',
+  },
+};
+const LEVELS = { e1m2: LEVEL_E1M2, e1m3: LEVEL_E1M3 };
+let LEVEL = LEVEL_E1M2;
 
 // ---- tiny puzzle solver (README §10: reachable, and no softlocks) ---------
 function solvePuzzle(pz) {
@@ -206,7 +332,7 @@ function buildLevel(spec) {
       LV.floor[idx] = r.pit ? fl - r.pit : fl;
       LV.ceil[idx] = r.pit ? LV.ceil[idx] || fl + 4 * CELL : fl + (r.h || 2) * CELL;
       LV.room[idx] = ri; LV.rough[idx] = st ? 0.12 : 1; LV.vault[idx] = r.vault || 0; LV.tex[idx] = tex;
-      LV.flags[idx] = (r.hide ? F_HIDE : 0) | (r.nopass ? F_NOPASS : 0) | (r.id === 'serpent' ? F_SLIME : 0);
+      LV.flags[idx] = (r.hide ? F_HIDE : 0) | (r.nopass ? F_NOPASS : 0) | (r.id === 'serpent' ? F_SLIME : 0) | (r.wind ? F_WIND : 0);
     }
   });
   for (const s of spec.shafts) {
@@ -221,7 +347,7 @@ function buildLevel(spec) {
   const W2 = (gx, gz) => [gx * CELL, gz * CELL];
   for (const p of spec.props) {
     const [x, z] = W2(p.at[0], p.at[1]);
-    const prop = Object.assign({}, p, { x, z, y: groundInfo(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6).floor });
+    const prop = Object.assign({}, p, { x, z, y: p.level !== undefined ? p.level : groundInfo(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6).floor });
     LV.props.push(prop);
     if (p.prefab === 'torch') {
       const n = wallIn(p.wall);
@@ -232,6 +358,8 @@ function buildLevel(spec) {
     } else if (p.prefab === 'table') LV.colliders.push({ x, z, r: 1.15 });
     else if (p.prefab === 'column') LV.colliders.push({ x, z, r: 0.75 });
     else if (p.prefab === 'winch') LV.colliders.push({ x, z, r: 0.45 });
+    else if (p.prefab === 'stal') LV.colliders.push({ x, z, r: 0.7 });
+    else if (p.prefab === 'post') LV.colliders.push({ x, z, r: 0.35 });
     else if (p.prefab === 'bunk') { LV.colliders.push({ x: x - 0.6, z, r: 0.55 }); LV.colliders.push({ x: x + 0.6, z, r: 0.55 }); }
     else if (p.prefab === 'stool') LV.colliders.push({ x, z, r: 0.35 });
   }

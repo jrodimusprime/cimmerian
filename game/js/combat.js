@@ -13,25 +13,36 @@ const WEAPONS = {
 };
 const WEAPON_ORDER = ['fists', 'dagger', 'sword'];
 const KICK = { dmg: 6, period: 0.62, reach: 2.4, arc: 0.4, hitAt: 0.16, push: 11, stagger: 1.15 };
+// The cast is the book's (README §1: canon cast only). Each entry cites where Howard puts them.
 const FOES = {
-  warden: { hp: 70, speed: 3.3, reach: 2.4, dmg: 13, windup: 0.5, strike: 0.22, recover: 0.6, block: 'alternate', sight: 17, name: 'warden' },
-  spearman: { hp: 55, speed: 3.1, reach: 3.3, dmg: 15, windup: 0.62, strike: 0.22, recover: 0.75, sight: 17, name: 'spearman' },
-  archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 15], sight: 24, name: 'archer' },
-  captain: { hp: 190, speed: 3.7, reach: 2.6, dmg: 18, windup: 0.44, strike: 0.2, recover: 0.42, block: 'front', combo: 2, sight: 20, name: 'captain' },
+  // "the Kothian guards looked on stolidly" (ch. II); Strabonus's Kothian spearmen and Shemitish archers (ch. I, V)
+  warden: { hp: 70, speed: 3.3, reach: 2.4, dmg: 13, windup: 0.5, strike: 0.22, recover: 0.6, block: 'alternate', sight: 17, name: 'Kothian guard' },
+  spearman: { hp: 55, speed: 3.1, reach: 3.3, dmg: 15, windup: 0.62, strike: 0.22, recover: 0.75, sight: 17, name: 'Kothian spearman' },
+  archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 15], sight: 24, name: 'Shemite archer' },
+  // "the black giants who guarded him ... grasping their long-shafted axes" (ch. II): Tsotha's own guard
+  axeman: { hp: 160, speed: 3.3, reach: 2.7, dmg: 20, windup: 0.7, strike: 0.26, recover: 0.85, block: 'front', sight: 20, name: 'black axeman' },
+  // "monsters with dripping jaws agape"; "something whimpered in fear and slunk away in the darkness" (ch. III-IV)
+  thing: { hp: 32, speed: 4.6, reach: 1.9, dmg: 9, windup: 0.42, strike: 0.25, recover: 0.55, sight: 15, leap: 6, name: 'pit-thing' },
+  // the weeping thing (ch. III): Conan fled it, "doubting the power of man-made weapons to harm it"
+  weeper: { hp: 1e9, speed: 2.7, reach: 1.7, dmg: 30, windup: 0.3, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: ['weeper_way', 'lair'] },
 };
 const ALERT_LINES = {
-  scout: '"Who screamed? Who\'s there?" A warden comes up the south passage with his sword out.',
-  post: '"The prisoner is loose! To me, to me!" The wardens at the post scramble for their weapons.',
+  scout: '"Who screamed? Who\'s there?" A Kothian guard comes up the south passage with his sword out.',
+  post: '"The king is loose! To me, to me!" The guards at the post scramble for their weapons.',
   barracks: 'Shukeli\'s death-squeal rings through the pits. Boots thunder in the barracks!',
-  landing: '"So the dog-king climbs. Kill him on the stair!" The captain of the pits draws his sword.',
+  landing: 'One of Tsotha\'s black giants bars the stair, his long-shafted axe across his chest, and the guards close in around him.',
+  warren: 'Something whimpers in the dark, and something else answers it. The things of the pits are coming.',
+  nook: 'Something drops from the roof with a wet slap.',
+  lair: 'The weeping changes to an abominable high-pitched tittering, and something vast and quaking hitches itself toward you.',
+  gatewave: 'The stone groans, and the roof of the chamber comes alive.',
 };
 
 function newFoes() {
   return LEVEL.entities.filter(e => FOES[e.class]).map(e => {
     const p = { x: e.at[0] * CELL, z: e.at[1] * CELL };
     return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw, yaw: e.yaw,
-      hp: FOES[e.class].hp, state: 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
-      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false };
+      hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
+      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0 };
   });
 }
 
@@ -78,6 +89,7 @@ function flowStep(f, field) {
 
 // ---- perception ---------------------------------------------------------------
 function foeSees(f) {
+  if (f.state === 'lurk' || f.state === 'dormant' || f.state === 'drop') return false;
   const st = FOES[f.cls], dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz);
   if (d > st.sight || (hiddenAt(S.x, S.z) && d > 3)) return false;
   const facing = (dx * Math.sin(f.yaw) + dz * Math.cos(f.yaw)) / (d || 1);
@@ -93,6 +105,7 @@ function alertGroup(g, quiet) {
 // ---- the foes' tick ------------------------------------------------------------
 function updateFoes() {
   if (S.tick % 18 === 0 || !FLOW) computeFlow();
+  const hasGrille = !!LEVEL.links.find(l => l.name === 'grille_gate');
   for (const f of S.foes) {
     const st = FOES[f.cls];
     f.flash = Math.max(0, f.flash - DT); f.cool -= DT; f.t += DT;
@@ -101,13 +114,31 @@ function updateFoes() {
       if (f.falling) { f.vy = (f.vy || 0) - 24 * DT; f.y += f.vy * DT; }
       continue;
     }
+    if (f.state === 'dormant') { if (f.wake !== undefined && S.tick >= f.wake) f.state = 'lurk'; continue; }
+    if (f.state === 'lurk') {                           // clinging to the roof in the dark, waiting for something warm
+      f.y = groundInfo(f.x, f.z).ceil - 0.05;
+      const near = Math.hypot(S.x - f.x, S.z - f.z);
+      if (near < 4.2 || (f.alert && near < 10) || f.wake !== undefined) { f.state = 'drop'; f.t = 0; f.vy = 0; Sfx.screech(clamp((f.x - S.x) / 12, -1, 1)); }
+      continue;
+    }
+    if (f.state === 'drop') {
+      f.vy -= 24 * DT; f.y += f.vy * DT;
+      const fl = groundInfo(f.x, f.z).floor;
+      if (f.y <= fl) { f.y = fl; f.state = 'chase'; f.t = 0; f.cool = 0.3; if (!f.alert) alertGroup(f.group); }
+      continue;
+    }
+    if (st.invulnerable) {                              // the weeping thing: weeps, then titters when it sees you
+      f.sound -= DT;
+      const dd = Math.hypot(S.x - f.x, S.z - f.z);
+      if (f.sound <= 0 && dd < 34) { f.sound = f.alert ? 1.6 : 3.2; (f.alert ? Sfx.titter : Sfx.weep)(clamp((f.x - S.x) / 15, -1, 1), clamp(1.2 - dd / 30, 0.1, 1)); }
+    }
     // knockback, then fall if it carried them over a pit
     if (Math.abs(f.vx) + Math.abs(f.vz) > 0.01) {
       const r = collide(f.x + f.vx * DT, f.z + f.vz * DT, 0.42, f.y, f);
       f.x = r[0]; f.z = r[1]; f.vx *= Math.pow(0.02, DT); f.vz *= Math.pow(0.02, DT);
     }
     const g = groundInfo(f.x, f.z);
-    if (g.kind === 2) { killFoe(f, 'fall'); f.falling = 1; f.vy = 0; continue; }
+    if (g.kind === 2 && !st.invulnerable) { killFoe(f, 'fall'); f.falling = 1; f.vy = 0; continue; }
     f.y += (g.floor - f.y) * Math.min(1, DT * 12);
     const dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz), want = Math.atan2(dx, dz);
     if (!f.alert && mode === 'play' && foeSees(f)) alertGroup(f.group);
@@ -116,13 +147,14 @@ function updateFoes() {
     const move = (tx, tz, spd) => {
       const ddx = tx - f.x, ddz = tz - f.z, dd = Math.hypot(ddx, ddz);
       if (dd < 0.05) return;
-      const r = collide(f.x + ddx / dd * spd * DT, f.z + ddz / dd * spd * DT, 0.42, f.y, f);
+      const r = collide(f.x + ddx / dd * spd * DT, f.z + ddz / dd * spd * DT, st.invulnerable ? 1.0 : 0.42, f.y, f);
+      if (st.territory && !st.territory.includes(roomIdAt(r[0], r[1]))) { f.state = 'home'; f.t = 0; return; }   // it will not leave its tunnels
       f.walk += Math.hypot(r[0] - f.x, r[1] - f.z); f.x = r[0]; f.z = r[1]; f.moving = true;
       let a = Math.atan2(ddx, ddz) - f.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); f.yaw += clamp(a, -8 * DT, 8 * DT);
     };
     const approach = (spd) => {
       if (d < 7 && los(f.x, f.y + 1.2, f.z, S.x, S.y + 1.2, S.z) && Math.abs(S.y - f.y) < 1.4) { move(S.x, S.z, spd); return; }
-      const shut = S.grille.open < 0.8 && f.x > GRILLE_X && S.x < GRILLE_X;
+      const shut = hasGrille && S.grille.open < 0.8 && f.x > GRILLE_X && S.x < GRILLE_X;
       const step = flowStep(f, FLOW) || (shut ? flowStep(f, FLOW_BARS) : null);
       if (step) move(step[0], step[1], spd);
       else if (shut) move(GRILLE_X + 0.45, clamp(S.z, 13.2 * CELL, 14.8 * CELL), spd);          // press up against the bars nearest him
@@ -130,12 +162,19 @@ function updateFoes() {
     };
     switch (f.state) {
       case 'idle': f.yaw += Math.sin(S.tick * 0.01 + f.homeX) * 0.002; break;
+      case 'home':                                      // back to its wallow, weeping again
+        f.alert = false; S.alerted.delete(f.group);
+        move(f.homeX, f.homeZ, st.speed * 0.6);
+        if (Math.hypot(f.homeX - f.x, f.homeZ - f.z) < 0.8) f.state = 'idle';
+        else if (f.t > 1.5 && foeSees(f) && st.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }
+        break;
       case 'investigate':
         move(f.tx, f.tz, st.speed * 0.8);
         if (Math.hypot(f.tx - f.x, f.tz - f.z) < 0.6) { f.state = 'idle'; }
         break;
       case 'chase':
         if (mode !== 'play') break;
+        if (st.invulnerable && !st.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'home'; f.t = 0; break; }
         if (st.ranged) {
           const see = los(f.x, f.y + 1.6, f.z, S.x, S.y + 1.4, S.z);
           if (d < st.keep[0]) { const bx = f.x - dx / d * 2, bz = f.z - dz / d * 2; move(bx, bz, st.speed); turn(10); }
@@ -149,7 +188,7 @@ function updateFoes() {
         for (const o of S.foes) if (o !== f && !o.dead) { const ox = f.x - o.x, oz = f.z - o.z, od = Math.hypot(ox, oz); if (od < 0.9 && od > 1e-4) { f.x += ox / od * (0.9 - od) * 0.5; f.z += oz / od * (0.9 - od) * 0.5; } }
         break;
       case 'windup':
-        turn(f.cls === 'captain' ? 4.5 : 3.2);       // slow to track: strafing out of a telegraphed blow is fair
+        turn(f.cls === 'axeman' ? 4.5 : f.cls === 'thing' ? 6 : 3.2);       // slow to track: strafing out of a telegraphed blow is fair
         if (f.t >= st.windup * (f.combo ? 0.6 : 1)) { f.state = 'strike'; f.t = 0; foeStrike(f, st); }
         break;
       case 'strike':
@@ -176,9 +215,10 @@ function foeStrike(f, st) {
     return;
   }
   Sfx.swing();
+  if (st.leap) { f.vx += Math.sin(f.yaw) * st.leap; f.vz += Math.cos(f.yaw) * st.leap; }    // it springs
   const facing = (dx * Math.sin(f.yaw) + dz * Math.cos(f.yaw)) / (d || 1);
   if (mode === 'play' && d <= st.reach + 0.35 && facing > 0.5 && Math.abs(S.y - f.y) < 1.8 && los(f.x, f.y + 1.3, f.z, S.x, S.y + 1.3, S.z)) {
-    hurt(st.dmg, f.cls === 'spearman' ? 'spear' : 'blade');
+    hurt(st.dmg, f.cls === 'spearman' ? 'spear' : f.cls === 'thing' ? 'claws' : f.cls === 'weeper' ? 'weeper' : f.cls === 'axeman' ? 'axe' : 'blade');
     punchView(0.06, (S.rng.next() - 0.5) * 0.06);
     S.vx += dx / (d || 1) * 3; S.vz += dz / (d || 1) * 3;
   }
@@ -206,24 +246,30 @@ function resolvePlayerHit() {
     return d < spec.reach && (d < 0.8 || (dx * fx + dz * fz) / d > spec.arc) && Math.abs(y - S.y) < 2 && los(S.x, S.y + 1.3, S.z, x, y + 1.2, z) ? d : -1;
   };
   let hit = false;
-  const targets = S.foes.filter(f => !f.dead && inArc(f.x, f.z, f.y) >= 0).sort((a, b) => Math.hypot(a.x - S.x, a.z - S.z) - Math.hypot(b.x - S.x, b.z - S.z));
+  const targets = S.foes.filter(f => !f.dead && f.state !== 'dormant' && f.state !== 'lurk' && inArc(f.x, f.z, f.y) >= 0).sort((a, b) => Math.hypot(a.x - S.x, a.z - S.z) - Math.hypot(b.x - S.x, b.z - S.z));
   for (const f of (spec.cleave || h.kick ? targets : targets.slice(0, 1))) { hitFoe(f, h.kick ? KICK.dmg : spec.dmg[h.n], h.kick); hit = true; }
   // the jailer through the bars, the serpent, the giant: the old interactions still hold
   const sh = S.shukeli;
-  if (!h.kick && sh.state !== 'dead' && inArc(sh.x, sh.z, groundInfo(sh.x, sh.z).floor) >= 0) {
+  if (!h.kick && sh.state !== 'dead' && sh.state !== 'gone' && inArc(sh.x, sh.z, groundInfo(sh.x, sh.z).floor) >= 0) {
     if (h.w !== 'fists') killShukeli(); else { Sfx.miss(); log('You snatch at his robe through the bars. He squeals and tears free.', 'dim'); shukeliRetreat(); }
     hit = true;
   }
   const head = S.satha.pts && S.satha.active ? S.satha.pts[0] : null;
   if (!hit && head && head.y > -0.5 && Math.hypot(head.x - S.x, head.z - S.z) < spec.reach + 1.2) { Sfx.clank(); log(h.w === 'fists' || h.kick ? 'You might as well kick the mountain.' : 'Your blade skates off her scales like a stone off a tiled roof.', 'dim'); hit = true; }
   const g = S.giant;
-  if (!hit && g.state !== 'crushed' && g.state !== 'wait' && inArc(g.x, g.z, g.y) >= 0) { Sfx.stab(); log('You hammer at him. It is like striking an oak.', 'dim'); hit = true; }
+  if (!hit && g.state !== 'crushed' && g.state !== 'wait' && g.state !== 'gone' && inArc(g.x, g.z, g.y) >= 0) { Sfx.stab(); log('You hammer at him. It is like striking an oak.', 'dim'); hit = true; }
   if (!hit) Sfx.miss();
 }
 function hitFoe(f, dmg, kick) {
   const st = FOES[f.cls], dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz) || 1;
   const front = (dx * Math.sin(f.yaw) + dz * Math.cos(f.yaw)) / d > 0.3;
   alertGroup(f.group);
+  if (st.invulnerable) {                                 // man-made weapons do not harm it
+    Sfx.squelch(); f.flash = 0.1;
+    if (!S.hints.has('weeper')) { S.hints.add('weeper'); log('Your blade sinks into the quaking jelly and comes out clean. It titters. Nothing you carry can harm this thing. RUN.', 'bad'); }
+    if (kick) { f.vx -= dx / d * 3; f.vz -= dz / d * 3; }
+    return;
+  }
   if (!kick && st.block && front && !['stagger', 'windup', 'strike'].includes(f.state)) {
     f.blockToggle = !f.blockToggle;
     if (st.block === 'front' || f.blockToggle) {
@@ -239,7 +285,7 @@ function hitFoe(f, dmg, kick) {
   if (kick) { f.state = 'stagger'; f.t = 0; f.combo = 0; f.vx = -dx / d * KICK.push; f.vz = -dz / d * KICK.push; Sfx.kick(); }
   else {
     f.vx -= dx / d * 2.2; f.vz -= dz / d * 2.2;
-    if (f.cls !== 'captain' && dmg >= 40) { f.state = 'pain'; f.t = 0; f.combo = 0; Sfx.grunt(); }   // only a heavy blow breaks a wind-up
+    if (f.cls !== 'axeman' && dmg >= 40) { f.state = 'pain'; f.t = 0; f.combo = 0; Sfx.grunt(); }   // only a heavy blow breaks a wind-up
   }
   if (f.hp <= 0) killFoe(f, kick ? 'kick' : 'blade');
 }
@@ -256,7 +302,7 @@ function killFoe(f, how) {
   log(DEATH_LINES[how](FOES[f.cls].name), 'good');
   const drop = (kind, name) => S.items.push({ id: 'drop_' + f.id, kind, name, x: f.x, z: f.z, y: groundInfo(f.x, f.z).floor, taken: false });
   if (how !== 'fall' && how !== 'crush') {
-    if ((f.cls === 'warden' || f.cls === 'captain') && !S.weapons.sword && !S.items.some(i => i.kind === 'sword' && !i.taken)) drop('sword', 'warden\'s sword');
+    if (f.cls === 'warden' && !S.weapons.sword && !S.items.some(i => i.kind === 'sword' && !i.taken)) drop('sword', 'Kothian sword');
     else if (f.cls === 'spearman') drop('spear', 'spear');
   }
 }
@@ -265,8 +311,18 @@ function punchView(p, y) { punchPitch += p; punchYaw += y; }
 // ---- drawing the foes ---------------------------------------------------------
 function foePose(f) {
   const st = FOES[f.cls], P = poseIdle({}, gameTime + f.homeX), c = CAST[f.cls];
+  if (f.cls === 'thing') {
+    if (f.dead) { const k = smoothstep(0, 0.6, f.deathT); return Object.assign(poseCrawl(P, 0, 0, gameTime), { roll: 1.4 * k, drop: -0.42 - 0.1 * k }); }
+    poseCrawl(P, f.walk * 3.2, f.moving ? 1 : 0.15, gameTime + f.homeX);
+    if (f.state === 'lurk' || f.state === 'drop') { P.pitch = Math.PI; P.drop = 0.42; }   // hanging from the roof
+    if (f.state === 'windup') Object.assign(P, { lean: 0.55, headX: -0.4, uxL: -1.6, uxR: -1.6, fxL: -0.9, fxR: -0.9, drop: -0.2 });   // rears up
+    if (f.state === 'strike') Object.assign(P, { lean: 1.0, uxL: -1.2, uxR: -1.2, fxL: -0.1, fxR: -0.1 });
+    if (f.state === 'stagger' || f.state === 'pain') Object.assign(P, { roll: 0.5, headX: -0.4 });
+    return P;
+  }
+  if (c.weapon !== 'bow') poseMenace(P, gameTime + f.homeX);
   if (c.shield) { P.uxL = -0.35; P.fxL = -1.25; P.uzL = 0.25; }
-  if (c.weapon === 'spear') { P.uxR = -0.25; P.fxR = -1.2; P.we = 1.25; }
+  if (c.weapon === 'spear' || c.weapon === 'axe') { P.uxR = -0.25; P.fxR = -1.2; P.we = 1.25; if (c.weapon === 'axe') { P.uxL = -0.6; P.fxL = -1.3; } }
   else if (c.weapon === 'sword') { P.uxR = -0.25; P.fxR = -0.9; P.we = 0.45; }
   else if (c.weapon === 'bow') { P.uxL = -0.2; P.fxL = -0.6; }
   if (f.dead) {
@@ -279,14 +335,16 @@ function foePose(f) {
   switch (f.state) {
     case 'windup': {
       const k = smoothstep(0, st.windup, t);
-      if (c.weapon === 'sword') Object.assign(P, { uxR: lerp(P.uxR, -2.6, k), uzR: 0.4 * k, fxR: lerp(P.fxR, -1.3, k), twist: -0.45 * k, lean: -0.08 * k, we: lerp(0.45, 2.3, k) });
+      if (c.weapon === 'axe') Object.assign(P, { uxR: lerp(P.uxR, -2.8, k), uxL: lerp(P.uxL, -2.6, k), fxR: -0.6, fxL: -0.6, lean: -0.15 * k, headX: 0.2 * k, we: lerp(1.25, 2.6, k) });
+      else if (c.weapon === 'sword') Object.assign(P, { uxR: lerp(P.uxR, -2.6, k), uzR: 0.4 * k, fxR: lerp(P.fxR, -1.3, k), twist: -0.45 * k, lean: -0.08 * k, we: lerp(0.45, 2.3, k) });
       else if (c.weapon === 'spear') Object.assign(P, { uxR: lerp(P.uxR, 0.35, k), fxR: lerp(-1.2, -1.9, k), twist: -0.35 * k, lean: -0.1 * k, we: lerp(1.25, 0.05, k) });
       else if (c.weapon === 'bow') Object.assign(P, { uxL: -1.5, uyL: 0.1, fxL: -0.05, uxR: -1.45, uzR: 0.35 * k, fxR: lerp(-0.5, -2.3, k), twist: 0.35, headY: -0.2 });
       break;
     }
     case 'strike': {
       const k = smoothstep(0, st.strike, t);
-      if (c.weapon === 'sword') Object.assign(P, { uxR: lerp(-2.6, -0.5, k), uzR: 0.4 - 0.5 * k, fxR: lerp(-1.3, -0.15, k), twist: lerp(-0.45, 0.5, k), lean: lerp(-0.08, 0.28, k), we: lerp(2.3, -0.5, k) });
+      if (c.weapon === 'axe') Object.assign(P, { uxR: lerp(-2.8, -0.7, k), uxL: lerp(-2.6, -0.6, k), fxR: -0.3, fxL: -0.3, lean: lerp(-0.15, 0.45, k), we: lerp(2.6, -0.6, k) });
+      else if (c.weapon === 'sword') Object.assign(P, { uxR: lerp(-2.6, -0.5, k), uzR: 0.4 - 0.5 * k, fxR: lerp(-1.3, -0.15, k), twist: lerp(-0.45, 0.5, k), lean: lerp(-0.08, 0.28, k), we: lerp(2.3, -0.5, k) });
       else if (c.weapon === 'spear') Object.assign(P, { uxR: lerp(0.35, -1.45, k), fxR: lerp(-1.9, -0.05, k), twist: lerp(-0.35, 0.2, k), lean: 0.3 * k, we: 0.0 });
       else Object.assign(P, { uxL: -1.5, fxL: -0.05, uxR: -1.3, fxR: -0.6, twist: 0.35 });
       break;
@@ -300,7 +358,8 @@ function foePose(f) {
 }
 function drawFoes() {
   for (const f of S.foes) {
-    if (f.dead && f.falling && f.y < -12) continue;
+    if (f.state === 'dormant' || (f.dead && f.falling && f.y < -12)) continue;
+    if (f.cls === 'weeper') { drawWeeper(f); continue; }
     const l = sampleLight(f.x, f.y + 1.4, f.z);
     drawCharacter(f.cls, f.x, f.y, f.z, f.yaw, foePose(f), l, f.flash > 0 ? 0.55 : 0);
   }

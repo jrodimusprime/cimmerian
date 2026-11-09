@@ -102,6 +102,17 @@ const Sfx = (() => {
     hit() { noise(0.14, 0.2, 900, 'lowpass', 200); tone(90, 0.16, 'sine', 0.12, 50); },
     grunt() { const b = 110 + Math.random() * 40; tone(b, 0.28, 'sawtooth', 0.06, b * 0.7); noise(0.2, 0.05, 600, 'bandpass'); },
     kick() { noise(0.18, 0.28, 300, 'lowpass', 80); tone(65, 0.22, 'sine', 0.18, 40); },
+    // e1m3
+    screech(pan) { tone(900, 0.35, 'sawtooth', 0.05, 2400, 0, pan); noise(0.3, 0.12, 3200, 'bandpass', 1200, 0, 3, pan); },
+    weep(pan, vol = 1) {                              // a woman weeping piteously, somewhere in the dark
+      const b = 420 + Math.random() * 40;
+      for (let i = 0; i < 4; i++) tone(b * (1.08 - i * 0.05), 0.45, 'triangle', 0.035 * vol, b * (0.92 - i * 0.05), i * 0.38, pan, 0.08);
+      noise(1.4, 0.02 * vol, 1500, 'bandpass', 900, 0, 2, pan, 0.3);
+    },
+    titter(pan, vol = 1) { const b = 760 + Math.random() * 80; for (let i = 0; i < 7; i++) tone(b * (1 + (i % 2) * 0.12), 0.08, 'square', 0.03 * vol, b * 0.9, i * 0.09, pan); },
+    squelch() { noise(0.35, 0.22, 500, 'lowpass', 120); tone(70, 0.3, 'sine', 0.12, 40); },
+    wind(vol) { noise(1.8, 0.12 * vol, 300, 'bandpass', 900, 0, 0.8, Math.random() * 2 - 1, 0.5); tone(55, 1.6, 'sine', 0.03 * vol, 48, 0.2); },
+    magic() { tone(220, 1.2, 'sine', 0.08, 880); [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.9, 'triangle', 0.04, null, 0.15 + i * 0.12)); },
     arrow(pan) { noise(0.12, 0.06, 5000, 'highpass', null, 0, 1, pan); },
   };
 })();

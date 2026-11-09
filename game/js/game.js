@@ -14,7 +14,7 @@ const SIM_HZ = 72, DT = 1 / SIM_HZ, EYE = 1.6, RADIUS = 0.42, REACH = 2.7, TETHE
 const BASE_SENS = 0.0022, RES_STEPS = [200, 240, 300, 360, 480, 600], SENS_KEY = 'cimmerian-sens', BRIGHT_KEY = 'cimmerian-bright';
 const SATHA_SPEED = 7.5, SATHA_SPACING = 2.0, SATHA_SEGS = 12, SATHA_PERIOD = 40;
 const GRILLE_X = 34 * CELL, HALL_Z = 14 * CELL;
-let resIdx = 3, R = null, levelMesh = null, sensMul = 1, brightness = 1.32;
+let resIdx = 3, R = null, levelMesh = null, sensMul = 1, brightness = 1.14;
 try { const v = parseFloat(localStorage.getItem(SENS_KEY)); if (v >= 0.1 && v <= 4) sensMul = v; } catch (e) { /* ignore */ }
 try { const v = parseFloat(localStorage.getItem(BRIGHT_KEY)); if (v >= 0.8 && v <= 2.2) brightness = v; } catch (e) { /* ignore */ }
 
@@ -113,25 +113,29 @@ function sathaPoints(sHead) {
   return out;
 }
 
-function newState(seed) {
+function newState(seed, carry) {
   const start = entitySpec('info_player_start'), sp = W(start.at[0], start.at[1]);
-  const g = entitySpec('black_giant'), gp = W(g.at[0], g.at[1]);
-  const sh = entitySpec('monster_shukeli'), shp = W(sh.at[0], sh.at[1]);
+  const g = entitySpec('black_giant'), gp = g ? W(g.at[0], g.at[1]) : { x: -1e4, z: -1e4 };
+  const sh = entitySpec('monster_shukeli'), shp = sh ? W(sh.at[0], sh.at[1]) : { x: -1e4, z: -1e4 };
+  const fixed = ['cell_door', 'grille_gate', 'portcullis'];
   return {
-    seed, tick: 0, rng: new RNG(hash4(seed, 0xC1, 2, 0)),
+    seed, level: LEVEL.level, tick: 0, rng: new RNG(hash4(seed, 0xC1, LEVEL.level.charCodeAt(3), 0)),
     x: sp.x, y: 0, z: sp.z, yaw: start.yaw, pitch: -0.12, vx: 0, vy: 0, vz: 0, onGround: true,
-    health: 100, deaths: 0, passes: 0, kills: 0,
+    health: carry ? Math.max(60, carry.health) : 100, deaths: carry ? carry.deaths : 0, passes: 0, kills: carry ? carry.kills : 0,
     flags: Object.fromEntries(LEVEL.puzzle.flags.map(f => [f, false])),
-    read: new Set(), visited: new Set(), room: '', hints: new Set(),
+    read: new Set(), visited: new Set(), room: '', hints: carry ? new Set(carry.hints) : new Set(),
     items: LV.items.map(it => Object.assign({}, it, { taken: false })),
     door: { open: 0, target: 0 }, grille: { open: 0, target: 0 },
-    giant: { state: 'wait', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0, arms: 0, grabT: 0, fall: 0 },
+    giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0, arms: 0, grabT: 0, fall: 0 },
     satha: { start: null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1 },
-    shukeli: { state: 'idle', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
+    shukeli: { state: sh ? 'idle' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
     proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, combo: 0, lastSwing: -999, pendingHit: null,
-    weapons: { fists: true, dagger: false, sword: false }, weapon: 'fists', hits: 0,
-    foes: newFoes(), alerted: new Set(), areas: new Set(['cell']), portc: { open: 0, target: 0, dropT: 0 },
-    checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1,
+    weapons: carry ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }, weapon: carry ? carry.weapon : 'fists', hits: 0,
+    foes: newFoes(), alerted: new Set(), areas: new Set([LEVEL.areas[0].id]), portc: { open: 0, target: 0, dropT: 0 },
+    gates: Object.fromEntries(LEVEL.links.filter(l => !fixed.includes(l.name)).map(l => [l.name, { open: 0, target: 0 }])),
+    valves: LEVEL.valves ? LEVEL.valves.at.map(() => 1) : [], wind: 0, windNow: 0, windSnd: 0,
+    boom: { angle: LEVEL.boom ? LEVEL.boom.over : 0, target: LEVEL.boom ? LEVEL.boom.over : 0 }, stone: { drop: 0, target: 0 },
+    checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1, playTicks: carry ? carry.playTicks : 0,
   };
 }
 
@@ -139,7 +143,8 @@ function newState(seed) {
 // Light at a point, as Quake lit its alias models: a colour plus a key
 // direction (toward the strongest nearby lights) so models show their form.
 function sampleLight(x, y, z) {
-  let r = AMBIENT[0], g = AMBIENT[1], b = AMBIENT[2], kx = 0.1, ky = 0.35, kz = 0.05;
+  const A = LEVEL.ambient || AMBIENT;
+  let r = A[0], g = A[1], b = A[2], kx = 0.1, ky = 0.35, kz = 0.05;
   for (const l of LV.lights) {
     const dx = l.x - x, dy = l.y - y, dz = l.z - z, d2 = dx * dx + dy * dy + dz * dz;
     if (d2 > l.rad * l.rad) continue;
@@ -157,7 +162,7 @@ function rotDir(m, v) { return norm3([m[0] * v[0] + m[4] * v[1] + m[8] * v[2], m
 
 // ---------------------------------------------------------------- physics
 function linkClosed(idx) {
-  for (const l of LEVEL.links) for (const [gx, gz] of l.cells) if (gz * LV.W + gx === idx) return (l.name === 'cell_door' ? S.door.open : l.name === 'portcullis' ? S.portc.open : S.grille.open) < 0.8;
+  for (const l of LEVEL.links) for (const [gx, gz] of l.cells) if (gz * LV.W + gx === idx) return (l.name === 'cell_door' ? S.door.open : l.name === 'portcullis' ? S.portc.open : l.name === 'grille_gate' ? S.grille.open : S.gates[l.name].open) < 0.8;
   return false;
 }
 function blockedCell(gx, gz, feet) {
@@ -177,10 +182,11 @@ function dynColliders(self) {
 }
 const GRILLE_CELLS = new Set();
 function collide(x, z, r, feet, self) {
-  if (!GRILLE_CELLS.size) for (const [gx, gz] of LEVEL.links.find(l => l.name === 'grille_gate').cells) GRILLE_CELLS.add(gz * LV.W + gx);
+  const grille = LEVEL.links.find(l => l.name === 'grille_gate');
+  if (grille && !GRILLE_CELLS.size) for (const [gx, gz] of grille.cells) GRILLE_CELLS.add(gz * LV.W + gx);
   const cols = LV.colliders.concat(dynColliders(self));
   // the closed grille: bars on the plane x = GRILLE_X, so men on either side can fight through them
-  if (S.grille.open < 0.8 && z > 13 * CELL - r && z < 15 * CELL + r) {
+  if (grille && S.grille.open < 0.8 && z > 13 * CELL - r && z < 15 * CELL + r) {
     const east = (self ? self.x : S.x) > GRILLE_X;
     x = east ? Math.max(x, GRILLE_X + r) : Math.min(x, GRILLE_X - r);
   }
@@ -218,7 +224,7 @@ function updatePlayer(inp) {
   const sp = Math.hypot(S.vx, S.vz), ox = S.x, oz = S.z;
   const steps = Math.max(1, Math.ceil(sp * DT / 0.3));
   for (let i = 0; i < steps; i++) { const r = collide(S.x + S.vx * DT / steps, S.z + S.vz * DT / steps, RADIUS, S.y); S.x = r[0]; S.z = r[1]; }
-  if (!S.flags.free) {                                      // the chain: README e1m2 "chain-length radius"
+  if (feature('ring') && !S.flags.free) {                  // the chain: README e1m2 "chain-length radius"
     const ring = feature('ring'), dx = S.x - ring.x, dz = S.z - ring.z, d = Math.hypot(dx, dz);
     if (d > TETHER) { S.x = ring.x + dx / d * TETHER; S.z = ring.z + dz / d * TETHER; if (chainSndT <= 0 && sp > 1) { Sfx.chain(); chainSndT = 0.8; } }
   }
@@ -246,6 +252,9 @@ const DEATHS = {
   blade: 'A warden\'s blade finds you. The pits keep their prisoner after all.',
   spear: 'The spear goes in under your ribs, and the dark comes up to meet you.',
   arrow: 'The arrow takes you in the throat. You drown on dry stone.',
+  axe: 'The long axe comes down like a falling tree.',
+  claws: 'They are on you in the dark, all claws and dripping jaws, and the pits keep what they catch.',
+  weeper: 'The quaking mass flows over you, and its laughter is the last thing you hear.',
 };
 function hurt(n, why) {
   if (mode !== 'play') return;
@@ -273,8 +282,8 @@ function respawn() {
   S.x = c.x; S.z = c.z; S.yaw = c.yaw; S.y = groundInfo(c.x, c.z).floor; S.vx = S.vy = S.vz = 0; S.health = 100;
   prev = { x: S.x, y: S.y, z: S.z };
   S.puddles = []; S.proj = S.proj.filter(p => p.type === 'bone');
-  // the living go back to their posts, so a retry is a fair fight (Quake would not be so kind)
-  for (const f of S.foes) if (!f.dead) Object.assign(f, { x: f.homeX, z: f.homeZ, yaw: f.homeYaw, state: 'idle', alert: false, t: 0, vx: 0, vz: 0, hp: FOES[f.cls].hp, combo: 0 });
+  // the living go back to their posts, but keep their wounds, as Quake's monsters did
+  for (const f of S.foes) if (!f.dead && f.state !== 'dormant' && f.state !== 'lurk') Object.assign(f, { x: f.homeX, z: f.homeZ, yaw: f.homeYaw, state: 'idle', alert: false, t: 0, vx: 0, vz: 0, combo: 0, y: groundInfo(f.homeX, f.homeZ).floor });
   S.pendingHit = null; S.swing = S.kickT = 0;
   if (S.flags.shukeli_dead) alertGroup('barracks', true);      // the alarm has been raised; it stays raised
   mode = 'play'; fade = 1; fadeTarget = 0;
@@ -335,6 +344,37 @@ function interact() {
       if (S.flags.has_spear) { log('You already carry a spear.', 'dim'); return; }
       setFlag('has_spear'); Sfx.pickup(); log('You take a spear from the rack and sling it across your back.');
       return;
+    case 'valve': {
+      const v = S.valves[f.idx] = 1 - S.valves[f.idx];
+      Sfx.clank(); Sfx.grind();
+      log(v ? 'You haul the lever up. The vent grinds open, and the air in it sighs.' : 'You drag the lever down. An iron shutter grinds across the vent.', 'dim');
+      return;
+    }
+    case 'boom':
+      if (S.stone.target > 0 && !S.flags.stone_down) { log('Not while the stone hangs on the rope.', 'dim'); return; }
+      if (S.flags.stone_down) return;
+      S.boom.target = S.boom.target === LEVEL.boom.over ? LEVEL.boom.floor : LEVEL.boom.over; Sfx.grind();
+      log(S.boom.target === LEVEL.boom.floor ? 'You put your shoulder to the mast. The arm creaks round until the stone hangs over solid floor.' : 'You swing the arm back over the shaft.', 'dim');
+      return;
+    case 'windlass':
+      if (S.flags.stone_down) return;
+      if (!S.flags.has_crank) { log('The windlass has no crank. Someone took it.', 'dim'); return; }
+      if (S.boom.target !== LEVEL.boom.floor) {
+        log('You fit the crank and the stone begins to sink, straight toward the black mouth of the shaft. You stop. Let it down there, and the deep will have it.', 'warn');
+        if (!S.hints.has('boom')) { S.hints.add('boom'); log('(Swing the arm out over the floor first.)', 'dim'); }
+        return;
+      }
+      S.stone.target = 1; Sfx.chain(); Sfx.grind();
+      log('You fit the crank and pay out the rope, hand over hand. The stone comes down out of the dark.', 'good');
+      return;
+    case 'sigil_door':
+      if (S.gates.sigil_gate.target > 0) return;
+      if (!S.flags.has_sigil) { log('A round socket is cut into the face of the slab, as wide as a cart-wheel\'s hub, ringed with carving.', 'dim'); return; }
+      S.flags.has_sigil = false; S.gates.sigil_gate.target = 1; Sfx.magic ? Sfx.magic() : Sfx.sting(); Sfx.bars();
+      log('You set the sigil-stone in the socket. The rings blaze cold and green, and the slab begins, very slowly, to sink into the floor.', 'good');
+      for (const f of S.foes) if (f.group === 'gatewave' && f.state === 'dormant') f.wake = S.tick + Math.round(f.delay * SIM_HZ);
+      log(ALERT_LINES.gatewave, 'bad'); S.alerted.add('gatewave');
+      return;
     case 'winch':
       if (S.flags.portcullis_open) { log('The spear shaft holds the ratchet fast. The portcullis stays up.', 'dim'); return; }
       Sfx.grind(); Sfx.chain();
@@ -363,13 +403,20 @@ function takeItem(it) {
   }
   it.taken = true; Sfx.pickup();
   if (it.kind === 'dagger') {
-    setFlag('has_dagger'); S.weapons.dagger = true; if (S.weapon === 'fists') S.weapon = 'dagger';
-    log('You take the strangler\'s dagger: a hand\'s breadth of good steel. Now you have teeth. (Click to strike, right-click or F to kick.)', 'good');
-    const w0 = S.foes.find(f => f.id === 'w0');
-    if (w0 && !w0.dead && !w0.alert) { w0.state = 'investigate'; w0.tx = 26.5 * CELL; w0.tz = 14.6 * CELL; w0.alert = true; S.alerted.add('scout'); log(ALERT_LINES.scout, 'warn'); }
+    S.weapons.dagger = true; if (S.weapon === 'fists') S.weapon = 'dagger';
+    log('You take the dagger.', 'good');
   } else if (it.kind === 'sword') {
     S.weapons.sword = true; S.weapon = 'sword';
-    log('You take up the warden\'s sword. It is a soldier\'s blade, plain and heavy, and your hand knows it at once. (Click, click, click: a three-blow combination.)', 'good');
+    if (S.flags.has_sword === false) {
+      setFlag('has_sword');
+      log('You take up the strangler\'s sword: a huge blade, Kushite-forged, and your hand knows it at once. (Click, click, click for a three-blow combination; right-click or F to kick.)', 'good');
+      const w0 = S.foes.find(f => f.id === 'w0');
+      if (w0 && !w0.dead && !w0.alert) { w0.state = 'investigate'; w0.tx = 26.5 * CELL; w0.tz = 14.6 * CELL; w0.alert = true; S.alerted.add('scout'); log(ALERT_LINES.scout, 'warn'); }
+    } else log('You take up the sword.', 'good');
+  } else if (it.kind === 'crank') {
+    setFlag('has_crank'); log('You pull the windlass crank from the dead apprentice\'s grip. His fingers do not want to let it go.', 'good');
+  } else if (it.kind === 'sigil') {
+    setFlag('has_sigil'); log('You lift the sigil-stone. The carved rings on its face glow faintly against your palm, cold as well-water.', 'good');
   } else if (it.kind === 'spear') {
     if (S.flags.has_spear) { it.taken = false; log('You already carry a spear.', 'dim'); return; }
     setFlag('has_spear'); log('You take up the dead man\'s spear and sling it across your back.');
@@ -391,6 +438,7 @@ function throwBone() {
 
 // ---------------------------------------------------------------- the black giant
 function updateGiant() {
+  if (S.giant.state === 'gone') return;
   const g = S.giant; g.t += DT;
   const moveTo = (tx, tz, speed) => {
     const dx = tx - g.x, dz = tz - g.z, d = Math.hypot(dx, dz);
@@ -442,8 +490,8 @@ function updateGiant() {
     const h = S.satha.pts[0];
     if (h.y > -0.5 && Math.hypot(h.x - g.x, h.z - g.z) < 2.4) {
       g.state = 'crushed'; g.t = 0; Sfx.crush(); Sfx.scream();
-      S.items.push({ id: 'dagger', kind: 'dagger', name: 'strangler\'s dagger', x: g.x + 0.6, z: 36.9, y: groundInfo(g.x + 0.6, 36.9).floor, taken: false });
-      log('Satha takes him from behind. There is a crack like an oak going over, then only the long rasp of scales on stone. By the dead man\'s hand, something glints.', 'warn');
+      S.items.push({ id: 'giant_sword', kind: 'sword', name: 'strangler\'s sword', x: g.x + 0.6, z: 36.9, y: groundInfo(g.x + 0.6, 36.9).floor, taken: false });
+      log('Satha takes him from behind. There is a crack like an oak going over, then only the long rasp of scales on stone. The sword flies from the black\'s hand and rings on the stone.', 'warn');
       for (let k = 0; k < 18; k++) particles.push({ m: 'drop', x: g.x, y: 1 + Math.random(), z: g.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 9, s: 1.4 });
     }
   }
@@ -522,7 +570,7 @@ function shukeliRetreat() { const sh = S.shukeli; sh.state = 'retreat'; sh.ignor
 function noiseAt(x, z) {
   const sh = S.shukeli;
   Sfx.clatter(clamp((x - S.x) / 15, -1, 1));
-  if (sh.state === 'dead') return;
+  if (sh.state === 'dead' || sh.state === 'gone') return;
   const d = Math.hypot(x - GRILLE_X, z - HALL_Z);
   if (d > 12 || sh.state === 'retreat' || sh.state === 'peer' || sh.ignoreT > 0) { if (d > 12) log('The bone clatters away into the dark. Nothing stirs.', 'dim'); return; }
   sh.state = 'walk'; sh.t = 0;
@@ -531,6 +579,7 @@ function noiseAt(x, z) {
   log('Beyond the grille a stool scrapes back. "Rats? Rats in my pits?" The jailer comes waddling to see.', 'warn');
 }
 function updateShukeli() {
+  if (S.shukeli.state === 'gone') return;
   const sh = S.shukeli; sh.t += DT; sh.tauntT -= DT; sh.ignoreT -= DT;
   const moveTo = (tx, tz, speed) => {
     const dx = tx - sh.x, dz = tz - sh.z, d = Math.hypot(dx, dz);
@@ -587,6 +636,7 @@ function killShukeli() {
 
 // ---------------------------------------------------------------- projectiles & hazards
 function barsHit(p, nx, nz) {
+  if (!LEVEL.links.find(l => l.name === 'grille_gate')) return null;
   // closed grille (x plane) and cell door (z plane) stop thrown things
   if (S.grille.open < 0.8 && (p.x - GRILLE_X) * (nx - GRILLE_X) <= 0 && Math.abs(nz - HALL_Z) < CELL) return 'x';
   const dz = 12 * CELL;
@@ -659,6 +709,8 @@ function findTarget() {
     if (f.type === 'bones' && S.flags.has_bone) continue;
     if (f.type === 'spear_rack' && (S.flags.has_spear || S.flags.portcullis_open)) continue;
     if (f.type === 'winch' && S.flags.portcullis_open) continue;
+    if ((f.type === 'boom' || f.type === 'windlass') && S.flags.stone_down) continue;
+    if (f.type === 'sigil_door' && S.gates.sigil_gate && S.gates.sigil_gate.target > 0) continue;
     consider({ type: f.type, f }, f.x, f.y - f.baseY, f.z, f.type === 'clue' ? 2.6 : f.type === 'ring' ? 3.7 : 3.0);
   }
   return best;
@@ -668,11 +720,15 @@ function promptText(t) {
   if (t.type === 'item') return t.it.heal ? '[E] ' + (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name : '[E] take the ' + t.it.name;
   switch (t.type) {
     case 'ring': return S.read.has('insc_cell') ? '[E] grind the rusted link against the stone' : '[E] strain at the chain';
-    case 'clue': return '[E] read the scratches';
+    case 'clue': return t.f.id.startsWith('mark') ? '[E] look at the marks' : '[E] read the scratches';
     case 'bones': return '[E] take a thighbone';
     case 'door': return '[E] try the cell door';
     case 'grille': return S.flags.has_keys ? '[E] unlock the grille' : '[E] try the grille';
     case 'spear_rack': return '[E] take a spear';
+    case 'valve': return S.valves[t.f.idx] ? '[E] shut the vent' : '[E] open the vent';
+    case 'boom': return '[E] swing the arm';
+    case 'windlass': return S.flags.has_crank ? '[E] let the stone down' : '[E] try the windlass';
+    case 'sigil_door': return S.flags.has_sigil ? '[E] set the sigil-stone in the gate' : '[E] look at the gate';
     case 'winch': return S.flags.has_spear ? '[E] wind the winch and jam the ratchet' : '[E] wind the winch';
   }
   return '';
@@ -691,11 +747,28 @@ const ROOM_DESC = {
   winch: 'A great winch on trestles, its rope running up into the wall. It raises the portcullis on the stair.',
   stair: 'A stair climbs toward the citadel and the open air.',
   landing: 'A wide landing under Tsotha\'s scarlet banners. Daylight, real daylight, falls down the stair beyond.',
+  foot: 'The keys open a door at the foot of the gaol stair, and below it the made stone ends. The tunnels go down into the hill, dank and breathing.',
+  junction: 'Three ways lead on from here. Someone has scratched marks beside each mouth, and left candles burning down to nothing.',
+  warren: 'A great wet cave, its roof hung with stone teeth. The floor is gnawed bone. Something has been living here, many somethings.',
+  west_shelf: 'The tunnels cross here, at the lip of a well. A cold wind rises out of it, from far, far below, and the only way on is a ledge of rock across the dark.',
+  lair: 'A dank, low cave that stinks of sweet rot. Something is weeping in here, piteously, like a woman.',
+  stone: 'A high chamber over a shaft. A great carved stone hangs above the drop from a wooden arm, on a rope that runs back to a windlass.',
+  gate: 'An old hall cut square in the rock, older than the citadel above. Its far end is a single slab of stone, with a round socket in its face.',
 };
 function objective() {
   const f = S.flags, live = g => S.foes.some(x => x.group === g && !x.dead && x.alert);
+  if (LEVEL.level === 'e1m3') {
+    if (live('nook') || live('warren')) return 'Fight! Kick them back.';
+    if (!S.areas.has('warren')) return 'Find the safe road. Read the apprentices\' marks.';
+    if (!f.crossed) return f.still_air ? 'The flames stand straight. Cross the ledge.' : 'Still the draft from the well, then cross the ledge.';
+    if (!f.has_crank) return live('lair') ? 'It cannot be killed. Get what you came for, and RUN.' : 'Find the windlass crank.';
+    if (!f.stone_down) return 'Let down the hanging stone.';
+    if (!f.has_sigil && !f.gate_open && S.gates.sigil_gate.target === 0) return 'Take the sigil-stone to the gate.';
+    if (!f.gate_open) return 'Hold them off until the gate is open.';
+    return 'Through the gate.';
+  }
   if (!f.free) return 'Free yourself from the chain.';
-  if (!f.has_dagger) return S.giant.state === 'crushed' ? 'Find something to fight with.' : 'Survive.';
+  if (!f.has_sword) return S.giant.state === 'crushed' ? 'Find something to fight with.' : 'Survive.';
   if (live('scout') || live('post')) return 'Fight! Kick shields aside.';
   if (!f.shukeli_dead) return 'Reach the grille at the end of the hall. Deal with the jailer.';
   if (!f.has_keys) return 'Take the jailer\'s keys.';
@@ -708,10 +781,8 @@ function objective() {
 function enterArea(a) {
   if (S.areas.has(a.id)) return;
   S.areas.add(a.id);
-  const cps = { hall: [7.5, 12.4, Math.PI], post: [26.8, 16.5, Math.PI], grille: [32.6, 16, 0], guard: [36.5, 14, -Math.PI / 2], winch: [44.2, 17, -Math.PI / 2], landing: [50, 13.9, -Math.PI / 2] };
-  const c = cps[a.id];
-  if (c && S.flags.free) S.checkpoint = { x: c[0] * CELL, z: c[1] * CELL, yaw: c[2] };
   log(a.name + (a.type === 'action' ? ' · a fight' : ''), 'title');
+  if (a.cp && S.flags.free !== false) S.checkpoint = { x: a.cp[0] * CELL, z: a.cp[1] * CELL, yaw: a.cp[2] };
 }
 function enterRoom(id) {
   const room = LV.rooms.find(r => r.id === id);
@@ -720,6 +791,37 @@ function enterRoom(id) {
   S.visited.add(id);
   if (ROOM_DESC[id]) { log(cap(room.name), 'title'); log(ROOM_DESC[id]); }
 }
+
+// ---------------------------------------------------------------- e1m3: the tunnels' machinery
+function updateTunnels() {
+  if (LEVEL.valves) {                                   // the breath of the deep, through four mouths
+    const V = LEVEL.valves;
+    S.wind = V.base + V.weights.reduce((a, w, i) => a + w * S.valves[i], 0);
+    S.windNow += (S.wind - S.windNow) * Math.min(1, DT * 1.5);
+    if (Math.abs(S.wind) < 0.05) setFlag('still_air'); else S.flags.still_air = false;
+    const g = groundInfo(S.x, S.z);
+    if ((g.flags & F_WIND) && mode === 'play') {        // the presence pushes you off the ledge
+      const gust = 1 + 0.35 * Math.sin(S.tick * 0.07) + 0.2 * Math.sin(S.tick * 0.031);
+      const r = collide(S.x, S.z + S.windNow * 5 * gust * DT, RADIUS, S.y); S.x = r[0]; S.z = r[1];   // stronger than a man can run against
+    }
+    S.windSnd -= DT;
+    if (S.windSnd <= 0 && Math.abs(S.windNow) > 0.1 && Math.hypot(S.x - 40 * CELL, S.z - 18.5 * CELL) < 25) { S.windSnd = 1.6; Sfx.wind(Math.min(1, Math.abs(S.windNow) * 0.5)); }
+    if (S.room === 'east_shelf' || S.room === 'weeper_way') setFlag('crossed');
+  }
+  if (LEVEL.boom) {
+    S.boom.angle += clamp(S.boom.target - S.boom.angle, -DT * 0.8, DT * 0.8);
+    S.stone.drop = Math.min(S.stone.target, S.stone.drop + DT * 0.22);
+    if (S.stone.drop >= 1 && !S.flags.stone_down) {
+      setFlag('stone_down'); Sfx.crush();
+      const p = boomTip();
+      S.items.push({ id: 'sigil', kind: 'sigil', name: 'sigil-stone', x: p[0], z: p[1], y: groundInfo(p[0], p[1]).floor, taken: false });
+      log('The stone settles on the floor with a sound like a closing tomb. Its carved face glows.', 'good');
+    }
+  }
+  for (const k in S.gates) { const gt = S.gates[k]; gt.open += clamp(gt.target - gt.open, -DT, DT * 0.085); }
+  if (S.gates.sigil_gate && S.gates.sigil_gate.open >= 0.8) setFlag('gate_open');
+}
+function boomTip() { const b = LEVEL.boom, a = S.boom.angle; return [b.post[0] * CELL + Math.cos(a) * b.len, b.post[1] * CELL + Math.sin(a) * b.len]; }
 
 // ---------------------------------------------------------------- the tick
 function humanInput() {
@@ -732,7 +834,7 @@ function humanInput() {
   return inp;
 }
 function tick(inp) {
-  S.tick++;
+  S.tick++; S.playTicks++;
   if (inp.yaw !== undefined) S.yaw = inp.yaw;
   if (inp.pitch !== undefined) S.pitch = inp.pitch;
   prev = { x: S.x, y: S.y, z: S.z };
@@ -746,6 +848,7 @@ function tick(inp) {
   if (mode !== 'play') return;
   updateShukeli();
   updateFoes();
+  updateTunnels();
   updateProjectiles();
   if (mode !== 'play') return;
   resolvePlayerHit();
@@ -763,7 +866,8 @@ function tick(inp) {
   }
   if (S.onGround && sp > 0.8) { stepAcc += sp * DT; bobPhase += sp * DT * 2.2; if (stepAcc > 2.0) { stepAcc = 0; Sfx.step(hiddenAt(S.x, S.z)); } }
   bobAmt += ((S.onGround && sp > 0.8 ? Math.min(1, sp / 5) : 0) - bobAmt) * Math.min(1, DT * 8);
-  if (S.x > LEVEL.entities.find(e => e.class === 'trigger_exit').x * CELL) finishLevel();
+  const ex = LEVEL.entities.find(e => e.class === 'trigger_exit').rect;
+  if (S.x > ex[0] * CELL && S.x < ex[2] * CELL && S.z > ex[1] * CELL && S.z < ex[3] * CELL && (LEVEL.level !== 'e1m3' || S.flags.gate_open)) finishLevel();
 }
 
 // ---------------------------------------------------------------- determinism helpers
@@ -797,6 +901,8 @@ window.CIM = {
     return this.obs();
   },
   release() { agentInput = null; },
+  load(id) { loadLevel(id, S ? { health: 100, weapons: S.weapons, weapon: S.weapon, kills: 0, deaths: 0, hints: [], playTicks: 0 } : null); mode = 'splash'; return this.obs(); },
+  get level() { return LEVEL.level; },
   solve: () => solvePuzzle(LEVEL.puzzle),
 };
 
@@ -805,18 +911,39 @@ function lockPointer() { try { const p = canvas.requestPointerLock(); if (p && p
 function hideOverlay() { overlay.className = 'hidden'; overlay.innerHTML = ''; }
 async function showIntro() {
   mode = 'splash'; hud.classList.add('hidden');
-  await showSplash('e1m2', '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> kick &nbsp; <b>1 2 3</b> weapons &nbsp; <b>Esc</b> pause</div>');
+  await showTitleCard();
+  await showSplash(LEVEL.level, '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> kick &nbsp; <b>1 2 3</b> weapons &nbsp; <b>Esc</b> pause</div>');
   if (mode === 'splash') startPlay(false);
 }
+const LEVEL_INTRO = {
+  e1m2: [['THE PITS', 'title'], ['You wake on wet straw with iron on your ankle and the taste of the wizard\'s poison still in your mouth.', ''],
+    ['Beyond the bars of your cell door, a black giant watches you, and grins.', 'warn'], ['(E to use things. Read whatever the dead have left you.)', 'dim']],
+  e1m3: [['THE TUNNELS BELOW', 'title'], ['Shukeli\'s keys open the door at the foot of the gaol stair. Beyond it the made stone ends, and the tunnels go down into the dark.', ''],
+    ['Somewhere far off, a woman is weeping.', 'warn']],
+};
 function startPlay(agent) {
   Sfx.init();
   hideOverlay(); hud.classList.remove('hidden');
   mode = 'play'; fade = 1; fadeTarget = 0; acc = 0;
-  log('THE PITS', 'title');
-  log('You wake on wet straw with iron on your ankle and the taste of the wizard\'s poison still in your mouth.');
-  log('Beyond the bars of your cell door, a black giant watches you, and grins.', 'warn');
-  log('(E to use things. Read whatever the dead have left you.)', 'dim');
+  for (const [t, c] of LEVEL_INTRO[LEVEL.level] || []) log(t, c);
   if (!agent) lockPointer();
+}
+// load a level; `carry` brings the hero's state across (health, weapons, tally)
+function loadLevel(id, carry) {
+  LEVEL = LEVELS[id];
+  buildLevel(LEVEL);
+  if (entitySpec('scripted_satha')) buildSathaPath();
+  if (levelMesh) R.deleteMesh(levelMesh);
+  levelMesh = R.createMesh(buildLevelMesh());
+  FLOW = null; GRILLE_CELLS.clear(); particles = []; interactTarget = null;
+  const seed = parseInt(new URLSearchParams(location.search).get('seed'), 10) || 1;
+  S = newState(seed, carry);
+  S.y = groundInfo(S.x, S.z).floor; prev = { x: S.x, y: S.y, z: S.z };
+  S.room = roomIdAt(S.x, S.z); S.visited.add(S.room);
+  const room = LV.rooms.find(r => r.id === S.room); $('locName').textContent = room ? cap(room.name) : '';
+  logEl.innerHTML = '';
+  const pz = solvePuzzle(LEVEL.puzzle);
+  console.log('[solve] ' + id + ': ' + pz.states + ' states, goal ' + (pz.goalReachable ? 'reachable' : 'UNREACHABLE') + ', softlocks: ' + (pz.softlocks.length || 'none'));
 }
 function showPause() {
   mode = 'paused';
@@ -833,14 +960,23 @@ function showPause() {
 }
 async function finishLevel() {
   if (mode !== 'play') return;
-  mode = 'done'; S.doneT = S.tick; fadeTarget = 1; Sfx.sting();
+  mode = 'done'; S.doneT = S.tick; S.doneHash = stateHash(); fadeTarget = 1; Sfx.sting();
   document.exitPointerLock && document.exitPointerLock();
-  const secs = Math.round(S.tick / SIM_HZ);
+  const secs = Math.round(S.tick / SIM_HZ), slain = S.foes.filter(f => f.dead).length;
+  const stats = '<p class="stats">' + LEVEL.level + ' complete · ' + Math.floor(secs / 60) + 'm ' + (secs % 60) + 's · ' + S.deaths + ' death' + (S.deaths === 1 ? '' : 's') +
+    ' · ' + slain + ' of ' + S.foes.filter(f => FOES[f.cls].hp < 1e8).length + ' foes slain · tick ' + S.tick + ' · state ' + S.doneHash + '</p>';
+  if (agentInput) return;                         // the test harness drives level changes itself
   await new Promise(r => setTimeout(r, 900));
   hud.classList.add('hidden');
-  await showSplash('e1m3', '<p class="stats">e1m2 complete · ' + Math.floor(secs / 60) + 'm ' + (secs % 60) + 's · ' + S.deaths + ' death' + (S.deaths === 1 ? '' : 's') +
-    ' · ' + S.kills + ' of ' + S.foes.length + ' foes slain · Satha passed ' + S.passes + ' time' + (S.passes === 1 ? '' : 's') + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p><p class="sub">End of the demo. The Tunnels Below is the next level in the plan (README §9).</p>', 'Click to play The Pits again');
-  location.reload();
+  const next = LEVEL.next;
+  if (next) {
+    await showSplash(next, stats);
+    loadLevel(next, { health: S.health, weapons: S.weapons, weapon: S.weapon, kills: S.kills, deaths: S.deaths, hints: [...S.hints], playTicks: S.playTicks });
+    startPlay(false);
+  } else {
+    await showSplash('e1m4', stats + '<p class="sub">End of the demo. Yothga, Pelias and the climb through the citadel are next in the plan (README §9).</p>', 'Click to begin again');
+    location.reload();
+  }
 }
 
 // ---------------------------------------------------------------- HUD
@@ -848,7 +984,7 @@ function updateHUD() {
   $('hpFill').style.width = Math.max(0, S.health) + '%';
   $('hpNum').textContent = Math.ceil(Math.max(0, S.health));
   const carry = [S.flags.has_bone ? 'thighbone (click to throw)' : S.weapon === 'fists' ? 'bare fists' : 'the ' + S.weapon];
-  if (S.flags.has_spear) carry.push('a spear on your back');
+  if (S.flags.has_spear) carry.push('a spear, to jam the winch');
   if (S.flags.has_keys) carry.push('keys');
   $('carry').textContent = carry.join(' · ') + (S.kills ? '  ·  ' + S.kills + ' slain' : '');
   $('objective').textContent = objective();
@@ -869,7 +1005,14 @@ function render(alpha) {
   const proj = m4persp(72 * Math.PI / 180, R.aspect, 0.05, 200);
   const view = m4mul(m4rx(-S.pitch - punchPitch), m4mul(m4ry(-S.yaw - punchYaw), m4t(-px, -eyeY, -pz)));
   const vp = m4mul(proj, view), f = camFwd();
-  const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3], lc = [0.3, 0.27, 0.23];
+  const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3];
+  let lc = [0.24, 0.215, 0.18], lampRange = 10;
+  if (LEVEL.torch) {                                   // the torch in his left hand: warm, flickering, guttering in the draft
+    const gutter = 1 - Math.min(0.55, Math.abs(S.windNow) * 0.3) * (0.6 + 0.4 * Math.sin(gameTime * 23));
+    const fl = (0.88 + 0.08 * Math.sin(gameTime * 11.3) + 0.05 * Math.sin(gameTime * 29.1)) * gutter;
+    lc = [1.0 * fl, 0.62 * fl, 0.3 * fl]; lampRange = 15;
+    lampPos[0] -= Math.cos(S.yaw) * 0.4; lampPos[2] += Math.sin(S.yaw) * 0.4;
+  }
   // torches gutter as Satha comes (rule 4: timing visible in the world)
   const t = sathaPhase();
   // Quake's flicker lightstyle (world.qc: 'm' is normal), ten steps a second
@@ -878,7 +1021,7 @@ function render(alpha) {
   if (t >= 0 && t < 6.5) lm *= 1 - 0.5 * smoothstep(0, 0.6, t) * (1 - smoothstep(5, 6.5, t)) * (0.75 + 0.25 * Math.sin(gameTime * 37));
   R.beginScene(gameTime);
   R.lightMul(lm);
-  R.setCamera(vp, [px, eyeY, pz], lampPos, lc, 10, 0.034);
+  R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, 0.034);
   R.drawWorld(levelMesh);
   // items
   for (const it of S.items) {
@@ -890,9 +1033,10 @@ function render(alpha) {
     drawM(mesh, m, light, 0.06 + 0.05 * Math.sin(gameTime * 3));
   }
   // ring and chain
-  const ring = feature('ring'), rl = sampleLight(ring.x, 1, ring.z + 1);
+  const ring = feature('ring') || { x: -1e4, y: 0, z: -1e4 }, rl = sampleLight(ring.x, 1, ring.z + 1);
   drawM('ring', m4trs(ring.x, ring.y, ring.z + 0.08, 0, 0, 0, 1.4), rl);
   const A = [ring.x, ring.y - 0.22, ring.z + 0.12];
+  if (feature('ring')) {
   const B = S.flags.free ? [ring.x + 0.5, groundInfo(ring.x + 0.5, ring.z + 1.6).floor + 0.03, ring.z + 1.6] : [px, py + 0.12, pz];
   const dist = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]), n = Math.max(4, Math.ceil(dist / 0.17)), sag = Math.sqrt(Math.max(0, 3.6 * 3.6 - dist * dist)) * 0.45;
   let lp = A;
@@ -903,15 +1047,17 @@ function render(alpha) {
     drawM('link', m4trs((x + lp[0]) / 2, (y + lp[1]) / 2, (z + lp[2]) / 2, Math.atan2(dx, dz), -Math.atan2(dy, Math.hypot(dx, dz)), i % 2 ? Math.PI / 2 : 0, 1), sampleLight(x, y + 0.5, z));
     lp = [x, y, z];
   }
+  }
   // the cell door (swings into the hall) and the grille (slides up)
   const dl = sampleLight(8 * CELL, 1.5, 12.2 * CELL);
-  drawM('bars:2.5:3.2', m4trs(7 * CELL, 0, 12 * CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // swings into the cell
+  const has = n => LEVEL.links.some(l => l.name === n);
+  if (has('cell_door')) drawM('bars:2.5:3.2', m4trs(7 * CELL, 0, 12 * CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // swings into the cell
   const gl2 = sampleLight(GRILLE_X, 2, HALL_Z);
-  drawM('bars:5:7.5', m4trs(GRILLE_X, S.grille.open * 6.6, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), gl2);
-  drawM('bars:5:6', m4trs(45 * CELL, 0.4 + S.portc.open * 5.2, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), sampleLight(45 * CELL, 2, HALL_Z));
+  if (has('grille_gate')) drawM('bars:5:7.5', m4trs(GRILLE_X, S.grille.open * 6.6, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), gl2);
+  if (has('portcullis')) drawM('bars:5:6', m4trs(45 * CELL, 0.4 + S.portc.open * 5.2, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), sampleLight(45 * CELL, 2, HALL_Z));
   // the black giant
   const g = S.giant, gl = sampleLight(g.x, 1.5, g.z);
-  if (g.state === 'crushed') {
+  if (g.state === 'gone') { /* not in this level */ } else if (g.state === 'crushed') {
     const k = smoothstep(0, 1, g.fall);
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, { pitch: -1.5 * k, roll: 0.3 * k, drop: 0.1 * k, uzL: 1.2 * k, uzR: 1.2 * k, txL: -0.4 * k, sxL: 0.8 * k, headX: -0.4 * k }, gl);
   } else {
@@ -924,7 +1070,7 @@ function render(alpha) {
   }
   // Shukeli, the jailer
   const sh = S.shukeli, sl = sampleLight(sh.x, 1.5, sh.z), shy = groundInfo(sh.x, sh.z).floor;
-  if (sh.state === 'dead') {
+  if (sh.state === 'gone') { /* not in this level */ } else if (sh.state === 'dead') {
     const k = smoothstep(0, 1, sh.fall);
     drawCharacter('shukeli', sh.x + 0.3 * k, shy, sh.z, -Math.PI / 2, { pitch: 0.5 * k, roll: 0.3 * k, drop: -0.35 * k, headX: 0.5 * k, uzL: 0.6 * k, uzR: 0.6 * k }, sl);
   } else {
@@ -937,6 +1083,39 @@ function render(alpha) {
     drawCharacter('shukeli', sh.x, shy, sh.z, sh.yaw, P, sl);
   }
   drawFoes();
+  // writing scratched into the walls wherever there is something to read
+  for (const f of LV.features) {
+    if (f.type !== 'clue' || !f.wall) continue;
+    const n = wallIn(f.wall), yaw = Math.atan2(n[0], n[1]), l = sampleLight(f.x + n[0], f.y, f.z + n[1]);
+    const mk = f.id.startsWith('mark') ? 'tally' + ({ mark_one: 1, mark_two: 2, mark_three: 3 })[f.id] : 'scratches';
+    drawM(mk, m4trs(f.x + n[0] * 0.03, f.y, f.z + n[1] * 0.03, yaw, 0, 0, 1), l);
+  }
+  // e1m3: flames over the ledge lean with the draft; vents and their levers; the boom and its stone; the sigil slab
+  if (LEVEL.flames) for (const [fx, fz] of LEVEL.flames) {
+    const x = fx * CELL, z = fz * CELL, y = groundInfo(x, z).kind === 1 ? groundInfo(x, z).floor : 0, l = sampleLight(x, y + 2, z);
+    drawM('stand', m4trs(x, y, z, 0, 0, 0, 1), l);
+    const lean = clamp(S.windNow * 0.45, -1.1, 1.1) + Math.sin(gameTime * 13 + fx) * 0.06 * (1 + Math.abs(S.windNow));
+    drawM('flame', m4trs(x, y + 2.0, z, 0, lean, 0, 1 + 0.08 * Math.sin(gameTime * 17 + fz)), l, 0.6);
+  }
+  if (LEVEL.valves) LEVEL.valves.at.forEach(([vx, vz, w], i) => {
+    const n = wallIn(w), x = vx * CELL, z = vz * CELL, y = groundInfo(x + n[0], z + n[1]).floor, yaw = Math.atan2(n[0], n[1]), l = sampleLight(x + n[0], y + 1, z + n[1]);
+    drawM('valve', m4trs(x + n[0] * 0.05, y + 0.6, z + n[1] * 0.05, yaw, 0, 0, 1), l);
+    drawM('lever', m4mul(m4trs(x + n[0] * 0.15 + Math.cos(yaw) * 0.7, y + 0.6, z + n[1] * 0.15 - Math.sin(yaw) * 0.7, yaw, 0, 0, 1), m4rx(S.valves[i] ? -0.7 : 0.7)), l);
+  });
+  if (LEVEL.boom) {
+    const b = LEVEL.boom, px = b.post[0] * CELL, pz = b.post[1] * CELL, py = groundInfo(px + 1, pz).floor, a = S.boom.angle, l = sampleLight(px, py + 4, pz);
+    drawM('boom', m4trs(px, py + 5.4, pz, -a, 0, 0, 1), l);
+    if (!S.items.some(i => i.kind === 'sigil')) {          // the stone on its rope, until it is set down
+      const tip = boomTip(), top = py + 5.25, gt = groundInfo(tip[0], tip[1]), fl = gt.kind === 1 ? gt.floor : py;
+      const y = lerp(py + 3.0, fl, S.stone.drop), len = Math.max(0.05, top - (y + 1.4));
+      drawM('sigilstone', m4trs(tip[0], y, tip[1], -a, 0, 0, 1.4), sampleLight(tip[0], y + 1, tip[1]), 0.1);
+      drawM('rope', m4mul(m4t(tip[0], y + 1.4, tip[1]), m4s3(1, len, 1)), l);
+    }
+  }
+  if (S.gates.sigil_gate) {
+    const gx = 43.5 * CELL, gz = 30 * CELL;
+    drawM('slab', m4trs(gx, -S.gates.sigil_gate.open * 3.5, gz, 0, 0, 0, 1), sampleLight(gx + 1.5, 1.5, gz), S.gates.sigil_gate.target > 0 ? 0.15 : 0);
+  }
   // Satha (README MODELS §5.2): sculpted head and jaw, and one smooth body tube
   // rebuilt each frame along her spine, drawn in chunks so each is lit locally.
   if (t >= 0) {
@@ -1013,6 +1192,12 @@ function render(alpha) {
     if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
     else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
     else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
+    if (LEVEL.torch) {                     // the torch, held low in the left hand
+      const tm = m4trs(-0.22 + sb, -0.36 + cb, -0.46, 0.25, 0.25, -0.18, 1), tl = [0.75, 0.48, 0.26];
+      tl.d = [0, 1, 0];
+      drawM('vm_torch', tm, tl);
+      drawM('flame', m4mul(tm, m4trs(0, 0.37, 0, 0, clamp(S.windNow * 0.5, -1, 1) + Math.sin(gameTime * 14) * 0.08, 0, 0.075 + 0.006 * Math.sin(gameTime * 19))), vl, 0.7);
+    }
     if (S.kickT > 0) {                     // the kick: a boot comes up from below
       const k = Math.sin((1 - S.kickT / KICK.period) * Math.PI);
       drawM('vm_leg', m4trs(0.05, -0.75 + k * 0.42, -0.55 - k * 0.15, 0, -1.35 + k * 0.4, 0, 1), vl);
@@ -1102,25 +1287,18 @@ document.addEventListener('pointerlockchange', () => {
 // ---------------------------------------------------------------- boot
 function boot() {
   try { R = new Renderer(canvas); }
-  catch (e) { overlay.innerHTML = '<div class="panel"><h2>No WebGL2</h2><p>This demo needs a browser with WebGL2. (' + e.message + ')</p></div>'; return; }
+  catch (e) { overlay.innerHTML = '<div class="panel"><h2>No WebGL2</h2><p>This game needs a browser with WebGL2. (' + e.message + ')</p></div>'; return; }
   R.gamma = brightness;
   onResize();
   addEventListener('resize', onResize);
   setTimeout(() => {
     R.uploadTextures(generateTextures());
     R.setPalette(gamePalette());
-    buildLevel(LEVEL);
-    buildSathaPath();
-    levelMesh = R.createMesh(buildLevelMesh());
-    const seed = parseInt(new URLSearchParams(location.search).get('seed'), 10) || 1;
-    S = newState(seed);
-    S.y = groundInfo(S.x, S.z).floor; prev = { x: S.x, y: S.y, z: S.z };
-    S.room = roomIdAt(S.x, S.z); S.visited.add(S.room); $('locName').textContent = 'The Cell';
-    const pz = solvePuzzle(LEVEL.puzzle);
-    console.log('[solve] e1m2: ' + pz.states + ' states, goal ' + (pz.goalReachable ? 'reachable' : 'UNREACHABLE') + ', softlocks: ' + (pz.softlocks.length || 'none'));
+    const q = new URLSearchParams(location.search);
+    loadLevel(LEVELS[q.get('level')] ? q.get('level') : 'e1m2');
     lastFrame = performance.now();
     requestAnimationFrame(frame);
-    if (new URLSearchParams(location.search).has('agent')) { mode = 'splash'; return; }
+    if (q.has('agent')) { mode = 'splash'; return; }
     showIntro();
   }, 30);
 }

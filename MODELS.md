@@ -141,10 +141,12 @@ The game is first person, so the hero is mostly seen as **view-models**. A full-
 | `satha_head.mdl` | serpent_head | B | **300** | 36 | `strike` 8, `recoil` 6 | e1m2, e1m4 | Invulnerable set piece. Spits venom (damage zones) |
 | `satha_seg.mdl` | serpent_seg | S | **48** × 12 | 2 | — | e1m2, e1m4 | 12 entities follow the head at a 6-tick delay each |
 | `satha_tail.mdl` | serpent_tail | S | **80** | 6 | — | e1m2, e1m4 | |
-| `crawler.mdl` | ape (low) | C | **260** | 56 | `drop_from_ceiling` 6 | e1m3 | *Invented filler* (not in Howard) |
+| `pit_thing.mdl` | ape (low) | C | **260** | 56 | `drop_from_ceiling` 6 | e1m3 | The pits' nameless monsters: "monsters with dripping jaws agape", "something whimpered in fear and slunk away" (ch. III–IV). Pale, gaunt, long-armed, on all fours |
+| `weeping_thing.mdl` | blob + 7 tentacle segments | B | **480** | 40 | `titter` 8, `hitch` 8 | e1m3 | "An amorphic bulk ... like an octopus, but its malformed tentacles were too short ... a frog-like head ... great unstable eyes" (ch. III). It can't be killed; Conan fled it |
+| `axeman.mdl` | humanoid / giant | N | **360** | 60 | `overhead` 8 | e1m2 | Tsotha's guard: "a dozen black giants, grasping their long-shafted axes" (ch. II). Horned great helm, long axe |
 | `yothga_stem.mdl` | stem | B | **380** | 30 | `expose` 8, `wither` 12 | e1m4 | Boss core, struck once all three tendrils are cut |
 | `yothga_tendril.mdl` | tendril | S | **120** × 3 | 24 | `grab` 8, `sever` 6 | e1m4 | Regrows on a fixed 6 s timer (puzzle, README §10) |
-| `servant_citadel.mdl` | humanoid / normal | C | **280** | 58 | — | e1m5 | *Invented filler*. Scarlet livery |
+| `citadel_slave.mdl` | humanoid / normal | C | **280** | 58 | — | e1m5 | Tsotha's slaves: Conan "expected a rush of slaves" (ch. III). Scarlet livery. (Replaces an invented servant: README §1, canon cast only) |
 | `looter.mdl` | humanoid / normal | C | **270** | 58 | `loot` 6 | e1m6 | 3 skins |
 | `soldier_pellia.mdl` | humanoid / normal | C | **300** | 60 | — | e1m6, e1m7 | The usurper's soldiers |
 | `arpello.mdl` | humanoid / heavy | B | **400** | 76 | `disarmed` 6, `fall` 10 | e1m7 | Tower duel. Disarmed by parries, then kicked off |
@@ -190,7 +192,7 @@ The winged beast, Pelias's eagle, the crystal-globe vision of Tamar, and the mar
 | `crystal_globe.mdl` | P | 80 | 1 | Turnable (e1m5) |
 | `standard.mdl` | P | 60 | 4 | `cloth` rig. Tsotha's ward standards (e1m9) and the rally standards (e1m1) |
 | `h_human.mdl` | P | 48 | 1 | Head gib. 4 skins (bare, helm, hood, beard) |
-| `h_beast.mdl` | P | 56 | 1 | Head gib for the demon and crawler |
+| `h_beast.mdl` | P | 56 | 1 | Head gib for the demon and the pit-things |
 | `gib1–3.mdl` | P | 12, 18, 24 | 1 | Flesh and bone chunks in the `scarlet` and `bone` ramps |
 
 Doors, grilles, skull-jaws, winches, ropes, the counterweight lift and bridges are **brush entities** (`func_door`, `func_train`, `func_rotate`-style) built from prefabs, not models.

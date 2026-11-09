@@ -1,7 +1,7 @@
 // Golden playthrough of e1m2 through the CIM agent API (README §11).
 // It plays the whole level, fights included, using only player inputs.
 // The final state hash must match EXPECTED on every run.
-const EXPECTED = { tick: 19289, hash: '84ed4146' };
+const EXPECTED = { tick: 14312, hash: 'e9f60ba3' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -44,7 +44,7 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
     if (!live.length) break;
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
     const f = live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
-    const shielded = f.cls === 'warden' || f.cls === 'captain';
+    const shielded = !!FOES[f.cls].block;
     const reach = s.weapon === 'sword' ? 2.6 : 2.0;
     let act = { yaw, pitch: Math.max(-0.4, Math.min(0.3, Math.atan2(f.y - s.y, d))) };
     if (d > reach) {
@@ -77,7 +77,7 @@ await O('__go(17.5, 21.6, false)'); o = await O('__use(7, 8.08, -0.3)'); log('fr
 await O('__go(22.5, 22.5, false)'); o = await O('__wait(1100)'); log('giant:', brief(o), await ev('CIM.state.giant.state'));
 // THE HALL (timing): wait for Satha to clear, take the dagger; the scout comes
 o = await O('__waitPhase(19, 20)');
-await O('__route([[7.5, 11.2], [7.5, 13.9]])'); o = await O('(__take("dagger"), CIM.obs())'); log('dagger:', brief(o));
+await O('__route([[7.5, 11.2], [7.5, 13.9]])'); o = await O('(__take("sword"), CIM.obs())'); log("sword:", brief(o));
 // WARDENS' POST (action): meet the scout in the passage mouth, then the post
 await O('__route([[26.5, 14.1], [26.5, 15.8]])');
 o = await O('__fight(["scout"])'); log('scout:', brief(o));

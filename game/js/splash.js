@@ -18,6 +18,11 @@ const SPLASHES = {
     text: 'The jailer\'s keys are heavy in your fist, and the stair climbs toward the citadel. But the keys open more than one door, and the pits go deeper than any stair. Somewhere below, something is weeping, and a prisoner older than the citadel is waiting to be found.',
   },
 };
+SPLASHES.e1m4 = {
+  title: 'YOTHGA', scene: 'descent', seed: 31, accent: [],
+  text: 'Beyond the sigil gate a cage of bars stands in the dark, and in it a garden that should not be: a pale stem, livid blossoms, tendrils that rear like cobras. In their grip hangs a man who is very old, or something wearing one. The flower is drinking his soul.',
+};
+SPLASHES.title = { scene: 'citadel', seed: 3, accent: [] };
 const INK = [11, 10, 9], BONE_C = [232, 220, 192], SCARLET = [196, 48, 43];
 
 // ---- 1. the tonal drawing (Canvas 2D, grey = light) -------------------------
@@ -120,6 +125,47 @@ function paintTone(c, W, H, sp) {
   }
   return sp.scene === 'serpent' ? paintSerpent(c, W, H, g, poly, k) : paintTorchbearer(c, W, H, g, poly, k);
 }
+// The title plate: the Scarlet Citadel on its crag under a storm, the Cimmerian on the rocks below.
+function paintCitadel(c, W, H, sp) {
+  const k = H / 640, r = new RNG(sp.seed), g = v => { v = clamp(Math.round(v), 0, 255); return 'rgb(' + v + ',' + v + ',' + v + ')'; };
+  const poly = (pts, fill) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]); c.closePath(); c.fillStyle = fill; c.fill(); };
+  const sky = c.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, g(20)); sky.addColorStop(0.55, g(150)); sky.addColorStop(0.75, g(205)); sky.addColorStop(1, g(60));
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  for (let b = 0; b < 14; b++) {                       // storm wrack, bands of cloud
+    const y = r.range(0.02, 0.5) * H, h = r.range(0.03, 0.09) * H;
+    c.globalAlpha = 0.5; c.fillStyle = g(r.range(15, 80));
+    c.beginPath(); c.ellipse(r.range(0, W), y, r.range(0.2, 0.6) * W, h, r.range(-0.08, 0.08), 0, Math.PI * 2); c.fill();
+  }
+  c.globalAlpha = 1;
+  c.strokeStyle = g(250); c.lineWidth = 2.5 * k; c.beginPath();                    // lightning over the towers
+  let lx = W * 0.71, ly = 0; c.moveTo(lx, ly);
+  while (ly < H * 0.3) { lx += r.range(-22, 22) * k; ly += r.range(12, 26) * k; c.lineTo(lx, ly); }
+  c.stroke();
+  const cx = W * 0.66, base = H * 0.62;                // the crag and the citadel on it
+  poly([[W * 0.42, H], [W * 0.5, base + 30 * k], [W * 0.58, base], [W * 0.75, base - 10 * k], [W * 0.86, base + 40 * k], [W * 0.95, H]], g(18));
+  const towers = [[-0.12, 0.2, 0.026], [-0.07, 0.3, 0.03], [-0.02, 0.38, 0.034], [0.035, 0.33, 0.03], [0.085, 0.24, 0.028], [0.13, 0.16, 0.024]];
+  for (const [ox, hh, ww] of towers) {
+    const x = cx + ox * W, w = ww * W, top = base - hh * H;
+    poly([[x - w, base], [x - w, top], [x + w, top], [x + w, base]], g(40));
+    for (let m = -2; m <= 2; m++) poly([[x + m * w * 0.4 - w * 0.12, top], [x + m * w * 0.4 - w * 0.12, top - 9 * k], [x + m * w * 0.4 + w * 0.12, top - 9 * k], [x + m * w * 0.4 + w * 0.12, top]], g(40));
+    poly([[x - w * 1.15, top], [x, top - w * 2.4], [x + w * 1.15, top]], g(30));
+    for (let wy = top + 14 * k; wy < base - 10 * k; wy += 22 * k) { c.fillStyle = g(235); c.fillRect(x - 2 * k, wy, 4 * k, 8 * k); }
+  }
+  c.fillStyle = g(36); c.beginPath(); c.ellipse(cx - 0.005 * W, base - 0.33 * H, 0.05 * W, 0.06 * H, 0, Math.PI, 0); c.fill();   // the gold dome
+  // the Cimmerian on the rocks, sword in hand, looking up at it
+  poly([[0, H], [0, H * 0.78], [W * 0.12, H * 0.74], [W * 0.26, H * 0.8], [W * 0.38, H]], g(10));
+  const fx = W * 0.19, fy = H * 0.76;
+  c.save(); c.translate(fx, fy); c.scale(k * 1.25, k * 1.25); c.fillStyle = g(5);
+  poly([[-24, -96], [24, -98], [32, -82], [20, -40], [22, -4], [-22, -4], [-18, -40], [-32, -80]], g(5));
+  poly([[-20, -6], [-6, -6], [-12, 40], [-6, 78], [-22, 80], [-28, 40]], g(5)); poly([[6, -6], [20, -6], [26, 40], [32, 78], [16, 80], [10, 40]], g(5));
+  c.beginPath(); c.ellipse(0, -112, 13, 15, 0, 0, Math.PI * 2); c.fill();
+  poly([[-14, -122], [-30, -100], [-22, -96], [-10, -112]], g(5)); poly([[14, -122], [30, -98], [22, -96], [10, -112]], g(5));   // the black mane
+  poly([[22, -90], [30, -94], [40, -44], [32, -42]], g(5));
+  poly([[34, -46], [40, -46], [44, 60], [38, 60]], g(70)); poly([[26, -48], [48, -48], [48, -42], [26, -42]], g(30));        // the sword, point down
+  c.restore();
+  return [[cx / W, (base - 0.2 * H) / H, 0.22]];        // the citadel, scarlet
+
+}
 function paintSerpent(c, W, H, g, poly, k) {
   // Satha rising out of her well in the left foreground
   const wx = W * 0.19, wy = H * 0.8;
@@ -191,7 +237,7 @@ function paintCarceri(cv, sp) {
   cv.width = W; cv.height = H;
   const tc = document.createElement('canvas'); tc.width = W; tc.height = H;
   const c = tc.getContext('2d');
-  const accents = sp.accent.concat(paintTone(c, W, H, sp) || []);
+  const accents = sp.accent.concat((sp.scene === 'citadel' ? paintCitadel(c, W, H, sp) : paintTone(c, W, H, sp)) || []);
   const src = c.getImageData(0, 0, W, H).data, N = W * H;
   let tone = new Float32Array(N);
   for (let i = 0; i < N; i++) tone[i] = src[i * 4] / 255;
@@ -240,5 +286,36 @@ function showSplash(id, extraHtml, buttonLabel) {
       resolve();
     };
     addEventListener('keydown', go); overlay.addEventListener('mousedown', go);
+  });
+}
+
+// The title card: five seconds, then the story. Embers rise; the plate pushes in.
+function showTitleCard() {
+  overlay.className = 'titlecard';
+  overlay.innerHTML = '<canvas id="splashArt"></canvas><canvas id="embers"></canvas><div class="tc"><div class="tc1">THE CIMMERIAN</div><div class="tc2">The Scarlet Citadel</div><div class="tc3">after Robert E. Howard</div></div>';
+  paintCarceri($('splashArt'), SPLASHES.title);
+  const ec = $('embers'), ex = ec.getContext('2d');
+  ec.width = innerWidth; ec.height = innerHeight;
+  const embers = Array.from({ length: 90 }, () => ({ x: Math.random() * ec.width, y: ec.height + Math.random() * ec.height, v: 20 + Math.random() * 60, s: 1 + Math.random() * 2.5, w: Math.random() * 6 }));
+  const t0 = performance.now();
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => { if (done) return; done = true; removeEventListener('keydown', skip); overlay.removeEventListener('mousedown', skip); resolve(); };
+    const skip = () => { if (performance.now() - t0 > 400) finish(); };
+    addEventListener('keydown', skip); overlay.addEventListener('mousedown', skip);
+    const tick = now => {
+      if (done) return;
+      const t = (now - t0) / 1000;
+      ex.clearRect(0, 0, ec.width, ec.height);
+      for (const e of embers) {
+        e.y -= e.v * 0.016; e.x += Math.sin(t * 2 + e.w) * 0.4;
+        if (e.y < -10) { e.y = ec.height + 10; e.x = Math.random() * ec.width; }
+        const a = Math.max(0, Math.min(1, e.y / ec.height)) * (0.5 + 0.5 * Math.sin(t * 6 + e.w));
+        ex.fillStyle = 'rgba(255,' + (120 + Math.floor(e.w * 15)) + ',40,' + a.toFixed(2) + ')';
+        ex.fillRect(e.x, e.y, e.s, e.s);
+      }
+      if (t >= 5) finish(); else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   });
 }
