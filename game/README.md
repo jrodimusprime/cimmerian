@@ -8,6 +8,7 @@ Three playable levels, told out of joint as README §9 plans: **e1m2, The Pits**
 |---|---|
 | W A S D, mouse | Move and look (Shift to run, Space to jump) |
 | E | Use: read, take, try doors, wind winches |
+| T | Shake out your torch (e1m3, when Satha comes) |
 | Click | Strike (click, click, click for the sword's three-blow combination), or throw the bone you're holding |
 | Right-click, F or Q | Kick: knocks men back, staggers them and breaks a shield's guard |
 | 1 2 3, mouse wheel | Fists, dagger, sword |
@@ -51,16 +52,19 @@ On this field the battle is on: a group that has seen you keeps coming even afte
 
 ### e1m3, The Tunnels Below
 
-About 5–10 minutes, with 14 pit-things and the weeping thing. Conan carries a torch through the tunnels, as he does in the book, and it gutters in the well's draft.
+The book's chapter III, after the grille. About 5–10 minutes, with 16 pit-things and the weeping thing. Conan carries the torch from the vault, and down here it is the only light there is.
 
 | # | Area | Type | What happens |
 |---|---|---|---|
-| 1 | The Marked Ways | puzzle | Pelias's dead apprentices marked the safe road with three cuts. One cut is a drop under rotten planks; two cuts hides something on the roof |
-| 2 | The Warren | action | A pack of the pits' nameless things, two of them waiting on the ceiling |
-| 3 | The Crossing | puzzle | Four vents breathe from the well (the book's "presence"). The flames over the ledge lean with the draft, and the draft pushes harder than you can run. Find the setting that makes them stand straight. Closing every vent pushes the other way |
-| 4 | The Weeper's Lair | action (flight) | The weeping thing can't be harmed by a blade (in the book Conan fled it). Snatch the windlass crank from the dead apprentice and run; it won't follow you out of its tunnels |
-| 5 | The Hanging Stone | puzzle | Swing the boom over the floor first, then let the stone down. Lower it over the shaft and the deep has it |
-| 6 | The Sigil Gate | action | Set the sigil-stone. The slab sinks slowly while six things drop from the roof |
+| 1 | The Weeping | puzzle | A woman weeping, somewhere ahead. Follow the sound through the forks: down a wrong turning it grows fainter, and things wait on the roof of the blind tunnels |
+| 2 | The Weeping Thing | combat (flight) | In the low cave the weeping stops, then starts again behind you: the quaking jelly-thing with a frog's head comes out of its wallow by the tunnel mouth. No blade can harm it. Flee down the far tunnel and cut through the things it drives ahead of it. It won't leave its tunnels |
+| 3 | The Well | puzzle | A well cuts across the chamber where the tunnels cross, too wide to step over. It breathes: the torch flame leans as the wind rises, then a gust blows you back the way you came. Run and leap between its breaths |
+| 4 | The Dark | combat | On the far side the presence floats up out of the well, blows the torch out and tears it from your hand. Its wind drives you south into the black tunnels; fight the things there by their red eyes, round and back to the chamber |
+| 5 | The Crossing | puzzle | Find the torch by its ember on the well's rim and blow it alight. The dead's scratches say to go where the air comes from: the flame leans away from the one tunnel with a draft in it. Leap the well again, and when the presence comes up again you have five breaths to be in the right tunnel, or it takes the torch again |
+| 6 | The Side Tunnels | combat | Back in the main corridor; things in the tunnels off it |
+| 7 | Satha Returns | puzzle | Every torch bows: Satha comes up out of her hole between you and the far glow and crawls down the corridor toward you. Get into a side tunnel and shake out your torch (T). If she sees fire, she strikes into the tunnel mouth |
+
+Exit: the cage of bars at the end of the corridor, with a garden in it.
 
 **Combat** (README §13):
 - **Fixed damage.** The same blow always does the same damage.
@@ -86,9 +90,10 @@ Only characters and creatures from Howard's text (README §1, *Canon cast only*)
 | Kothian spearman | A kettle hat over a mail coif, the face veiled to the eyes, spear |
 | Shemite archer | A deep leather hood with the face lost in shadow, leathers, quiver, recurve bow |
 | Black axeman | One of Tsotha's black giants: a horned great helm with a scarlet crest, a scarlet cloak, spiked pauldrons, a long-shafted axe |
+| The presence | What floats up out of the well: no body, a few faint wavering columns of pallor over the shaft, felt more than seen |
 | Pit-thing | The pits' nameless things: pale, gaunt and rib-thin, long-armed and clawed, on all fours, with ember pin-prick eyes and dripping jaws. They cling to the roof and drop |
 | Weeping thing | A quaking jelly mass with short tentacles, a frog's head, great unstable eyes and blubbery lips. It weeps like a woman and titters when it sees you |
-| Satha | A sculpted head with a hinged jaw, slit-pupil eyes, fangs and tongue; her body is one smooth, scaled tube rebuilt every frame along her spine |
+| Satha | A smooth head and hinged jaw with everything painted into the skin, as Quake did it: crown shields, glowing amber eyes with slit pupils, nostrils, a lip line with fangs, a red mouth and a forked tongue. Her body is one smooth, scaled tube rebuilt every frame along her spine, and it grows out of the back of her skull. Her scales carry a faint shimmer, so she stays white under orange torchlight |
 | The hero (first person) | His manacled right hand: a muscled forearm with veins and a scar, a riveted cuff with a broken chain, jointed fingers with nails |
 
 Every human enemy stands like Quake's killers: hunched, knees bent, head thrust forward. All of them are built from compact specs, as README §8 and MODELS.md require: a 14-bone humanoid rig with rigid parts, smooth lofts and lathes for the body, and outfits as per-role overlays. They're posed procedurally (idle, walk, wind-up, strike, block, pain, stagger and death) and lit from the direction of their strongest nearby light, as Quake lit its alias models.
@@ -102,10 +107,10 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §5 level spec | `LEVEL` in `js/level.js`: areas, rooms, links, props, entities and a `puzzle:` block in the YAML shape, built into a grid |
 | §7 palette | 128×128 textures built from the ramps: irregular hewn courses, worn flagstones, rotten straw, dripping cave rock, mud. A large-scale grime map breaks up the repetition across every surface. Every clue is carved into its wall as pale, unreadable glyphs. The final image is snapped to the 128-colour game palette through a lookup table (the Quake look, F4) |
 | §9 pacing | The `areas:` list in the spec, with a `type` of puzzle or action |
-| §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *6 states*, e1m1 *5 states*, e1m3 *9 states*, goal reachable, no softlocks |
+| §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *6 states*, e1m1 *5 states*, e1m3 *6 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `10360`, `21a65357`; e1m1: `8821`, `7b58280b`; e1m3: `5870`, `8bbc707f`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `10360`, `21a65357`; e1m1: `8821`, `7b58280b`; e1m3: `10012`, `bb20221c`) |
 
 ## Not the real build
 

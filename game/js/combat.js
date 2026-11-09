@@ -27,7 +27,7 @@ const FOES = {
   // "monsters with dripping jaws agape"; "something whimpered in fear and slunk away in the darkness" (ch. III-IV)
   thing: { hp: 32, speed: 4.6, reach: 1.9, dmg: 9, windup: 0.42, strike: 0.25, recover: 0.55, sight: 15, leap: 6, name: 'pit-thing' },
   // the weeping thing (ch. III): Conan fled it, "doubting the power of man-made weapons to harm it"
-  weeper: { hp: 1e9, speed: 2.7, reach: 1.7, dmg: 30, windup: 0.3, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: ['weeper_way', 'lair'] },
+  weeper: { hp: 1e9, speed: 2.7, reach: 1.7, dmg: 30, windup: 0.3, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: null },
 };
 const ALERT_LINES = {
   scout: '"Who screamed? Who\'s there?" A Kothian guard comes up the south passage with his sword out.',
@@ -41,10 +41,12 @@ const ALERT_LINES = {
   heap2: 'More of them, wave on wave. About your iron-clad feet grows a ring of mangled corpses.',
   barracks: 'Shukeli\'s death-squeal rings through the pits. Boots thunder in the barracks!',
   landing: 'One of Tsotha\'s black giants bars the stair, his long-shafted axe across his chest, and the guards close in around him.',
-  warren: 'Something whimpers in the dark, and something else answers it. The things of the pits are coming.',
-  nook: 'Something drops from the roof with a wet slap.',
-  lair: 'The weeping changes to an abominable high-pitched tittering, and something vast and quaking hitches itself toward you.',
-  gatewave: 'The stone groans, and the roof of the chamber comes alive.',
+  dead_n: 'Something drops from the roof with a wet slap.',
+  dead_s: 'Something drops from the roof with a wet slap.',
+  weeper: 'The weeping changes to an abominable high-pitched tittering, and the quaking thing hitches itself toward you.',
+  driven: 'Ahead of it, things come scrambling down the tunnel, mad with fear, and they will not let you by.',
+  dark: 'In the black, something moves; many somethings. Their eyes are pin-pricks of red.',
+  side: 'The things of the side tunnels come out at your light.',
 };
 
 function newFoes() {
@@ -52,7 +54,7 @@ function newFoes() {
     const p = { x: e.at[0] * CELL, z: e.at[1] * CELL };
     return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw || 0, yaw: e.yaw || 0,
       hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
-      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold };
+      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold, territory: e.territory || FOES[e.class].territory || null };
   });
 }
 
@@ -158,7 +160,7 @@ function updateFoes() {
       const ddx = tx - f.x, ddz = tz - f.z, dd = Math.hypot(ddx, ddz);
       if (dd < 0.05) return;
       const r = collide(f.x + ddx / dd * spd * DT, f.z + ddz / dd * spd * DT, st.invulnerable ? 1.0 : 0.42, f.y, f);
-      if (st.territory && !st.territory.includes(roomIdAt(r[0], r[1]))) { f.state = 'home'; f.t = 0; return; }   // it will not leave its tunnels
+      if (f.territory && !f.territory.includes(roomIdAt(r[0], r[1]))) { f.state = 'home'; f.t = 0; return; }   // it will not leave its tunnels
       f.walk += Math.hypot(r[0] - f.x, r[1] - f.z); f.x = r[0]; f.z = r[1]; f.moving = true;
       let a = Math.atan2(ddx, ddz) - f.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); f.yaw += clamp(a, -8 * DT, 8 * DT);
     };
@@ -176,7 +178,7 @@ function updateFoes() {
         f.alert = false; S.alerted.delete(f.group);
         move(f.homeX, f.homeZ, st.speed * 0.6);
         if (Math.hypot(f.homeX - f.x, f.homeZ - f.z) < 0.8) f.state = 'idle';
-        else if (f.t > 1.5 && foeSees(f) && st.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }
+        else if (f.t > 1.5 && foeSees(f) && f.territory && f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }
         break;
       case 'investigate':
         move(f.tx, f.tz, st.speed * 0.8);
@@ -184,7 +186,7 @@ function updateFoes() {
         break;
       case 'chase':
         if (mode !== 'play') break;
-        if (st.invulnerable && !st.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'home'; f.t = 0; break; }
+        if (f.territory && !f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'home'; f.t = 0; break; }
         if (st.ranged) {
           const see = los(f.x, f.y + 1.6, f.z, S.x, S.y + 1.4, S.z);
           if (d < st.keep[0]) { const bx = f.x - dx / d * 2, bz = f.z - dz / d * 2; move(bx, bz, st.speed); turn(10); }

@@ -44,6 +44,7 @@ try {
     writeFileSync(`${outDir}/${name}.png`, Buffer.from(r.result.data, 'base64'));
     console.log('[shot]', name);
   };
+  for (let i = 0; i < 100; i++) { if (await ev('!!(window.CIM && CIM.state)').catch(() => false)) break; await sleep(100); }   // the game has loaded its first level
   const body = readFileSync(scriptPath, 'utf8');
   const fn = new Function('ev', 'shot', 'sleep', 'log', `return (async () => { ${body} })();`);
   await fn(ev, shot, sleep, (...a) => console.log(...a));

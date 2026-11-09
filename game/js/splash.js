@@ -20,7 +20,7 @@ const SPLASHES = {
 };
 SPLASHES.e1m4 = {
   title: 'YOTHGA', scene: 'descent', seed: 31, accent: [],
-  text: 'Beyond the sigil gate a cage of bars stands in the dark, and in it a garden that should not be: a pale stem, livid blossoms, tendrils that rear like cobras. In their grip hangs a man who is very old, or something wearing one. The flower is drinking his soul.',
+  text: 'At the end of the main corridor a cage of bars stands in the dark, and in it a garden that should not be: a pale stem, livid blossoms, tendrils that rear like cobras. In their grip hangs a man who is very old, or something wearing one. The flower is drinking his soul.',
 };
 SPLASHES.e1m1 = {
   title: 'THE PLAIN OF SHAMU', scene: 'battle', seed: 11, accent: [[0.5, 0.18, 0.09]],

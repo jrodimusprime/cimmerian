@@ -405,20 +405,14 @@ function buildModel(name) {
       break;
     case 'keys': buildKeys(mb, 1); break;
     case 'sword': return buildCharPart('warden', 'sword');
-    case 'slab':                                          // the sigil gate: a stone slab along z, a socket for the stone
-      addBox(mb, 0, 1.7, 0, 0.35, 1.7, 2.5, T.HEWN);
-      smoothLathe(mb, 0.36, 1.5, 0, [[0.42, -0.02], [0.42, 0.04]], 12, T.SIGIL, ONE3, [1, 0, 0]);
+    case 'plant': {                                       // a garden plant that should not be: a pale stem, jade leaves, livid blossoms
+      smoothLathe(mb, 0, 0, 0, [[0.07, 0], [0.05, 0.8], [0.035, 1.6], [0.02, 2.2]], 6, T.SICK, ONE3, [0.05, 1, 0.02]);
+      for (let k = 0; k < 7; k++) { const a = k * 2.4, h = 0.25 + k * 0.27; addSpike(mb, 0, h, 0, [Math.cos(a), 0.35 + 0.1 * (k % 3), Math.sin(a)], 0.55 - k * 0.04, 0.09, 3, T.SLIME); }
+      for (let k = 0; k < 3; k++) { const a = k * 2.1 + 0.5; addRock(mb, Math.cos(a) * 0.25, 1.7 + k * 0.22, Math.sin(a) * 0.25, 0.16, 0.12, 0.16, 40 + k, T.BLOOD, 0.2); }
       break;
-    case 'boom':                                          // a beam out along +x with a pulley at the end
-      addBox(mb, 2.6, 0, 0, 2.7, 0.14, 0.12, T.WOOD);
-      addBox(mb, 0, 0, 0, 0.4, 0.2, 0.2, T.IRON);
-      smoothLathe(mb, 5.0, -0.15, 0, [[0.16, -0.06], [0.16, 0.06]], 8, T.IRON, ONE3, [0, 0, 1]);
-      break;
-    case 'sigilstone':                                    // Pelias's sigil-key: a carved wheel of black stone
-      smoothLathe(mb, 0, 0.5, 0, [[0, -0.18], [0.45, -0.16], [0.5, 0], [0.45, 0.16], [0, 0.18]], 14, T.SIGIL, ONE3, [0, 0, 1]);
-      break;
-    case 'flame':                                         // a standing flame on a short iron stand: it leans with the draft
-      for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; addSpike(mb, Math.cos(a) * 0.06, 0, Math.sin(a) * 0.06, [Math.cos(a) * 0.15, 1, Math.sin(a) * 0.15], 0.45 + (k % 2) * 0.25, 0.1, 4, T.FIRE); }
+    }
+    case 'presence':                                      // what floats up out of the well: no body, a wavering column of pallor
+      smoothLathe(mb, 0, 0, 0, [[0.05, -2], [0.7, -1], [1.1, 0.4], [1.3, 1.4], [1.0, 2.4], [0.8, 3.2], [1.0, 4.1], [0.8, 5.0], [0.4, 5.9], [0.05, 6.6]], 16, T.PALE, ONE3, [0, 1, 0]);
       break;
     case 'vm_torch':                                      // a pitch torch: a tapered haft, an iron collar, a fat head of tarred rag
       smoothLathe(mb, 0, 0, 0, [[0.016, -0.42], [0.021, -0.1], [0.026, 0.2]], 7, T.WOOD, ONE3, [0, 1, 0]);
@@ -432,13 +426,6 @@ function buildModel(name) {
       for (let k = 0; k < (core ? 0 : 4); k++) { const a = k / 4 * Math.PI * 2; addSpike(mb, Math.cos(a) * 0.03, 0.06, Math.sin(a) * 0.03, [Math.cos(a) * 0.35, 1, Math.sin(a) * 0.35], 0.12 + 0.03 * (k % 2), 0.018, 4, T.FIRE); }
       break;
     }
-    case 'rope': smoothLathe(mb, 0, 0, 0, [[0.03, 0], [0.03, 1]], 5, T.WOOD, ONE3, [0, 1, 0]); break;
-    case 'stand': addLathe(mb, 0, 0, 0, [[0.2, 0], [0.05, 0.1], [0.04, 1.8], [0.18, 1.9], [0.2, 2.0], [0, 2.0]], 6, T.IRON); break;
-    case 'valve':                                         // a vent in the rock with an iron lever beside it
-      addBox(mb, 0, 0.3, 0, 0.45, 0.35, 0.05, T.IRON);
-      for (let k = -2; k <= 2; k++) addBox(mb, k * 0.17, 0.3, 0.04, 0.025, 0.33, 0.03, T.BLACK);
-      break;
-    case 'lever': addBox(mb, 0, 0.35, 0, 0.04, 0.38, 0.04, T.IRON); addRock(mb, 0, 0.75, 0, 0.07, 0.07, 0.07, 3, T.WOOD, 0.1); break;
     case 'decal:scratch': case 'decal:tally1': case 'decal:tally2': case 'decal:tally3': {   // a flat quad for an alpha-tested decal
       const layer = { 'decal:scratch': T.SCRATCH, 'decal:tally1': T.TALLY1, 'decal:tally2': T.TALLY2, 'decal:tally3': T.TALLY3 }[name];
       const w = name === 'decal:scratch' ? 0.75 : 0.32, h = name === 'decal:scratch' ? 0.42 : 0.42, c = [[-w, -h, 0, 1], [w, -h, 1, 1], [w, h, 1, 0], [-w, h, 0, 0]];
@@ -490,7 +477,7 @@ const UV_MODELS = new Set(['satha_head_uv', 'satha_jaw_uv', 'vm_forearm', 'vm_ma
 // Loft through elliptical stations along +z. Each station: {z, w, ht, hb, cy, x?}
 // (half-width, height above and below the centre). u runs around from the
 // bottom (0) over the top (0.5), v = z * vScale. Smooth per-vertex normals.
-function loft(mb, st, sides, layer, vScale = 1, shade = null, axis = 'z') {
+function loft(mb, st, sides, layer, vScale = 1, shade = null, axis = 'z', vOff = 0) {
   const ring = [];
   for (let i = 0; i < st.length; i++) {
     const s = st[i], prev = st[Math.max(0, i - 1)], next = st[Math.min(st.length - 1, i + 1)];
@@ -502,11 +489,11 @@ function loft(mb, st, sides, layer, vScale = 1, shade = null, axis = 'z') {
       let n = norm3([sa / Math.max(s.w, 1e-3), -ca / Math.max(h, 1e-3), -dw * 0.6]);
       let p = [x, y, s.z];
       if (axis === 'y') { p = [x, s.z, -y]; n = [n[0], n[2], -n[1]]; }     // loft along +y instead
-      r.push({ p, n, u: k / sides, v: s.z * vScale, sh: shade ? shade(k / sides, i / (st.length - 1)) : 1 });
+      r.push({ p, n, u: k / sides, v: s.z * vScale + vOff, sh: shade ? shade(k / sides, i / (st.length - 1)) : 1 });
     }
     ring.push(r);
   }
-  const uv = layer === T.SATHA || layer === T.ARM || layer === T.MANACLE || layer === T.FACE_BRUTE || layer === T.FACE_EUNUCH || layer === T.FACE_VULTURE;   // UV skins carry (u, v, shade); others a grey tint
+  const uv = layer === T.SATHA || layer === T.SATHA_HEAD || layer === T.SATHA_JAW || layer === T.ARM || layer === T.MANACLE || layer === T.FACE_BRUTE || layer === T.FACE_EUNUCH || layer === T.FACE_VULTURE;   // UV skins carry (u, v, shade); others a grey tint
   for (let i = 0; i < ring.length - 1; i++) for (let k = 0; k < sides; k++) {
     const a = ring[i][k], b = ring[i][k + 1], c = ring[i + 1][k + 1], d = ring[i + 1][k];
     for (const q of [a, b, c, a, c, d]) { mb.ensure(1); mb.v(q.p, q.n[0], q.n[1], q.n[2], uv ? [q.u, q.v, q.sh] : [q.sh, q.sh, q.sh], layer); }
@@ -521,28 +508,11 @@ function buildSathaHead(part) {
     case 'satha_head_uv':                                   // skull: broad temples, flat crown, tapering snout
       loft(mb, [S_(-0.7, 0.92, 0.8, 0.8, 0), S_(-0.2, 1.0, 0.82, 0.62, 0.08), S_(0.35, 1.12, 0.78, 0.42, 0.22), S_(0.9, 1.1, 0.7, 0.3, 0.3),
         S_(1.45, 0.92, 0.58, 0.24, 0.32), S_(1.95, 0.7, 0.46, 0.2, 0.3), S_(2.35, 0.48, 0.34, 0.16, 0.26), S_(2.62, 0.27, 0.22, 0.12, 0.22), S_(2.76, 0.07, 0.07, 0.06, 0.2)],
-      14, T.SATHA, 1 / 4.4);
+      20, T.SATHA_HEAD, 1 / 3.6, null, 'z', 0.75 / 3.6);
       break;
     case 'satha_jaw_uv':                                    // lower jaw, pivots at its root
       loft(mb, [S_(-0.3, 0.9, 0.1, 0.55, -0.3), S_(0.4, 0.98, 0.1, 0.45, -0.18), S_(1.2, 0.84, 0.08, 0.32, -0.08), S_(1.9, 0.6, 0.07, 0.22, -0.02),
-        S_(2.4, 0.36, 0.06, 0.14, 0.0), S_(2.62, 0.1, 0.04, 0.05, 0.02)], 12, T.SATHA, 1 / 4.4);
-      break;
-    case 'satha_head_parts':
-      for (const sx of [-1, 1]) {
-        addRock(mb, sx * 0.86, 0.62, 1.12, 0.2, 0.18, 0.22, 3, T.EYE, 0.02);                    // eye (fullbright)
-        addBox(mb, sx * 1.02, 0.62, 1.12, 0.02, 0.15, 0.035, T.BLACK, sx * 0.25);              // slit pupil
-        addRock(mb, sx * 0.74, 0.86, 1.08, 0.34, 0.12, 0.5, 7 + sx, T.SCALES, 0.08);           // brow plate
-        addSpike(mb, sx * 0.34, 0.12, 2.0, [sx * 0.08, -1, -0.25], 0.5, 0.065, 5, T.BONE);      // fangs
-        for (let k = 0; k < 5; k++) addSpike(mb, sx * (0.62 - k * 0.07), 0.13, 0.7 + k * 0.28, [0, -1, 0.1], 0.14, 0.03, 4, T.BONE);
-        addBox(mb, sx * 0.16, 0.42, 2.62, 0.045, 0.03, 0.03, T.BLACK, sx * 0.4);               // nostrils
-        addBox(mb, sx * 1.0, 0.3, 0.9, 0.04, 0.025, 0.9, T.BLACK, sx * 0.12);                  // lip line
-      }
-      addBox(mb, 0, 0.05, 1.1, 0.75, 0.04, 1.2, T.MOUTH);                                       // palate
-      break;
-    case 'satha_jaw_parts':
-      addBox(mb, 0, -0.12, 1.0, 0.7, 0.04, 1.2, T.MOUTH);                                      // tongue bed
-      addLathe(mb, 0, -0.08, 0.6, [[0.12, 0], [0.09, 1.2], [0.03, 1.9], [0, 2.0]], 5, T.MOUTH, 0, ONE3, [0, 0.05, 1]); // tongue
-      for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) addSpike(mb, sx * (0.6 - k * 0.08), -0.06, 0.7 + k * 0.3, [0, 1, 0.1], 0.12, 0.028, 4, T.BONE);
+        S_(2.4, 0.36, 0.06, 0.14, 0.0), S_(2.62, 0.1, 0.04, 0.05, 0.02)], 16, T.SATHA_JAW, 1 / 3.6, null, 'z', 0.3 / 3.6);
       break;
   }
   return mb.finish();

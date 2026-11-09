@@ -15,26 +15,29 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CLOTH', 'ROBE', 'BONE', 'FIRE', 'EYE', 'VENOM', 'BLACK', 'STRAW', 'SKY',
   'SATHA', 'ARM', 'HANDSKIN', 'MANACLE', 'MOUTH', 'GRIP', 'STEEL', 'NAIL',
   'MAIL', 'LEATHER', 'TABARD', 'HAIR', 'SHIELD', 'BLOOD', 'BANNER', 'FACE',
-  'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'SIGIL', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
-  'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE'];
+  'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
+  'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
 
 function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
 // n-step ramp between two anchors, slightly gamma-curved like Quake's palette rows
-function makeRamp(lo, hi, n, gamma = 1.15) {
-  const a = hexRgb(lo), b = hexRgb(hi), out = [];
+function makeRamp(lo, hi, n, gamma = 1.15, mid = null) {
+  const a = hexRgb(lo), b = hexRgb(hi), m = mid && hexRgb(mid), out = [];
   for (let i = 0; i < n; i++) {
     const t = Math.pow(i / (n - 1), gamma);
-    out.push([0, 1, 2].map(k => Math.round(a[k] + (b[k] - a[k]) * t)));
+    if (m) {                                             // through a middle colour, as Quake's fire row goes red, orange, yellow
+      const [p, q, u] = t < 0.5 ? [a, m, t * 2] : [m, b, t * 2 - 1];
+      out.push([0, 1, 2].map(k => Math.round(p[k] + (q[k] - p[k]) * u)));
+    } else out.push([0, 1, 2].map(k => Math.round(a[k] + (b[k] - a[k]) * t)));
   }
   return out;
 }
 const RAMPS = {
   ink: makeRamp('#0b0a09', '#e8dcc0', 16),
   jade: makeRamp('#08120c', '#7fa88a', 12),
-  fire: makeRamp('#5a1a00', '#ffd27a', 10, 0.9),
+  fire: makeRamp('#3c0600', '#ffd23c', 12, 0.9, '#d8480a'),
   scarlet: makeRamp('#2a0606', '#c4302b', 10),     // UI only in this level
   earth: makeRamp('#160e08', '#b08a66', 16),
   bronze: makeRamp('#20140a', '#d8a24a', 14),
@@ -44,10 +47,10 @@ const RAMPS = {
 // The game palette (README §7): 6 lit ramps and 2 fullbright ramps of 16 shades, like the rows of
 // Quake's palette.lmp. The final image is snapped to these 128 colours (renderer POST_FS).
 const PALETTE_RAMPS = [['#0b0a09', '#e8dcc0'], ['#2a0606', '#c4302b'], ['#20140a', '#d8a24a'], ['#08120c', '#7fa88a'],
-  ['#0a0d14', '#6b7a96'], ['#160e08', '#b08a66'], ['#5a1a00', '#ffd27a'], ['#0a3020', '#e6fff0']];
+  ['#0a0d14', '#6b7a96'], ['#160e08', '#b08a66'], ['#3c0600', '#ffd23c', '#d8480a'], ['#0a3020', '#e6fff0']];
 function gamePalette() {
   const out = [];
-  for (const [lo, hi] of PALETTE_RAMPS) out.push(...makeRamp(lo, hi, 16, 1.15));
+  for (const [lo, hi, mid] of PALETTE_RAMPS) out.push(...makeRamp(lo, hi, 16, mid ? 0.9 : 1.15, mid));
   return out;
 }
 // For every colour on a 32-step grid, the nearest palette colour, weighted for the eye (as WEaBuse3D does it).
@@ -215,6 +218,59 @@ const TEXGEN = {
   SKY: { f: (x, y, s) => ({ v: 0.6 + 0.4 * tfbm(x / 64, y / 64, 2, 3, s), ramp: 'ink', lo: 0.4, hi: 0.75, e: 1 }) },  // daylight through the grating
   // ---- UV-mapped skins ----------------------------------------------------
   // Satha: u around the body (0.5 = spine, 0/1 = belly), v along it.
+  // Satha's head and jaw, painted as Quake painted its skins: one smooth shape, every detail in the texture.
+  // u runs round the loft (0 underneath, 0.5 on the crown); a = distance from the crown line.
+  SATHA_HEAD: { f: (x, y, s) => {
+    const u = x / 64, z = (y / 64) * 3.6 - 0.75, a = Math.abs(u - 0.5), n = tfbm(x / 64, y / 64, 16, 2, s);
+    const lip = 0.305 - 0.012 * z;
+    const eye = ell(a, z, 0.172, 1.12, 0.042, 0.19);
+    if (eye < 1) {                                       // the eye: amber, burning, a black slit across it
+      if (Math.abs(z - 1.12) < 0.028 && eye < 0.9) return { v: 0.02, ramp: 'ink', lo: 0, hi: 0.1 };
+      return { v: 0.5 + 0.5 * (1 - eye), ramp: 'fire', lo: 0.45, hi: 1, e: 1 };
+    }
+    if (eye < 1.18) return { v: 0.06, ramp: 'ink', lo: 0, hi: 0.3 };                                   // the dark rim of the socket
+    const stripe = seg(a, z, 0.18, 0.92, 0.2, -0.3) < 0.01 ? 0.22 : 0;                                // a faint stripe back from the eye
+    if (ell(a, z, 0.035, 2.52, 0.012, 0.05) < 1) return { v: 0.03, ramp: 'ink', lo: 0, hi: 0.2 };   // nostrils
+    if (a > lip - 0.011 && a < lip + 0.011 && z > -0.1 && z < 2.6) return { v: 0.05, ramp: 'ink', lo: 0, hi: 0.25 };   // the lip line
+    if (a >= lip + 0.011) {                             // under the lip: fangs, teeth, then the palate
+      const below = a - lip - 0.011, fang = Math.abs(z - 1.98) < 0.075 * (1 - below / 0.07) && below < 0.07;
+      const tooth = z > 0.4 && z < 1.8 && below < 0.022 && Math.abs(((z - 0.4) % 0.17) - 0.085) < 0.045 * (1 - below / 0.022);
+      if (fang || tooth) return { v: 0.85 + 0.1 * n, ramp: 'ink', lo: 0.6, hi: 1 };
+      return { v: 0.3 + 0.25 * n - 0.15 * (Math.floor(z * 6) % 2), ramp: 'scarlet', lo: 0.05, hi: 0.55 };
+    }
+    let t;
+    if (a < 0.12 && z > -0.35 && z < 2.25) {           // the crown: great overlapping shields, a seam down the middle
+      const zr = (z + 0.35) / 0.42, fz = zr - Math.floor(zr), fa = a / 0.12;
+      if (fz < 0.07 || a < 0.006 || (fa > 0.92)) return { v: 0.1 + 0.1 * n, ramp: 'ink', lo: 0, hi: 0.4 };
+      t = 0.82 - 0.3 * fz - 0.15 * fa + 0.1 * n;
+    } else if (a < 0.155 && z > 0.75 && z < 1.55) {   // the brow plate over the eye, and its shadow beneath
+      t = a > 0.145 ? 0.15 : 0.85 + 0.08 * n;
+    } else {                                           // small keeled scales
+      const su = u * 34, sv = (z + 2) * 7, row = Math.floor(sv), fu = (su + (row % 2) * 0.5) % 1, fv = sv - row;
+      t = 0.72 - Math.hypot((fu - 0.5) * 1.2, fv - 0.35) * 0.9 + 0.2 * (1 - fv) + 0.1 * n;
+      if (fv < 0.1) t -= 0.25;
+    }
+    t -= stripe + 0.22 * smoothstep(0.2, 0.3, a) + 0.18 * smoothstep(2.2, 2.75, z);        // turning under, and toward the snout
+    return { v: t, ramp: 'ink', lo: 0.3, hi: 1, e: 0.12 };                               // "the great shimmering white form"
+  } },
+  SATHA_JAW: { f: (x, y, s) => {
+    const u = x / 64, z = (y / 64) * 3.6 - 0.3, a = Math.abs(u - 0.5), n = tfbm(x / 64, y / 64, 16, 2, s);
+    if (a < 0.19) {                                    // the mouth: wet red flesh, the forked tongue lying in it
+      const fork = z > 2.0 ? Math.abs(a - (z - 2.0) * 0.06) : a;
+      if (fork < 0.022 && z > 0.1 && z < 2.45) return { v: 0.12 + 0.2 * n, ramp: 'scarlet', lo: 0, hi: 0.35 };
+      return { v: 0.45 + 0.3 * n - 0.2 * smoothstep(0.1, 0.19, a), ramp: 'scarlet', lo: 0.1, hi: 0.8 };
+    }
+    if (a < 0.235) {                                   // a row of teeth along each edge
+      const tooth = z > 0.3 && z < 2.3 && Math.abs(((z - 0.3) % 0.17) - 0.085) < 0.05 * (1 - (a - 0.19) / 0.045);
+      return tooth ? { v: 0.88 + 0.1 * n, ramp: 'ink', lo: 0.6, hi: 1 } : { v: 0.06, ramp: 'ink', lo: 0, hi: 0.25 };
+    }
+    if (a > 0.4) {                                     // under the chin: broad pale scutes
+      const band = ((z + 1) * 4) % 1;
+      return band < 0.1 ? { v: 0.2, ramp: 'ink', lo: 0.2, hi: 0.6 } : { v: 0.6 + 0.3 * (1 - band) + 0.1 * n, ramp: 'ink', lo: 0.45, hi: 0.9 };
+    }
+    const su = u * 30, sv = (z + 2) * 7, row = Math.floor(sv), fu = (su + (row % 2) * 0.5) % 1, fv = sv - row;
+    return { v: 0.65 - Math.hypot((fu - 0.5) * 1.2, fv - 0.35) * 0.9 + 0.2 * (1 - fv) + 0.1 * n - (fv < 0.1 ? 0.25 : 0), ramp: 'ink', lo: 0.3, hi: 0.95, e: 0.12 };
+  } },
   SATHA: { f: (x, y, s) => {
     const u = x / 64, v = y / 64, bu = Math.min(u, 1 - u);
     if (bu < 0.13) {                                   // belly scutes: broad transverse plates
@@ -235,7 +291,7 @@ const TEXGEN = {
     let lo = 0.42, hi = 1;
     if (dd < 0.9) { lo = 0.3; hi = 0.82; } else if (dd < 1.1) { lo = 0.5; hi = 1; }
     if (du > 0.3) { lo += 0.06; }
-    return { v: t, ramp: 'ink', lo, hi, h: 0.08 };
+    return { v: t, ramp: 'ink', lo, hi, h: 0.08, e: 0.12 };                // a faint shimmer, so she stays white under orange torchlight
   } },
   // The hero's right forearm: u around (0.5 = back of the arm), v from wrist (0) to elbow (1).
   ARM: { f: (x, y, s) => {
@@ -318,11 +374,6 @@ const TEXGEN = {
     const px = x / 64, py = y / 64, b = tfbm(px, py, 4, 3, s + 6);
     if (b > 0.6) return { v: 0.4 + 0.3 * tfbm(px, py, 16, 1, s), ramp: 'jade', lo: 0.3, hi: 0.68 };
     return { v: 0.5 + 0.3 * tfbm(px, py, 8, 4, s), ramp: 'earth', lo: 0.32, hi: 0.78, h: 0.05 };
-  } },
-  SIGIL: { f: (x, y, s) => {                          // Pelias's sigil-stone: carved rings that glow
-    const px = x / 64 - 0.5, py = y / 64 - 0.5, r = Math.hypot(px, py), a = Math.atan2(py, px);
-    if (Math.abs(r - 0.3) < 0.02 || Math.abs(r - 0.18 - 0.03 * Math.sin(a * 5)) < 0.015) return { v: 0.8, ramp: 'magic', lo: 0.4, hi: 1, e: 0.9 };
-    return { v: 0.3 + 0.3 * tfbm(x / 64, y / 64, 8, 3, s), ramp: 'ink', lo: 0.1, hi: 0.5, h: 0.08 };
   } },
   PLANK: { f: (x, y, s) => {                          // rotten planks
     const px = x / 64, py = y / 64, b = Math.floor(px * 4), l = px * 4 - b;

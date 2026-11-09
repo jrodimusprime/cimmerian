@@ -1,5 +1,5 @@
-// Golden playthrough of e1m3 through the CIM agent API (README §11).
-const EXPECTED = { tick: 5870, hash: '8bbc707f' };
+// Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
+const EXPECTED = { tick: 10012, hash: 'bb20221c' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -68,32 +68,50 @@ window.__heal = () => { for (const it of CIM.state.items) if (!it.taken && it.he
 true`);
 const O = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health)} kills=${o.kills} flags=${Object.entries(o.flags).filter(([, v]) => v).map(([k]) => k).join(',')}`;
-let o = await O('(CIM.load("e1m3"), CIM.state.weapons.sword = true, CIM.state.weapon = "sword", CIM.step({}, 1))');
-// THE MARKED WAYS (puzzle): read the foot inscription and the three-cut mark
-await O('__use(6.96, 18.2)'); await O('__route([[11.5, 18.6]])'); o = await O('__use(12.96, 17.6)'); log('marks:', brief(o));
-// THE WARREN (action)
-await O('__route([[16, 18.6], [21.5, 18.5]])');
-o = await O('__fight(["warren"], 9000, 30)'); log('warren:', brief(o));
+await ev(`
+// the well: wait for it to be still, then run at the rim and leap
+window.__leap = (x, zFrom, dir) => {
+  const T = CIM.state.tun;
+  __nav(x * C, zFrom * C, true);
+  for (let i = 0; i < 900 && !(T.gt > 1.5 && T.gt < 3.2 && T.pres === 'calm'); i++) __wait(1);
+  const yaw = dir > 0 ? Math.PI : 0, rim = (dir > 0 ? 17 : 18) * C;
+  for (let i = 0; i < 200; i++) {
+    const s = CIM.state, near = dir > 0 ? rim - s.z < 0.35 : s.z - rim < 0.35;
+    const o = CIM.step({ forward: 1, run: true, jump: near && s.onGround, yaw, pitch: 0 }, 1);
+    if (o.mode !== 'play' || (dir > 0 ? s.z > rim + 2.5 + 1.2 : s.z < rim - 2.5 - 1.2) && s.onGround) break;
+  }
+  return CIM.obs();
+};
+true`);
+let o = await O('(CIM.load("e1m3"), CIM.step({}, 1))');
+// THE WEEPING (puzzle): follow it through the forks
+await O('__use(2.04, 17)');
+o = await O('__route([[10, 17], [16, 17], [22, 17], [22, 10], [22, 4.2]])'); log('weeping:', brief(o));
+// THE WEEPING THING (combat, flight): it comes out behind you; cut through the things it drives ahead
+o = await O('__route([[27, 4], [30, 4]])');
+o = await O('__fight(["driven"], 6000, 25)'); log('flight:', brief(o));
+o = await O('__route([[39, 4], [39, 12], [39, 15.4]])'); log('well:', brief(o));
+// THE WELL (puzzle): leap it between its breaths; the presence takes the torch
+o = await O('__leap(39, 15.4, 1)'); log('leapt:', brief(o), await ev('CIM.state.torch'));
+// THE DARK (combat): driven south into the black tunnels; round to the crossing again
+o = await O('__route([[41, 24]])');
+o = await O('__fight(["dark"], 9000, 30)'); log('dark:', brief(o));
 await O('__heal()');
-// THE CROSSING (puzzle): open only the second vent, then cross the ledge
-await O('__route([[33.7, 14.9]])'); await O('__use(33.6, 14.05)');
-await O('__route([[33.7, 23.1]])'); await O('__use(33.6, 23.95)'); await O('__route([[35.3, 23.1]])'); o = await O('__use(35.6, 23.95)');
-log('vents:', JSON.stringify(await O('CIM.state.valves')), 'wind', await ev('CIM.state.wind'));
-await O('__wait(150)');
-o = await O('__route([[36.2, 18.5], [44.6, 18.5]])'); log('crossed:', brief(o));
-// THE LAIR (action): the crank is behind the weeping thing; grab it and run
-await O('__route([[50, 17.9], [55.5, 17.6]])');
-await O('__route([[57.5, 20.5], [58.4, 19.8]])'); o = await O('(__take("crank"), CIM.obs())'); log('crank:', brief(o));
-await O('__route([[58, 21.5], [58, 23.4]])');
-o = await O('__fight(["lair"], 3000, 12)');
-// THE HANGING STONE (puzzle)
-await O('__route([[54.6, 27.9]])'); o = await O('__use(54, 27)'); o = await O('__wait(200)');
-await O('__route([[53.6, 26.6]])'); o = await O('__use(53.4, 25.9, -0.2)'); o = await O('__wait(400)'); log('stone:', brief(o));
-o = await O('(__take("sigil"), CIM.obs())'); log('sigil:', brief(o));
-// THE SIGIL GATE (action): set the stone, hold them off, go through
-await O('__route([[52.5, 30], [45, 30]])'); o = await O('__use(44.1, 30)'); log('set:', brief(o));
-o = await O('__fight(["gatewave"], 9000, 30)'); log('wave:', brief(o));
-o = await O('__wait(600)');
-o = await O('__route([[42, 30], [31.5, 30]])'); log('end:', brief(o));
+o = await O('__route([[41, 27.8], [47, 27.8], [47, 15], [44.5, 15], [41, 15.2]])');
+// THE CROSSING (puzzle): the ember; go where the air comes from
+o = await O('(__take("ember"), CIM.obs())'); log('ember:', brief(o), await ev('CIM.state.torch'));
+o = await O('__leap(35, 15.4, 1)');
+o = await O('__route([[33, 21], [28, 21], [28, 26]])'); log('out:', brief(o), await ev('CIM.state.torch'), await ev('CIM.state.tun.pres'));
+// THE SIDE TUNNELS (combat)
+o = await O('__route([[28, 31]])');
+o = await O('__fight(["side"], 9000, 30)'); log('side:', brief(o));
+await O('__heal()');
+// SATHA RETURNS (puzzle): into a side tunnel, shake out the torch, keep still
+o = await O('__route([[38, 31.5], [41, 31.5], [45, 31.5], [45, 34]])');
+o = await O('CIM.step({ torch: true, yaw: 0, pitch: 0 }, 1)');
+for (let i = 0; i < 60 && !(await ev('CIM.state.flags.satha_passed')); i++) o = await O('__wait(72)');
+log('satha:', brief(o), await ev('CIM.state.torch'));
+// the cage of bars, with a garden in it
+o = await O('__route([[45, 31.5], [57, 31.5]])');
 const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
 log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED));
