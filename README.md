@@ -2,6 +2,8 @@
 
 A free, non-commercial browser game: a first-person sword-and-sorcery adaptation of Robert E. Howard's *The Scarlet Citadel* (Weird Tales, January 1933). It is built on a pure-JavaScript WebGL port of the Quake engine. Story splash screens sit between the levels, the art direction is a strict minimal palette, and every set, map, texture and character is generated from compact AI-written specs rather than hand-modelled.
 
+**Playable demo:** [`demo/`](demo/README.md) is a vertical slice of e1m2 *The Pits*, prototyped on The Endless Cave's WebGL2 engine. Open `demo/index.html` in a browser.
+
 Two design pillars:
 
 - **Deterministic.** The same seed plus the same inputs always gives the same game. An AI agent can play, learn and replay it, and every level ships with a recorded solution that runs as a test (section 11).

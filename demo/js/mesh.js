@@ -1,0 +1,363 @@
+'use strict';
+// ---------------------------------------------------------------------------
+// Geometry (from The Endless Cave engine): flat-shaded low-poly meshes.
+// Vertex = pos3 nor3 col3 layer1.
+// For world meshes `col` is baked light; for entity models it is a tint.
+// ---------------------------------------------------------------------------
+
+class MeshBuilder {
+  constructor(cap = 4096) { this.d = new Float32Array(cap * 10); this.n = 0; }
+  ensure(k) {
+    if ((this.n + k) * 10 > this.d.length) {
+      const nd = new Float32Array(Math.max(this.d.length * 2, (this.n + k) * 10));
+      nd.set(this.d); this.d = nd;
+    }
+  }
+  v(p, nx, ny, nz, col, l) {
+    const o = this.n * 10, d = this.d;
+    d[o] = p[0]; d[o + 1] = p[1]; d[o + 2] = p[2]; d[o + 3] = nx; d[o + 4] = ny; d[o + 5] = nz;
+    d[o + 6] = col[0]; d[o + 7] = col[1]; d[o + 8] = col[2]; d[o + 9] = l;
+    this.n++;
+  }
+  // triangle with a facing hint vector; the normal is flipped to agree with it
+  tri(a, b, c, layer, hx, hy, hz, col = ONE3) {
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const len = Math.hypot(nx, ny, nz);
+    if (len < 1e-9) return;
+    nx /= len; ny /= len; nz /= len;
+    this.ensure(3);
+    if (nx * hx + ny * hy + nz * hz < 0) { nx = -nx; ny = -ny; nz = -nz; this.v(a, nx, ny, nz, col, layer); this.v(c, nx, ny, nz, col, layer); this.v(b, nx, ny, nz, col, layer); }
+    else { this.v(a, nx, ny, nz, col, layer); this.v(b, nx, ny, nz, col, layer); this.v(c, nx, ny, nz, col, layer); }
+  }
+  // triangle facing away from a centre point (convex shapes)
+  triC(a, b, c, layer, ctr, col) {
+    this.tri(a, b, c, layer, (a[0] + b[0] + c[0]) / 3 - ctr[0], (a[1] + b[1] + c[1]) / 3 - ctr[1], (a[2] + b[2] + c[2]) / 3 - ctr[2], col);
+  }
+  quad(a, b, c, d, layer, hx, hy, hz, col) { this.tri(a, b, c, layer, hx, hy, hz, col); this.tri(a, c, d, layer, hx, hy, hz, col); }
+  quadC(a, b, c, d, layer, ctr, col) { this.triC(a, b, c, layer, ctr, col); this.triC(a, c, d, layer, ctr, col); }
+  finish() { return this.d.slice(0, this.n * 10); }
+}
+const ONE3 = [1, 1, 1];
+
+// ---- primitive helpers ----------------------------------------------------
+// lathe around an arbitrary axis. profile = [[radius, height], ...]
+function addLathe(mb, ox, oy, oz, profile, sides, layer, rot = 0, col = ONE3, axis = null) {
+  let ax = [0, 1, 0], u = [1, 0, 0], w = [0, 0, 1];
+  if (axis) {
+    ax = axis;
+    const ref = Math.abs(ax[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    u = norm3(cross3(ax, ref)); w = cross3(ax, u);
+  }
+  let ymin = 1e9, ymax = -1e9;
+  for (const p of profile) { ymin = Math.min(ymin, p[1]); ymax = Math.max(ymax, p[1]); }
+  const ym = (ymin + ymax) / 2;
+  const ctr = [ox + ax[0] * ym, oy + ax[1] * ym, oz + ax[2] * ym];
+  const P = (r, h, a) => {
+    const c = Math.cos(a) * r, s = Math.sin(a) * r;
+    return [ox + ax[0] * h + u[0] * c + w[0] * s, oy + ax[1] * h + u[1] * c + w[1] * s, oz + ax[2] * h + u[2] * c + w[2] * s];
+  };
+  for (let k = 0; k < profile.length - 1; k++) {
+    const [r0, h0] = profile[k], [r1, h1] = profile[k + 1];
+    for (let s = 0; s < sides; s++) {
+      const a0 = s / sides * Math.PI * 2 + rot, a1 = (s + 1) / sides * Math.PI * 2 + rot;
+      mb.quadC(P(r0, h0, a0), P(r0, h0, a1), P(r1, h1, a1), P(r1, h1, a0), layer, ctr, col);
+    }
+  }
+}
+function cross3(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function norm3(a) { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+
+function addBox(mb, cx, cy, cz, hx, hy, hz, layer, rotY = 0, col = ONE3, rotX = 0) {
+  const c = Math.cos(rotY), s = Math.sin(rotY), cx2 = Math.cos(rotX), sx2 = Math.sin(rotX);
+  const P = (x, y, z) => {
+    const y2 = y * cx2 - z * sx2, z2 = y * sx2 + z * cx2;
+    return [cx + x * c + z2 * s, cy + y2, cz - x * s + z2 * c];
+  };
+  const v = [P(-hx, -hy, -hz), P(hx, -hy, -hz), P(hx, hy, -hz), P(-hx, hy, -hz), P(-hx, -hy, hz), P(hx, -hy, hz), P(hx, hy, hz), P(-hx, hy, hz)];
+  const ctr = [cx, cy, cz];
+  const F = [[0, 1, 2, 3], [5, 4, 7, 6], [4, 0, 3, 7], [1, 5, 6, 2], [3, 2, 6, 7], [4, 5, 1, 0]];
+  for (const f of F) mb.quadC(v[f[0]], v[f[1]], v[f[2]], v[f[3]], layer, ctr, col);
+}
+
+const ICO_V = (() => {
+  const t = (1 + Math.sqrt(5)) / 2;
+  return [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]].map(norm3);
+})();
+const ICO_F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+  [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+function addRock(mb, x, y, z, sx, sy, sz, seed, layer, jitter = 0.35, col = ONE3) {
+  const v = ICO_V.map((p, i) => {
+    const k = 1 - jitter / 2 + jitter * hrand(seed, i, 7, 3);
+    return [x + p[0] * sx * k, y + p[1] * sy * k, z + p[2] * sz * k];
+  });
+  const ctr = [x, y, z];
+  for (const f of ICO_F) mb.triC(v[f[0]], v[f[1]], v[f[2]], layer, ctr, col);
+}
+function addSpike(mb, bx, by, bz, dir, len, r, sides, layer, col = ONE3) {
+  addLathe(mb, bx, by, bz, [[0, 0], [r, 0.02], [r, len * 0.72], [0, len]], sides, layer, 0.3, col, norm3(dir));
+}
+
+function addBones(mb, x, y, z, seed, big) {
+  const r = new RNG(seed);
+  const n = big ? 3 : 1;
+  for (let s = 0; s < n; s++) {
+    const ox = x + (s ? r.range(-0.6, 0.6) : 0), oz = z + (s ? r.range(-0.6, 0.6) : 0);
+    addRock(mb, ox, y + 0.12, oz, 0.16, 0.13, 0.19, seed + s, T.BONE, 0.15);
+    addBox(mb, ox + 0.04, y + 0.12, oz + 0.13, 0.04, 0.03, 0.02, T.BLACK, 0);
+  }
+  for (let k = 0; k < (big ? 14 : 4); k++) addBox(mb, x + r.range(-0.9, 0.9), y + 0.04 + (big ? r.range(0, 0.25) : 0), z + r.range(-0.9, 0.9), 0.035, 0.035, r.range(0.15, 0.32), T.BONE, r.range(0, 3), ONE3, big ? r.range(-0.3, 0.3) : 0);
+}
+
+// ---- prefabs baked into the level mesh (README: prefab library) ------------
+function addPrefab(mb, p) {
+  const n = wallIn(p.wall);
+  switch (p.prefab) {
+    case 'torch': {
+      const bx = p.x + n[0] * 0.12, bz = p.z + n[1] * 0.12, by = p.y + 2.2, yaw = Math.atan2(n[0], n[1]);
+      addBox(mb, bx, by, bz, 0.1, 0.16, 0.06, T.IRON, yaw);
+      addLathe(mb, bx + n[0] * 0.1, by - 0.1, bz + n[1] * 0.1, [[0.03, 0], [0.05, 0], [0.07, 0.55], [0.0, 0.58]], 5, T.WOOD, 0, ONE3, norm3([n[0] * 0.5, 1, n[1] * 0.5]));
+      const fx = p.x + n[0] * 0.48, fz = p.z + n[1] * 0.48, fy = by + 0.4;
+      for (let k = 0; k < 4; k++) {
+        const a = k / 4 * Math.PI * 2;
+        addSpike(mb, fx + Math.cos(a) * 0.05, fy, fz + Math.sin(a) * 0.05, [Math.cos(a) * 0.25, 1, Math.sin(a) * 0.25], 0.3 + (k % 2) * 0.2, 0.08, 4, T.FIRE);
+      }
+      break;
+    }
+    case 'brazier':
+      for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2; addBox(mb, p.x + Math.cos(a) * 0.38, p.y + 0.4, p.z + Math.sin(a) * 0.38, 0.04, 0.42, 0.04, T.IRON, -a, ONE3, 0.2); }
+      addLathe(mb, p.x, p.y + 0.75, p.z, [[0.1, 0], [0.55, 0.2], [0.62, 0.42], [0.5, 0.42], [0.0, 0.3]], 8, T.IRON);
+      for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; addRock(mb, p.x + Math.cos(a) * 0.25, p.y + 1.1, p.z + Math.sin(a) * 0.25, 0.14, 0.08, 0.14, k + 3, T.BLACK); }
+      for (let k = 0; k < 6; k++) {
+        const a = k / 6 * Math.PI * 2;
+        addSpike(mb, p.x + Math.cos(a) * 0.2, p.y + 1.05, p.z + Math.sin(a) * 0.2, [Math.cos(a) * 0.25, 1, Math.sin(a) * 0.25], 0.55 + (k % 2) * 0.4, 0.13, 4, T.FIRE);
+      }
+      break;
+    case 'table':
+      addBox(mb, p.x, p.y + 0.98, p.z, 1.0, 0.06, 0.62, T.WOOD, 0.08);
+      for (const [dx, dz] of [[-0.85, -0.5], [0.85, -0.5], [-0.85, 0.5], [0.85, 0.5]]) {
+        const c = Math.cos(0.08), s = Math.sin(0.08);
+        addBox(mb, p.x + dx * c + dz * s, p.y + 0.46, p.z - dx * s + dz * c, 0.06, 0.46, 0.06, T.WOOD, 0.08);
+      }
+      addLathe(mb, p.x - 0.4, p.y + 1.04, p.z + 0.15, [[0, 0], [0.07, 0], [0.07, 0.22], [0, 0.22]], 6, T.BONE);   // candle
+      addSpike(mb, p.x - 0.4, p.y + 1.26, p.z + 0.15, [0, 1, 0], 0.14, 0.035, 4, T.FIRE);
+      addLathe(mb, p.x + 0.3, p.y + 1.04, p.z - 0.2, [[0, 0], [0.16, 0], [0.13, 0.04], [0, 0.04]], 7, T.IRON);      // plate
+      addRock(mb, p.x + 0.3, p.y + 1.12, p.z - 0.2, 0.1, 0.06, 0.08, 4, T.STRAW);
+      break;
+    case 'stool':
+      addLathe(mb, p.x, p.y, p.z, [[0.0, 0], [0.22, 0], [0.12, 0.08], [0.12, 0.48], [0.26, 0.5], [0.26, 0.58], [0, 0.6]], 6, T.WOOD);
+      break;
+    case 'bones': addBones(mb, p.x, p.y, p.z, Math.floor(p.x * 13 + p.z * 7), p.big); break;
+    case 'skull':
+      addRock(mb, p.x, p.y + 0.17, p.z, 0.17, 0.15, 0.2, 11, T.BONE, 0.08);
+      addBox(mb, p.x, p.y + 0.06, p.z + 0.08, 0.09, 0.05, 0.08, T.BONE);
+      addBox(mb, p.x - 0.06, p.y + 0.19, p.z + 0.17, 0.04, 0.035, 0.03, T.BLACK); addBox(mb, p.x + 0.06, p.y + 0.19, p.z + 0.17, 0.04, 0.035, 0.03, T.BLACK);
+      break;
+    case 'chains': {
+      const bx = p.x + n[0] * 0.1, bz = p.z + n[1] * 0.1, yaw = Math.atan2(n[0], n[1]);
+      addBox(mb, bx, p.y + 4.2, bz, 0.12, 0.12, 0.06, T.IRON, yaw);
+      for (let k = 0; k < 10; k++) {
+        const y = p.y + 4.0 - k * 0.24;
+        addBox(mb, bx + n[0] * 0.05, y, bz + n[1] * 0.05, k % 2 ? 0.02 : 0.07, 0.11, k % 2 ? 0.07 : 0.02, T.IRON, yaw);
+      }
+      addBox(mb, bx + n[0] * 0.05, p.y + 1.5, bz + n[1] * 0.05, 0.14, 0.09, 0.14, T.IRON, yaw);   // open manacle
+      break;
+    }
+    case 'grating': {
+      const cx = (p.at[0] + 0.5) * CELL, cz = (p.at[1] + 0.5) * CELL, y = groundInfo(cx, cz).ceil - 0.3;
+      for (let k = -2; k <= 2; k++) {
+        addBox(mb, cx + k * 0.45, y, cz, 0.05, 0.05, 1.3, T.IRON);
+        addBox(mb, cx, y - 0.08, cz + k * 0.45, 1.3, 0.05, 0.05, T.IRON);
+      }
+      break;
+    }
+  }
+}
+
+// ---- the level mesh -------------------------------------------------------
+function wallStrip(mb, ca, cb, ba, bb, ta, tb, layer, hx, hz) {
+  const ROWS = 3;
+  let pA = null, pB = null;
+  for (let r = 0; r <= ROWS; r++) {
+    const t = r / ROWS, s = Math.sin(Math.PI * t);
+    const ka = s * ca.bul * (0.6 + 0.8 * hrand(ca.gx, ca.gz, r * 7, 3));
+    const kb = s * cb.bul * (0.6 + 0.8 * hrand(cb.gx, cb.gz, r * 7, 3));
+    const A = [ca.x + ca.jx * ka, ba + (ta - ba) * t, ca.z + ca.jz * ka];
+    const B = [cb.x + cb.jx * kb, bb + (tb - bb) * t, cb.z + cb.jz * kb];
+    if (pA) mb.quad(pA, pB, B, A, layer, hx, 0, hz);
+    pA = A; pB = B;
+  }
+}
+function bakeLights(mb, lights, amb) {
+  const d = mb.d;
+  for (let i = 0; i < mb.n; i++) {
+    const o = i * 10, px = d[o], py = d[o + 1], pz = d[o + 2], nx = d[o + 3], ny = d[o + 4], nz = d[o + 5];
+    let r = amb[0], g = amb[1], b = amb[2];
+    for (const L of lights) {
+      const dx = L.x - px, dy = L.y - py, dz = L.z - pz, d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > L.rad * L.rad) continue;
+      const dist = Math.sqrt(d2) || 1e-3;
+      let att = 1 - dist / L.rad; att *= att;
+      const lam = Math.max(0, (dx * nx + dy * ny + dz * nz) / dist) * 0.75 + 0.25;
+      const k = att * lam * L.i;
+      r += L.r * k; g += L.g * k; b += L.b * k;
+    }
+    d[o + 6] = r; d[o + 7] = g; d[o + 8] = b;
+  }
+}
+const AMBIENT = [0.07, 0.066, 0.06];
+const DIRS = [[0, -1, 0, 0, 1, 0], [1, 0, 1, 0, 1, 1], [0, 1, 1, 1, 0, 1], [-1, 0, 0, 1, 0, 0]];
+function buildLevelMesh() {
+  const mb = new MeshBuilder(40000), W = LV.W, H = LV.H;
+  const P = (q, y) => [q.x, y, q.z];
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const idx = j * W + i, k = LV.kind[idx];
+    if (!k) continue;
+    const fl = LV.flags[idx], tex = LV.tex[idx];
+    const c0 = corner(i, j), c1 = corner(i + 1, j), c2 = corner(i + 1, j + 1), c3 = corner(i, j + 1);
+    const fy = q => (k === 2 ? q.fp : q.fo);
+    const fLayer = k === 2 ? T.SLIME : T[tex.floor];
+    const diag = hash4(i, j, 2, 3) & 1;
+    const f0 = P(c0, fy(c0)), f1 = P(c1, fy(c1)), f2 = P(c2, fy(c2)), f3 = P(c3, fy(c3));
+    if (diag) { mb.tri(f0, f1, f2, fLayer, 0, 1, 0); mb.tri(f0, f2, f3, fLayer, 0, 1, 0); }
+    else { mb.tri(f0, f1, f3, fLayer, 0, 1, 0); mb.tri(f1, f2, f3, fLayer, 0, 1, 0); }
+    const cLayer = (fl & F_SKY) ? T.SKY : T[tex.ceil];
+    const e0 = P(c0, c0.c), e1 = P(c1, c1.c), e2 = P(c2, c2.c), e3 = P(c3, c3.c);
+    if (diag) { mb.tri(e0, e1, e2, cLayer, 0, -1, 0); mb.tri(e0, e2, e3, cLayer, 0, -1, 0); }
+    else { mb.tri(e0, e1, e3, cLayer, 0, -1, 0); mb.tri(e1, e2, e3, cLayer, 0, -1, 0); }
+    for (const d of DIRS) {
+      const nk = kindAt(i + d[0], j + d[1]);
+      const ca = corner(i + d[2], j + d[3]), cb = corner(i + d[4], j + d[5]);
+      if (nk === 0) wallStrip(mb, ca, cb, fy(ca), fy(cb), ca.c, cb.c, T[tex.wall], -d[0], -d[1]);
+      else if (k === 2 && nk === 1) mb.quad(P(ca, ca.fp), P(cb, cb.fp), P(cb, cb.fo), P(ca, ca.fo), T[tex.wall], -d[0], 0, -d[1]);
+    }
+  }
+  for (const p of LV.props) addPrefab(mb, p);
+  bakeLights(mb, LV.lights, AMBIENT);
+  return mb.finish();
+}
+
+// ---- entity models (built at the origin, +z forward, feet at y=0) ---------
+// Character proportions for the tiny humanoid rig (README §8: rigid parts
+// per bone, Quake-style chunky deformation). Units are for a 1.85 m man.
+const CHAR_DEFS = {
+  giant: { skin: T.DARKSKIN, cloth: T.CLOTH, bulk: 1.15, scale: 1.35, legs: true },
+  shukeli: { skin: T.SKIN, cloth: T.ROBE, bulk: 1.5, scale: 1.0, legs: false, robe: true },
+};
+function buildPart(def, part) {
+  const mb = new MeshBuilder(256), b = def.bulk, sk = def.skin, cl = def.cloth;
+  switch (part) {
+    case 'torso':
+      if (def.robe) {
+        addLathe(mb, 0, 0, 0, [[0, 0.02], [0.42 * b * 0.8, 0.02], [0.36 * b * 0.8, 0.5], [0.3 * b, 0.95], [0.26 * b, 1.25], [0.2 * b, 1.48], [0, 1.5]], 8, cl);
+        addRock(mb, 0, 1.08, 0.1, 0.27 * b, 0.25, 0.22 * b, 21, cl, 0.06);          // belly
+        addBox(mb, 0, 1.0, 0, 0.29 * b, 0.05, 0.22 * b, T.IRON);                       // belt
+      } else {
+        addBox(mb, 0, 0.95, 0, 0.19 * b, 0.11, 0.12 * b, cl);                          // loincloth
+        addBox(mb, 0, 0.9, 0.12 * b, 0.1, 0.13, 0.01, cl);
+        addBox(mb, 0, 1.2, 0, 0.18 * b, 0.16, 0.12 * b, sk);                           // belly
+        addBox(mb, 0, 1.43, 0, 0.25 * b, 0.12, 0.14 * b, sk);                          // chest
+      }
+      break;
+    case 'head':
+      addLathe(mb, 0, 1.53, 0, [[0, 0], [0.06, 0], [0.06, 0.08], [0, 0.08]], 5, sk);
+      addRock(mb, 0, 1.7, 0.01, 0.12, 0.14, 0.13, def.robe ? 3 : 8, sk, 0.08);
+      addBox(mb, -0.045, 1.72, 0.12, 0.025, 0.012, 0.01, def.robe ? T.BLACK : T.BONE);
+      addBox(mb, 0.045, 1.72, 0.12, 0.025, 0.012, 0.01, def.robe ? T.BLACK : T.BONE);
+      addBox(mb, 0, 1.63, 0.12, 0.04, 0.01, 0.01, T.BLACK);
+      if (def.robe) addRock(mb, 0, 1.6, 0.06, 0.12, 0.06, 0.1, 5, sk, 0.05);          // jowls
+      break;
+    case 'uarm': addBox(mb, 0, -0.15, 0, 0.055 * b, 0.16, 0.055 * b, def.robe ? cl : sk); break;
+    case 'farm':
+      addBox(mb, 0, -0.14, 0, 0.05 * b, 0.15, 0.05 * b, sk);
+      addBox(mb, 0, -0.33, 0.01, 0.045 * b, 0.06, 0.035 * b, sk);
+      break;
+    case 'thigh': addBox(mb, 0, -0.22, 0, 0.075 * b, 0.23, 0.075 * b, sk); break;
+    case 'shin':
+      addBox(mb, 0, -0.21, 0, 0.06 * b, 0.22, 0.06 * b, sk);
+      addBox(mb, 0, -0.43, 0.06, 0.055 * b, 0.04, 0.11, sk);
+      break;
+    case 'keys': buildKeys(mb, 0.6); break;
+  }
+  return mb.finish();
+}
+function buildKeys(mb, s) {
+  for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; addBox(mb, Math.cos(a) * 0.08 * s, 0.1 * s + Math.sin(a) * 0.08 * s, 0, 0.025 * s, 0.025 * s, 0.012 * s, T.IRON, 0, ONE3, 0); }
+  for (let k = 0; k < 3; k++) {
+    const a = -0.5 + k * 0.5, x = Math.sin(a) * 0.2 * s, y = 0.1 * s - Math.cos(a) * 0.2 * s;
+    addBox(mb, x, y, 0, 0.018 * s, 0.13 * s, 0.01 * s, T.IRON, 0, ONE3, 0);
+    addBox(mb, x + 0.03 * s, y - 0.1 * s, 0, 0.03 * s, 0.025 * s, 0.01 * s, T.IRON);
+  }
+}
+function buildModel(name) {
+  const mb = new MeshBuilder(512);
+  if (name.startsWith('part:')) { const [, d, p] = name.split(':'); return buildPart(CHAR_DEFS[d], p); }
+  if (name.startsWith('bars:')) {
+    // a run of iron bars along +x, from 0 to len, base at y=0
+    const [, len, h] = name.split(':').map(Number);
+    for (let x = 0.15; x < len; x += 0.3) addBox(mb, x, h / 2, 0, 0.035, h / 2, 0.035, T.IRON);
+    for (const y of [0.15, h * 0.42, h - 0.12]) addBox(mb, len / 2, y, 0, len / 2, 0.05, 0.06, T.IRON);
+    return mb.finish();
+  }
+  switch (name) {
+    case 'satha_head': {
+      addRock(mb, 0, 0.5, 0.35, 0.72, 0.42, 1.05, 31, T.SCALES, 0.1);                 // skull plate
+      addRock(mb, 0, 0.22, 0.3, 0.6, 0.22, 0.95, 33, T.BELLY, 0.1);                   // jaw
+      addRock(mb, 0, 0.42, -0.45, 0.62, 0.48, 0.6, 35, T.SCALES, 0.12);               // neck
+      for (const sx of [-1, 1]) {
+        addBox(mb, sx * 0.48, 0.72, 0.62, 0.12, 0.07, 0.12, T.EYE, sx * 0.4);         // eyes (fire, fullbright)
+        addBox(mb, sx * 0.5, 0.8, 0.6, 0.18, 0.04, 0.2, T.SCALES, sx * 0.4);          // brow ridge
+        addSpike(mb, sx * 0.3, 0.32, 1.12, [0, -1, 0.15], 0.3, 0.05, 4, T.BONE);      // fangs
+        addBox(mb, sx * 0.18, 0.58, 1.33, 0.05, 0.04, 0.03, T.BLACK);                 // nostrils
+      }
+      addBox(mb, 0, 0.3, 1.2, 0.4, 0.03, 0.15, T.BLACK);                              // mouth line
+      break;
+    }
+    case 'satha_seg':
+      addLathe(mb, 0, 0, 0, [[0.5, -0.8], [0.82, -0.45], [0.86, 0.1], [0.78, 0.6], [0.55, 0.85]], 7, T.SCALES, 0.2, ONE3, [0, 0, 1]);
+      addBox(mb, 0, -0.72, 0, 0.42, 0.08, 0.7, T.BELLY);
+      break;
+    case 'satha_tail':
+      addLathe(mb, 0, 0, 0, [[0.6, 0.6], [0.6, 0.3], [0.4, -0.8], [0.18, -1.9], [0, -2.6]], 6, T.SCALES, 0.2, ONE3, [0, 0, 1]);
+      break;
+    case 'ring':
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; addBox(mb, Math.cos(a) * 0.16, Math.sin(a) * 0.16, 0, 0.035, 0.055, 0.035, T.IRON, 0, ONE3, 0); }
+      addBox(mb, 0, 0.18, -0.06, 0.07, 0.05, 0.08, T.IRON);
+      break;
+    case 'link':
+      addBox(mb, -0.05, 0, 0, 0.018, 0.018, 0.1, T.IRON); addBox(mb, 0.05, 0, 0, 0.018, 0.018, 0.1, T.IRON);
+      addBox(mb, 0, 0, 0.09, 0.06, 0.018, 0.018, T.IRON); addBox(mb, 0, 0, -0.09, 0.06, 0.018, 0.018, T.IRON);
+      break;
+    case 'dagger':
+      addBox(mb, 0, 0.07, 0, 0.022, 0.07, 0.022, T.WOOD);
+      addBox(mb, 0, 0.15, 0, 0.07, 0.015, 0.025, T.IRON);
+      addLathe(mb, 0, 0.16, 0, [[0.04, 0], [0.035, 0.18], [0, 0.32]], 4, T.BONE, Math.PI / 4);
+      break;
+    case 'bone':
+      addLathe(mb, 0, 0, 0, [[0, -0.3], [0.05, -0.29], [0.03, -0.22], [0.025, 0.22], [0.05, 0.28], [0, 0.3]], 5, T.BONE, 0, ONE3, [0, 0, 1]);
+      addRock(mb, 0.03, 0, 0.29, 0.05, 0.04, 0.04, 2, T.BONE); addRock(mb, -0.03, 0, -0.29, 0.05, 0.04, 0.04, 3, T.BONE);
+      break;
+    case 'keys': buildKeys(mb, 1); break;
+    case 'bread': addRock(mb, 0, 0.09, 0, 0.17, 0.09, 0.12, 6, T.STRAW, 0.25); break;
+    case 'wine':
+      addRock(mb, 0, 0.14, 0, 0.17, 0.13, 0.22, 9, T.CLOTH, 0.15);
+      addLathe(mb, 0, 0.12, 0.2, [[0.04, 0], [0.03, 0.12], [0, 0.13]], 5, T.CLOTH, 0, ONE3, [0, 0.5, 1]);
+      break;
+    case 'jug':
+      addLathe(mb, 0, 0, 0, [[0, 0], [0.09, 0], [0.13, 0.1], [0.11, 0.2], [0.05, 0.27], [0.06, 0.31], [0, 0.31]], 7, T.WOOD);
+      break;
+    case 'venom': addRock(mb, 0, 0, 0, 0.16, 0.16, 0.22, 2, T.VENOM, 0.3); break;
+    case 'puddle': addLathe(mb, 0, 0.02, 0, [[0, 0], [1.0, 0], [0.8, 0.04], [0, 0.05]], 9, T.VENOM); break;
+    case 'puff': addRock(mb, 0, 0, 0, 0.1, 0.1, 0.1, 2, T.BLACK, 0.3); break;
+    case 'drop': addRock(mb, 0, 0, 0, 0.05, 0.05, 0.05, 4, T.DARKSKIN, 0.3); break;
+    // first-person view-model: the hero's right forearm, still manacled
+    case 'vm_arm':
+      addLathe(mb, 0, 0, 0.02, [[0.045, 0], [0.055, 0.18], [0.065, 0.42]], 6, T.SKIN, 0, ONE3, [0, 0, 1]);   // forearm
+      addLathe(mb, 0, 0, 0.06, [[0.07, 0], [0.074, 0.03], [0.074, 0.08], [0.07, 0.11]], 6, T.IRON, 0, ONE3, [0, 0, 1]);   // manacle
+      addRock(mb, 0, 0.005, -0.03, 0.055, 0.05, 0.06, 13, T.SKIN, 0.15);   // fist
+      addBox(mb, 0, 0.075, 0.12, 0.02, 0.012, 0.035, T.IRON);         // broken link
+      break;
+    default: addBox(mb, 0, 0.1, 0, 0.1, 0.1, 0.1, T.BONE);
+  }
+  return mb.finish();
+}
