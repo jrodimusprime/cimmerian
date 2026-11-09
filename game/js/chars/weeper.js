@@ -24,19 +24,19 @@ function buildWeeperPart(part) {
   }
   return mb.finish();
 }
-function drawWeeper(f) {
-  const l = sampleLight(f.x, f.y + 1, f.z), t = gameTime + f.homeX;
+function drawWeeper(f, lightOverride) {
+  const l = lightOverride || sampleLight(f.x, f.y + 1, f.z), t = gameTime + f.homeX;
   // it quakes: the whole mass wobbles on a few slow, unrelated waves
   const wob = (a, b) => 1 + 0.08 * Math.sin(t * a) + 0.05 * Math.sin(t * b + 1.3);
   const root = m4mul(m4trs(f.x, f.y, f.z, f.yaw, 0, 0, 1), m4s3(wob(2.1, 5.3), wob(1.7, 4.1) * (f.state === 'windup' ? 1.2 : 1), wob(2.6, 3.7)));
   R.key = l.d;
   R.blend(true);
-  R.drawEntity(getModel('weeper:body'), root, l, 0.15, 0.82);
+  drawPart('weeper_body', 'weeper:body', root, l, 0.15, 0.82);
   R.blend(false);
   for (let k = 0; k < 7; k++) {
     const a = k / 7 * Math.PI * 2, sway = Math.sin(t * 2.3 + k) * 0.5 + (f.moving ? Math.sin(f.walk * 3 + k) * 0.4 : 0);
-    drawM('weeper:tentacle', m4mul(root, m4trs(Math.sin(a) * 1.2, 0.35, Math.cos(a) * 1.0, a, 0.3 + sway * 0.3, sway * 0.4, 1.2)), l, 0.1);
+    drawPart('weeper_tentacle', 'weeper:tentacle', m4mul(root, m4trs(Math.sin(a) * 1.2, 0.35, Math.cos(a) * 1.0, a, 0.3 + sway * 0.3, sway * 0.4, 1.2)), l, 0.1);
   }
   const lunge = f.state === 'windup' ? 0.3 : f.state === 'strike' ? 0.6 : 0;
-  drawM('weeper:head', m4mul(root, m4trs(0, 1.55 + Math.sin(t * 1.9) * 0.08, 0.7 + lunge, 0, -0.2 - lunge * 0.4, Math.sin(t * 0.9) * 0.15, 1.1)), l, 0.05);
+  drawPart('weeper_head', 'weeper:head', m4mul(root, m4trs(0, 1.55 + Math.sin(t * 1.9) * 0.08, 0.7 + lunge, 0, -0.2 - lunge * 0.4, Math.sin(t * 0.9) * 0.15, 1.1)), l, 0.05);
 }

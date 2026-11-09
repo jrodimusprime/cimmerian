@@ -1148,6 +1148,7 @@ function startPlay(agent) {
 // load a level; `carry` brings the hero's state across (health, weapons, tally)
 function loadLevel(id, carry) {
   LEVEL = LEVELS[id];
+  if (R && typeof loadCastModels === 'function') loadCastModels(levelCast(LEVEL));   // in the background: the old rig stands in until they arrive
   buildLevel(LEVEL);
   if (entitySpec('scripted_satha') || LEVEL.satha) buildSathaPath();
   if (levelMesh) R.deleteMesh(levelMesh);
@@ -1350,7 +1351,7 @@ function render(alpha) {
           const x = hx * CELL, z = hz * CELL;
           if (Math.hypot(x - S.x, z - S.z) > 110) continue;
           const y = groundInfo(x, z).floor, P = poseIdle({}, gameTime * 0.7 + hz);
-          drawCharacter('spearman', x, y, z, -Math.PI / 2 + Math.sin(hz * 3.1) * 0.15, Object.assign(P, { we: 1.35 }), sampleLight(x, y + 1.5, z));
+          drawCharacter('pikeman', x, y, z, -Math.PI / 2 + Math.sin(hz * 3.1) * 0.15, Object.assign(P, { we: 1.35 }), sampleLight(x, y + 1.5, z));   // "giants in their steel caps and mail brigandines"
         }
       });
     }
@@ -1384,7 +1385,7 @@ function render(alpha) {
       const wx = (W.x[0] + W.x[1]) / 2 * CELL, wz = (W.row + 0.5) * CELL, pl = [0.55, 0.62, 0.68];
       pl.d = [0, 1, 0];
       R.blend(true);
-      for (let k = 0; k < 3; k++) drawM('presence', m4mul(m4trs(wx + Math.sin(gameTime * 0.7 + k * 2.1) * 1.3, -1.5 + (T.pres === 'up' ? 0 : -2) + Math.sin(gameTime * 1.3 + k * 2) * 0.4, wz + Math.cos(gameTime * 0.5 + k) * 0.5, gameTime * (0.3 + k * 0.2) + k * 2, 0.08 * Math.sin(gameTime * 0.9 + k), 0.06 * Math.cos(gameTime * 1.1 + k), 1), m4s3(0.7 + 0.25 * k, 1 + 0.1 * Math.sin(gameTime * 2 + k), 0.7 + 0.25 * k)), pl, 0.25, a * (0.5 + 0.25 * Math.sin(gameTime * 5 + k * 1.7)));
+      for (let k = 0; k < 3; k++) drawPart('presence', 'presence', m4mul(m4trs(wx + Math.sin(gameTime * 0.7 + k * 2.1) * 1.3, -1.5 + (T.pres === 'up' ? 0 : -2) + Math.sin(gameTime * 1.3 + k * 2) * 0.4, wz + Math.cos(gameTime * 0.5 + k) * 0.5, gameTime * (0.3 + k * 0.2) + k * 2, 0.08 * Math.sin(gameTime * 0.9 + k), 0.06 * Math.cos(gameTime * 1.1 + k), 1), m4s3(0.7 + 0.25 * k, 1 + 0.1 * Math.sin(gameTime * 2 + k), 0.7 + 0.25 * k)), pl, 0.25, a * (0.5 + 0.25 * Math.sin(gameTime * 5 + k * 1.7)));
       R.blend(false);
     }
     const gr = LV.rooms.find(r => r.id === 'garden');
@@ -1408,12 +1409,12 @@ function render(alpha) {
       const fa = [ahead[0], h[1], ahead[2]], fb = behind;
       const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
       const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
-      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, 0.82);
+      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.0 : 0.82);   // the built head is sized to her neck
       const hl = sampleLight(h[0], h[1] + 1, h[2]);
       if (h[1] > -10) {
         const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
-        drawM('satha_head_uv', hm, hl, 0.03); drawM('satha_jaw_uv', jm, hl, 0.03);
+        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.03); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.03);
       }
       if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS, fw = norm3([hm[8], hm[9], hm[10]]);
@@ -1477,8 +1478,9 @@ function render(alpha) {
     const arm = [0.62, -0.5, 0.6], ad = arm[0] * X[0] + arm[1] * X[1] + arm[2] * X[2];
     const Z = norm3([arm[0] - X[0] * ad, arm[1] - X[1] * ad, arm[2] - X[2] * ad]), Y = cross3(Z, X);
     const hand = new Float32Array([X[0], X[1], X[2], 0, Y[0], Y[1], Y[2], 0, Z[0], Z[1], Z[2], 0, pos[0], pos[1], pos[2], 1]);
-    drawM('vm_forearm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl);
-    drawM('vm_hand_grip', hand, vl);       // empty-handed, he makes a fist
+    // his own forearm and fist (the CC0 body, his baked skin), else the old modelled ones
+    if (typeof SKINNED !== 'undefined' && SKINNED.vm_arm) { drawStatic('vm_arm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); }
+    else { drawM('vm_forearm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); drawM('vm_hand_grip', hand, vl); }
     if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
     else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
     else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
@@ -1489,7 +1491,7 @@ function render(alpha) {
       const handR = new Float32Array([TX[0], TX[1], TX[2], 0, TY[0], TY[1], TY[2], 0, TZ[0], TZ[1], TZ[2], 0, tpos[0], tpos[1], tpos[2], 1]);
       const handL = m4mul(m4s3(-1, 1, 1), handR), tl = [0.85, 0.55, 0.3];
       tl.d = [0.2, 1, 0.3];
-      drawM('vm_forearm', handL, tl); drawM('vm_hand_grip', handL, tl);
+      if (typeof SKINNED !== 'undefined' && SKINNED.vm_arm) drawStatic('vm_arm', handL, tl); else { drawM('vm_forearm', handL, tl); drawM('vm_hand_grip', handL, tl); }
       const torch = m4mul(handL, m4trs(0.0, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.5));
       drawM('vm_torch', torch, tl);
       // the flame: three nested tongues, each flickering on its own, leaning with the draft
@@ -1589,6 +1591,18 @@ document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement !== canvas && mode === 'play' && !agentInput) showPause();
 });
 
+// ---------------------------------------------------------------- the cast's built models
+const W_MODELS = ['vm_arm', 'w_sword', 'w_greatsword', 'w_dagger', 'w_axe', 'w_spear', 'w_pike', 'w_bow'];
+const ALL_MODELS = Object.keys(CAST).concat(['horse', 'steed', 'weeper_body', 'weeper_tentacle', 'weeper_head', 'yothga_stem', 'yothga_tendril', 'yothga_bloom', 'eagle_body', 'eagle_wing', 'satha_head', 'satha_jaw', 'presence'], W_MODELS);
+// only what this level puts on screen
+function levelCast(L) {
+  const ids = new Set(W_MODELS.concat(L.satha || L.entities.some(e => e.class === 'scripted_satha') ? ['satha_head', 'satha_jaw'] : [])), map = { black_giant: ['giant'], monster_shukeli: ['shukeli'], thing: ['thing', 'thing_b', 'thing_c'], weeper: ['weeper_body', 'weeper_tentacle', 'weeper_head', 'presence'] };
+  for (const e of L.entities) for (const id of (map[e.class] || (CAST[e.class] ? [e.class] : []))) ids.add(id);
+  if (L.kings) { for (const r of L.kings.riders) ids.add(r[2]); ids.add('tsotha'); ids.add('horse'); ids.add('oknight'); }
+  if (L.host) ids.add('pikeman');
+  return [...ids];
+}
+
 // ---------------------------------------------------------------- boot
 function boot() {
   try { R = new Renderer(canvas); }
@@ -1600,6 +1614,7 @@ function boot() {
     R.uploadTextures(generateTextures());
     R.setPalette(gamePalette());
     const q = new URLSearchParams(location.search);
+    if (q.has('cast')) loadCastModels(ALL_MODELS).then(() => galleryShow(galleryIdx));
     loadLevel(LEVELS[q.get('level')] ? q.get('level') : 'e1m2');
     lastFrame = performance.now();
     requestAnimationFrame(frame);

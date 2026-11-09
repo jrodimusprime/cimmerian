@@ -54,16 +54,22 @@ function leaf(mb, at, dir, len) {
 }
 // Yothga at rest, or reared to strike (rear 0..1): tendrils arch out, the blooms lift and spread
 function drawYothga(x, y, z, yaw, t, rear, light) {
+  // "a thick vine which seemed to grow through the solid stone of the floor": a squat knotted stem, its
+  // tendrils drooping and creeping over the stone; when it rears, they lift "like the hood of a cobra"
   const root = m4trs(x, y, z, yaw, 0, 0, 1.25);
-  drawM('yothga:stem', root, light, 0.05);
-  const crown = m4mul(root, m4t(0, 1.35, -0.05));
-  for (let k = 0; k < 7; k++) {
-    const a = k / 7 * Math.PI * 2 + 0.3, sw = Math.sin(t * (1.1 + k * 0.17) + k) * 0.18;
-    const lift = -0.9 + rear * 0.7 + (k % 2) * 0.3, len = 0.6 + 0.12 * (k % 3);
+  drawPart('yothga_stem', 'yothga:stem', m4mul(root, m4s3(1.15, 0.62, 1.15)), light, 0.05);
+  const crown = m4mul(root, m4t(0, 0.82, -0.03));
+  for (let k = 0; k < 9; k++) {
+    const a = k / 9 * Math.PI * 2 + 0.3, sw = Math.sin(t * (1.1 + k * 0.17) + k) * 0.16;
+    const lift = 0.4 - rear * 1.15 + (k % 2) * 0.18, len = 0.8 + 0.18 * (k % 3);
     const tm = m4mul(crown, m4mul(m4ry(a + sw), m4mul(m4rx(lift), m4s3(1, 1, len))));
-    drawM('yothga:tendril', tm, light, 0.05);
+    drawPart('yothga_tendril', 'yothga:tendril', tm, light, 0.05);
     const tip = m4mul(crown, m4mul(m4ry(a + sw), m4mul(m4rx(lift), m4t(0, 0.05, 1.62 * len))));
-    drawM('yothga:bloom', m4mul(tip, m4mul(m4rx(-lift - 0.6 + rear * 0.5 + sw), m4s3(0.8, 0.8, 0.8))), light, 0.25);
+    if (k % 3 !== 2) drawPart('yothga_bloom', 'yothga:bloom', m4mul(tip, m4mul(m4rx(-lift - 0.4 + rear * 0.5 + sw), m4s3(0.85, 0.85, 0.85))), light, 0.25);
   }
-  drawM('yothga:bloom', m4mul(crown, m4mul(m4t(0, 0.12, 0.08), m4mul(m4rx(-0.5 + rear * 0.5), m4s3(1.4, 1.4, 1.4)))), light, 0.3);   // the great blossom
+  for (let k = 0; k < 7; k++) {                       // creepers over the floor, gripping the stone
+    const a = k / 7 * Math.PI * 2 + 0.7, sw = Math.sin(t * 0.6 + k * 1.7) * 0.08;
+    drawPart('yothga_tendril', 'yothga:tendril', m4mul(root, m4mul(m4t(0, 0.06, 0), m4mul(m4ry(a + sw), m4mul(m4rx(0.04), m4s3(1.1, 0.7, 1.15 + 0.2 * (k % 2)))))), light, 0.05);
+  }
+  drawPart('yothga_bloom', 'yothga:bloom', m4mul(crown, m4mul(m4t(0, 0.14, 0.1), m4mul(m4rx(-0.4 + rear * 0.6), m4s3(1.6, 1.6, 1.6)))), light, 0.3);   // the great blossom
 }

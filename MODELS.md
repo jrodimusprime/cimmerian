@@ -1,5 +1,7 @@
 # MODELS.md: hero and creature models
 
+> **The web build today.** The playable game (`game/`) no longer uses the part-built models this document budgets for. Its cast is real CC0 human bodies from MakeHuman (MPFB) in Blender-built armour, plus Blender-built beasts and weapons, exported as skinned `.glb` (`game/models/cast/`, built by [`tools/blender/`](tools/blender/README.md)), at roughly 12–35k triangles a figure. The tiers and rigs below remain the plan for a Quake `.mdl` port, which would need the same models decimated to these budgets.
+
 This is every model the game needs, with its rig (bones), triangle budget, skin size and animation frames. `tools/mdlgen.js` builds each one from a `chars/<id>.yaml` spec (see README §8) and **fails the build if a model exceeds its triangle or vertex cap**.
 
 ---

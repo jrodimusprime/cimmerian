@@ -52,6 +52,8 @@ window.GALLERY_ON = false;
 
 function startGallery(want) {
   window.GALLERY_ON = true;
+  R.resize(innerWidth, innerHeight, 720);                // judged at a high line count; the game itself runs lower
+  onResize = () => R.resize(innerWidth, innerHeight, 720);
   for (const el of document.querySelectorAll('body > *:not(canvas)')) el.style.display = 'none';
   galleryLabel = document.createElement('div');
   galleryLabel.style.cssText = 'position:fixed;left:0;right:0;top:0;padding:14px 20px;font:15px/1.35 Georgia,serif;color:#e8dcc0;background:linear-gradient(#000c,#0000);pointer-events:none;';
@@ -68,6 +70,7 @@ function galleryShow(i) {
   const [id, name, lv, q] = GALLERY_LIST[galleryIdx];
   galleryLabel.innerHTML = `<div style="font-size:22px;letter-spacing:2px;color:#d8a24a">${name.toUpperCase()}</div>` +
     `<div style="opacity:.85"><i>"${q}"</i> &nbsp;·&nbsp; ${lv} &nbsp;·&nbsp; ${galleryIdx + 1}/${GALLERY_LIST.length}</div>` +
+    `<div style="opacity:.6;font-size:12px;margin-top:2px">${CAST[id] && !CAST[id].pit && !CAST[id].ape ? 'CC0 MakeHuman body, skin, eyes and hair; armour and dress built in Blender (tools/blender)' : id.startsWith('@') ? 'built in Blender (tools/blender)' : 'CC0 MakeHuman body, reshaped; built in Blender (tools/blender)'}</div>` +
     `<div style="position:fixed;bottom:12px;left:0;right:0;display:flex;justify-content:space-around;opacity:.7;font-size:13px;letter-spacing:3px"><span>FRONT</span><span>PROFILE</span></div>`;
   return id;
 }
@@ -75,7 +78,11 @@ window.galleryShow = galleryShow;
 
 // how big each subject is, for framing: [height to frame, eye height]
 function gallerySize(id) {
-  if (id === '@horse' || id === '@steed') return [3.0, 1.4];
+  if (new URLSearchParams(location.search).has('face') && SKINNED[id] && SKINNED[id].byName.head !== undefined && !(CAST[id].pit !== undefined || CAST[id].ape)) {   // ?cast&face: the head, close
+    const hb = SKINNED[id].bones[SKINNED[id].byName.head].rest, k = SKIN_SCALE[id] || 1;
+    return [0.42, (hb[1] + 0.03) * k];
+  }
+  if (id === '@horse' || id === '@steed') return [3.9, 1.4];
   if (id === '@yothga') return [3.6, 1.3];
   if (id === '@weeper') return [6.5, 1.6];
   if (id === '@eagle') return [5.5, 0.9];
@@ -88,7 +95,7 @@ function gallerySize(id) {
 function galleryPose(id, t) {
   const c = CAST[id], P = poseIdle({}, t);
   if (c.pit !== undefined) return poseCrawl(P, 0, 0.1, t);
-  if (c.ape) return Object.assign(poseMenace(P, t), { lean: 0.35, headX: -0.3, uxL: -0.3, uxR: -0.3, fxL: -0.5, fxR: -0.5, uzL: 0.35, uzR: 0.35 });
+  if (c.ape) return Object.assign(poseMenace(P, t), { lean: 0.75, headX: -0.65, uxL: -0.75, uxR: -0.75, fxL: -0.3, fxR: -0.3, uzL: 0.3, uzR: 0.3, txL: -0.6, txR: -0.5, sxL: 0.9, sxR: 0.8, drop: -0.2 });
   if (!c.weapon) return P;
   if (c.weapon !== 'bow') poseMenace(P, t);
   if (c.shield) { P.uxL = -0.35; P.fxL = -1.25; P.uzL = 0.25; }
@@ -103,11 +110,11 @@ function drawGallerySubject(id, t, light) {
   if (id === '@steed') return drawHorse(0, 0, 0, 0, 0, light, false, true);
   if (id === '@yothga') return drawYothga(0, 0, 0, 0, t, 0.6, light);
   if (id === '@eagle') return drawEagle(0, 0.9, 0, 0, t, light);
-  if (id === '@weeper') return drawWeeper({ x: 0, y: 0, z: 0, yaw: 0, homeX: 0, state: 'idle', moving: false, walk: 0 });
-  if (id === '@satha_head') { const hm = m4trs(0, 0.3, 0, 0, 0, 0, 0.82); drawM('satha_head_uv', hm, light, 0.03); drawM('satha_jaw_uv', m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(0.45), m4t(0, 0.1, 0.3)))), light, 0.03); return; }
+  if (id === '@weeper') return drawWeeper({ x: 0, y: 0, z: 0, yaw: 0, homeX: 0, state: 'idle', moving: false, walk: 0 }, light);
+  if (id === '@satha_head') { const hm = m4trs(0, 0.3, 0, 0, 0, 0, 0.82); drawPart('satha_head', 'satha_head_uv', hm, light, 0.03); drawPart('satha_jaw', 'satha_jaw_uv', m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(0.45), m4t(0, 0.1, 0.3)))), light, 0.03); return; }
   if (id === '@presence') {
     R.blend(true);
-    for (let k = 0; k < 3; k++) drawM('presence', m4mul(m4trs(Math.sin(t * 0.7 + k * 2.1) * 0.6, 0, Math.cos(t * 0.5 + k) * 0.3, t * (0.3 + k * 0.2) + k * 2, 0, 0, 1), m4s3(0.7 + 0.25 * k, 1, 0.7 + 0.25 * k)), light, 0.25, 0.5 + 0.25 * Math.sin(t * 5 + k * 1.7));
+    for (let k = 0; k < 3; k++) drawPart('presence', 'presence', m4mul(m4trs(Math.sin(t * 0.7 + k * 2.1) * 0.6, 0, Math.cos(t * 0.5 + k) * 0.3, t * (0.3 + k * 0.2) + k * 2, 0, 0, 1), m4s3(0.7 + 0.25 * k, 1, 0.7 + 0.25 * k)), light, 0.25, 0.5 + 0.25 * Math.sin(t * 5 + k * 1.7));
     R.blend(false);
     return;
   }
@@ -123,7 +130,7 @@ function renderGallery(dt) {
   }
   const id = GALLERY_LIST[galleryIdx][0], [h, eye] = gallerySize(id), t = gameTime;
   const gl = R.gl, half = Math.floor(R.lw / 2), aspect = half / R.lh;
-  const light = [0.58, 0.5, 0.42]; light.d = norm3([0.45, 0.8, 0.55]);
+  const light = [0.7, 0.66, 0.6]; light.d = norm3([0.45, 0.8, 0.55]);
   R.beginScene(t);
   R.lightMul(1);
   for (const [vx, cyaw] of [[0, 0], [half, Math.PI / 2]]) {
@@ -131,7 +138,7 @@ function renderGallery(dt) {
     const d = h * 1.25 / Math.tan(30 * Math.PI / 180) * 0.6 + 0.6, cx = Math.sin(cyaw) * d, cz = Math.cos(cyaw) * d;
     const proj = m4persp(50 * Math.PI / 180, aspect, 0.05, 60);
     const view = m4mul(m4rx(0.04), m4mul(m4ry(-cyaw), m4t(-cx, -eye, -cz)));
-    R.setCamera(m4mul(proj, view), [cx, eye, cz], [cx * 0.7 + 1.2, eye + 1.5, cz * 0.7 + 1.2], [0.22, 0.19, 0.16], 12, 0.01);
+    R.setCamera(m4mul(proj, view), [cx, eye, cz], [cx * 0.7 + 1.2, eye + 1.5, cz * 0.7 + 1.2], [0.34, 0.32, 0.3].map(v => v * (new URLSearchParams(location.search).has('face') ? 0.35 : 1)), 14, 0.01);
     const bl = [0.2, 0.17, 0.14]; bl.d = [0, 1, 0];
     R.key = bl.d; R.drawEntity(galleryBackdrop, m4t(0, 0, 0), bl, 0, 1, false);
     drawGallerySubject(id, t, light);

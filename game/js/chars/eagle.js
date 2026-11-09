@@ -33,8 +33,8 @@ function buildEaglePart(part) {
 }
 function drawEagle(x, y, z, yaw, t, light) {
   const root = m4trs(x, y, z, yaw, 0.1, 0, 1.3);
-  drawM('eagle:body', root, light);
+  drawPart('eagle_body', 'eagle:body', root, light);
   const flap = Math.sin(t * 3) * 0.35;
-  drawM('eagle:wing', m4mul(root, m4mul(m4t(0.15, 0.05, 0.05), m4rz(flap))), light);
-  drawM('eagle:wing', m4mul(root, m4mul(m4t(-0.15, 0.05, 0.05), m4mul(m4s3(-1, 1, 1), m4rz(flap)))), light);
+  drawPart('eagle_wing', 'eagle:wing', m4mul(root, m4mul(m4t(0.15, 0.05, 0.05), m4rz(flap))), light);
+  drawPart('eagle_wing', 'eagle:wing', m4mul(root, m4mul(m4t(-0.15, 0.05, 0.05), m4mul(m4s3(-1, 1, 1), m4rz(flap)))), light);
 }

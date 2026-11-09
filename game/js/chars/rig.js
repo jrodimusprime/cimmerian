@@ -19,6 +19,7 @@ const DOWN = [0, -1, 0];
 // ---- posing and drawing ------------------------------------------------------
 // A pose is a bag of joint angles; anything missing is zero.
 function drawCharacter(id, x, y, z, yaw, P, light, glow = 0) {
+  if (typeof SKINNED !== 'undefined' && SKINNED[id]) return drawSkinned(id, x, y, z, yaw, P, light, glow);   // the built mesh, once loaded
   const c = CAST[id], b = c.bulk, M = (part, m) => drawM('char:' + id + ':' + part, m, light, glow);
   const root = m4trs(x, y + (P.drop || 0), z, yaw, P.pitch || 0, P.roll || 0, c.scale);
   const hips = m4mul(root, m4mul(m4t(0, RIG.hipY, 0), m4rx(P.hip || 0)));
@@ -75,7 +76,7 @@ function poseMenace(P, t) {
 // the crawler goes on all fours: spine flat, head craned up, long arms planted ahead
 function poseCrawl(P, ph, amt, t) {
   const s = Math.sin(ph) * amt;
-  Object.assign(P, { lean: 1.2, headX: -1.0 + Math.sin(t * 3) * 0.08, drop: -0.42, uxL: 0.55 + s * 0.45, uxR: 0.55 - s * 0.45, fxL: -0.35, fxR: -0.35, uzL: 0.18, uzR: 0.18,
+  Object.assign(P, { lean: 1.2, headX: -1.0 + Math.sin(t * 3) * 0.08, drop: -0.42, uxL: -0.85 + s * 0.45, uxR: -0.85 - s * 0.45, fxL: -0.35, fxR: -0.35, uzL: 0.22, uzR: 0.22,   // arms swung forward to plant ahead of the body
     txL: -1.05 - s * 0.4, txR: -1.05 + s * 0.4, sxL: 1.55, sxR: 1.55 });
   return P;
 }

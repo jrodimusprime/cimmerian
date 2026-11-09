@@ -138,7 +138,9 @@ This shows the design working. It is not the production pipeline:
 | `js/chars/humanoid.js` | The shared part builder: heads and helms, outfits, limbs, weapons, shields |
 | `js/chars/pitthing.js`, `weeper.js`, `demon.js`, `yothga.js`, `horse.js`, `eagle.js` | One builder per creature that isn't a man: the pit-things, the weeping thing, Thoth-Amon's baboon-shape, Yothga, the horses and Tsotha's steed, Pelias's eagle |
 | `js/chars/broken.js` | Broken gear that dead men drop |
-| `js/gallery.js` | The cast gallery (`?cast`): every creature and person in the campaign, front and profile |
+| `js/gallery.js` | The cast gallery (`?cast`, `?cast&face`): every creature and person in the campaign, front and profile |
+| `js/skinned.js` | Loads the built cast (`models/cast/*.glb`, made by `tools/blender/`), skins them on the GPU and drives their skeletons with the pose library; static parts (weapons, Satha's head, the weeping thing, Yothga, the eagle) are drawn the same way |
+| `models/cast/` | The built cast: CC0 MakeHuman bodies in Blender-built armour, the beasts, the weapons. Each level loads only its own |
 | `js/combat.js` | Weapons, kicks, enemy AI, flow-field pathing |
 | `js/textures.js` | Ramp-locked procedural textures and the game palette |
 | `js/level.js` | The e1m2, e1m1 and e1m3 specs, the puzzle solver and the grid queries |

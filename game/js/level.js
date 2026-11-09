@@ -383,7 +383,8 @@ const LEVEL_E1M1 = {
   charges: [{ x: 72, period: 9.0, offset: 0.0, dir: 1 }, { x: 75.5, period: 9.0, offset: 3.0, dir: -1 }, { x: 79, period: 9.0, offset: 6.0, dir: 1 }],
   chargeSpan: [6, 57],
   // the kings watch from their horses in the ring of the host; Tsotha swings down and walks out to you
-  kings: { riders: [[108, 28, 'kknight'], [108, 36, 'oknight']], horse: [105.4, 32], tsotha: [104.6, 32] },
+  // "Strabonus, with his broad dark face and crafty eyes; Amalrus, slender, fastidious" (ch. I), watching from their horses
+  kings: { riders: [[108, 28, 'strabonus'], [108, 36, 'amalrus']], horse: [105.4, 32], tsotha: [104.6, 32] },
   // "the ring of attackers": the host stands round the heap in ranks of pikemen, giants in steel caps
   host: { x: [103.7, 105.2], z: [7, 57], step: 3.4 },
   puzzle: {

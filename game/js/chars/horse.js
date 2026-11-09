@@ -35,6 +35,17 @@ function buildHorsePart(part) {
   return mb.finish();
 }
 function drawHorse(x, y, z, yaw, gallop, light, dead, gaunt) {
+  const sid = gaunt ? 'steed' : 'horse';
+  if (typeof SKINNED !== 'undefined' && SKINNED[sid]) {             // the built mesh: the same gallop, on real legs
+    const root = m4trs(x, y + (dead ? 0.25 : Math.abs(Math.sin(gallop)) * 0.08), z, yaw, 0, dead ? Math.PI / 2 : 0, 1);
+    const rots = {}, ph = { fl: 0, fr: 0.9, hl: 2.1, hr: 3.0 };
+    for (const k in ph) {
+      const a = dead ? 0.3 + 0.2 * (k.length) : Math.sin(gallop + ph[k]) * 0.6, bend = dead ? 0.5 : Math.max(0, Math.sin(gallop + ph[k] + 1.2)) * (k[0] === 'f' ? 0.9 : -0.8);
+      rots['leg_' + k + '_u'] = m4rx(a); rots['leg_' + k + '_m'] = m4rx(bend); rots['leg_' + k + '_l'] = m4rx(-bend * 0.5);
+    }
+    rots.neck = m4rx(dead ? 0.6 : 0.08 * Math.sin(gallop * 2)); rots.tail = m4rx(dead ? 0 : -0.3 - 0.2 * Math.sin(gallop));
+    return drawSkinnedRots(sid, root, rots, light);
+  }
   const root = m4trs(x, y, z, yaw, dead ? 0 : 0, dead ? Math.PI / 2 : 0, 1);
   const lift = dead ? 0 : Math.abs(Math.sin(gallop)) * 0.1;
   const base = m4mul(root, m4t(0, (dead ? -0.95 : 0) + lift, 0));

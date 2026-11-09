@@ -279,6 +279,8 @@ layers:
 
 ## 8. Characters: how they're made
 
+> **As built (the web game):** every man in the cast is a real CC0 human body from MakeHuman (MPFB), shaped per character with MakeHuman's body and face targets (Conan's V-shape and low, scowling brow; Shukeli's belly; Tsotha's vulture face). Each wears CC0 hair, eyes and brows, and armour built over him in headless Blender. The helms' **face masks are cast from each man's own face**, so the closed helms read as steel death-masks. The beasts are built in Blender too: horses on a skin-modifier skeleton, the weeping thing from metaballs, Yothga and the eagle from tubes and leaves. Satha's head and jaw are sculpted the same way. All of it is baked with ambient occlusion into one texture per piece, exported as `.glb` with a 23-bone skeleton, and posed in the game by the same pose library as before. The pipeline and its licences are in [`tools/blender/README.md`](tools/blender/README.md), and every model can be inspected at `index.html?cast` (front and profile; `?cast&face` for heads). The part-built rig below remains the fallback while models load.
+
 Characters are built from specs rather than sculpted. `mdlgen.js` does the following:
 
 1. **Rig.** It loads a shared rig: `humanoid` (14 bones), `ape` (a humanoid with long arms and a hunched spine), `serpent` (a segment chain) or `tendril` (a branching chain).
@@ -685,4 +687,5 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - Base data and QuakeC: LibreQuake contributors (BSD-3 data, GPL-2+ QuakeC).
 - Map tools: ericw-tools (GPL-2).
 - Art: see `story/credits.json`. Every source is public domain or CC0, with the artist's death year recorded.
+- The cast's bodies: [MakeHuman / MPFB](https://static.makehumancommunity.org/mpfb.html) base mesh, shape targets, game-engine skeleton and weights, and the [MakeHuman system assets](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html) and [Skins 02](https://static.makehumancommunity.org/assets/assetpacks/skins02.html) packs (skins, eyes, eyebrows, hair). All **CC0**. The armour, helms, masks, robes, beasts and weapons built over them are this project's own. How they're built: [`tools/blender/`](tools/blender/README.md).
 - This project: GPL-2 code, CC0 generated assets. Non-commercial fan work, not affiliated with any rights holder.
