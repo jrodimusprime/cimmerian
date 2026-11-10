@@ -273,7 +273,7 @@ function updatePlayer(inp) {
   if (S.onGround && S.vy <= 0 && S.y - g.floor < 0.8) { S.y = g.floor; S.vy = 0; }
   else { S.vy -= 24 * DT; S.y += S.vy * DT; }
   if (S.y <= g.floor) {
-    if (S.vy < -15) { Sfx.thud && Sfx.thud(); const dmg = Math.round((-S.vy - 15) * 6); if (dmg > 2) hurt(dmg, 'fall'); }
+    if (S.vy < -15) { Sfx.thud(); const dmg = Math.round((-S.vy - 15) * 6); if (dmg > 2) hurt(dmg, 'fall'); }
     S.y = g.floor; S.vy = 0;
   }
   S.onGround = S.y - g.floor < 0.02;
@@ -1078,7 +1078,7 @@ function tick(inp) {
     const area = LEVEL.areas.find(a => a.rooms.includes(id));
     if (area) enterArea(area);
   }
-  if (S.onGround && sp > 0.8) { stepAcc += sp * DT; bobPhase += sp * DT * 2.2; if (stepAcc > 2.0) { stepAcc = 0; Sfx.step(hiddenAt(S.x, S.z)); } }
+  if (S.onGround && sp > 0.8) { stepAcc += sp * DT; bobPhase += sp * DT * 2.2; if (stepAcc > 2.0) { stepAcc = 0; Sfx.step(hiddenAt(S.x, S.z), LEVEL.open ? 'turf' : 'stone'); } }
   bobAmt += ((S.onGround && sp > 0.8 ? Math.min(1, sp / 5) : 0) - bobAmt) * Math.min(1, DT * 8);
   const exE = LEVEL.entities.find(e => e.class === 'trigger_exit'), ex = exE ? exE.rect : [1e9, 1e9, 1e9, 1e9];
   if (S.x > ex[0] * CELL && S.x < ex[2] * CELL && S.z > ex[1] * CELL && S.z < ex[3] * CELL && (LEVEL.level !== 'e1m3' || S.flags.satha_passed)) finishLevel();
@@ -1148,6 +1148,7 @@ function startPlay(agent) {
 // load a level; `carry` brings the hero's state across (health, weapons, tally)
 function loadLevel(id, carry) {
   LEVEL = LEVELS[id];
+  Sfx.ambience(LEVEL.open ? 'field' : LEVEL.torch ? 'tunnels' : 'pits');
   if (R && typeof loadCastModels === 'function') loadCastModels(levelCast(LEVEL));   // in the background: the old rig stands in until they arrive
   buildLevel(LEVEL);
   if (entitySpec('scripted_satha') || LEVEL.satha) buildSathaPath();

@@ -292,15 +292,16 @@ function hitFoe(f, dmg, kick) {
     }
   }
   f.hp -= dmg; f.flash = 0.12; S.hits++;
-  Sfx.hit(); punchView(0.02, 0);
+  Sfx.hit(f.cls === 'thing', panOf(f)); punchView(0.02, 0);
   for (let k = 0; k < (kick ? 3 : 9); k++) particles.push({ m: 'blood', x: f.x + dx / d * 0.35, y: f.y + 1.2 + Math.random() * 0.4, z: f.z + dz / d * 0.35, vx: -dx / d * 2 + (Math.random() - 0.5) * 3, vy: Math.random() * 2.5, vz: -dz / d * 2 + (Math.random() - 0.5) * 3, life: 0.7, max: 0.7, g: 9, s: 1 });
   if (kick) { f.state = 'stagger'; f.t = 0; f.combo = 0; f.vx = -dx / d * KICK.push; f.vz = -dz / d * KICK.push; Sfx.kick(); }
   else {
     f.vx -= dx / d * 2.2; f.vz -= dz / d * 2.2;
-    if (f.cls !== 'axeman' && dmg >= 40) { f.state = 'pain'; f.t = 0; f.combo = 0; Sfx.grunt(); }   // only a heavy blow breaks a wind-up
+    if (f.cls !== 'axeman' && dmg >= 40) { f.state = 'pain'; f.t = 0; f.combo = 0; Sfx.grunt(f.cls === 'thing', panOf(f)); }   // only a heavy blow breaks a wind-up
   }
   if (f.hp <= 0) killFoe(f, kick ? 'kick' : 'blade');
 }
+function panOf(f) { const dx = f.x - S.x, dz = f.z - S.z; return clamp(dx * Math.cos(S.yaw) - dz * Math.sin(S.yaw), -6, 6) / 6; }   // left/right of where you face
 const DEATH_LINES = {
   blade: n => 'The ' + n + ' goes down and does not get up.',
   kick: n => 'Your heel caves in the ' + n + '\'s chest. He drops.',
@@ -310,7 +311,7 @@ const DEATH_LINES = {
 function killFoe(f, how) {
   if (f.dead) return;
   f.dead = true; f.state = 'dead'; f.deathT = 0; f.how = how; f.hp = 0; S.kills++;
-  Sfx.grunt(); if (how === 'fall') Sfx.scream();
+  Sfx.death(f.cls === 'thing', panOf(f)); if (how === 'fall') Sfx.scream();
   log(DEATH_LINES[how](FOES[f.cls].name), 'good');
   if (how === 'fall') return;
   fitDeath(f);
