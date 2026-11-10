@@ -38,5 +38,5 @@ function drawWeeper(f, lightOverride) {
     drawPart('weeper_tentacle', 'weeper:tentacle', m4mul(root, m4trs(Math.sin(a) * 1.2, 0.35, Math.cos(a) * 1.0, a, 0.3 + sway * 0.3, sway * 0.4, 1.2)), l, 0.1);
   }
   const lunge = f.state === 'windup' ? 0.3 : f.state === 'strike' ? 0.6 : 0;
-  drawPart('weeper_head', 'weeper:head', m4mul(root, m4trs(0, (typeof SKINNED !== 'undefined' && SKINNED.weeper_head ? 1.15 : 1.55) + Math.sin(t * 1.9) * 0.08, 0.85 + lunge, 0, -0.2 - lunge * 0.4, Math.sin(t * 0.9) * 0.15, 1.1)), l, 0.05);
+  drawPart('weeper_head', 'weeper:head', m4mul(root, m4trs(0, (typeof SKINNED !== 'undefined' && SKINNED.weeper_head ? 1.25 : 1.55) + Math.sin(t * 1.9) * 0.08, 0.7 + lunge, 0, -0.2 - lunge * 0.4, Math.sin(t * 0.9) * 0.15, 1.1)), l, 0.05);
 }

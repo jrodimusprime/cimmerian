@@ -224,26 +224,34 @@ def weeper_tentacle():
 
 
 def weeper_head():
-    """'a frog-like head ... great unstable eyes ... obscene blubbery lips'"""
-    head = _metablob('head', [(0, 0, 0.2, 0.95, (1.25, 1.0, 0.62)), (0, -0.35, 0.05, 0.75, (1.35, 0.85, 0.5)), (0, 0.3, 0.1, 0.7, (1.1, 0.9, 0.55))], res=0.05)
-    O.assign(head, O.recipe('frog', base=(0.46, 0.5, 0.4), tile_kind='leather', scale=4, grime=0.7, edge_wear=0.3))
-    lips = []
-    for up, dz in ((1, 0.05), (-1, -0.07)):              # two swollen, loose lips, the lower one hanging
-        lips.append(_tube('lip', [Vector((math.cos(t) * 0.62, -0.5 - math.sin(t) * 0.24, dz - (0.05 * math.sin(t) if up < 0 else 0))) for t in [k / 24 * math.pi for k in range(25)]],
-                          [0.06 + 0.04 * math.sin(k / 24 * math.pi) for k in range(25)], seg=10))
-    lp = _join(lips, 'lips')
-    O.assign(lp, O.recipe('lips', base=(0.33, 0.24, 0.27), tile_kind='leather', scale=3, grime=0.45))
+    """'a frog-like head ... great unstable eyes ... obscene blubbery lips': a broad flat toad's head
+    half-sunk in the mass, a wide wet slit of a mouth, eyes bulging unevenly out of folds of skin"""
+    import random
+    rnd = random.Random(5)
+    balls = [(0, 0, 0.15, 1.05, (1.45, 1.05, 0.5)), (0, -0.35, 0.02, 0.8, (1.5, 0.85, 0.42))]
+    for k in range(10):                                  # warts and folds
+        a = rnd.random() * 6.28
+        balls.append((math.cos(a) * 0.55, math.sin(a) * 0.45 - 0.1, 0.25 + rnd.random() * 0.15, 0.18 + rnd.random() * 0.12, (1, 1, 0.7)))
+    head = _metablob('head', balls, res=0.045)
+    O.assign(head, O.recipe('frog', base=(0.4, 0.44, 0.35), tile_kind='leather', scale=5, grime=0.75, edge_wear=0.35))
+    # the mouth: a dark wet gash across the front, the lower lip sagging
+    mouth = _tube('mouth', [Vector((math.cos(t) * 0.68, -0.62 - math.sin(t) * 0.22, -0.02 - 0.06 * math.sin(t))) for t in [k / 24 * math.pi for k in range(25)]],
+                  [0.025 + 0.03 * math.sin(k / 24 * math.pi) for k in range(25)], seg=8)
+    O.assign(mouth, O.recipe('gash', base=(0.12, 0.05, 0.06), tile_kind='leather', scale=2, grime=0.2, glow=0.05))
+    lip = _tube('lip', [Vector((math.cos(t) * 0.7, -0.6 - math.sin(t) * 0.24, -0.1 - 0.09 * math.sin(t))) for t in [k / 24 * math.pi for k in range(25)]],
+                [0.04 + 0.05 * math.sin(k / 24 * math.pi) for k in range(25)], seg=8)
+    O.assign(lip, O.recipe('lip', base=(0.36, 0.33, 0.3), tile_kind='leather', scale=3, grime=0.6))
     eyes = []
-    for sx, r in ((-1, 0.2), (1, 0.15)):                 # unequal, bulging, watery
-        e = _sphere('eye', Vector((sx * 0.42, -0.3, 0.48)), r, dims=(1.05, 0.95, 1.15), seg=16, ring=10)
-        O.assign(e, O.recipe('eye', base=(0.62, 0.64, 0.5), tile_kind='leather', scale=2, grime=0.5, glow=0.25))   # milky, filmed over
-        pupil = _sphere('pupil', Vector((sx * 0.42 + sx * 0.02, -0.3 - r * 0.97, 0.49)), r * 0.42, dims=(1.0, 0.25, 0.22), seg=10, ring=6)   # a toad's flat bar of a pupil
-        O.assign(pupil, O.recipe('pupil', base=(0.04, 0.04, 0.02), grime=0))
-        lid = _sphere('lid', Vector((sx * 0.42, -0.28, 0.5)), r * 1.15, dims=(1.1, 1.0, 0.8), seg=14, ring=8)
-        _keep(lid, lambda co: co.z > 0.53)
-        O.assign(lid, O.recipe('lid', base=(0.4, 0.44, 0.35), tile_kind='leather', scale=3, grime=0.7))
-        eyes += [e, pupil, lid]
-    return _done([head, lp] + eyes, 512)
+    for sx, r in ((-1, 0.15), (1, 0.11)):
+        c = Vector((sx * 0.48, -0.32, 0.4))
+        fold = _sphere('fold', c + Vector((0, 0.02, -0.02)), r * 1.5, dims=(1.1, 1.0, 0.75), seg=14, ring=8)
+        O.assign(fold, O.recipe('fold', base=(0.38, 0.42, 0.33), tile_kind='leather', scale=3, grime=0.7))
+        e = _sphere('eye', c + Vector((0, -0.08, 0.03)), r, seg=14, ring=10)
+        O.assign(e, O.recipe('eye', base=(0.55, 0.5, 0.25), tile_kind='leather', scale=2, grime=0.6, glow=0.3))
+        pupil = _sphere('pupil', c + Vector((0, -0.08 - r * 0.96, 0.03)), r * 0.45, dims=(1.0, 0.2, 0.25), seg=10, ring=6)
+        O.assign(pupil, O.recipe('pupil', base=(0.02, 0.02, 0.01), grime=0))
+        eyes += [fold, e, pupil]
+    return _done([head, mouth, lip] + eyes, 512)
 
 
 def yothga_stem():
