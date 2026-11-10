@@ -189,7 +189,7 @@ const LEVEL_E1M3 = {
     { id: 'weep_den', name: 'a low cave', at: [16, 1], size: [12, 6], h: 4, style: 'rough', tex: CAVE_TEX },
     { id: 'hollow', name: 'a wallow', at: [24, 7], size: [2, 3], h: 2.4, style: 'rough', tex: { wall: 'CAVE', floor: 'SLIME', ceil: 'CAVE' } },
     { id: 'flight', name: 'a tunnel', at: [28, 3], size: [12, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
-    { id: 'flight_break', name: 'a break in the tunnel floor', at: [31, 3], size: [3, 2], h: 2.4, pit: 1.8, style: 'rough', tex: CAVE_TEX },   // drop in, jump the far ledge
+    { id: 'flight_break', name: 'a break in the tunnel floor', at: [31, 3], size: [3, 2], h: 2.4, pit: 0.8, style: 'rough', tex: CAVE_TEX },   // a step down, and a hop up the far side
     { id: 'flight2', name: 'a tunnel', at: [38, 5], size: [2, 8], h: 2.4, style: 'rough', tex: CAVE_TEX },
     // the well, in the chamber where the tunnels cross
     { id: 'cross_n', name: 'the chamber where the tunnels cross', at: [34, 13], size: [10, 4], h: 6, style: 'rough', tex: CAVE_TEX },
@@ -314,8 +314,8 @@ const LEVEL_E1M1 = {
     { id: 'plain', name: 'the plain of Shamu', at: [0, 0], size: [120, 64], nopass: true, sky: true, tex: FIELD },
     { id: 'charge', name: 'the field of the last charge', at: [3, 5], size: [31, 53], sky: true, tex: FIELD },
     { id: 'arrowground', name: 'the arrow ground', at: [34, 5], size: [27, 53], sky: true, tex: FIELD },
-    { id: 'gully', name: 'a gully of dead', at: [33, 5], size: [4, 26], pit: 1.8, hide: true, sky: true, tex: FIELD },   // drop in; jump the far bank
-    { id: 'gully', name: 'a gully of dead', at: [34, 31], size: [4, 27], pit: 1.8, hide: true, sky: true, tex: FIELD },
+    { id: 'gully', name: 'a gully of dead', at: [33, 5], size: [4, 26], floor: -1.0, hide: true, sky: true, tex: FIELD },   // a sunken gully: its banks slope down a metre; the arrows can't find you in it
+    { id: 'gully', name: 'a gully of dead', at: [34, 31], size: [4, 27], floor: -1.0, hide: true, sky: true, tex: FIELD },
     { id: 'rise', name: 'the Shemite rise', at: [61, 5], size: [8, 53], floor: 1.0, sky: true, tex: FIELD },
     { id: 'lanes', name: 'the riders\' ground', at: [69, 5], size: [14, 53], sky: true, tex: FIELD },
     { id: 'heap', name: 'the heap of dead', at: [83, 5], size: [20, 53], sky: true, tex: FIELD },

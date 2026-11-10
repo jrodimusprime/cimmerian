@@ -867,7 +867,7 @@ const ROOM_DESC = {
   cell: 'A vault cut from the living rock, far under the hill. Straw rots on the floor. A torch burns in a niche above the ring you are chained to, and the darkness presses in on it like a living thing.',
   hall: 'The main corridor of the pits, vaulted high and narrow like the nave of a drowned temple. Its floor is worn into a smooth trough down the middle, as if something enormous passes along it often.',
   charge: 'The field of the last charge. Five thousand knights rode into Koth behind you, and here they lie, slashed and trampled, their horses with them.',
-  gully: 'A sunken gully choked with the dead of the charge. Its banks are steep, and down here the arrows cannot find you.',
+  gully: 'A sunken gully choked with the dead of the charge. Its banks fall away waist-deep, and down here the arrows cannot find you.',
   arrowground: 'Open ground under the Shemite rise, feathered with spent shafts. The dead horses are the only cover.',
   rise: 'The rise where the Shemitish bowmen stood to shoot your knights down.',
   lanes: 'The ground the enemy horse rides over, again and again, churned to mire.',
