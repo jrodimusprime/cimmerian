@@ -42,6 +42,20 @@ Two design pillars:
 
 ---
 
+## To do
+
+From play-testing, in no particular order:
+
+- **Pit-thing animation is off.** Spend real time fixing it: the crawl, strike and death poses on the new goblin body. The pit-thing's dead body doesn't work.
+- **The strangler's walk** (the black with the sword, before Satha takes him) looks off.
+- **Sword swipe animations** are no good.
+- **The punch animation** needs fixing.
+- **Parry:** add a parry button. **Remove the kick** (it's dumb).
+- **Spears:** they can be thrown and picked up, and break after about 5 uses. Enemies who throw spears carry 2 spare spears and a backup weapon.
+- **Pelias** still shows faint painted nipples on his skin (his older skin texture paints them wider than the paint-out reaches).
+
+Done since the list was made: cheat mode (`?cheat=true`: god mode, and N skips the level); rotten plank bridges over the deep pits in e1m2 and e1m3 (they give way if you walk, hold if you run); monsters never walk into a pit or the water (a blow can still knock one in); a sound volume and an ambience slider in the pause menu, and the treble cut well down.
+
 ## 1. Source material
 
 ### Main story: *The Scarlet Citadel* (1933)

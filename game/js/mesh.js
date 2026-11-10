@@ -331,7 +331,7 @@ function buildLevelMesh() {
     const fl = LV.flags[idx], tex = LV.tex[idx];
     const c0 = corner(i, j), c1 = corner(i + 1, j), c2 = corner(i + 1, j + 1), c3 = corner(i, j + 1);
     const fy = q => (k === 2 ? q.fp : q.fo);
-    const fLayer = k === 2 ? T.SLIME : T[tex.floor];
+    const fLayer = k === 2 ? (LV.void[idx] ? T.BLACK : T.SLIME) : T[tex.floor];   // a deep pit's bottom is black: a drop, not a puddle
     const diag = hash4(i, j, 2, 3) & 1;
     const f0 = P(c0, fy(c0)), f1 = P(c1, fy(c1)), f2 = P(c2, fy(c2)), f3 = P(c3, fy(c3));
     if (diag) { mb.tri(f0, f1, f2, fLayer, 0, 1, 0); mb.tri(f0, f2, f3, fLayer, 0, 1, 0); }
@@ -421,6 +421,12 @@ function buildModel(name) {
     const [, len, h] = name.split(':').map(Number);
     for (let x = 0.15; x < len; x += 0.3) addBox(mb, x, h / 2, 0, 0.035, h / 2, 0.035, T.IRON);
     for (const y of [0.15, h * 0.42, h - 0.12]) addBox(mb, len / 2, y, 0, len / 2, 0.05, 0.06, T.IRON);
+    return mb.finish();
+  }
+  if (name === 'plank') {                               // a rotten plank: two boards side by side, cleats, nails; length 1 along z
+    for (const sx of [-1, 1]) addBox(mb, sx * 0.12, 0, 0, 0.115, 0.03, 0.5, T.WOOD, 0, ONE3, 0);
+    for (const z of [-0.42, 0.42]) addBox(mb, 0, -0.045, z, 0.25, 0.025, 0.04, T.WOOD);
+    for (const sx of [-1, 1]) for (const z of [-0.42, 0.42]) addBox(mb, sx * 0.12, 0.032, z, 0.012, 0.006, 0.012, T.IRON);
     return mb.finish();
   }
   switch (name) {

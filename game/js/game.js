@@ -12,12 +12,16 @@ const $ = id => document.getElementById(id);
 const canvas = $('gl'), hud = $('hud'), logEl = $('log'), promptEl = $('prompt'), overlay = $('overlay');
 const CHEAT = new URLSearchParams(location.search).get('cheat') === 'true';   // ?cheat=true: god mode, and N skips the level
 const SIM_HZ = 72, DT = 1 / SIM_HZ, EYE = 1.6, RADIUS = 0.42, REACH = 2.7, TETHER = 3.2;
-const BASE_SENS = 0.0022, RES_STEPS = [200, 240, 300, 360, 480, 600], SENS_KEY = 'cimmerian-sens', BRIGHT_KEY = 'cimmerian-bright';
+const BASE_SENS = 0.0022, RES_STEPS = [200, 240, 300, 360, 480, 600], SENS_KEY = 'cimmerian-sens', BRIGHT_KEY = 'cimmerian-bright', VOL_KEY = 'cimmerian-vol', AMB_KEY = 'cimmerian-amb';
 const SATHA_SPEED = 7.5, SATHA_SPACING = 2.0, SATHA_SEGS = 12, SATHA_PERIOD = 40;
 const GRILLE_X = 34 * CELL, HALL_Z = 14 * CELL;
 let resIdx = 3, R = null, levelMesh = null, sensMul = 1, brightness = 1.14;
 try { const v = parseFloat(localStorage.getItem(SENS_KEY)); if (v >= 0.1 && v <= 4) sensMul = v; } catch (e) { /* ignore */ }
 try { const v = parseFloat(localStorage.getItem(BRIGHT_KEY)); if (v >= 0.8 && v <= 2.2) brightness = v; } catch (e) { /* ignore */ }
+let volume = 1, ambience = 1;
+try { const v = parseFloat(localStorage.getItem(VOL_KEY)); if (v >= 0 && v <= 1.5) volume = v; } catch (e) { /* ignore */ }
+try { const v = parseFloat(localStorage.getItem(AMB_KEY)); if (v >= 0 && v <= 1.5) ambience = v; } catch (e) { /* ignore */ }
+Sfx.setVolume(volume); Sfx.setAmbience(ambience);
 
 let mode = 'loading';            // loading | splash | play | paused | dead | done
 let S = null;                    // simulation state
@@ -165,6 +169,7 @@ function newState(seed, carry) {
     gates: Object.fromEntries(LEVEL.links.filter(l => !fixed.includes(l.name)).map(l => [l.name, { open: 0, target: 0 }])),
     wind: 0, windNow: 0, windSnd: 0,
     checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1, playTicks: carry ? carry.playTicks : 0,
+    planks: LV.planks.map(() => ({ state: 'whole', t: 0, fall: 0 })),
     shamu: LEVEL.level === 'e1m1' ? { vt: 0, shout: false, cool: 0, woke: new Set(), phase: 'fight', t: 0, line: 0, hoof: [-1, -1, -1],
       tsotha: { state: 'away', x: LEVEL.kings.tsotha[0] * CELL, z: LEVEL.kings.tsotha[1] * CELL, yaw: -Math.PI / 2, t: 0, walk: 0 } } : null,
     paralysed: 0,
@@ -199,8 +204,9 @@ function linkClosed(idx) {
   for (const l of LEVEL.links) for (const [gx, gz] of l.cells) if (gz * LV.W + gx === idx) return (l.name === 'cell_door' ? S.door.open : l.name === 'portcullis' ? S.portc.open : l.name === 'grille_gate' ? S.grille.open : S.gates[l.name].open) < 0.8;
   return false;
 }
-function blockedCell(gx, gz, feet) {
+function blockedCell(gx, gz, feet, foe) {
   const idx = cellIdx(gx, gz);
+  if (foe && idx >= 0 && LV.deep[idx]) return true;                 // monsters never go over the edge of a deep pit, or into the water
   if (idx < 0 || LV.kind[idx] === 0) return true;
   if (LV.flags[idx] & F_NOPASS) return true;
   if (LV.blockers.has(idx) && linkClosed(idx) && !GRILLE_CELLS.has(idx)) return true;   // the grille is a plane of bars, handled in collide()
@@ -220,7 +226,7 @@ function dynColliders(self) {
   return c;
 }
 const GRILLE_CELLS = new Set();
-function collide(x, z, r, feet, self) {
+function collide(x, z, r, feet, self, knocked) {
   const grille = LEVEL.links.find(l => l.name === 'grille_gate');
   if (grille && !GRILLE_CELLS.size) for (const [gx, gz] of grille.cells) GRILLE_CELLS.add(gz * LV.W + gx);
   const cols = LV.colliders.concat(dynColliders(self));
@@ -237,7 +243,7 @@ function collide(x, z, r, feet, self) {
     }
     const gx0 = Math.floor((x - r) / CELL), gx1 = Math.floor((x + r) / CELL), gz0 = Math.floor((z - r) / CELL), gz1 = Math.floor((z + r) / CELL);
     for (let gz = gz0; gz <= gz1; gz++) for (let gx = gx0; gx <= gx1; gx++) {
-      if (!blockedCell(gx, gz, feet)) continue;
+      if (!blockedCell(gx, gz, feet, !!self && !knocked)) continue;   // a monster won't walk into a pit; a blow can still send him over
       const minx = gx * CELL, maxx = minx + CELL, minz = gz * CELL, maxz = minz + CELL;
       const px = clamp(x, minx, maxx), pz = clamp(z, minz, maxz), dx = x - px, dz = z - pz, d2 = dx * dx + dz * dz;
       if (d2 >= r * r) continue;
@@ -256,6 +262,7 @@ function hiddenAt(x, z) { const g = groundInfo(x, z); return !!(g.flags & F_HIDE
 function updatePlayer(inp) {
   const fx = -Math.sin(S.yaw), fz = -Math.cos(S.yaw), rx = Math.cos(S.yaw), rz = -Math.sin(S.yaw);
   const ix = fx * inp.fwd + rx * inp.side, iz = fz * inp.fwd + rz * inp.side, il = Math.hypot(ix, iz);
+  if (S.plankDrop > 0) { S.plankDrop -= DT; inp = Object.assign({}, inp, { fwd: 0, side: 0, jump: false }); S.vx *= 0.8; S.vz *= 0.8; }   // falling with the plank: nothing to push off
   const speed = inp.run ? 7.2 : 4.4;
   const wx = il ? ix / il * speed : 0, wz = il ? iz / il * speed : 0;
   const k = Math.min(1, (S.onGround ? 14 : 2.5) * DT);
@@ -966,6 +973,17 @@ const SHAMU_KINGS = [
   ['"Arrows!" snarls Strabonus. "Who can take a man-eating tiger alive?"', 'voice'],
   ['"Take him alive," says Tsotha. He swings down from his horse and comes through the lines of the pikemen, who shrink back fearfully lest they so much as touch the skirts of his robe.', 'voice'],
 ];
+// rotten planks over the deep pits: stand on one (or walk it) and it groans, then gives way. Run it, or jump.
+function updatePlanks() {
+  if (!S.planks || !S.planks.length) return;
+  const g = groundInfo(S.x, S.z), on = S.onGround && g.plank !== undefined ? g.plank : -1;
+  S.planks.forEach((p, i) => {
+    if (p.state === 'gone') { p.fall += DT; return; }
+    if (on === i) p.t += DT; else if (p.state === 'whole') p.t = Math.max(0, p.t - DT * 0.5);
+    if (p.state === 'whole' && p.t > 0.18) { p.state = 'cracking'; Sfx.creak(); if (!S.hints.has('plank')) { S.hints.add('plank'); log('The plank groans and bows under you. It is rotten through!', 'warn'); } }
+    if (p.state === 'cracking' && (p.t > 0.4 || (on !== i && p.t > 0.3))) { p.state = 'gone'; p.fall = 0; Sfx.snapWood(); if (on === i) { S.plankDrop = 0.45; S.vy = -3; S.onGround = false; log('The rotten plank snaps under you!', 'bad'); } }
+  });
+}
 function updateShamu() {
   const M = S.shamu, L = LEVEL, room = S.room;
   if (!M) return;
@@ -1062,6 +1080,7 @@ function tick(inp) {
   updateFoes();
   updateTunnels();
   updateShamu();
+  updatePlanks();
   updateProjectiles();
   if (mode !== 'play') return;
   resolvePlayerHit();
@@ -1172,13 +1191,17 @@ function loadLevel(id, carry) {
 function showPause() {
   mode = 'paused';
   overlay.className = '';
-  overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">e1m2 · The Pits · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
+  overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">' + LEVEL.level + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
     '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> kick · <b>1 2 3</b> fists, dagger, sword · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
     '<div class="setting"><label for="brIn">Brightness</label><input type="range" id="brIn" min="0.8" max="2.2" step="0.05" value="' + brightness + '"><span id="brVal">' + brightness.toFixed(2) + '</span></div>' +
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
+    '<div class="setting"><label for="volIn">Sound volume</label><input type="range" id="volIn" min="0" max="1.5" step="0.05" value="' + volume + '"><span id="volVal">' + Math.round(volume * 100) + '%</span></div>' +
+    '<div class="setting"><label for="ambIn">Ambience</label><input type="range" id="ambIn" min="0" max="1.5" step="0.05" value="' + ambience + '"><span id="ambVal">' + Math.round(ambience * 100) + '%</span></div>' +
     '<div class="btns"><button id="bRes">Resume</button><button id="bRestart">Restart level</button></div></div>';
   $('sensIn').oninput = e => { sensMul = parseFloat(e.target.value); $('sensVal').textContent = sensMul.toFixed(2) + '×'; try { localStorage.setItem(SENS_KEY, String(sensMul)); } catch (err) { /* ignore */ } };
   $('brIn').oninput = e => { brightness = parseFloat(e.target.value); R.gamma = brightness; $('brVal').textContent = brightness.toFixed(2); try { localStorage.setItem(BRIGHT_KEY, String(brightness)); } catch (err) { /* ignore */ } };
+  $('volIn').oninput = e => { volume = parseFloat(e.target.value); Sfx.setVolume(volume); $('volVal').textContent = Math.round(volume * 100) + '%'; try { localStorage.setItem(VOL_KEY, String(volume)); } catch (err) { /* ignore */ } };
+  $('ambIn').oninput = e => { ambience = parseFloat(e.target.value); Sfx.setAmbience(ambience); $('ambVal').textContent = Math.round(ambience * 100) + '%'; try { localStorage.setItem(AMB_KEY, String(ambience)); } catch (err) { /* ignore */ } };
   $('bRes').onclick = () => { hideOverlay(); mode = 'play'; lockPointer(); };
   $('bRestart').onclick = () => location.reload();
 }
@@ -1383,6 +1406,21 @@ function render(alpha) {
       }
     }
   }
+  // the planks: whole, shaking as they crack, and the halves tumbling into the dark when they go
+  if (S.planks) LV.planks.forEach((p, i) => {
+    const st = S.planks[i], dx = p.x1 - p.x0, dz = p.z1 - p.z0, L = Math.hypot(dx, dz), yaw = Math.atan2(dx, dz);
+    const cx = (p.x0 + p.x1) / 2, cz = (p.z0 + p.z1) / 2, l = sampleLight(cx, p.y + 0.5, cz);
+    if (st.state !== 'gone') {
+      const sh = st.state === 'cracking' ? Math.sin(gameTime * 60) * 0.015 : 0, sag = st.state === 'cracking' ? 0.06 : 0.015;
+      drawM('plank', m4mul(m4trs(cx, p.y - 0.04 - sag + sh, cz, yaw, 0, 0, 1), m4s3(1, 1, L)), l);
+    } else if (st.fall < 3) {                            // the two halves, hinged off the rims, then falling free
+      const f = st.fall, drop = 4.9 * f * f;
+      for (const s2 of [-1, 1]) {
+        const ex = s2 < 0 ? p.x0 : p.x1, ez = s2 < 0 ? p.z0 : p.z1, mx = (ex + cx) / 2, mz = (ez + cz) / 2;
+        drawM('plank', m4mul(m4trs(mx, p.y - 0.04 - drop * (0.6 + 0.4 * (s2 > 0)), mz, yaw + f * s2 * 0.8, s2 * Math.min(1.4, f * 3), f * 2 * s2, 1), m4s3(1, 1, L / 2)), l);
+      }
+    }
+  });
   // writing scratched into the walls wherever there is something to read
   for (const d of WALL_DECALS) { R.key = d.l.d; R.drawEntity(d.mesh, m4ident(), d.l, 0, 1, true, true); }
   // e1m3: what comes up out of the well; the cage of bars with a garden in it
@@ -1416,12 +1454,12 @@ function render(alpha) {
       const fa = [ahead[0], h[1], ahead[2]], fb = behind;
       const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
       const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
-      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.0 : 0.82);   // the built head is sized to her neck
+      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.3 : 0.82);   // the built head: a viper's, broader than her neck
       const hl = sampleLight(h[0], h[1] + 1, h[2]);
       if (h[1] > -10) {
         const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
-        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.03); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.03);
+        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.6); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.55);   // she shimmers: white even in torchlight
       }
       if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS, fw = norm3([hm[8], hm[9], hm[10]]);
@@ -1674,6 +1712,14 @@ function boot() {
   addEventListener('resize', onResize);
   setTimeout(() => {
     R.uploadTextures(generateTextures());
+    // Satha's hide: a photographed reptile skin (ambientCG Leather008, CC0), pale as "the great shimmering white form"
+    { const im = new Image(); im.onload = () => {
+        const c = document.createElement('canvas'); c.width = c.height = TEX_SIZE; const x = c.getContext('2d'); x.drawImage(im, 0, 0, TEX_SIZE, TEX_SIZE);
+        const d = x.getImageData(0, 0, TEX_SIZE, TEX_SIZE).data;
+        let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i]; m /= d.length / 4 * 255;
+        for (let i = 0; i < d.length; i += 4) { const v = Math.min(1, 0.78 * (d[i] / 255) / m); d[i] = 238 * v + 10; d[i + 1] = 234 * v + 10; d[i + 2] = 222 * v + 12; d[i + 3] = 70; }   // pale; a faint shimmer
+        R.updateLayer(T.SATHA, new Uint8Array(d.buffer));
+      }; im.src = 'textures/satha_skin.png'; }
     R.setPalette(gamePalette());
     const q = new URLSearchParams(location.search);
     if (q.has('cast')) loadCastModels(ALL_MODELS).then(() => galleryShow(galleryIdx));

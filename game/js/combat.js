@@ -146,7 +146,7 @@ function updateFoes() {
     }
     // knockback, then fall if it carried them over a pit
     if (Math.abs(f.vx) + Math.abs(f.vz) > 0.01) {
-      const r = collide(f.x + f.vx * DT, f.z + f.vz * DT, 0.42, f.y, f);
+      const r = collide(f.x + f.vx * DT, f.z + f.vz * DT, 0.42, f.y, f, true);
       f.x = r[0]; f.z = r[1]; f.vx *= Math.pow(0.02, DT); f.vz *= Math.pow(0.02, DT);
     }
     const g = groundInfo(f.x, f.z);

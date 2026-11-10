@@ -208,7 +208,8 @@ def weeper_body():
         a = k / 8 * 6.28 + rnd.random() * 0.4
         balls.append((math.cos(a) * 1.3, math.sin(a) * 1.15, 0.12, 0.42, (1.3, 1.3, 0.45)))
     b = _metablob('weeper_body', balls, res=0.07)
-    O.assign(b, O.recipe('jelly', base=(0.42, 0.47, 0.38), tile_kind=None if ph('Leather037', 1) else 'leather', scale=2.5, grime=0.6, glow=0.1, edge_wear=0.4, photo=ph('Leather037', 4, 0.8)))
+    O.assign(b, O.recipe('jelly', base=(0.42, 0.47, 0.38), tile_kind=None if ph('Leather037', 1) else 'leather', scale=2.5, grime=0.6, glow=0.1, edge_wear=0.4, photo=ph('Leather037', 4, 0.8),
+                         blood=dict(spots=[(0, -1.05, 1.15, 0.65), (0.3, -1.1, 0.9, 0.35), (-0.35, -1.0, 0.8, 0.3)], streaks=dict(ztop=1.4, zbot=-0.1, yfront=-0.3, xmax=1.1, thresh=0.4, fine=8), amount=1.0, col=(0.36, 0.02, 0.02))))
     return _done([b], 1024)
 
 
@@ -235,14 +236,16 @@ def weeper_head():
         a = rnd.random() * 6.28
         balls.append((math.cos(a) * 0.55, math.sin(a) * 0.45 - 0.1, 0.25 + rnd.random() * 0.15, 0.18 + rnd.random() * 0.12, (1, 1, 0.7)))
     head = _metablob('head', balls, res=0.045)
-    O.assign(head, O.recipe('frog', base=(0.4, 0.44, 0.35), tile_kind=None if ph('Leather037', 1) else 'leather', scale=5, grime=0.6, edge_wear=0.35, photo=ph('Leather037', 5, 0.8)))
+    GORE = dict(spots=[(0, -0.66, -0.05, 0.45), (-0.45, -0.58, -0.08, 0.32), (0.48, -0.6, -0.06, 0.3)],
+                streaks=dict(ztop=0.05, zbot=-0.7, yfront=-0.1, xmax=0.8, thresh=0.42, fine=11), amount=1.0, col=(0.38, 0.02, 0.02))
+    O.assign(head, O.recipe('frog', base=(0.4, 0.44, 0.35), tile_kind=None if ph('Leather037', 1) else 'leather', scale=5, grime=0.6, edge_wear=0.35, photo=ph('Leather037', 5, 0.8), blood=GORE))
     # the mouth: a dark wet gash across the front, the lower lip sagging
     mouth = _tube('mouth', [Vector((math.cos(t) * 0.68, -0.62 - math.sin(t) * 0.22, -0.02 - 0.06 * math.sin(t))) for t in [k / 24 * math.pi for k in range(25)]],
                   [0.025 + 0.03 * math.sin(k / 24 * math.pi) for k in range(25)], seg=8)
     O.assign(mouth, O.recipe('gash', base=(0.12, 0.05, 0.06), tile_kind='leather', scale=2, grime=0.2, glow=0.05))
     lip = _tube('lip', [Vector((math.cos(t) * 0.7, -0.6 - math.sin(t) * 0.24, -0.1 - 0.09 * math.sin(t))) for t in [k / 24 * math.pi for k in range(25)]],
                 [0.04 + 0.05 * math.sin(k / 24 * math.pi) for k in range(25)], seg=8)
-    O.assign(lip, O.recipe('lip', base=(0.36, 0.33, 0.3), tile_kind=None if ph('Leather037', 1) else 'leather', scale=3, grime=0.5, photo=ph('Leather037', 10, 0.6)))
+    O.assign(lip, O.recipe('lip', base=(0.36, 0.33, 0.3), tile_kind=None if ph('Leather037', 1) else 'leather', scale=3, grime=0.5, photo=ph('Leather037', 10, 0.6), blood=dict(spots=[(0, -0.65, -0.1, 0.9)], amount=0.75)))
     eyes = []
     for sx, r in ((-1, 0.15), (1, 0.11)):
         c = Vector((sx * 0.48, -0.32, 0.4))
@@ -495,7 +498,7 @@ def satha_head():
 
 def satha_jaw():
     j = _metablob('satha_jaw', [(*G(0, 0.3, 0.55), 0.8, (1.2, 1.2, 0.22)), (*G(0, 0.28, -0.1), 0.55, (1.1, 0.6, 0.3))], res=0.05)
-    O.assign(j, O.recipe('belly', base=(0.74, 0.74, 0.68), tile_kind=None if ph('Leather008', 1) else 'scales', scale=7, grime=0.35, photo=ph('Leather008', 4, 0.6)))
+    O.assign(j, O.recipe('belly', base=(0.95, 0.95, 0.95), tile_kind=None if ph('Leather008', 1) else 'scales', scale=7, grime=0.15, photo=ph('Leather008', 4, 0.6)))
     tongue = _tube('tongue', [Vector(G(0, 0.36, 0.0)), Vector(G(0, 0.38, 0.8)), Vector(G(0.06, 0.4, 1.35)), Vector(G(0, 0.42, 1.55))], [0.07, 0.05, 0.025, 0.004], seg=8)
     O.assign(tongue, O.recipe('tongue', base=(0.5, 0.06, 0.08), grime=0.2))
     return _done([j, tongue], 256)
@@ -776,7 +779,7 @@ def cobra_head():
         p.use_smooth = True
     while o.data.uv_layers:
         o.data.uv_layers.remove(o.data.uv_layers[0])
-    O.assign(o, O.recipe('satha_scales', base=(0.82, 0.82, 0.78), tile_kind=None if ph('Leather008', 1) else 'scales', scale=11, grime=0.3, edge_wear=0.3, photo=ph('Leather008', 4, 0.7)))
+    O.assign(o, O.recipe('satha_scales', base=(1.0, 1.0, 1.0), tile_kind=None if ph('Leather008', 1) else 'scales', scale=11, grime=0.12, edge_wear=0.2, photo=ph('Leather008', 4, 0.55)))
     o.name = 'satha_head'
     parts = [o]
     # eyes where the cobra's were (the widest point of the head, high on the sides), and fangs
@@ -790,7 +793,7 @@ def cobra_head():
         pu = _sphere('pupil', Vector((sx * (ex + 0.06), ey, ez)), 0.06, dims=(0.3, 0.25, 1.3), seg=8, ring=6)
         O.assign(pu, O.recipe('slit', base=(0.02, 0.02, 0.02), grime=0))
         lowz = min(v.z for v in vs if abs(v.y - (ey - 0.25)) < 0.08)
-        f = _tube('fang', [Vector((sx * ex * 0.55, ey - 0.25, lowz + 0.04)), Vector((sx * ex * 0.56, ey - 0.28, lowz - 0.2)), Vector((sx * ex * 0.53, ey - 0.24, lowz - 0.3))], [0.04, 0.025, 0.002], seg=8)
+        f = _tube('fang', [Vector((sx * ex * 0.55, ey - 0.25, lowz + 0.04)), Vector((sx * ex * 0.56, ey - 0.27, lowz - 0.12)), Vector((sx * ex * 0.53, ey - 0.24, lowz - 0.18))], [0.03, 0.02, 0.002], seg=8)
         O.assign(f, O.recipe('fang', base=(0.9, 0.88, 0.8), grime=0.2))
         parts += [e, pu, f]
     return _done(parts, 512)

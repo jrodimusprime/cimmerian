@@ -1,6 +1,6 @@
 // Golden playthrough of e1m2, The Pits, through the CIM agent API (README §11).
 // It plays the level in the book's order, using only player inputs.
-const EXPECTED = { tick: 9412, hash: '6a6ec48e' };
+const EXPECTED = { tick: 9443, hash: '03de69bf' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -116,7 +116,6 @@ o = await O('(__nav(55.5 * C, 11.5 * C), __jumpTo(59.5, 11.5))'); log('stone:', 
 o = await O('(__nav(59.5 * C, 14 * C), __jumpTo(62, 14))');
 // THE BONE PIT (combat), then the weeping tunnel
 o = await O('__fight(["bonepit"], 9000, 20)'); log('bonepit:', brief(o));
-await O('__heal()');
-o = await O('__route([[66, 14], [69.5, 14]])'); log('end:', brief(o));
+o = await O('__route([[66, 14], [69.5, 14]])'); log('end:', brief(o));   // no heal detour: it wandered back over pit 3
 const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
 log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED));

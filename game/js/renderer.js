@@ -188,6 +188,12 @@ class Renderer {
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.REPEAT);
   }
+  updateLayer(layer, rgba) {                                  // replace one texture layer (a photographed skin, once it loads)
+    const gl = this.gl, S = TEX_SIZE;
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex);
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, layer, S, S, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  }
   resize(w, h, lowH) {
     const gl = this.gl, dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.floor(w * dpr); this.canvas.height = Math.floor(h * dpr);

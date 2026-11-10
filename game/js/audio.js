@@ -5,7 +5,7 @@
 // randomness here uses Math.random: sound never feeds back into the sim.
 // ---------------------------------------------------------------------------
 const Sfx = (() => {
-  let ac = null, master = null, nbuf = null, muted = false;
+  let ac = null, master = null, nbuf = null, muted = false, ambBus = null, vol = 1, ambVol = 1;
   // Recorded CC0 sounds (game/sound/, from OpenGameArt: see the README's credits). Each name is a family:
   // 'flesh' picks one of flesh_0..flesh_9 at random, with a little pitch variation. Synth stands in until they load.
   const BANK = {}, FAMILY = {};
@@ -37,7 +37,7 @@ const Sfx = (() => {
     const b = BANK[name]; if (!b) return null;
     const s = ac.createBufferSource(); s.buffer = b; s.loop = true; s.playbackRate.value = rate;
     const g = ac.createGain(); g.gain.value = 0.0001; g.gain.exponentialRampToValueAtTime(vol, ac.currentTime + 3);
-    s.connect(g); g.connect(master); s.start(0, Math.random() * b.duration);
+    s.connect(g); g.connect(ambBus || master); s.start(0, Math.random() * b.duration);
     return { s, g };
   }
   // the place's own sound: the pits drip and groan; the tunnels breathe; the field is wind and a battle far off
@@ -52,7 +52,7 @@ const Sfx = (() => {
     else if (kind === 'field') {                    // no recording: wind over the plain, and the din of the host far off
       const w = ac.createBufferSource(); w.buffer = nbuf; w.loop = true;
       const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 380; f.Q.value = 0.6;
-      const g = ac.createGain(); g.gain.value = 0.09; w.connect(f); f.connect(g); g.connect(master); w.start();
+      const g = ac.createGain(); g.gain.value = 0.09; w.connect(f); f.connect(g); g.connect(ambBus || master); w.start();
       const lfo = ac.createOscillator(); lfo.frequency.value = 0.13; const lg = ac.createGain(); lg.gain.value = 160; lfo.connect(lg); lg.connect(f.frequency); lfo.start();
       ambNodes.push({ s: w, g }, { s: lfo, g: lg });
       const din = () => { if (ambNow !== 'field') { dinOn = false; return; } play('clash', 0.05, Math.random() * 2 - 1, 0.8, 0.2); if (Math.random() < 0.4) play('voice', 0.04, Math.random() * 2 - 1, 0.75, 0.1, 0.3); setTimeout(din, 700 + Math.random() * 2600); };
@@ -66,7 +66,14 @@ const Sfx = (() => {
     const C = window.AudioContext || window.webkitAudioContext;
     if (!C) return;
     ac = new C();
-    master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+    // everything goes through one tone stage: the treble cut well down, a little weight added below,
+    // so blades and voices sound like they're in stone rooms and not in a tin
+    master = ac.createGain(); master.gain.value = 0.5 * vol;
+    const shelf = ac.createBiquadFilter(); shelf.type = 'highshelf'; shelf.frequency.value = 2200; shelf.gain.value = -14;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200; lp.Q.value = 0.5;
+    const low = ac.createBiquadFilter(); low.type = 'lowshelf'; low.frequency.value = 220; low.gain.value = 4;
+    master.connect(shelf); shelf.connect(lp); lp.connect(low); low.connect(ac.destination);
+    ambBus = ac.createGain(); ambBus.gain.value = ambVol; ambBus.connect(master);
     nbuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
     const d = nbuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -123,7 +130,9 @@ const Sfx = (() => {
     init,
     ambience(kind) { setAmb(kind); },
     stats() { return { families: Object.fromEntries(Object.entries(FAMILY).map(([k, v]) => [k, v.length])), singles: Object.keys(BANK), amb: ambNow, nodes: ambNodes.length }; },
-    toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.5; return muted; },
+    toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.5 * vol; return muted; },
+    setVolume(v) { vol = v; if (master && !muted) master.gain.value = 0.5 * vol; },
+    setAmbience(v) { ambVol = v; if (ambBus) ambBus.gain.value = ambVol; },
     step(soft, surf = 'stone') { play('step_' + surf, soft ? 0.18 : 0.32, undefined, 1, 0.1) || noise(0.07, soft ? 0.05 : 0.08, 300 + Math.random() * 200, 'lowpass'); },
     pickup() { play('keys', 0.3, undefined, 1.2) || (tone(520, 0.1, 'triangle', 0.05), tone(780, 0.14, 'triangle', 0.05, null, 0.06)); },
     heal() { tone(330, 0.3, 'sine', 0.06, 440); tone(495, 0.4, 'sine', 0.04, null, 0.12); },
@@ -173,6 +182,8 @@ const Sfx = (() => {
     squelch() { play('flesh', 0.8, undefined, 0.5, 0.1) || (noise(0.35, 0.22, 500, 'lowpass', 120), tone(70, 0.3, 'sine', 0.12, 40)); },
     wind(vol) { noise(1.8, 0.12 * vol, 300, 'bandpass', 900, 0, 0.8, Math.random() * 2 - 1, 0.5); tone(55, 1.6, 'sine', 0.03 * vol, 48, 0.2); },
     magic() { tone(220, 1.2, 'sine', 0.08, 880); [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.9, 'triangle', 0.04, null, 0.15 + i * 0.12)); },
+    creak() { play('wood_hit', 0.3, undefined, 0.45, 0.05) || noise(0.6, 0.08, 300, 'bandpass', 180, 0, 5); },
+    snapWood() { if (play('wood_hit', 0.7, undefined, 0.7)) { play('wood_hit', 0.5, undefined, 0.55, 0.05, 0.08); return; } noise(0.25, 0.3, 900, 'bandpass', 300, 0, 2); },
     arrow(pan) { noise(0.12, 0.06, 5000, 'highpass', null, 0, 1, pan); },
   };
 })();

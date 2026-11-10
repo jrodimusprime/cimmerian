@@ -53,6 +53,56 @@ def alpha_material(obj):
     obj['nobake'] = 1
 
 
+NO_NIPPLES = {'breast/nipple-point-decr': 1.0, 'breast/nipple-size-decr': 1.0, 'breast/breast-point-decr': 1.0}
+
+
+def nipple_uvs(h):
+    """The UV discs the skin texture paints the nipples in, from the vertices MakeHuman's nipple target moves."""
+    import gzip, os
+    base = os.path.join(os.path.dirname(__import__('bl_ext.blender_org.mpfb', fromlist=['x']).__file__), 'data', 'targets', 'breast')
+    idx = set()
+    with gzip.open(os.path.join(base, 'nipple-size-incr.target.gz'), 'rt') as f:
+        for line in f:
+            p = line.split()
+            if p and p[0].isdigit():
+                idx.add(int(p[0]))
+    uv = h.data.uv_layers.active.data
+    pts = {}
+    for poly in h.data.polygons:
+        for li in poly.loop_indices:
+            vi = h.data.loops[li].vertex_index
+            if vi in idx:
+                side = 'l' if h.data.vertices[vi].co.x > 0 else 'r'
+                pts.setdefault(side, []).append(tuple(uv[li].uv))
+    out = []
+    for side, P in pts.items():
+        cu = sum(p[0] for p in P) / len(P); cv = sum(p[1] for p in P) / len(P)
+        r = max(((p[0] - cu) ** 2 + (p[1] - cv) ** 2) ** 0.5 for p in P)
+        out.append((cu, cv, r * 2.8))
+    return out
+
+
+def unpaint_nipples(img, discs):
+    """Paint the skin over the nipples: each disc filled from the ring of skin around it, feathered at the edge."""
+    import numpy as np
+    w, hgt = img.size
+    px = np.array(img.pixels[:], np.float32).reshape(hgt, w, 4)
+    yy, xx = np.mgrid[0:hgt, 0:w]
+    for cu, cv, r in discs:
+        cx, cy, R = cu * w, cv * hgt, max(3.0, r * w)
+        d = np.hypot(xx - cx, yy - cy)
+        ring = (d > R * 1.25) & (d < R * 1.9)
+        if not ring.any():
+            continue
+        fill = px[ring].mean(0)
+        k = np.clip((R * 1.25 - d) / (R * 0.4), 0, 1)[..., None]      # 1 inside, feathered to 0 at 1.25 R
+        noise = (np.random.default_rng(1).random((hgt, w, 1)) - 0.5) * 0.02
+        px[..., :3] = px[..., :3] * (1 - k) + (fill[:3] + noise) * k
+    out = bpy.data.images.new(img.name + '_clean', w, hgt, alpha=True)
+    out.pixels.foreach_set(px.ravel()); out.pack()
+    return out
+
+
 def eye_material(obj):
     """MakeHuman's CC0 eye texture, as it is (the iris is in its own UVs)."""
     img = bpy.data.images.load(obj['eye_tex'], check_existing=True)
@@ -67,8 +117,8 @@ def eye_material(obj):
 def human(spec):
     """Body, rig, rest pose, skin: the common start of every man in the cast."""
     h, rig = body.make_human(spec['macro'], spec.get('race', {'asian': 0.1, 'caucasian': 0.8, 'african': 0.1}))
-    if spec.get('targets'):
-        body.apply_targets(h, spec['targets'])
+    body.apply_targets(h, dict(NO_NIPPLES, **(spec.get('targets') or {})))
+    nip_uv = nipple_uvs(h)                           # where the skin paints them, before the helper geometry is cut away
     assets = []
     for kind, (name, tint) in (('Hair', spec.get('hair', (None, None))), ('Eyebrows', spec.get('brows', (None, None)))):
         if name:
@@ -101,7 +151,7 @@ def human(spec):
     h.name = 'body'
     neutral = (0.6, 0.54, 0.54) if 'afr' in (spec.get('skin') or '') else (0.88, 0.82, 0.8)   # 'black giants': keep Kush dark under the torchlight   # the palette pushes warm skin to gold: start it cooler
     tint = spec.get('skin_tint', neutral)
-    outfit.assign(h, outfit.recipe('skin', base=tint, image=skin_image(spec['skin']) if spec.get('skin') else None,
+    outfit.assign(h, outfit.recipe('skin', base=tint, image=unpaint_nipples(skin_image(spec['skin']), nip_uv) if spec.get('skin') else None,
                                    tile_kind=spec.get('skin_tile'), scale=10, grime=spec.get('dirt', 0.25)))
     h['tex_size'] = 1024
     return h, rig, helpers
@@ -136,13 +186,14 @@ def hide_covered(h, cover):
 def smooth_torso(h):
     """Under a robe nobody sees the chest: smooth its anatomy away so the cloth cut from it hangs plain."""
     import bmesh
-    gi = [h.vertex_groups[g].index for g in ('spine_02', 'spine_03', 'clavicle_l', 'clavicle_r') if g in h.vertex_groups]
+    gi = [h.vertex_groups[g].index for g in ('spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r') if g in h.vertex_groups]
     bm = bmesh.new(); bm.from_mesh(h.data)
     dl = bm.verts.layers.deform.active
     vs = [v for v in bm.verts if sum(v[dl].get(i, 0) for i in gi) > 0.3 and not v.is_boundary]
-    for _ in range(25):
-        bmesh.ops.smooth_vert(bm, verts=vs, factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    for _ in range(70):
+        bmesh.ops.smooth_vert(bm, verts=vs, factor=0.8, use_axis_x=True, use_axis_y=True, use_axis_z=True)
     bm.to_mesh(h.data); bm.free()
+    outfit.clear_custom_normals(h)
 
 
 def finish(objs, rig, body_ratio=0.38):

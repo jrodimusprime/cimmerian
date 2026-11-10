@@ -55,13 +55,15 @@ const LEVEL_E1M2 = {
     { id: 'slope', name: 'the Pitted Way', at: [46, 13], size: [7, 2], h: 2.6, floor: 1.4, rise: 1.0, style: 'rough' },
     { id: 'landing', name: 'the Pitted Way', at: [53, 9], size: [8, 10], h: 3.4, floor: 7.4, vault: 1.2, style: 'hewn' },
     // the pits span the way from wall to wall: leap the first, cross the second on a single stone, leap the third
-    { id: 'pit1', name: 'a pit', at: [54, 9], size: [1, 10], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
-    { id: 'pit2', name: 'a pit', at: [56, 9], size: [3, 10], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
+    { id: 'pit1', name: 'a pit', at: [54, 9], size: [1, 10], floor: 7.4, pit: 34, void: true, style: 'rough', tex: { wall: 'ROCK' } },
+    { id: 'pit2', name: 'a pit', at: [56, 9], size: [3, 10], floor: 7.4, pit: 34, void: true, style: 'rough', tex: { wall: 'ROCK' } },
     { id: 'stone', name: 'a stone left standing', at: [57, 11], size: [1, 1], h: 3.4, floor: 7.4, style: 'rough' },
-    { id: 'pit3', name: 'a pit', at: [60, 9], size: [1, 10], floor: 7.4, pit: 34, style: 'rough', tex: { wall: 'ROCK' } },
+    { id: 'pit3', name: 'a pit', at: [60, 9], size: [1, 10], floor: 7.4, pit: 34, void: true, style: 'rough', tex: { wall: 'ROCK' } },
     { id: 'bonepit', name: 'the Bone Pit', at: [61, 11], size: [4, 6], h: 3, floor: 7.4, style: 'rough' },
     { id: 'exit', name: 'a dank tunnel', at: [65, 13], size: [6, 2], h: 1.6, floor: 7.4, style: 'rough' },
   ],
+  // rotten planks laid across the pitted way: tempting, and they will not take a man's weight for long
+  planks: [{ from: [53.9, 17.5], to: [55.1, 17.5] }, { from: [59.9, 10.5], to: [61.1, 10.5] }],
   shafts: [],
   links: [
     // "pulling the grille partly to behind it, leaving the bolt poised": the vault's grille, onto the stair foot
@@ -90,7 +92,6 @@ const LEVEL_E1M2 = {
     { at: [4, 14], y: -4, col: [0.25, 0.55, 0.38], rad: 10, i: 0.9 },             // slime glow in the well
     { at: [28, 7], y: -8, col: [0.25, 0.55, 0.38], rad: 9, i: 0.6 },              // slime glow in the serpent's hole
     { at: [6.4, 9.4], y: 2.4, col: [1.0, 0.6, 0.28], rad: 11, i: 1.5 },           // the torch in the niche above the king
-    { at: [54.5, 12], y: -3, col: [0.25, 0.6, 0.4], rad: 6, i: 0.8 }, { at: [57.5, 15], y: -3, col: [0.25, 0.6, 0.4], rad: 7, i: 0.9 }, { at: [60.5, 12], y: -3, col: [0.25, 0.6, 0.4], rad: 6, i: 0.8 },
   ],
   features: [
     { type: 'ring', at: [6.08, 9.4], y: 1.0, wall: 'W' },
@@ -172,6 +173,8 @@ const LEVEL_E1M3 = {
     { id: 'side', type: 'action', name: 'The Side Tunnels', rooms: ['out1', 'out2', 'corridor_w', 'side1', 'side2', 'side3'], cp: [28, 24, Math.PI] },
     { id: 'satha', type: 'puzzle', name: 'Satha Returns', rooms: ['corridor_e', 'alcove1', 'alcove2'], cp: [40.5, 31.5, -Math.PI / 2] },
   ],
+  // a rotten plank someone laid across the well: it will not hold for long
+  planks: [{ from: [42.6, 16.9], to: [42.6, 18.1] }],
   rooms: [
     // the weeping: "a sound that made his skin crawl ... a woman weeping"
     { id: 'dank', name: 'a dank tunnel', at: [2, 16], size: [6, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
@@ -188,12 +191,12 @@ const LEVEL_E1M3 = {
     { id: 'flight2', name: 'a tunnel', at: [38, 5], size: [2, 8], h: 2.4, style: 'rough', tex: CAVE_TEX },
     // the well, in the chamber where the tunnels cross
     { id: 'cross_n', name: 'the chamber where the tunnels cross', at: [34, 13], size: [10, 4], h: 6, style: 'rough', tex: CAVE_TEX },
-    { id: 'well', name: 'the well', at: [34, 17], size: [10, 1], h: 6, pit: 50, style: 'rough', tex: CAVE_TEX },
+    { id: 'well', name: 'the well', at: [34, 17], size: [10, 1], h: 6, pit: 50, void: true, style: 'rough', tex: CAVE_TEX },
     { id: 'cross_s', name: 'the chamber where the tunnels cross', at: [34, 18], size: [10, 5], h: 6, style: 'rough', tex: CAVE_TEX },
     { id: 'blind', name: 'a tunnel choked with fallen rock', at: [35, 23], size: [2, 4], h: 2.2, style: 'rough', tex: CAVE_TEX },
     { id: 'loop1', name: 'a black tunnel', at: [40, 23], size: [2, 4], h: 2.2, style: 'rough', tex: CAVE_TEX },
     { id: 'loop2', name: 'a black tunnel', at: [40, 27], size: [8, 2], h: 2.2, style: 'rough', tex: CAVE_TEX },
-    { id: 'loop_gap', name: 'a black tunnel', at: [44, 27], size: [1, 2], h: 2.2, pit: 40, style: 'rough', tex: CAVE_TEX },   // leapt in the dark
+    { id: 'loop_gap', name: 'a black tunnel', at: [44, 27], size: [1, 2], h: 2.2, pit: 40, void: true, style: 'rough', tex: CAVE_TEX },   // leapt in the dark
     { id: 'loop3', name: 'a black tunnel', at: [46, 14], size: [2, 13], h: 2.4, style: 'rough', tex: CAVE_TEX },
     { id: 'loop4', name: 'a black tunnel', at: [44, 14], size: [2, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
     // the way back to the main corridor, and the things in its side tunnels
@@ -431,7 +434,7 @@ function buildLevel(spec) {
   const [W, H] = spec.grid, N = W * H;
   Object.assign(LV, {
     spec, W, H, kind: new Uint8Array(N), floor: new Float32Array(N), ceil: new Float32Array(N), flags: new Uint8Array(N),
-    room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N),
+    room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), planks: [],
     rooms: spec.rooms, features: [], props: [], lights: [], colliders: [], items: [], blockers: new Set(), corners: null,
   });
   spec.rooms.forEach((r, ri) => {
@@ -444,6 +447,7 @@ function buildLevel(spec) {
       if (r.rise) fl = r.floor + (r.riseAxis === 'z' ? j : i) * r.rise;
       if (r.slope) fl = r.slope[0] + (r.slope[1] - r.slope[0]) * (j / (r.size[1] - 1));
       LV.kind[idx] = r.pit ? 2 : 1;
+      LV.deep[idx] = r.pit > 3 ? 1 : 0; LV.void[idx] = r.void ? 1 : 0;
       LV.floor[idx] = r.pit ? fl - r.pit : fl;
       LV.ceil[idx] = r.pit ? LV.ceil[idx] || fl + 4 * CELL : fl + (r.h || 2) * CELL;
       LV.room[idx] = ri; LV.rough[idx] = st ? 0.12 : 1; LV.vault[idx] = r.vault || 0; LV.tex[idx] = tex;
@@ -462,6 +466,11 @@ function buildLevel(spec) {
   for (let gz = 0; gz <= H; gz++) for (let gx = 0; gx <= W; gx++) LV.corners[gz * (W + 1) + gx] = computeCorner(gx, gz);
 
   const W2 = (gx, gz) => [gx * CELL, gz * CELL];
+  // planks across deep pits: from/to in cells; the plank's top is the rim's floor at its ends
+  for (const pk of spec.planks || []) {
+    const [x0, z0] = W2(pk.from[0], pk.from[1]), [x1, z1] = W2(pk.to[0], pk.to[1]);
+    LV.planks.push({ x0, z0, x1, z1, hw: 0.36, y: Math.max(groundInfo(x0, z0).floor, groundInfo(x1, z1).floor) });
+  }
   for (const p of spec.props.concat(scatterProps(spec))) {
     const [x, z] = W2(p.at[0], p.at[1]);
     const prop = Object.assign({}, p, { x, z, y: p.level !== undefined ? p.level : groundInfo(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6).floor });
@@ -572,6 +581,15 @@ function groundInfo(x, z) {
   const f = kind === 2 ? 'fp' : 'fo';
   const bil = (a, b, c, d) => (a * (1 - fx) + b * fx) * (1 - fz) + (c * (1 - fx) + d * fx) * fz;
   info.floor = bil(c00[f], c10[f], c01[f], c11[f]);
+  if (kind === 2 && LV.planks.length) {                  // a plank across the pit holds you up (while it lasts)
+    for (let i = 0; i < LV.planks.length; i++) {
+      const p = LV.planks[i];
+      if (typeof S !== 'undefined' && S && S.planks && S.planks[i] && S.planks[i].state === 'gone') continue;
+      const dx = p.x1 - p.x0, dz = p.z1 - p.z0, L2 = dx * dx + dz * dz, t = ((x - p.x0) * dx + (z - p.z0) * dz) / L2;
+      if (t < 0 || t > 1) continue;
+      if (Math.hypot(x - p.x0 - dx * t, z - p.z0 - dz * t) < p.hw) { info.floor = p.y; info.plank = i; break; }
+    }
+  }
   info.ceil = bil(c00.c, c10.c, c01.c, c11.c);
   return info;
 }

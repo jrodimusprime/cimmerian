@@ -103,7 +103,7 @@ def tile(kind):
 
 # ---- recipe materials: what gets baked ----------------------------------------------
 def recipe(name, *, base=(0.5, 0.5, 0.5), tile_kind=None, scale=12.0, image=None, grime=0.35, edge_wear=0.0,
-           stripes=None, glow=0.0, uv_mode='UV', photo=None):
+           stripes=None, glow=0.0, uv_mode='UV', photo=None, blood=None):
     """A node tree whose emission is the surface colour: a tint, an optional tiled pattern
     (UV-mapped), an optional image (UV), large-scale grime in object space."""
     m = bpy.data.materials.new(name)
@@ -181,6 +181,41 @@ def recipe(name, *, base=(0.5, 0.5, 0.5), tile_kind=None, scale=12.0, image=None
         else:
             L.new(c2n.outputs[0], mix.inputs[7])
         cur = mix.outputs[2]
+    if blood:                                             # gore: pools round given points, and runs streaking down from them
+        def mr(src, a, b, c=0.0, d=1.0):
+            n = N.new('ShaderNodeMapRange'); n.inputs[1].default_value = a; n.inputs[2].default_value = b
+            n.inputs[3].default_value = c; n.inputs[4].default_value = d; L.new(src, n.inputs[0]); return n.outputs[0]
+        def mx(a, b):
+            n = N.new('ShaderNodeMath'); n.operation = 'MAXIMUM'; L.new(a, n.inputs[0]); L.new(b, n.inputs[1]); return n.outputs[0]
+        def mul(a, b):
+            n = N.new('ShaderNodeMath'); n.operation = 'MULTIPLY'; L.new(a, n.inputs[0]); L.new(b, n.inputs[1]); return n.outputs[0]
+        sep = N.new('ShaderNodeSeparateXYZ'); L.new(tc.outputs['Object'], sep.inputs[0])
+        mask = None
+        for (px_, py_, pz_, r) in blood.get('spots', []):
+            sub = N.new('ShaderNodeVectorMath'); sub.operation = 'DISTANCE'; L.new(tc.outputs['Object'], sub.inputs[0]); sub.inputs[1].default_value = (px_, py_, pz_)
+            nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 9; nz.inputs['Detail'].default_value = 6; L.new(tc.outputs['Object'], nz.inputs[0])
+            ragged = N.new('ShaderNodeMath'); ragged.operation = 'ADD'; L.new(sub.outputs['Value'], ragged.inputs[0])
+            off = mr(nz.outputs[0], 0.3, 0.7, -r * 0.35, r * 0.35); L.new(off, ragged.inputs[1])
+            gm = mr(ragged.outputs[0], r, r * 0.55)
+            mask = gm if mask is None else mx(mask, gm)
+        st = blood.get('streaks')
+        if st:                                            # vertical runs: noise stretched along z, gated to the front and below the source
+            vs = N.new('ShaderNodeMapping'); vs.inputs['Scale'].default_value = (st.get('fine', 14), st.get('fine', 14), 0.7)
+            L.new(tc.outputs['Object'], vs.inputs[0])
+            nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.0; nz.inputs['Detail'].default_value = 3; L.new(vs.outputs[0], nz.inputs[0])
+            runs = mr(nz.outputs[0], st.get('thresh', 0.56), st.get('thresh', 0.56) + 0.05)
+            below = mr(sep.outputs[2], st['ztop'], st['ztop'] - 0.05)                       # starts at the source
+            fade = mr(sep.outputs[2], st['zbot'], st['ztop'])                                # thins out as it runs down
+            front = mr(sep.outputs[1], st['yfront'], st['yfront'] + 0.15)                    # only on the front (Blender -y)
+            side = mr(sep.outputs[0], st['xmax'], st['xmax'] * 0.6)
+            sidel = mr(sep.outputs[0], -st['xmax'], -st['xmax'] * 0.6)
+            gm = mul(mul(mul(runs, below), mul(fade, front)), mul(side, sidel))
+            mask = gm if mask is None else mx(mask, gm)
+        if mask is not None:
+            bc = N.new('ShaderNodeRGB'); bc.outputs[0].default_value = (*lin(blood.get('col', (0.32, 0.02, 0.02))), 1)
+            mix = N.new('ShaderNodeMix'); mix.data_type = 'RGBA'; mix.blend_type = 'MIX'
+            amt = N.new('ShaderNodeMath'); amt.operation = 'MULTIPLY'; amt.inputs[1].default_value = blood.get('amount', 0.9); L.new(mask, amt.inputs[0])
+            L.new(amt.outputs[0], mix.inputs[0]); L.new(cur, mix.inputs[6]); L.new(bc.outputs[0], mix.inputs[7]); cur = mix.outputs[2]
     if grime > 0:                                         # stains, at the scale of a body, in object space
         nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 3.5; nz.inputs['Detail'].default_value = 8
         L.new(tc.outputs['Object'], nz.inputs[0])
@@ -263,6 +298,15 @@ def smart_uv(obj, angle=66, margin=0.02):
 
 
 # ---- geometry helpers ---------------------------------------------------------------
+def clear_custom_normals(obj):
+    """MakeHuman's body carries custom split normals: anything cut from it keeps shading the original anatomy
+    (a smoothed chest still lit as if it had nipples) unless they go."""
+    if getattr(obj.data, 'has_custom_normals', False):
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True); bpy.context.view_layer.objects.active = obj
+        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+
+
 def region_shell(src, name, groups, *, offset=0.012, min_weight=0.35, keep=None, thickness=0.0, smooth=0):
     """A garment cut from the body: the faces whose vertices belong to `groups` (bone
     weights), pushed out along the normals. It keeps the body's UVs and weights."""
@@ -319,6 +363,7 @@ def region_shell(src, name, groups, *, offset=0.012, min_weight=0.35, keep=None,
         rb.free()
         bm.normal_update()
     bm.to_mesh(obj.data); bm.free()
+    clear_custom_normals(obj)
     if thickness > 0:
         sol = obj.modifiers.new('thick', 'SOLIDIFY'); sol.thickness = thickness; sol.offset = 1.0
         apply_mod(obj, sol)

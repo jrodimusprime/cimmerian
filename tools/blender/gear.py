@@ -511,6 +511,51 @@ def g_pauldrons(h, rig, helpers, spec, metal='steel', spikes=False):
     return out
 
 
+def round_front(obj, h, zlo, zhi):
+    """Each row of the garment's front torso laid on a smooth half-ellipse (as wide as the row, as deep as its
+    deepest point): the cloth hangs across the chest in one curve, with no anatomy, no corners."""
+    import math
+    tg = [obj.vertex_groups[g].index for g in ('pelvis', 'spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r', 'neck_01') if g in obj.vertex_groups]
+    vs = obj.data.vertices
+    torso = [v for v in vs if zlo < v.co.z < zhi and sum(g.weight for g in v.groups if g.group in tg) > 0.6]
+    if not torso:
+        return
+    cx = 0.0; cy = sum(v.co.y for v in torso) / len(torso)
+    rows = {}
+    for v in torso:
+        rows.setdefault(round(v.co.z / 0.02), []).append(v)
+    keys = sorted(rows)
+    A = {k: max(abs(v.co.x - cx) for v in rows[k]) for k in keys}
+    Bd = {k: max(cy - v.co.y for v in rows[k]) for k in keys}
+    sm = lambda D, k: sum(D[j] for j in keys if abs(j - k) <= 2) / sum(1 for j in keys if abs(j - k) <= 2)   # the widths and depths smoothed down the body too
+    for k in keys:
+        a, b = sm(A, k), sm(Bd, k)
+        for v in rows[k]:
+            if v.co.y > cy:
+                continue
+            th = math.atan2(cy - v.co.y, v.co.x - cx)
+            r = a * b / math.sqrt((b * math.cos(th)) ** 2 + (a * math.sin(th)) ** 2)
+            v.co.x, v.co.y = cx + r * math.cos(th), cy - r * math.sin(th)
+
+
+def bridge(obj, iters=100, where=lambda co: True):
+    """Smooth a garment hard but only ever outward (each vertex keeps the farther of where it was and where the
+    smoothing put it, measured from the body's axis): hollows fill, bumps are spanned, nothing sinks into the body."""
+    import bmesh
+    bm = bmesh.new(); bm.from_mesh(obj.data)
+    inner = [v for v in bm.verts if not v.is_boundary and where(v.co)]
+    cx = sum(v.co.x for v in bm.verts) / len(bm.verts); cy = sum(v.co.y for v in bm.verts) / len(bm.verts)
+    orig = {v: v.co.copy() for v in inner}
+    for _ in range(iters):
+        bmesh.ops.smooth_vert(bm, verts=inner, factor=0.7, use_axis_x=True, use_axis_y=True, use_axis_z=False)
+        for v in inner:
+            o = orig[v]
+            if (v.co.x - cx) ** 2 + (v.co.y - cy) ** 2 < (o.x - cx) ** 2 + (o.y - cy) ** 2:
+                v.co.x, v.co.y = o.x, o.y
+            orig[v] = v.co.copy()
+    bm.to_mesh(obj.data); bm.free()
+
+
 def g_robe(h, rig, helpers, spec, col='silk', col2=None, sleeves=True, name='robe', hem=0.06, flare=1.25, belly=0.0, drape=True):
     """A robe to the ankles: the body's shell above the waist, a bell of cloth below it."""
     pel = O.bone_head(rig, 'pelvis'); nz = O.bone_head(rig, 'neck_01').z
@@ -567,6 +612,8 @@ def g_robe(h, rig, helpers, spec, col='silk', col2=None, sleeves=True, name='rob
         sub = sk.modifiers.new('s', 'SUBSURF'); sub.levels = 1; O.apply_mod(sk, sub)
         O.drape(sk, [h], lambda co: co.z > pel.z + 0.03, frames=60)
     _solid(sk, 0.008)
+    nz_ = O.bone_head(rig, 'neck_01').z
+    round_front(top, h, nz_ - 0.5, nz_ - 0.05)          # cloth falls in one smooth curve across the chest; it doesn't follow it in
     st = ('bars', COL[col2], 10) if col2 else None
     mat = O.recipe(name, base=COL[col], tile_kind='cloth', scale=14, grime=0.45, stripes=st)
     a = _finish(top, rig, mat, body=h, tex=1024)
