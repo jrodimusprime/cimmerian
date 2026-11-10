@@ -29,7 +29,7 @@ const keys = {};
 let mouseDX = 0, mouseDY = 0, pressUse = false, pressFire = false, agentInput = null;
 let acc = 0, lastFrame = 0, gameTime = 0, fade = 1, fadeTarget = 0, flash = 0, flashCol = [0.75, 0.06, 0.02];
 let prev = { x: 0, y: 0, z: 0 }, renderAlpha = 0, hudT = 0, debugOn = false;
-let skyMesh = null, particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, pressTorch = false, wantWeapon = null;
+let skyMesh = null, particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, pressTorch = false, pressThrow = false, wantWeapon = null;
 let punchPitch = 0, punchYaw = 0;          // cosmetic view kick, never fed back into the sim
 
 const modelCache = new Map();
@@ -163,7 +163,7 @@ function newState(seed, carry) {
     giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0,  wp: 0, arms: 0, grabT: 0, fall: 0 },
     satha: { start: entitySpec('scripted_satha') ? Math.round(3 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
-    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, combo: 0, lastSwing: -999, pendingHit: null,
+    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, combo: 0, lastSwing: -999, pendingHit: null,
     weapons: armed || (carry ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry ? carry.weapon : 'fists', hits: 0,
     foes: newFoes(), alerted: new Set(), areas: new Set([LEVEL.areas[0].id]), portc: { open: 0, target: 0, dropT: 0 },
     gates: Object.fromEntries(LEVEL.links.filter(l => !fixed.includes(l.name)).map(l => [l.name, { open: 0, target: 0 }])),
@@ -432,7 +432,7 @@ function takeItem(it) {
     S.weapons.sword = true; S.weapon = 'sword';
     if (S.flags.has_sword === false) {
       setFlag('has_sword');
-      log('You take up the black\'s huge sword, and your hand knows it at once. Now for the grille! (Click to strike; click, click, click for a combination; right-click or F to kick.)', 'good');
+      log('You take up the black\'s huge sword, and your hand knows it at once. Now for the grille! (Click to strike; click, click, click for a combination; right-click or F to parry.)', 'good');
       const w0 = S.foes.find(f => f.id === 'w0');
       if (w0 && !w0.dead && !w0.alert) { w0.state = 'investigate'; w0.tx = 26.5 * CELL; w0.tz = 14.6 * CELL; w0.alert = true; S.alerted.add('scout'); log(ALERT_LINES.scout, 'warn'); }
     } else log('You take up the sword.', 'good');
@@ -444,13 +444,30 @@ function takeItem(it) {
   } else if (it.kind === 'ember') {
     S.torch = 'lit'; setFlag('torch_found'); Sfx.pickup();
     log('You find the torch by its ember and blow on it, gently, gently, until the pitch catches and the flame stands up again.', 'good');
-  } else if (it.kind === 'spear') {
+  } else if (it.kind === 'spear' && LEVEL.links.some(l => l.name === 'portcullis')) {
     if (S.flags.has_spear) { it.taken = false; log('You already carry a spear.', 'dim'); return; }
     setFlag('has_spear'); log('You take up the dead man\'s spear and sling it across your back.');
+  } else if (it.kind === 'spear') {
+    if (S.weapons.spear) { it.taken = false; log('You already carry a spear.', 'dim'); return; }
+    S.weapons.spear = true; S.weapon = 'spear'; S.spearUses = it.uses || 0;
+    log(S.hints.has('spear') ? 'You take up the spear.' : 'You take up the spear. Thrust with it, or throw it (G). A spear won\'t last: the haft splits after a few blows.', 'good'); S.hints.add('spear');
   } else if (it.kind === 'keys') {
     setFlag('has_keys');
     log('You reach through the bars\' shadow and take up the ring of keys. They are warm from the jailer\'s belt.', 'good');
   }
+}
+function parry() {
+  if (S.parryCool > 0 || S.swing > 0) return;
+  S.parryT = PARRY.window; S.parryCool = PARRY.cool; Sfx.swing();
+}
+// throw the spear in your hand: it flies true, and lies where it lands to be picked up again
+function throwSpear() {
+  if (S.weapon !== 'spear' || S.throwT > 0 || S.swing > 0) return;
+  const f = camFwd();
+  S.weapons.spear = false; S.throwT = 0.4;
+  S.weapon = S.weapons.sword ? 'sword' : S.weapons.dagger ? 'dagger' : 'fists';
+  S.proj.push({ type: 'jav', x: S.x + f[0] * 0.6, y: S.y + 1.5 + f[1] * 0.6, z: S.z + f[2] * 0.6, vx: f[0] * 24, vy: f[1] * 24 + 1.0, vz: f[2] * 24, life: 3, spin: 0, uses: S.spearUses });
+  Sfx.whoosh();
 }
 function onFire(kick) {
   if (S.shamu && S.shamu.tsotha.state === 'offer' && !kick) { startAttack(false); tsothaTouch(); return; }
@@ -716,6 +733,10 @@ function updateProjectiles() {
           S.items.push({ id: 'b' + S.tick, kind: 'bone', name: 'thighbone', x, z, y: gg.floor, taken: false });
           if (!p.noisy) noiseAt(x, z);
         } else Sfx.clatter();
+      } else if (p.type === 'jav') {                     // a spear comes down and lies where it fell
+        const gg = groundInfo(p.x, p.z);
+        if (gg.kind === 1 && !(gg.flags & F_NOPASS) && p.uses < SPEAR_USES) S.items.push({ id: 'jav' + S.tick + '_' + i, kind: 'spear', name: 'spear', uses: p.uses, x: p.x, z: p.z, y: gg.floor, taken: false });
+        Sfx.clatter(clamp((p.x - S.x) / 15, -1, 1));
       } else if (p.type === 'arrow') {
         if (Math.hypot(p.x - S.x, p.z - S.z) < 12) Sfx.arrow();
       } else if (p.type === 'venom') {
@@ -735,6 +756,18 @@ function updateProjectiles() {
       S.proj.splice(i, 1); hurt(FOES.archer.dmg, 'arrow'); punchView(0.04, (Math.random() - 0.5) * 0.08);
       if (mode === 'play' && !S.hints.has('arrow')) { S.hints.add('arrow'); log('An arrow! Close with the archer, or put stone between you.', 'bad'); }
       continue;
+    }
+    if (p.type === 'jav' && p.foe && Math.hypot(p.x - S.x, p.y - (S.y + 1.1), p.z - S.z) < 0.7) {
+      S.proj.splice(i, 1); hurt(20, 'spear'); punchView(0.06, (Math.random() - 0.5) * 0.08);
+      const gg = groundInfo(S.x, S.z); S.items.push({ id: 'jav' + S.tick + '_' + i, kind: 'spear', name: 'spear', uses: 1, x: S.x + 0.6, z: S.z, y: gg.floor, taken: false });
+      continue;
+    }
+    if (p.type === 'jav' && !p.foe) {                    // your spear, into a man
+      const t = S.foes.find(f => !f.dead && f.state !== 'dormant' && Math.hypot(f.x - p.x, f.z - p.z) < 0.7 && p.y > f.y && p.y < f.y + 2.2);
+      if (t) { S.proj.splice(i, 1); p.uses++; hitFoe(t, SPEAR_THROW_DMG, false);
+        if (p.uses < SPEAR_USES) { const gg = groundInfo(t.x, t.z); S.items.push({ id: 'jav' + S.tick + '_' + i, kind: 'spear', name: 'spear', uses: p.uses, x: t.x + 0.5, z: t.z, y: gg.floor, taken: false }); }
+        else log('The spear\'s haft splits as it goes in.', 'dim');
+        continue; }
     }
     if (p.type === 'venom' && Math.hypot(p.x - S.x, p.y - (S.y + 1.0), p.z - S.z) < 0.8) {
       S.proj.splice(i, 1); Sfx.venom(); hurt(22, 'venom');
@@ -1053,9 +1086,9 @@ function humanInput() {
   const inp = {
     fwd: (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0),
     side: (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0),
-    run: !!(keys.ShiftLeft || keys.ShiftRight), jump: !!keys.Space, use: pressUse, torch: pressTorch, fire: pressFire, kick: pressKick, weapon: wantWeapon,
+    run: !!(keys.ShiftLeft || keys.ShiftRight), jump: !!keys.Space, use: pressUse, torch: pressTorch, fire: pressFire, kick: pressKick, throwSpear: pressThrow, weapon: wantWeapon,
   };
-  pressUse = pressFire = pressKick = pressTorch = false; wantWeapon = null;
+  pressUse = pressFire = pressKick = pressTorch = pressThrow = false; wantWeapon = null;
   return inp;
 }
 function tick(inp) {
@@ -1067,7 +1100,7 @@ function tick(inp) {
   if (inp.yaw !== undefined) S.yaw = inp.yaw;
   if (inp.pitch !== undefined) S.pitch = inp.pitch;
   prev = { x: S.x, y: S.y, z: S.z };
-  chainSndT -= DT; S.swing = Math.max(0, S.swing - DT); S.throwT = Math.max(0, S.throwT - DT); S.kickT = Math.max(0, S.kickT - DT);
+  chainSndT -= DT; S.swing = Math.max(0, S.swing - DT); S.throwT = Math.max(0, S.throwT - DT); S.kickT = Math.max(0, S.kickT - DT); S.parryT = Math.max(0, S.parryT - DT); S.parryCool = Math.max(0, S.parryCool - DT);
   if (inp.weapon && S.weapons[inp.weapon]) S.weapon = inp.weapon;
   if (inp.torch) shakeOutTorch();
   const { g, sp } = updatePlayer(inp);
@@ -1088,7 +1121,8 @@ function tick(inp) {
   interactTarget = findTarget();
   if (inp.use) interact();
   if (inp.fire) onFire(false);
-  if (inp.kick) onFire(true);
+  if (inp.kick) parry();
+  if (inp.throwSpear) throwSpear();
   if ((g.flags & F_WATER) && S.y < (LEVEL.waterY || -1) - 0.6) { die('drown'); return; }
   if (g.kind === 2 && S.y < g.floor + 30 && S.y < -4) { die('fall'); return; }
   const id = roomIdAt(S.x, S.z);
@@ -1129,7 +1163,7 @@ window.CIM = {
     if (mode === 'splash') startPlay(true);
     agentInput = action;
     for (let i = 0; i < ticks && mode === 'play'; i++) tick({ fwd: action.forward || 0, side: action.side || 0, run: !!action.run, jump: !!action.jump,
-      use: !!action.use && i === 0, torch: !!action.torch && i === 0, fire: !!action.attack && i === 0, kick: !!action.kick && i === 0, weapon: i === 0 ? action.weapon : null, yaw: action.yaw, pitch: action.pitch });
+      use: !!action.use && i === 0, torch: !!action.torch && i === 0, fire: !!action.attack && i === 0, kick: !!(action.parry || action.kick) && i === 0, throwSpear: !!action.throwSpear && i === 0, weapon: i === 0 ? action.weapon : null, yaw: action.yaw, pitch: action.pitch });
     if (mode === 'dead' && action.respawn) respawn();
     return this.obs();
   },
@@ -1145,7 +1179,7 @@ function hideOverlay() { overlay.className = 'hidden'; overlay.innerHTML = ''; }
 async function showIntro() {
   mode = 'splash'; hud.classList.add('hidden');
   await showTitleCard();
-  await showSplash(LEVEL.level, '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> kick &nbsp; <b>1 2 3</b> weapons &nbsp; <b>Esc</b> pause</div>');
+  await showSplash(LEVEL.level, '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> parry &nbsp; <b>G</b> throw spear &nbsp; <b>1 2 3 4</b> weapons &nbsp; <b>Esc</b> pause</div>');
   if (mode === 'splash') startPlay(false);
 }
 const LEVEL_INTRO = {
@@ -1192,7 +1226,7 @@ function showPause() {
   mode = 'paused';
   overlay.className = '';
   overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">' + LEVEL.level + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
-    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> kick · <b>1 2 3</b> fists, dagger, sword · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
+    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> parry · <b>G</b> throw spear · <b>1 2 3 4</b> fists, dagger, sword, spear · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
     '<div class="setting"><label for="brIn">Brightness</label><input type="range" id="brIn" min="0.8" max="2.2" step="0.05" value="' + brightness + '"><span id="brVal">' + brightness.toFixed(2) + '</span></div>' +
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
     '<div class="setting"><label for="volIn">Sound volume</label><input type="range" id="volIn" min="0" max="1.5" step="0.05" value="' + volume + '"><span id="volVal">' + Math.round(volume * 100) + '%</span></div>' +
@@ -1338,7 +1372,7 @@ function render(alpha) {
       uxL: 0.02, uzL: 0.12, fxL: -0.35 - 0.1 * Math.sin(gameTime * 2.1) });          // the keys jingling in the other fist
     if (g.arms > 0) Object.assign(P, { uxR: lerp(0.05, -2.9, g.arms), fxR: lerp(-0.2, -0.5, g.arms), uzR: lerp(0.14, 0.3, g.arms), we: lerp(-1.35, 2.5, g.arms),
       uxL: lerp(0.02, -0.6, g.arms), fxL: lerp(-0.35, -0.4, g.arms), lean: lerp(-0.06, -0.12, g.arms), headX: lerp(0.12, -0.25, g.arms), headY: P.headY * (1 - g.arms), twist: P.twist * (1 - g.arms) });
-    if (g.state === 'enter') poseWalk(P, g.walk * 2.2, 0.9, false);
+    if (g.state === 'enter') { poseWalk(P, g.walk * 2.9, 1.0, false); P.roll = Math.sin(g.walk * 2.9) * 0.05; P.lean = 0.04; P.uxL = 0.1 + Math.sin(g.walk * 2.9) * 0.25; P.headX = 0.05; }   // a big man's heavy, rolling stride, matched to the ground he covers
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
   // Shukeli, the jailer
@@ -1511,13 +1545,33 @@ function render(alpha) {
     const wep = S.flags.has_bone ? 'bone' : S.weapon;
     // the swing: dagger and fists thrust; the sword cuts right-to-left, left-to-right, then overhead
     let fwd, pos;
-    if (wep === 'sword' && S.swing > 0) {
-      const e = smoothstep(0, 1, prog), arcs = [[[0.9, 0.55, -0.6], [-1.0, -0.25, -0.7]], [[-0.9, 0.4, -0.6], [1.0, -0.3, -0.7]], [[0.05, 1.3, -0.4], [0.0, -0.9, -0.9]]][S.combo];
-      fwd = norm3(arcs[0].map((v, i) => lerp(v, arcs[1][i], e)));
-      pos = [0.15 - sb + fwd[0] * 0.06, -0.2 + cb + fwd[1] * 0.05, -0.36];
+    // strokes in three beats: draw back (anticipation), the cut (fast, eased out), follow-through and recovery
+    const beat = (p, a0, a1) => clamp((p - a0) / (a1 - a0), 0, 1), eOut = t => 1 - (1 - t) * (1 - t) * (1 - t), eIo = t => t * t * (3 - 2 * t);
+    const idleF = [-0.1, wep === 'sword' ? 0.75 : wep === 'spear' ? 0.05 : 0.5, -1], idleP = [0.17 - sb, -0.19 + cb, -0.33];
+    if (S.parryT > 0 && (wep === 'sword' || wep === 'spear' || wep === 'dagger')) {          // parry: the blade across the body, high
+      const k = Math.sin(Math.min(1, (PARRY.window - S.parryT) / 0.08) * Math.PI / 2);
+      fwd = norm3([lerp(idleF[0], -1, k), lerp(idleF[1], 0.25, k), lerp(idleF[2], -0.35, k)]);
+      pos = [lerp(idleP[0], 0.12, k), lerp(idleP[1], -0.05, k), lerp(idleP[2], -0.42, k)];
+    } else if (wep === 'sword' && S.swing > 0) {
+      // each cut: [start dir, end dir, start pos, end pos] (right-to-left, left-to-right, overhead)
+      const C = [[[0.95, 0.6, -0.45], [-0.95, -0.25, -0.6], [0.34, 0.02, -0.3], [-0.14, -0.17, -0.44]],
+                 [[-0.95, 0.5, -0.45], [0.95, -0.25, -0.6], [-0.1, 0.04, -0.32], [0.3, -0.18, -0.44]],
+                 [[0.0, 1.0, 0.35], [0.0, -0.9, -0.75], [0.12, 0.14, -0.24], [0.08, -0.2, -0.5]]][S.combo];
+      const wind = eIo(beat(prog, 0, 0.28)), cut = eOut(beat(prog, 0.28, 0.5)), back = eIo(beat(prog, 0.55, 1));
+      const f0 = idleF.map((v, i) => lerp(v, C[0][i], wind)), p0 = idleP.map((v, i) => lerp(v, C[2][i], wind));
+      const f1 = f0.map((v, i) => lerp(v, C[1][i], cut)), p1 = p0.map((v, i) => lerp(v, C[3][i], cut));
+      fwd = norm3(f1.map((v, i) => lerp(v, idleF[i], back))); pos = p1.map((v, i) => lerp(v, idleP[i], back));
+    } else if ((wep === 'fists' || wep === 'dagger' || wep === 'spear') && S.swing > 0) {
+      // a jab or thrust: cock back, drive straight out, snap back
+      const reach = wep === 'spear' ? 0.42 : wep === 'dagger' ? 0.3 : 0.26;
+      const cock = eIo(beat(prog, 0, 0.25)), drive = eOut(beat(prog, 0.25, 0.5)), ret = eIo(beat(prog, 0.6, 1));
+      const z = idleP[2] + 0.08 * cock - (reach + 0.08) * drive * (1 - ret) + 0.08 * cock * ret * 0;
+      const out = drive * (1 - ret);
+      fwd = norm3([idleF[0] + 0.05 * cock - 0.05 * out, idleF[1] - 0.25 * out, -1]);
+      pos = [idleP[0] - 0.08 * out + 0.03 * cock, idleP[1] + 0.03 * cock + 0.06 * out, z + 0.08 * cock * (1 - drive)];
     } else {
-      fwd = norm3([-0.1 - sw * 0.05, (wep === 'sword' ? 0.75 : 0.5) - sw * 0.35 + th * 0.4, -1]);
-      pos = [0.17 - sb + fwd[0] * sw * 0.16, -0.19 + cb + fwd[1] * sw * 0.16 + th * 0.06, -0.33 + fwd[2] * sw * 0.16];
+      fwd = norm3([idleF[0] - sw * 0.05, idleF[1] - sw * 0.35 + th * 0.4, -1]);
+      pos = [idleP[0] + fwd[0] * sw * 0.16, idleP[1] + fwd[1] * sw * 0.16 + th * 0.06, idleP[2] + fwd[2] * sw * 0.16];
     }
     const X = [-fwd[0], -fwd[1], -fwd[2]];
     const arm = [0.62, -0.5, 0.6], ad = arm[0] * X[0] + arm[1] * X[1] + arm[2] * X[2];
@@ -1529,6 +1583,7 @@ function render(alpha) {
     if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
     else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
     else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
+    else if (wep === 'spear') drawPart('w_spear', 'spear', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2] - 0.0, 0, 0, Math.PI / 2, 0.55)), vl);
     if (torchInHand()) {                     // the torch in his left fist: the right hand's model, mirrored
       const tf = norm3([-0.32 + sb * 2, 1.3, -0.7]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
       const td = tarm[0] * TX[0] + tarm[1] * TX[1] + tarm[2] * TX[2], TZ = norm3([tarm[0] - TX[0] * td, tarm[1] - TX[1] * td, tarm[2] - TX[2] * td]), TY = cross3(TZ, TX);
@@ -1546,10 +1601,6 @@ function render(alpha) {
         const fl = 1 + 0.22 * Math.sin(gameTime * (13 + k * 5) + k * 2) + 0.1 * Math.sin(gameTime * (31 + k * 7));
         drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(m4mul(torch, m4trs(0, 0.33, 0, 0, lean + 0.08 * Math.sin(gameTime * 9 + k), roll + 0.06 * Math.sin(gameTime * 7 + k * 3))), m4trs(0, 0, 0, gameTime * (1.5 + k) + k, 0, 0, [1.05, 0.8, 0.55][k] * fl)), tl, 0.6);
       }
-    }
-    if (S.kickT > 0) {                     // the kick: a boot comes up from below
-      const k = Math.sin((1 - S.kickT / KICK.period) * Math.PI);
-      drawM('vm_leg', m4trs(0.05, -0.75 + k * 0.42, -0.55 - k * 0.15, 0, -1.35 + k * 0.4, 0, 1), vl);
     }
   }
   R.present(fade, flash, flashCol);
@@ -1606,9 +1657,11 @@ addEventListener('keydown', e => {
     case 'KeyT': pressTorch = true; break;
     case 'KeyN': if (CHEAT && mode === 'play') finishLevel(); break;
     case 'KeyF': case 'KeyQ': pressKick = true; break;
+    case 'KeyG': pressThrow = true; break;
     case 'Digit1': wantWeapon = 'fists'; break;
     case 'Digit2': wantWeapon = 'dagger'; break;
     case 'Digit3': wantWeapon = 'sword'; break;
+    case 'Digit4': wantWeapon = 'spear'; break;
     case 'KeyP': resIdx = (resIdx + 1) % RES_STEPS.length; onResize(); log('Render resolution: ' + RES_STEPS[resIdx] + ' lines.', 'dim'); break;
     case 'KeyK': log(Sfx.toggleMute() ? 'Sound off.' : 'Sound on.', 'dim'); break;
     case 'F4': e.preventDefault(); R.palette = !R.palette; log(R.palette ? 'Palette on: the Quake look.' : 'Palette off: full colour.', 'dim'); break;

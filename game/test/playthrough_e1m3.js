@@ -31,7 +31,7 @@ window.__waitPhase = (lo, hi) => { for (let i = 0; i < 4000; i++) { const p = CI
 window.__item = k => CIM.state.items.find(i => i.kind === k && !i.taken);
 window.__take = (k) => { const it = __item(k); if (!it) return false; __nav(it.x, it.z, true); __go(it.x - 0.9, it.z, true); __face(it.x, it.z, -0.7); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.7 }, 1); return true; };
 window.__use = (x, z, pitch = 0) => { __face(x * C, z * C, pitch); return CIM.step({ use: true, yaw: CIM.state.yaw, pitch }, 1); };
-// fight: close with the nearest foe that knows we're here; kick shields, strike, step back from a wound-up blow
+// fight: close with the nearest foe that knows we're here; parry a shield-man's blow then strike, step back from other wound-up blows
 window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   let blocked = 0, lastHits = -1, reachable = null;
   for (let i = 0; i < maxTicks; i++) {
@@ -54,9 +54,10 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
         else if (f.x > GRILLE_X && s.x < GRILLE_X) { const bx = GRILLE_X - 0.5, bz = Math.max(33.2, Math.min(36.8, f.z)); act.yaw = Math.atan2(-(bx - s.x), -(bz - s.z)); }
       }
     }
+    else if (f.state === 'windup' && f.t > 0.18 && f.cls !== 'archer' && shielded && s.parryCool <= 0) act.parry = true;   // turn his blow aside, then cut
     else if (f.state === 'windup' && f.t > 0.18 && f.cls !== 'archer') act.forward = -1;        // dodge the telegraphed blow
-    else if (s.swing <= 0 && s.kickT <= 0) {
-      if (shielded && (f.state === 'block' || blocked > 0) && f.state !== 'stagger') { act.kick = true; blocked = 0; }
+    else if (s.swing <= 0) {
+      if (shielded && f.state === 'block') act.forward = -1;                                   // wait out his guard
       else act.attack = true;
     }
     if (f.state === 'block') blocked++;

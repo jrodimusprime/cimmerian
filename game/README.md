@@ -115,7 +115,7 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *6 states*, e1m1 *5 states*, e1m3 *6 states*, goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `9443`, `03de69bf`; e1m1: `11776`, `b94019fb`; e1m3: `9569`, `ba7717eb`) |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `9443`, `03de69bf`; e1m1: `11335`, `e4eed28f`; e1m3: `9569`, `ba7717eb`) |
 
 ## Not the real build
 

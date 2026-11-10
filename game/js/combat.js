@@ -10,14 +10,18 @@ const WEAPONS = {
   fists: { name: 'fists', dmg: [8, 8, 13], period: 0.42, reach: 2.0, arc: 0.5, hitAt: 0.13 },
   dagger: { name: 'dagger', dmg: [20, 20, 28], period: 0.36, reach: 2.35, arc: 0.45, hitAt: 0.12 },
   sword: { name: 'sword', dmg: [30, 30, 48], period: 0.5, reach: 3.0, arc: 0.25, hitAt: 0.2, cleave: true },
+  spear: { name: 'spear', dmg: [34, 34, 40], period: 0.55, reach: 3.5, arc: 0.3, hitAt: 0.22 },   // thrust; or throw it (G). It breaks after 5 uses
 };
-const WEAPON_ORDER = ['fists', 'dagger', 'sword'];
+const SPEAR_USES = 5, SPEAR_THROW_DMG = 60;
+// parry (right-click or F): a short window that turns a blow aside and staggers the man who struck it
+const PARRY = { window: 0.32, cool: 0.55, stagger: 1.0 };
+const WEAPON_ORDER = ['fists', 'dagger', 'sword', 'spear'];
 const KICK = { dmg: 6, period: 0.62, reach: 2.4, arc: 0.4, hitAt: 0.16, push: 11, stagger: 1.15 };
 // The cast is the book's (README §1: canon cast only). Each entry cites where Howard puts them.
 const FOES = {
   // "the Kothian guards looked on stolidly" (ch. II); Strabonus's Kothian spearmen and Shemitish archers (ch. I, V)
   warden: { hp: 70, speed: 3.3, reach: 2.4, dmg: 13, windup: 0.5, strike: 0.22, recover: 0.6, block: 'alternate', sight: 17, name: 'Kothian guard' },
-  spearman: { hp: 55, speed: 3.1, reach: 3.3, dmg: 15, windup: 0.62, strike: 0.22, recover: 0.75, sight: 17, name: 'Kothian spearman' },
+  spearman: { hp: 55, speed: 3.1, reach: 3.3, dmg: 15, windup: 0.62, strike: 0.22, recover: 0.75, sight: 17, name: 'Kothian spearman', spears: 3, throwAt: [6, 15] },
   archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 15], sight: 24, name: 'Shemite archer' },
   // ch. I: "dark-faced Kothian knights", "Ophirean knights in gilded mail"
   kknight: { hp: 80, speed: 3.4, reach: 2.5, dmg: 14, windup: 0.5, strike: 0.22, recover: 0.55, block: 'alternate', sight: 20, name: 'Kothian knight' },
@@ -192,9 +196,11 @@ function updateFoes() {
           if (d < st.keep[0]) { const bx = f.x - dx / d * 2, bz = f.z - dz / d * 2; move(bx, bz, st.speed); turn(10); }
           else if (!see || d > st.keep[1]) approach(st.speed);
           else { turn(8); if (f.cool <= 0) { f.state = 'windup'; f.t = 0; Sfx.bowdraw(); } }
-        } else if (d <= st.reach * 0.92 && Math.abs(S.y - f.y) < 1.6) {
+        } else if (st.spears && (f.spears === undefined ? st.spears : f.spears) > 1 && d > st.throwAt[0] && d < st.throwAt[1] && f.cool <= 0 && los(f.x, f.y + 1.6, f.z, S.x, S.y + 1.4, S.z)) {
+          turn(8); f.state = 'windup'; f.t = 0; f.throwing = true; Sfx.ready(clamp(-dx / 15, -1, 1));   // he keeps his last spear in hand
+        } else if (d <= foeReach(f) * 0.92 && Math.abs(S.y - f.y) < 1.6) {
           turn(8);
-          if (f.cool <= 0) { f.state = 'windup'; f.t = 0; Sfx.ready(clamp(-dx / 15, -1, 1)); }
+          if (f.cool <= 0) { f.state = 'windup'; f.t = 0; f.throwing = false; Sfx.ready(clamp(-dx / 15, -1, 1)); }
         } else approach(st.speed);
         // separation from friends
         for (const o of S.foes) if (o !== f && !o.dead) { const ox = f.x - o.x, oz = f.z - o.z, od = Math.hypot(ox, oz); if (od < 0.9 && od > 1e-4) { f.x += ox / od * (0.9 - od) * 0.5; f.z += oz / od * (0.9 - od) * 0.5; } }
@@ -216,8 +222,20 @@ function updateFoes() {
     }
   }
 }
+// a spearman with spears to spare throws one; with none left he fights with his sword
+function foeReach(f) { return f.sidearm ? 2.6 : FOES[f.cls].reach; }
 function foeStrike(f, st) {
   const dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz);
+  if (f.throwing) {
+    f.throwing = false; f.spears = (f.spears === undefined ? st.spears : f.spears) - 1;
+    const ox = f.x + Math.sin(f.yaw) * 0.5, oy = f.y + 1.6, oz = f.z + Math.cos(f.yaw) * 0.5;
+    const lead = d / 20, tx = S.x + S.vx * lead + (S.rng.next() - 0.5) * 0.6, tz = S.z + S.vz * lead + (S.rng.next() - 0.5) * 0.6, ty = S.y + 1.2;
+    const dd = Math.hypot(tx - ox, ty - oy, tz - oz) || 1;
+    S.proj.push({ type: 'jav', x: ox, y: oy, z: oz, vx: (tx - ox) / dd * 20, vy: (ty - oy) / dd * 20 + 1.2, vz: (tz - oz) / dd * 20, life: 3, spin: 0, from: f.id, foe: true, uses: 0 });
+    Sfx.swing(); f.cool = 1.2;
+    if (f.spears <= 0) f.sidearm = true;
+    return;
+  }
   if (st.ranged) {                                      // loose an arrow, leading the target a little
     const ox = f.x + Math.sin(f.yaw) * 0.5, oy = f.y + 1.45 * CAST[f.cls].scale, oz = f.z + Math.cos(f.yaw) * 0.5;
     const lead = d / 24, tx = S.x + S.vx * lead + (S.rng.next() - 0.5) * 0.5, tz = S.z + S.vz * lead + (S.rng.next() - 0.5) * 0.5, ty = S.y + 1.25;
@@ -230,7 +248,15 @@ function foeStrike(f, st) {
   if (st.leap) { f.vx += Math.sin(f.yaw) * st.leap; f.vz += Math.cos(f.yaw) * st.leap; }    // it springs
   const facing = (dx * Math.sin(f.yaw) + dz * Math.cos(f.yaw)) / (d || 1);
   if (mode === 'play' && d <= st.reach + 0.35 && facing > 0.5 && Math.abs(S.y - f.y) < 1.8 && los(f.x, f.y + 1.3, f.z, S.x, S.y + 1.3, S.z)) {
-    hurt(st.dmg, f.cls === 'spearman' ? 'spear' : f.cls === 'thing' ? 'claws' : f.cls === 'weeper' ? 'weeper' : f.cls === 'axeman' ? 'axe' : 'blade');
+    const fwdX = -Math.sin(S.yaw), fwdZ = -Math.cos(S.yaw), toward = (-dx * fwdX - dz * fwdZ) / (d || 1);
+    if (S.parryT > 0 && toward > 0.3 && !st.invulnerable) {   // turned aside: steel rings, he reels
+      S.parryT = 0; f.state = 'stagger'; f.t = -PARRY.stagger + (FOES[f.cls].recover || 0.5); f.combo = 0;
+      f.vx -= dx / (d || 1) * 6; f.vz -= dz / (d || 1) * 6; Sfx.clang(); punchView(-0.04, 0.03);
+      for (let k = 0; k < 8; k++) particles.push({ m: 'spark', x: S.x + fwdX * 0.9, y: S.y + 1.4, z: S.z + fwdZ * 0.9, vx: (Math.random() - 0.5) * 5, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 5, life: 0.35, max: 0.35, g: 9, s: 0.5 });
+      if (!S.hints.has('parried')) { S.hints.add('parried'); log('You turn the blow aside, and he reels. Strike now!', 'good'); }
+      return;
+    }
+    hurt(f.sidearm ? 13 : st.dmg, f.cls === 'spearman' && !f.sidearm ? 'spear' : f.cls === 'thing' ? 'claws' : f.cls === 'weeper' ? 'weeper' : f.cls === 'axeman' ? 'axe' : 'blade');
     punchView(0.06, (S.rng.next() - 0.5) * 0.06);
     S.vx += dx / (d || 1) * 3; S.vz += dz / (d || 1) * 3;
   }
@@ -252,6 +278,7 @@ function startAttack(kick) {
 }
 function resolvePlayerHit() {
   const h = S.pendingHit; if (!h || S.tick < h.at) return; S.pendingHit = null;
+  if (h.w === 'spear') { S.spearUses++; if (S.spearUses >= SPEAR_USES) { S.weapons.spear = false; S.weapon = S.weapons.sword ? 'sword' : S.weapons.dagger ? 'dagger' : 'fists'; Sfx.snapWood(); log('The spear\'s haft splits in your hands. You cast it aside.', 'warn'); } }
   const spec = h.kick ? KICK : WEAPONS[h.w], fx = -Math.sin(S.yaw), fz = -Math.cos(S.yaw);
   const inArc = (x, z, y) => {
     const dx = x - S.x, dz = z - S.z, d = Math.hypot(dx, dz);
@@ -287,7 +314,7 @@ function hitFoe(f, dmg, kick) {
     if (st.block === 'front' || f.blockToggle) {
       f.state = 'block'; f.t = 0; Sfx.clang(); punchView(-0.03, 0.02);
       for (let k = 0; k < 6; k++) particles.push({ m: 'spark', x: f.x + dx / d * 0.5, y: f.y + 1.3, z: f.z + dz / d * 0.5, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.25, max: 0.25, g: 9, s: 0.5 });
-      if (!S.hints.has('block')) { S.hints.add('block'); log('His shield turns your blow. Kick him off his guard! (Right-click or F)', 'dim'); }
+      if (!S.hints.has('block')) { S.hints.add('block'); log('His shield turns your blow. Parry his stroke (right-click or F) and strike while he reels.', 'dim'); }
       return;
     }
   }
@@ -323,6 +350,7 @@ function killFoe(f, how) {
   const deb = (m, p, k, s = 1) => f.debris.push({ m, x: p[0], z: p[1], yaw: f.dieYaw + k, s });
   if (w === 'sword' && !S.weapons.sword && free('sword')) drop('sword', 'Kothian sword');
   else if (w === 'spear' && LEVEL.links.some(l => l.name === 'portcullis') && !S.flags.has_spear && !S.flags.portcullis_open && free('spear')) drop('spear', 'spear');
+  else if (w === 'spear' && (f.spears === undefined || f.spears > 0) && !LEVEL.links.some(l => l.name === 'portcullis')) S.items.push({ id: 'spear_' + f.id, kind: 'spear', name: 'spear', uses: 0, x: side[0], z: side[1], y: groundInfo(side[0], side[1]).floor, taken: false });
   else if (w === 'sword') { deb('broken:sword_hilt', side, 1.1); deb('broken:sword_tip', far, 2.3); }
   else if (w === 'spear') { deb('broken:spear_butt', side, 0.4); deb('broken:spear_head', far, 1.9); }
   else if (w === 'axe') { deb('broken:axe_head', side, 0.8); deb('broken:axe_haft', far, 2.6); }
@@ -388,6 +416,23 @@ function punchView(p, y) { punchPitch += p; punchYaw += y; }
 // ---- drawing the foes ---------------------------------------------------------
 function foePose(f) {
   const st = FOES[f.cls], P = poseIdle({}, gameTime + f.homeX), c = CAST[f.cls];
+  if (f.cls === 'thing' && typeof SKINNED !== 'undefined' && SKINNED.thing) {   // the goblin body: a hunched lope on two legs
+    const t = gameTime + f.homeX;
+    if (f.dead) {                                     // pitched over backward, limbs flung out, then still
+      const k = smoothstep(0, 0.45, f.deathT), sd = hrand(Math.round(f.homeX * 10), 3, 5, 5) < 0.5 ? -1 : 1;
+      return Object.assign(P, { pitch: -1.45 * k, roll: 0.35 * sd * k, drop: 0.12 * k, lean: -0.2 * k, headX: 0.5 * k, headY: 0.6 * sd * k,
+        uxL: -0.6 * k, uxR: -0.9 * k, uzL: 1.3 * k, uzR: 1.1 * k, fxL: -0.8 * k, fxR: -0.4 * k, txL: -0.9 * k, txR: -0.3 * k, sxL: 1.4 * k, sxR: 0.6 * k });
+    }
+    if (f.state === 'lurk' || f.state === 'drop') return Object.assign(P, { pitch: Math.PI, drop: 0.42, uxL: -2.6, uxR: -2.6, fxL: -0.4, fxR: -0.4, txL: -0.6, txR: -0.6, sxL: 1.2, sxR: 1.2 });
+    const ph = f.walk * 3.6, amt = f.moving ? 1 : 0.12, sw = Math.sin(ph) * amt;
+    Object.assign(P, { lean: 0.5 + 0.1 * Math.abs(sw), headX: -0.45 + Math.sin(t * 3) * 0.06, drop: -0.16 - Math.abs(Math.cos(ph)) * 0.05 * amt,
+      txL: -0.35 + sw * 0.6, txR: -0.35 - sw * 0.6, sxL: 0.65 + Math.max(0, -Math.sin(ph - 0.9)) * 0.7 * amt, sxR: 0.65 + Math.max(0, Math.sin(ph - 0.9)) * 0.7 * amt,
+      uxL: -0.45 - sw * 0.5, uxR: -0.45 + sw * 0.5, uzL: 0.3, uzR: 0.3, fxL: -0.5, fxR: -0.5, roll: sw * 0.06 });
+    if (f.state === 'windup') { const k = smoothstep(0, FOES.thing.windup, f.t); Object.assign(P, { lean: lerp(P.lean, 0.05, k), headX: lerp(P.headX, -0.1, k), uxL: lerp(P.uxL, -2.5, k), uxR: lerp(P.uxR, -2.5, k), uzL: 0.45, uzR: 0.45, fxL: -0.7, fxR: -0.7 }); }
+    if (f.state === 'strike') Object.assign(P, { lean: 0.85, headX: -0.6, uxL: -1.5, uxR: -1.5, fxL: -0.05, fxR: -0.05, txL: -0.8, sxL: 0.9, drop: -0.25 });
+    if (f.state === 'stagger' || f.state === 'pain') Object.assign(P, { lean: -0.15, roll: 0.35, headX: 0.35, uxL: 0.4, uxR: -0.2, uzL: 0.8, uzR: 0.8 });
+    return P;
+  }
   if (f.cls === 'thing') {
     if (f.dead) {                                     // rolls over, limbs curling up like a dead spider's
       const k = smoothstep(0, 0.5, f.deathT), sd = hrand(Math.round(f.homeX * 10), 3, 5, 5) < 0.5 ? -1 : 1;
@@ -409,7 +454,7 @@ function foePose(f) {
     if (f.falling) return Object.assign(P, { uzL: 1.4, uzR: 1.4, uxL: -2, uxR: -2.4, txL: -0.6, sxL: 0.8, unarmed: true });   // flailing down the well
     return deathPose(f, P);
   }
-  if (f.moving) poseWalk(P, f.walk * 2.6, Math.min(1, 1), !c.shield && c.weapon !== 'spear');
+  if (f.moving) poseWalk(P, f.walk * 3.4, Math.min(1, 1), !c.shield && c.weapon !== 'spear');   // stride matched to the ground covered: no sliding feet
   const t = f.t;
   switch (f.state) {
     case 'windup': {
