@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10245, hash: 'b360990c' };
+const EXPECTED = { tick: 10155, hash: 'ac341a50' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -84,7 +84,7 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   }
   return CIM.obs();
 };
-window.__heal = (maxX = 1e9) => { for (const it of CIM.state.items) if (!it.taken && it.heal && it.x < maxX * C && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+window.__heal = (maxX = 1e9) => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && Math.abs((it.y || 0) - CIM.state.y) < 2.5 && !it.taken && it.heal && it.x < maxX * C && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
   x *= C; z *= C;
@@ -134,7 +134,7 @@ for (const [i, x] of [[0, 73.75], [1, 77.25], [2, 81.2]]) { o = await O(`__lane(
 await O('__heal()');
 await O('__route([[88, 31]])');
 o = await O('__fight(["heap1", "heap2", "heap3", "heap4"], 15000, 60)'); log('heap:', brief(o));
-o = await O('__fight(["heap1", "heap2", "heap3", "heap4"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap4"], 15000, 60)');
+o = await O('__fight(["heap1", "heap2", "heap3", "heap4"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap4", "heap5"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap5"], 15000, 60)');
 for (let i = 0; i < 60 && await ev('CIM.state.shamu.tsotha.state') !== 'offer'; i++) await O('__wait(72)');
 const ts = await O('[CIM.state.shamu.tsotha.x, CIM.state.shamu.tsotha.z]');
 await O(`__face(${ts[0]}, ${ts[1]}, 0.1)`);

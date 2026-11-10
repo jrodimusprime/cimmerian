@@ -137,6 +137,9 @@ const LEVEL_E1M2 = {
     { class: 'thing', id: 'v7', at: [39, 8], group: 'vaults', yaw: Math.PI }, { class: 'thing', id: 'v8', at: [42, 9], group: 'vaults', yaw: -Math.PI / 2 },
     { class: 'thing', id: 'p6', at: [25, 25], group: 'post', yaw: 0 }, { class: 'thing', id: 'p7', at: [31, 26], group: 'post', yaw: Math.PI },
     { class: 'thing', id: 'l1', at: [55.5, 15.5], group: 'pits', lurk: true },
+    // more of the pits' nameless things: in the gnawed hall, and on the ledges of the pitted way between the pits
+    { class: 'thing', id: 'q1', at: [21.5, 23], group: 'post' }, { class: 'thing', id: 'q2', at: [29.5, 27.5], group: 'post' }, { class: 'thing', id: 'q3', at: [23, 27.8], group: 'post' },
+    { class: 'thing', id: 'q4', at: [53.5, 11], group: 'pits' }, { class: 'thing', id: 'q5', at: [53.5, 16.5], group: 'pits' }, { class: 'thing', id: 'q6', at: [55.5, 12], group: 'pits' }, { class: 'thing', id: 'q7', at: [59.5, 16], group: 'pits' },
     { class: 'thing', id: 'b1', at: [62, 12.5], group: 'bonepit', yaw: -Math.PI / 2 },
     { class: 'thing', id: 'b2', at: [63.5, 15.2], group: 'bonepit', yaw: -Math.PI / 2 },
     { class: 'thing', id: 'b3', at: [62.6, 13.8], group: 'bonepit', lurk: true },
@@ -303,7 +306,7 @@ const FIELD = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' };   // open ground u
 const STREAM = { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M1 = {
   level: 'e1m1', next: 'e1m2', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
-  squads: ['charge', 'heap1', 'heap2', 'heap3', 'heap4'],                // five or six men who fight as one (combat.js squadChase)
+  squads: ['charge', 'heap1', 'heap2', 'heap3', 'heap4', 'heap5'],                // five or six men who fight as one (combat.js squadChase)
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
   // no walls: the plain goes on to the horizon under the sky; a stream and lines of boulders close the field in
   open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -0.5,
@@ -410,6 +413,11 @@ const LEVEL_E1M1 = {
     { class: 'kknight', id: 'h20', at: [101.6, 34], group: 'heap4', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h21', at: [102.4, 36.5], group: 'heap4', yaw: Math.PI / 2, hold: true },
     { class: 'spearman', id: 'h22', at: [101.6, 38.5], group: 'heap4', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h23', at: [102.4, 27.5], group: 'heap5', yaw: Math.PI / 2, hold: true },     // and a fifth: "again and again"
+    { class: 'kknight', id: 'h24', at: [101.6, 30], group: 'heap5', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h25', at: [102.4, 32.5], group: 'heap5', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h26', at: [101.6, 35], group: 'heap5', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h27', at: [102.4, 37.5], group: 'heap5', yaw: Math.PI / 2, hold: true },
   ],
   // the arrow ground: "Strabonus' Shemitish bowmen had wrought havoc among his knights"
   volley: { rooms: ['gully', 'arrowground'], group: 'line', period: 4.2 },

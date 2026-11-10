@@ -1294,6 +1294,7 @@ function updateShamu() {
   if (M.woke.has('heap1') && !alive('heap1').length) wake('heap2');
   if (M.woke.has('heap2') && !alive('heap2').length) wake('heap3');
   if (M.woke.has('heap3') && !alive('heap3').length && LEVEL.entities.some(e => e.group === 'heap4')) wake('heap4');
+  if (M.woke.has('heap4') && !alive('heap4').length && LEVEL.entities.some(e => e.group === 'heap5')) wake('heap5');
   for (const g of M.woke) if (S.foes.some(f => f.group === g && !f.dead && !f.alert)) alertGroup(g, true);   // the battle is on: after a fall they come again
   if (S.areas.has('line') && !alive('line').length) setFlag('line_broken');
   if (S.room === 'heap') setFlag('lanes_crossed');
@@ -1325,7 +1326,7 @@ function updateShamu() {
   });
   // the end of the field: the kings ride up; the wizard; the ring
   const ts = M.tsotha;
-  if (M.phase === 'fight' && M.woke.has('heap3') && !alive('heap3').length && (!LEVEL.entities.some(e => e.group === 'heap4') || (M.woke.has('heap4') && !alive('heap4').length))) { M.phase = 'kings'; M.t = 0; M.line = 0; setFlag('heap_held'); }
+  if (M.phase === 'fight' && M.woke.has('heap3') && !alive('heap3').length && (!LEVEL.entities.some(e => e.group === 'heap5') || (M.woke.has('heap5') && !alive('heap5').length))) { M.phase = 'kings'; M.t = 0; M.line = 0; setFlag('heap_held'); }
   M.t += DT;
   if (M.phase === 'kings') {
     if (M.line < SHAMU_KINGS.length && M.t > 1 + M.line * 4) { log(SHAMU_KINGS[M.line][0], SHAMU_KINGS[M.line][1]); Sfx.voice(0.5); M.line++; }

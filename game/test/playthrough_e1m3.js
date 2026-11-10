@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
-const EXPECTED = { tick: 11335, hash: 'e2db1ed0' };
+const EXPECTED = { tick: 11399, hash: '9f47a204' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -84,7 +84,7 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   }
   return CIM.obs();
 };
-window.__heal = () => { for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+window.__heal = () => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && Math.abs((it.y || 0) - CIM.state.y) < 2.5 && !it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
   x *= C; z *= C;
@@ -142,11 +142,13 @@ o = await O('__route([[28, 31]])');
 o = await O('__fight(["side"], 9000, 30)'); log('side:', brief(o));
 await O('__heal()');
 // SATHA RETURNS (puzzle): into a side tunnel, shake out the torch, keep still
+for (let i = 0; i < 80; i++) { const ph = await ev('sathaPhase()'); if (ph < 0 || (ph >= 18 && ph <= 30)) break; o = await O('__wait(12)'); }   // into the corridor just after her tail has gone by
 o = await O('__route([[38, 31.5], [41, 31.5], [45, 31.5], [45, 34]])');
 o = await O('CIM.step({ torch: true, yaw: 0, pitch: 0 }, 1)');
 for (let i = 0; i < 60 && !(await ev('CIM.state.flags.satha_passed')); i++) o = await O('__wait(72)');
 log('satha:', brief(o), await ev('CIM.state.torch'));
-// the cage of bars, with a garden in it
+// the cage of bars, with a garden in it: out of the alcove only once her whole length has gone by, well before she rises again
+for (let i = 0; i < 80; i++) { const ph = await ev('sathaPhase()'); if (ph >= 13 && ph <= 33) break; o = await O('__wait(12)'); }
 o = await O('__route([[45, 31.5], [57, 31.5]])');
 const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
 log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED));

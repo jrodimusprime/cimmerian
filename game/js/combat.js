@@ -226,7 +226,7 @@ function updateFoes() {
           else { turn(8); if (f.cool <= 0) { f.state = 'windup'; f.t = 0; Sfx.bowdraw(); } }
         } else if (st.spears && (f.spears === undefined ? st.spears : f.spears) > 1 && d > st.throwAt[0] && d < st.throwAt[1] && f.cool <= 0 && los(f.x, f.y + 1.6, f.z, S.x, S.y + 1.4, S.z)) {
           turn(8); f.state = 'windup'; f.t = 0; f.throwing = true; Sfx.ready(clamp(-dx / 15, -1, 1));   // he keeps his last spear in hand
-        } else if (f.squad && squadChase(f, st, d, dx, dz, move, turn)) {
+        } else if (f.squad && squadChase(f, st, d, dx, dz, move, turn, approach)) {
           /* the squad moved him */
         } else if (d <= foeReach(f) * 0.92 && Math.abs(S.y - f.y) < 1.6) {
           turn(8);
@@ -352,15 +352,21 @@ function yothgaHate(f) {
 // Squads (LEVEL.squads): five or six men who fight as one. Far off they come on as a body, a line abreast at the pace of the
 // slowest; close in they spread to ring the king, each at his own bearing, and only two strike at a time while the rest
 // hold their places, so he is always flanked and never facing them one by one.
-function squadChase(f, st, d, dx, dz, move, turn) {
+function squadChase(f, st, d, dx, dz, move, turn, approach) {
   const mates = S.foes.filter(o => o.group === f.group && !o.dead && !FOES[o.cls].ranged && (o.state === 'chase' || o.state === 'windup' || o.state === 'strike' || o.state === 'recover' || o.state === 'block'));
   const n = mates.length, k = mates.indexOf(f);
   if (n < 2 || k < 0 || Math.abs(S.y - f.y) > 1.6) return false;
   let cx = 0, cz = 0; for (const o of mates) { cx += o.x; cz += o.z; } cx /= n; cz /= n;
   const cd = Math.hypot(S.x - cx, S.z - cz) || 1;
   if (cd > 8 && d > 6) {                                   // the advance: abreast, keeping their dressing
-    const fx = (S.x - cx) / cd, fz = (S.z - cz) / cd, off = (k - (n - 1) / 2) * 1.5;
-    move(cx + fx * 2 + fz * off, cz + fz * 2 - fx * off, st.speed * 0.78); turn(6);
+    // the line forms at the front man's distance: the front halts until the laggards are up, then the whole line steps on
+    const ux = (cx - S.x) / cd, uz = (cz - S.z) / cd, dists = mates.map(o => Math.hypot(o.x - S.x, o.z - S.z));
+    const front = Math.min(...dists), dressed = Math.max(...dists) - front < 3, L = Math.max(6, front - (dressed ? 1.5 : 0));
+    const off = (k - (n - 1) / 2) * 1.5, tx = S.x + ux * L + uz * off, tz = S.z + uz * L - ux * off, td = Math.hypot(tx - f.x, tz - f.z);
+    let clear = true; for (let q = 1, m = Math.ceil(td / 1.2); q < m && clear; q++) { const i = cellIdx(Math.floor((f.x + (tx - f.x) * q / m) / CELL), Math.floor((f.z + (tz - f.z) * q / m) / CELL)); clear = i >= 0 && LV.kind[i] === 1 && !(LV.flags[i] & F_NOPASS); }
+    if (!clear) approach(st.speed * 0.85);                  // stakes or a wall in the way: by the path
+    else if (td > 0.5) move(tx, tz, td > 2.5 ? st.speed : st.speed * 0.7);
+    turn(6);
     return true;
   }
   const reach = foeReach(f), base = Math.atan2(cx - S.x, cz - S.z), a = base + (k - (n - 1) / 2) * Math.min(0.95, 4.6 / n);
