@@ -458,9 +458,12 @@ const LEVEL_E1M4 = {
   props: [
     { prefab: 'torch', at: [6.5, 14], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [13.5, 22], wall: 'S', dim: 0.6 }, { prefab: 'torch', at: [31, 10], wall: 'N', dim: 0.6 },
     { prefab: 'torch', at: [48, 4], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [56, 4], wall: 'N', dim: 0.6 }, { prefab: 'torch', at: [40, 22], wall: 'N', dim: 0.8 },
+    { prefab: 'fungus', at: [52.5, 33.5] }, { prefab: 'fungus', at: [44.5, 31.5] }, { prefab: 'fungus', at: [36.5, 33.5] }, { prefab: 'fungus', at: [27.5, 31.5] }, { prefab: 'fungus', at: [19.5, 33.5] }, { prefab: 'fungus', at: [11.5, 31.5] }, { prefab: 'fungus', at: [4.5, 33.5] }, { prefab: 'fungus', at: [3.5, 25.5] },
+    { prefab: 'torch', at: [10, 23], wall: 'N', dim: 0.6 }, { prefab: 'torch', at: [20, 28], wall: 'N', dim: 0.6 },
     { prefab: 'bones', at: [16, 17] }, { prefab: 'bones', at: [52, 12], big: true }, { prefab: 'skull', at: [55, 9] }, { prefab: 'bones', at: [50, 32] }, { prefab: 'bones', at: [24, 32.5], big: true }, { prefab: 'skull', at: [19, 31.5] }, { prefab: 'bones', at: [3, 26] }, { prefab: 'bones', at: [8, 24], big: true }, { prefab: 'skull', at: [12, 24] }, { prefab: 'bones', at: [10, 27], big: true }, { prefab: 'skull', at: [7, 32] }, { prefab: 'column', at: [30, 13] }, { prefab: 'column', at: [30, 19] },
   ],
-  lights: [{ at: [10, 18], y: 1.5, col: [0.7, 0.15, 0.2], rad: 9, i: 1.1 }],
+  lights: [{ at: [10, 18], y: 1.5, col: [0.7, 0.15, 0.2], rad: 9, i: 1.1 },   // and the warren's pale fungus
+    { at: [52.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [44.5, 31.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [36.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [27.5, 31.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [19.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [11.5, 31.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [4.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [3.5, 25.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }],
   features: [],
   // what the dead left: Tsotha's prisoners had bread and wine smuggled to them, once
   items: [{ kind: 'bread', name: 'heel of black bread', heal: 30, at: [27, 18.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [43, 13.5] },

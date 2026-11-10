@@ -17,12 +17,13 @@ await ev(`window.__chunk = (T) => {
   return P.i < R.length ? 'ok' : 'end';
 }; true`);
 for (const rec of recs) {
+  const tag = rec.split('/').pop().replace('.json', ''); frame = 0;
   await ev(`window.__R = ${readFileSync(rec, 'utf8')}; window.__P = { i: 0, done: 0 }; true`);
   for (;;) {
-    const r = await ev('__chunk(12)');
+    const r = await ev('__chunk(' + (+process.env.CIM_EVERY || 12) + ')');
     if (r === 'end') break;
     if (r.startsWith('load')) continue;
-    await grab(`${dir}/f${String(frame++).padStart(6, '0')}.jpg`);
+    await grab(`${dir}/${tag}_${String(frame++).padStart(6, '0')}.jpg`);
     if (frame % 300 === 0) log('frames', frame, rec, await ev('CIM.state.tick'));
   }
   log(rec, 'done at tick', await ev('CIM.state.tick'), 'hash', await ev('CIM.hash()'), 'frames', frame);

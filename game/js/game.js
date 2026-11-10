@@ -47,11 +47,24 @@ function drawM(name, m, light, glow = 0, alpha = 1) {
 // ---------------------------------------------------------------- text log
 function log(text, cls = '') {
   if (!text) return;
+  const last = logEl.lastElementChild;                  // the same line again: count it, don't repeat it
+  if (last && last.dataset.text === text) { last.dataset.n = (+last.dataset.n || 1) + 1; last.textContent = text + '  (\u00d7' + last.dataset.n + ')'; last.dataset.t = typeof S !== 'undefined' && S ? S.tick : 0; last.style.opacity = 1; return; }
   const el = document.createElement('div');
+  el.dataset.text = text;
   el.className = 'line ' + cls;
   el.textContent = text;
+  el.dataset.t = typeof S !== 'undefined' && S ? S.tick : 0;   // lines fade by game time, so a sped-up replay reads the same
   logEl.appendChild(el);
   while (logEl.children.length > 40) logEl.removeChild(logEl.firstChild);
+}
+function fadeLog() {
+  if (!S) return;
+  for (const el of [...logEl.children]) {
+    const age = (S.tick - (+el.dataset.t || 0)) / SIM_HZ;
+    if (age < 0) { el.dataset.t = S.tick; continue; }                 // a new level restarted the clock
+    const o = clamp(1 - (age - 14) / 2.5, 0, 1);
+    if (o <= 0) el.remove(); else el.style.opacity = o;
+  }
 }
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
@@ -1647,7 +1660,7 @@ function frame(now) {
     punchPitch *= Math.pow(0.0005, dt); punchYaw *= Math.pow(0.0005, dt);
     render(renderAlpha);
     hudT -= dt;
-    if (hudT <= 0 && mode !== 'splash') { hudT = 0.1; updateHUD(); }
+    if (hudT <= 0 && mode !== 'splash') { hudT = 0.1; updateHUD(); fadeLog(); }
   }
   requestAnimationFrame(frame);
 }

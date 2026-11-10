@@ -151,7 +151,7 @@ def human(spec):
     h.name = 'body'
     neutral = (0.6, 0.54, 0.54) if 'afr' in (spec.get('skin') or '') else (0.88, 0.82, 0.8)   # 'black giants': keep Kush dark under the torchlight   # the palette pushes warm skin to gold: start it cooler
     tint = spec.get('skin_tint', neutral)
-    outfit.assign(h, outfit.recipe('skin', base=tint, image=unpaint_nipples(skin_image(spec['skin']), nip_uv) if spec.get('skin') else None,
+    outfit.assign(h, outfit.recipe('skin', base=tint, image=unpaint_nipples(skin_image(spec['skin']), [(u, v, r * spec.get('nip_paint', 1.0)) for u, v, r in nip_uv]) if spec.get('skin') else None,
                                    tile_kind=spec.get('skin_tile'), scale=10, grime=spec.get('dirt', 0.25)))
     h['tex_size'] = 1024
     return h, rig, helpers
@@ -311,7 +311,7 @@ CAST = {
                     skin_tint=(0.9, 0.85, 0.7), targets={'stomach/stomach-pregnant-incr': 0.9, 'neck/neck-double-incr': 1.0},
                     outfit=['eyes', dict(kind='robe', col='ochre', flare=1.2, belly=0.3), dict(kind='belt', col='green', at=0.12, height=0.08)]),
     # ---- e1m4 ----
-    'pelias': dict(macro=M(gender=1.0, age=0.55, muscle=0.25, weight=0.0, height=0.8), race=W, skin='cauc_old', skin_tint=(0.86, 0.84, 0.8),
+    'pelias': dict(macro=M(gender=1.0, age=0.55, muscle=0.25, weight=0.0, height=0.8), race=W, skin='cauc_old', skin_tint=(0.86, 0.84, 0.8), nip_paint=1.9,   # the old skin paints them wide
                    targets={'forehead/forehead-scale-vert-incr': 1.0, 'cheek/l-cheek-volume-decr': 0.8, 'cheek/r-cheek-volume-decr': 0.8, 'head/head-oval': 0.6},
                    hair=('short02', (0.08, 0.07, 0.06)), brows=('eyebrow001', (0.06, 0.05, 0.05)),
                    outfit=['loincloth', 'eyes', dict(kind='beard', col='beard', length=0.04, width=0.7)]),

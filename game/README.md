@@ -1,8 +1,8 @@
-# The game: e1m2 "The Pits", e1m1 "The Plain of Shamu" and e1m3 "The Tunnels Below"
+# The game: The Scarlet Citadel, e1m1 to e1m8
 
-Three playable levels, told out of joint as README §9 plans: **e1m2, The Pits** opens cold in the chains (milestone M4), **e1m1, The Plain of Shamu** is the flashback to how the king got there, and **e1m3, The Tunnels Below** jumps forward again. All three are built on the engine from **The Endless Cave** (`colossal_cave_adventure_3d`): pure JavaScript and WebGL2, no build step and no asset files. It is drawn in the Quake manner: low resolution, every pixel snapped to the game's palette, banded light and a dark haze.
+All eight levels of the book are playable, told out of joint as README §9 plans: **e1m2, The Pits** opens cold in the chains, **e1m1, The Plain of Shamu** is the flashback to how the king got there, and from **e1m3, The Tunnels Below** the story runs straight on: **e1m4 Yothga**, **e1m5 The Scarlet Citadel**, **e1m6 The Tower of Tamar**, **e1m7 The Relief of Shamar** and **e1m8 The Tybor**, to the eagle and the ending. They are built on the engine from **The Endless Cave** (`colossal_cave_adventure_3d`): pure JavaScript and WebGL2, no build step and no asset files. It is drawn in the Quake manner: low resolution, every pixel snapped to the game's palette, banded light and a dark haze.
 
-**Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game), or open `index.html` in a browser. Everything is generated at load time. A five-second title card opens the game, and each level opens with its story splash. `?level=e1m1` or `?level=e1m3` starts at that level. `?cheat=true` turns on god mode (no damage; a fatal fall puts you back at the last checkpoint) and lets **N** skip to the next level. `?cast` opens the **cast gallery**: every creature and person the campaign uses, prologue to the Tybor, front and profile in the game's own renderer (left and right arrows step through them; `?cast=gromel` starts at one). The rendered sheets are in [`docs/cast/`](../docs/cast/).
+**Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game), or open `index.html` in a browser. Everything is generated at load time. A five-second title card opens the game, and each level opens with its story splash. `?level=e1m1` (or any `e1mN`) starts at that level. `?cheat=true` turns on god mode (no damage; a fatal fall puts you back at the last checkpoint) and lets **N** skip to the next level. `?cast` opens the **cast gallery**: every creature and person the campaign uses, prologue to the Tybor, front and profile in the game's own renderer (left and right arrows step through them; `?cast=gromel` starts at one). The rendered sheets are in [`docs/cast/`](../docs/cast/).
 
 | Key | Action |
 |---|---|
@@ -19,7 +19,7 @@ Three playable levels, told out of joint as README §9 plans: **e1m2, The Pits**
 
 Each level alternates puzzle areas and action areas (README §9). The HUD names each area as you enter, and entering one sets a checkpoint. When you die, enemies go back to their posts but keep their wounds, as Quake's monsters did.
 
-Play order: e1m2 → e1m1 → e1m3. Map names keep the book's numbering.
+Play order: e1m2 → e1m1 → e1m3 → e1m4 → … → e1m8. Map names keep the book's numbering.
 
 ### e1m2, The Pits
 
@@ -112,10 +112,10 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §5 level spec | `LEVEL` in `js/level.js`: areas, rooms, links, props, entities and a `puzzle:` block in the YAML shape, built into a grid |
 | §7 palette | 128×128 textures built from the ramps: irregular hewn courses, worn flagstones, rotten straw, dripping cave rock, mud. A large-scale grime map breaks up the repetition across every surface. Every clue is carved into its wall as pale, unreadable glyphs. The final image is snapped to the 128-colour game palette through a lookup table (the Quake look, F4) |
 | §9 pacing | The `areas:` list in the spec, with a `type` of puzzle or action |
-| §10 solver | `solvePuzzle()` searches every flag state. It logs at load: e1m2 *6 states*, e1m1 *5 states*, e1m3 *6 states*, goal reachable, no softlocks |
+| §10 solver | `solvePuzzle()` searches every flag state. It logs at load for every level (e.g. e1m2 *6 states*, e1m7 *14 states*): goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
-| §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, kick, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m2: `9443`, `03de69bf`; e1m1: `11335`, `e4eed28f`; e1m3: `9569`, `ba7717eb`) |
+| §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, parry, throwSpear, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m1 `11707` `9b1a737a`; e1m2 `9443` `84095d10`; e1m3 `9704` `acf9f759`; e1m4 `14276` `f0a50d2b`; e1m5 `15358` `f04118f8`; e1m6 `10537` `fa1fdb5a`; e1m7 `16224` `f83ae900`; e1m8 `11218` `76d0c87e`). With `CIM_RECORD=file` a run's inputs are saved, and `test/video.js` replays them, grabbing a frame every 12 ticks (5× speed at 30 fps); `test/video_assemble.py` makes the MP4 in Blender |
 
 ## Not the real build
 
@@ -143,7 +143,8 @@ This shows the design working. It is not the production pipeline:
 | `models/cast/` | The built cast: CC0 MakeHuman bodies in Blender-built armour, the beasts, the weapons. Each level loads only its own |
 | `js/combat.js` | Weapons, kicks, enemy AI, flow-field pathing |
 | `js/textures.js` | Ramp-locked procedural textures and the game palette |
-| `js/level.js` | The e1m2, e1m1 and e1m3 specs, the puzzle solver and the grid queries |
+| `js/level.js` | The eight level specs, the puzzle solver and the grid queries |
+| `js/beats.js` | The later levels' story beats: lines, flags, waking groups, sleepers, Pelias following, allied ranks, Tsotha's globes, the eagle |
 | `js/audio.js` | Synthesised sound |
 | `js/splash.js` | Splash text and the engraving painter |
 | `js/game.js` | Sim tick, player, giant, Satha, Shukeli, puzzles, HUD, rendering and the `CIM` agent API |

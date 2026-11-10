@@ -12,12 +12,17 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 
 > **3. The game lasts at least an hour and a half.** The campaign, `e1m1` to `e1m8`, must take a first-time player at least **90 minutes** in total; the optional prologue doesn't count toward it. That's at least **11–12 minutes a level** on average. Lengthen a short level the rule-2 way: more of the place the book describes, more of the opposition it puts there, more agility over its own ground. Never pad with invented scenes. Each level's length is checked at build time against its recorded solution (section 11): a first-time player is assumed to take about **4×** the bot's recorded run (an estimate until playtests measure it), so each golden run should last about **3 minutes or more** of game time.
 >
-> | Level | Budget (first-time) | Golden run now | Est. first-time now |
-> |---|---|---|---|
-> | `e1m1` The Plain of Shamu | 11 min | 2:44 | ~11 min |
-> | `e1m2` The Pits | 12 min | 2:11 | ~9 min (needs more) |
-> | `e1m3` The Tunnels Below | 12 min | 2:13 | ~9 min (needs more) |
-> | `e1m4`–`e1m8` | 11 min each | not built | |
+> | Level | Golden run | Est. first-time (4×) |
+> |---|---|---|
+> | `e1m1` The Plain of Shamu | 2:42 (11707 ticks) | ~10.8 min |
+> | `e1m2` The Pits | 2:11 (9443 ticks) | ~8.7 min |
+> | `e1m3` The Tunnels Below | 2:14 (9704 ticks) | ~9.0 min |
+> | `e1m4` Yothga | 3:18 (14276 ticks) | ~13.2 min |
+> | `e1m5` The Scarlet Citadel | 3:33 (15358 ticks) | ~14.2 min |
+> | `e1m6` The Tower of Tamar | 2:26 (10537 ticks) | ~9.8 min |
+> | `e1m7` The Relief of Shamar | 3:45 (16224 ticks) | ~15.0 min |
+> | `e1m8` The Tybor | 2:35 (11218 ticks) | ~10.4 min |
+> | **Campaign** | **22:47** (98467 ticks) | **~91 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **The telling is out of joint.** The game opens *in medias res*, in the pits, chained in the dark, the best possible first level. When the pits are behind you it flashes back to the plain of Shamu: *how did we get here?* Then it jumps forward again into the tunnels and follows the book to the end. This changes only the order in which levels are **played**, never what happens inside them; each level is still its stretch of the book, beat for beat. (Howard does the same: chapter III opens with the chained king remembering.)
@@ -481,9 +486,14 @@ Exit: the eagle takes the head (ending splash).
 
 | Where | Book | Current build | Fix |
 |---|---|---|---|
-| e1m1 | The plain of Shamu | *(was: not built; then a walled field)* | **Done**: an open plain to the horizon, closed by a stream, boulders and the ranks of the host. The charge, the gully of dead (agility), the volleys over the arrow ground, the Shemite line, three charge lanes, two waves at the heap, the kings' lines from the book, Tsotha's offer and the fang |
+| e1m1 | The plain of Shamu | *(was: not built; then a walled field)* | **Done**: an open plain to the horizon, closed by a stream, boulders and the ranks of the host. The charge, the gully of dead (agility), the volleys over the arrow ground, the Shemite line, three charge lanes, three waves at the heap, the kings' lines from the book, Tsotha's offer and the fang |
 | e1m2 | Keys gripped with his toes; Shukeli slams the grille; trapped; the pits behind | *(was: a rusted-link puzzle, a bone lure, soldiers in the pits)* | **Done**: rebuilt to the plan above |
 | e1m3 | The weeping, the well and the presence, the torch blown out, Satha returns | *(was: marked ways, a vent puzzle, a hanging sigil-stone and a sigil gate)* | **Done**: rebuilt to the plan above. The weeping through the forks, the weeping thing and the things it drives, the well's breath, the presence and the torch's ember, the draft, the side tunnels, Satha down the corridor, the cage with a garden in it |
+| e1m4 | Yothga in the cage of bars; Pelias freed; Satha flees from him; the dead Shukeli draws the bolt | not built | **Done**: told in beats (`js/beats.js`). Cut the stem; Pelias follows; the old works and their breaks; the gallery, the ledges, the main corridor where Satha turns from Pelias; the dens, the warren, the ossuary and the way the things do not use; the grille, and the dead man's fingers on the bolt |
+| e1m5 | Up through the citadel, its household asleep under Pelias's spell; the roof, the steed called | not built | **Done**: the long stair and the skull door, the black corridor, the censers (walk, don't run: running wakes the sleepers), the guard hall, the barracks and armoury, Tsotha's chambers, the tower stair, five gaps of battlements to the tallest tower |
+| e1m6 | Tamar: Arpello in the tower, hurled from the parapet | not built | **Done**: the turret, the leads and their gap, the archers' turret, Arpello on the crown (hurled down), the tower stair, the lower stair and the gate-tower's household guard, out by the postern |
+| e1m7 | The relief of Shamar: the ridge, the siege towers, the Shemites, the spearmen, the press, Strabonus | not built | **Done**: the Bossonians drawn on the ridge and the Gundermen beside you; two Shemite lines; two siege towers to climb and fire; the Kothian spearmen; the press of knights; Strabonus's palace troops, then Strabonus |
+| e1m8 | The rout to the Tybor, the barge bridge, the meadow, the eagle | not built | **Done**: the Kothian camp and the rout along the bank, barge to barge across the river (rotten lashings), the far bank and the reed-beds, the meadow; Pelias's eagle throws Tsotha, who fights with his globes; it takes the head |
 | Satha | "the great shimmering white form"; venom drips | *(was: green; spat)* | **Done**: white; drips |
 
 ---
