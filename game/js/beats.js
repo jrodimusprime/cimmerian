@@ -9,7 +9,7 @@
 // and fire globes. All of it is deterministic: it lives in S and runs in the tick.
 // ---------------------------------------------------------------------------
 function beatsInit() {
-  S.beats = { fired: new Set(), queue: [], t: {} };
+  S.beats = { fired: new Set(), queue: [], t: {}, when: {} };
   const n = LEVEL.npc;
   S.npc = n ? { id: n.id, x: n.at[0] * CELL, z: n.at[1] * CELL, yaw: n.yaw || 0, walk: 0, mode: n.mode || 'stay', t: 0 } : null;
   for (const f of S.foes) if (f.asleep) f.state = 'sleep';
@@ -25,7 +25,7 @@ function updateBeats() {
     if (b.at && !roomsOf(b.at).includes(S.room)) continue;
     if (b.killed && !groupDead(b.killed)) continue;
     if (b.after !== undefined) { B.t[b.id] = (B.t[b.id] || 0) + DT; if (B.t[b.id] < b.after) continue; }
-    B.fired.add(b.id);
+    B.fired.add(b.id); B.when[b.id] = S.tick;
     (b.lines || []).forEach(([t, c], i) => B.queue.push({ at: S.tick + Math.round(i * 2.6 * SIM_HZ), t, c: c || '' }));
     if (b.sets) setFlag(b.sets);
     for (const g of b.wake || []) alertGroup(g, false);
@@ -99,4 +99,25 @@ function globeBurst(x, y, z) {
   for (let k = 0; k < 26; k++) particles.push({ m: 'spark', x, y: y + 0.4, z, vx: (Math.random() - 0.5) * 9, vy: Math.random() * 6, vz: (Math.random() - 0.5) * 9, life: 0.7, max: 0.7, g: 6, s: 1.2 });
   const d = Math.hypot(S.x - x, S.z - z);
   if (d < 3.2) { hurt(Math.round(34 * (1 - d / 3.4)), 'fire'); S.vx += (S.x - x) / (d || 1) * 6; S.vz += (S.z - z) / (d || 1) * 6; }
+}
+// Pelias's eagle (e1m8): circles high over Tsotha once he is thrown; when he falls it stoops on
+// the body, takes the head, and climbs away west into the sunset. Drawn only: nothing in S.
+function drawEagleBeat() {
+  const E = LEVEL.eagle; if (!E || !S.beats || !S.beats.fired.has(E.from)) return;
+  const ts = S.foes.find(f => f.cls === E.foe); if (!ts) return;
+  const t0 = S.beats.when[E.from], t = (S.tick - t0) / SIM_HZ + renderAlpha * DT;
+  const gy = groundInfo(ts.x, ts.z).floor;
+  let x, y, z, yaw;
+  const circle = tt => { const a = tt * 0.45; return [ts.x + Math.cos(a) * 9, gy + 13 + Math.sin(tt * 0.7), ts.z + Math.sin(a) * 9, -a]; };
+  if (!ts.dead) {
+    const dive = clamp(t / 2.5, 0, 1);                  // it came down out of the sky at the steed's head, then rose to circle
+    [x, y, z, yaw] = circle(t); y += (1 - dive) * 30;
+  } else {
+    const td = (S.tick - (S.beats.when[E.dead] || S.tick)) / SIM_HZ + renderAlpha * DT;
+    const [cx, cy, cz] = circle(t), k = clamp(td / 2, 0, 1), up = clamp((td - 2.6) / 6, 0, 1);
+    x = lerp(cx, ts.x, k) - up * 90; y = lerp(cy, gy + 0.6, k) + up * 40; z = lerp(cz, ts.z, k) - up * 20;
+    yaw = up > 0 ? -Math.PI / 2 : Math.atan2(ts.x - cx, ts.z - cz);
+    if (up >= 1) return;
+  }
+  drawEagle(x, y, z, yaw, gameTime * (ts.dead ? 2 : 1), sampleLight(x, y, z));
 }

@@ -43,7 +43,7 @@ const FOES = {
   // Shamar (ch. V): Strabonus among his palace troops, "his axe ... clanged on Conan's helmet"
   strabonus: { hp: 320, speed: 3.6, reach: 2.9, dmg: 22, windup: 0.62, strike: 0.26, recover: 0.6, block: 'front', sight: 24, name: 'Strabonus of Koth', boss: true },
   // the Tybor (ch. V): Tsotha at bay, throwing the globes of fire
-  tsotha: { hp: 210, speed: 3.4, reach: 0, dmg: 0, windup: 0.9, strike: 0.2, recover: 1.1, ranged: true, globe: true, keep: [5, 13], sight: 30, name: 'Tsotha-lanti', boss: true },
+  tsotha: { hp: 280, speed: 3.4, reach: 0, dmg: 0, windup: 0.9, strike: 0.2, recover: 1.1, ranged: true, globe: true, keep: [5, 13], sight: 30, name: 'Tsotha-lanti', boss: true },
   weeper: { hp: 1e9, speed: 2.7, reach: 1.7, dmg: 30, windup: 0.3, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: null },
 };
 const ALERT_LINES = {
@@ -358,7 +358,7 @@ function killFoe(f, how) {
   if (f.dead) return;
   f.dead = true; f.state = 'dead'; f.deathT = 0; f.how = how; f.hp = 0; S.kills++;
   Sfx.death(f.cls === 'thing', panOf(f)); if (how === 'fall') Sfx.scream();
-  log(DEATH_LINES[how](FOES[f.cls].name), 'good');
+  if (!FOES[f.cls].boss) log(DEATH_LINES[how](FOES[f.cls].name), 'good');   // a boss's death has its own lines, in the level's beats
   if (how === 'fall' || f.cls === 'yothga') return;
   fitDeath(f);
   // his weapon leaves his hand: a pickup if you can use it, otherwise it lies broken beside him

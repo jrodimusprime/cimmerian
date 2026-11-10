@@ -47,7 +47,12 @@ try {
   };
   for (let i = 0; i < 100; i++) { if (await ev('!!(window.CIM && CIM.state)').catch(() => false)) break; await sleep(100); }   // the game has loaded its first level
   const body = readFileSync(scriptPath, 'utf8').replace(/^\/\/@include (\S+)$/m, (m, f) => readFileSync(join(dirname(resolve(scriptPath)), f), 'utf8'));
-  const fn = new Function('ev', 'shot', 'sleep', 'log', `return (async () => { ${body} })();`);
-  await fn(ev, shot, sleep, (...a) => console.log(...a));
+  // CIM_RECORD=file: log every agent call so the run can be replayed frame by frame (test/video.js)
+  if (process.env.CIM_RECORD) await ev(`window.__rec = []; { const st = CIM.step.bind(CIM), ld = CIM.load.bind(CIM);
+    CIM.step = (a = {}, n = 1) => { __rec.push([JSON.parse(JSON.stringify(a)), n]); return st(a, n); }; CIM.load = id => { __rec.push(['load', id]); return ld(id); }; } true`);
+  const grab = async (path, quality = 82) => { const r = await send('Page.captureScreenshot', { format: 'jpeg', quality }); writeFileSync(path, Buffer.from(r.result.data, 'base64')); };
+  const fn = new Function('ev', 'shot', 'sleep', 'log', 'grab', 'readFileSync', `return (async () => { ${body} })();`);
+  await fn(ev, shot, sleep, (...a) => console.log(...a), grab, readFileSync);
+  if (process.env.CIM_RECORD) writeFileSync(process.env.CIM_RECORD, await ev('JSON.stringify(__rec)'));
 } catch (e) { console.log('[harness error]', e.stack || e); }
 finally { try { ws && ws.close(); } catch {} chrome.kill('SIGKILL'); process.exit(0); }
