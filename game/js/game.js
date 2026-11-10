@@ -1225,7 +1225,7 @@ function tick(inp) {
   interactTarget = findTarget();
   if (inp.use) interact();
   if (inp.fire) onFire(false);
-  if (inp.kick) parry();
+  if (inp.kick) { if (S.weapon === 'spear') throwSpear(); else parry(); }   // right-click: with a spear in hand it's thrown; no parrying with a spear
   if (inp.throwSpear) throwSpear();
   if ((g.flags & F_WATER) && S.y < (LEVEL.waterY || -1) - 0.6) { die('drown'); return; }
   if (g.kind === 2 && S.y < g.floor + 30 && S.y < -4) { die('fall'); return; }
@@ -1283,7 +1283,7 @@ function hideOverlay() { overlay.className = 'hidden'; overlay.innerHTML = ''; }
 async function showIntro() {
   mode = 'splash'; hud.classList.add('hidden');
   await showTitleCard();
-  await showSplash(LEVEL.level, '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> parry &nbsp; <b>G</b> throw spear &nbsp; <b>1 2 3 4</b> weapons &nbsp; <b>Esc</b> pause</div>');
+  await showSplash(LEVEL.level, '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> parry (with a spear: throw) &nbsp; <b>G</b> throw spear &nbsp; <b>1 2 3 4</b> weapons &nbsp; <b>Esc</b> pause</div>');
   if (mode === 'splash') startPlay(false);
 }
 const LEVEL_INTRO = {
@@ -1330,7 +1330,7 @@ function showPause() {
   mode = 'paused';
   overlay.className = '';
   overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">' + LEVEL.level + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
-    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> parry · <b>G</b> throw spear · <b>1 2 3 4</b> fists, dagger, sword, spear · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
+    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> parry (with a spear: throw) · <b>G</b> throw spear · <b>1 2 3 4</b> fists, dagger, sword, spear · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
     '<div class="setting"><label for="brIn">Brightness</label><input type="range" id="brIn" min="0.8" max="2.2" step="0.05" value="' + brightness + '"><span id="brVal">' + brightness.toFixed(2) + '</span></div>' +
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
     '<div class="setting"><label for="volIn">Sound volume</label><input type="range" id="volIn" min="0" max="1.5" step="0.05" value="' + volume + '"><span id="volVal">' + Math.round(volume * 100) + '%</span></div>' +

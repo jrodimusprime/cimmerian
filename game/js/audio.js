@@ -68,11 +68,12 @@ const Sfx = (() => {
     ac = new C();
     // everything goes through one tone stage: the treble cut well down, a little weight added below,
     // so blades and voices sound like they're in stone rooms and not in a tin
-    master = ac.createGain(); master.gain.value = 0.5 * vol;
-    const shelf = ac.createBiquadFilter(); shelf.type = 'highshelf'; shelf.frequency.value = 2200; shelf.gain.value = -14;
-    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200; lp.Q.value = 0.5;
-    const low = ac.createBiquadFilter(); low.type = 'lowshelf'; low.frequency.value = 220; low.gain.value = 4;
-    master.connect(shelf); shelf.connect(lp); lp.connect(low); low.connect(ac.destination);
+    master = ac.createGain(); master.gain.value = 0.62 * vol;   // a little more gain to make up for the treble taken away
+    const shelf = ac.createBiquadFilter(); shelf.type = 'highshelf'; shelf.frequency.value = 1400; shelf.gain.value = -24;   // the treble cut hard: -24 dB above 1.4 kHz
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; lp.Q.value = 0.6;
+    const lp2 = ac.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 3400; lp2.Q.value = 0.5;              // a second pole pair: a steep roll-off, no hiss or tinkle left
+    const low = ac.createBiquadFilter(); low.type = 'lowshelf'; low.frequency.value = 220; low.gain.value = 5;
+    master.connect(shelf); shelf.connect(lp); lp.connect(lp2); lp2.connect(low); low.connect(ac.destination);
     ambBus = ac.createGain(); ambBus.gain.value = ambVol; ambBus.connect(master);
     nbuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
     const d = nbuf.getChannelData(0);
@@ -130,8 +131,8 @@ const Sfx = (() => {
     init,
     ambience(kind) { setAmb(kind); },
     stats() { return { families: Object.fromEntries(Object.entries(FAMILY).map(([k, v]) => [k, v.length])), singles: Object.keys(BANK), amb: ambNow, nodes: ambNodes.length }; },
-    toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.5 * vol; return muted; },
-    setVolume(v) { vol = v; if (master && !muted) master.gain.value = 0.5 * vol; },
+    toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.62 * vol; return muted; },
+    setVolume(v) { vol = v; if (master && !muted) master.gain.value = 0.62 * vol; },
     setAmbience(v) { ambVol = v; if (ambBus) ambBus.gain.value = ambVol; },
     step(soft, surf = 'stone') { play('step_' + surf, soft ? 0.18 : 0.32, undefined, 1, 0.1) || noise(0.07, soft ? 0.05 : 0.08, 300 + Math.random() * 200, 'lowpass'); },
     pickup() { play('keys', 0.3, undefined, 1.2) || (tone(520, 0.1, 'triangle', 0.05), tone(780, 0.14, 'triangle', 0.05, null, 0.06)); },
