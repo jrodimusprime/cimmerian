@@ -430,9 +430,10 @@ function interact() {
 }
 function takeItem(it) {
   if (it.heal) {
-    if (S.health >= 100) { log('You are not hurt. You leave the ' + it.name + ' for later.', 'dim'); return; }
+    if (S.health >= 100) { log('You are not hurt. You leave the ' + it.name.replace(/^(a|an|the) /, '') + ' for later.', 'dim'); return; }
     S.health = Math.min(100, S.health + it.heal); it.taken = true; Sfx.heal();
-    log(it.kind === 'bread' ? 'You wolf down the ' + it.name + '. Stale, gritty, and better than any feast. (+' + it.heal + ')' : 'You drink the ' + it.name + '. It burns going down. (+' + it.heal + ')', 'good');
+    const nm = it.name.replace(/^(a|an|the) /, '');   // 'a camp loaf' -> 'the camp loaf'
+    log(it.kind === 'bread' ? 'You wolf down the ' + nm + '. Stale, gritty, and better than any feast. (+' + it.heal + ')' : 'You drink the ' + nm + '. It burns going down. (+' + it.heal + ')', 'good');
     return;
   }
   if (it.kind === 'bone') {
@@ -827,7 +828,7 @@ function promptText(t) {
   if (!t) return '';
   if (t.type === 'item' && t.it.kind === 'cellkey') return S.hints.has('stoop') ? '[E] slip your foot from its sandal and grip the keys with your toes' : '[E] bend to the keys';
   if (t.type === 'item' && t.it.kind === 'ember') return '[E] take up the torch and blow on the ember';
-  if (t.type === 'item') return t.it.heal ? '[E] ' + (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name : '[E] take the ' + t.it.name;
+  if (t.type === 'item') return t.it.heal ? '[E] ' + (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name.replace(/^(a|an|the) /, '') : '[E] take the ' + t.it.name.replace(/^(a|an|the) /, '');
   switch (t.type) {
     case 'ring': return '[E] strain at the chain';
     case 'niche_torch': return '[E] take the torch';
