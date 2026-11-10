@@ -1152,7 +1152,7 @@ function loadLevel(id, carry) {
   buildLevel(LEVEL);
   if (entitySpec('scripted_satha') || LEVEL.satha) buildSathaPath();
   if (levelMesh) R.deleteMesh(levelMesh);
-  levelMesh = R.createMesh(buildLevelMesh());
+  { const lm = buildLevelMesh(); levelMesh = R.createMesh(lm); buildWallDecals(lm); }
   if (skyMesh) { R.deleteMesh(skyMesh); skyMesh = null; }
   if (LEVEL.open) skyMesh = R.createMesh(buildSkyMesh(LEVEL.sun || [-1, 0.05, 0.2]));
   R.haze = LEVEL.haze || [0.035, 0.026, 0.02];
@@ -1383,12 +1383,7 @@ function render(alpha) {
     }
   }
   // writing scratched into the walls wherever there is something to read
-  for (const f of LV.features) {
-    if (f.type !== 'clue' || !f.wall) continue;
-    const n = wallIn(f.wall), yaw = Math.atan2(n[0], n[1]), l = sampleLight(f.x + n[0], f.y, f.z + n[1]);
-    const mk = f.id.startsWith('mark') ? 'decal:tally' + ({ mark_one: 1, mark_two: 2, mark_three: 3 })[f.id] : 'decal:scratch';
-    R.key = l.d; R.drawEntity(getModel(mk), m4trs(f.x + n[0] * 0.02, f.y, f.z + n[1] * 0.02, yaw, 0, 0, 1), l, 0, 1, true, true);
-  }
+  for (const d of WALL_DECALS) { R.key = d.l.d; R.drawEntity(d.mesh, m4ident(), d.l, 0, 1, true, true); }
   // e1m3: what comes up out of the well; the cage of bars with a garden in it
   if (S.tun) {
     const T = S.tun, W = LEVEL.well, a = T.pres === 'up' ? 0.13 : T.pres === 'rising' ? 0.03 + 0.1 * smoothstep(0, 5, T.pt) : T.gt < 1.4 ? 0.05 * (1 - T.gt / 1.4) : 0;
@@ -1601,6 +1596,59 @@ addEventListener('wheel', e => {
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement !== canvas && mode === 'play' && !agentInput) showPause();
 });
+
+// ---------------------------------------------------------------- writing cut into the walls
+// The walls are jittered and bulged by the mesher, so a flat quad floats off them. Each scratching is
+// instead projected onto the real wall: a grid of rays cast at the level mesh, the decal laid on the hits.
+let WALL_DECALS = [];
+function buildWallDecals(lm) {
+  for (const d of WALL_DECALS) R.deleteMesh(d.mesh);
+  WALL_DECALS = [];
+  const tris = [];                                       // the level's near-vertical triangles, for ray tests
+  for (let i = 0; i < lm.length; i += 30) {
+    const ny = lm[i + 4];
+    if (Math.abs(ny) < 0.6) tris.push(i);
+  }
+  const ray = (o, d) => {                                // nearest hit along d (Moller-Trumbore)
+    let best = Infinity, bn = null;
+    for (const i of tris) {
+      const ax = lm[i], ay = lm[i + 1], az = lm[i + 2], e1 = [lm[i + 10] - ax, lm[i + 11] - ay, lm[i + 12] - az], e2 = [lm[i + 20] - ax, lm[i + 21] - ay, lm[i + 22] - az];
+      if (Math.abs(ax - o[0]) > 6 || Math.abs(az - o[2]) > 6) continue;
+      const p = [d[1] * e2[2] - d[2] * e2[1], d[2] * e2[0] - d[0] * e2[2], d[0] * e2[1] - d[1] * e2[0]], det = e1[0] * p[0] + e1[1] * p[1] + e1[2] * p[2];
+      if (Math.abs(det) < 1e-9) continue;
+      const inv = 1 / det, t0 = [o[0] - ax, o[1] - ay, o[2] - az], u = (t0[0] * p[0] + t0[1] * p[1] + t0[2] * p[2]) * inv;
+      if (u < 0 || u > 1) continue;
+      const q = [t0[1] * e1[2] - t0[2] * e1[1], t0[2] * e1[0] - t0[0] * e1[2], t0[0] * e1[1] - t0[1] * e1[0]], v = (d[0] * q[0] + d[1] * q[1] + d[2] * q[2]) * inv;
+      if (v < 0 || u + v > 1) continue;
+      const t = (e2[0] * q[0] + e2[1] * q[1] + e2[2] * q[2]) * inv;
+      if (t > 0 && t < best) { best = t; bn = norm3([e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]]); }
+    }
+    return best < Infinity ? { t: best, n: bn } : null;
+  };
+  for (const f of LV.features) {
+    if (f.type !== 'clue' || !f.wall) continue;
+    const n = wallIn(f.wall), side = [n[1], 0, -n[0]];   // n points into the room; side runs along the wall
+    const tally = f.id.startsWith('mark');
+    const layer = tally ? T['TALLY' + ({ mark_one: 1, mark_two: 2, mark_three: 3 })[f.id]] : T.SCRATCH;
+    const w = tally ? 0.32 : 0.75, h = 0.42, NX = 9, NY = 6, P = [];
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+      const a = (i / NX * 2 - 1) * w, b = (j / NY * 2 - 1) * h;
+      const o = [f.x + side[0] * a + n[0] * 1.2, f.y + b, f.z + side[2] * a + n[1] * 1.2];
+      const hit = ray(o, [-n[0], 0, -n[1]]);
+      const t = hit ? hit.t - 0.012 : 1.2 - 0.02;       // 12 mm proud of the stone, no more
+      let nr = hit ? hit.n : [n[0], 0, n[1]]; if (nr[0] * n[0] + nr[2] * n[1] < 0) nr = [-nr[0], -nr[1], -nr[2]];
+      P.push({ p: [o[0] - n[0] * t, o[1], o[2] - n[1] * t], nr, u: i / NX, v: 1 - j / NY });
+    }
+    const out = [];
+    const V = q => out.push(q.p[0], q.p[1], q.p[2], q.nr[0], q.nr[1], q.nr[2], q.u, q.v, 1, layer);
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+      const a = P[j * (NX + 1) + i], b = P[j * (NX + 1) + i + 1], c = P[(j + 1) * (NX + 1) + i + 1], d = P[(j + 1) * (NX + 1) + i];
+      V(a); V(b); V(c); V(a); V(c); V(d);
+    }
+    const l = sampleLight(f.x + n[0], f.y, f.z + n[1]);
+    WALL_DECALS.push({ mesh: R.createMesh(new Float32Array(out)), l });
+  }
+}
 
 // ---------------------------------------------------------------- the cast's built models
 // a rider's seat: the built war-horse stands taller than the old part-built one
