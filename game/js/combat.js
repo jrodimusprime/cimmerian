@@ -12,7 +12,7 @@ const WEAPONS = {
   sword: { name: 'sword', dmg: [30, 30, 48], period: 0.5, reach: 3.0, arc: 0.25, hitAt: 0.2, cleave: true },
   spear: { name: 'spear', dmg: [34, 34, 40], period: 0.55, reach: 3.5, arc: 0.3, hitAt: 0.22 },   // thrust; or throw it (G). It breaks after 5 uses
 };
-const SPEAR_USES = 5, SPEAR_THROW_DMG = 60;
+const SPEAR_USES = 5, SPEAR_THROW_DMG = 60, SPEAR_CARRY = 10;   // a spear breaks after 5 blows; you can carry 10 (one in hand, nine on your back)
 // parry (right-click or F): a short window that turns a blow aside and staggers the man who struck it
 const PARRY = { window: 0.32, cool: 0.55, stagger: 1.0 };
 const WEAPON_ORDER = ['fists', 'dagger', 'sword', 'spear'];
@@ -297,7 +297,7 @@ function startAttack(kick) {
 }
 function resolvePlayerHit() {
   const h = S.pendingHit; if (!h || S.tick < h.at) return; S.pendingHit = null;
-  if (h.w === 'spear') { S.spearUses++; if (S.spearUses >= SPEAR_USES) { S.weapons.spear = false; S.weapon = S.weapons.sword ? 'sword' : S.weapons.dagger ? 'dagger' : 'fists'; Sfx.snapWood(); log('The spear\'s haft splits in your hands. You cast it aside.', 'warn'); } }
+  if (h.w === 'spear') { S.spearUses++; if (S.spearUses >= SPEAR_USES) { Sfx.snapWood(); log('The spear\'s haft splits in your hands. You cast it aside' + (S.spears.length ? ' and pull another from your back.' : '.'), 'warn'); nextSpear(); } }
   const spec = h.kick ? KICK : WEAPONS[h.w], fx = -Math.sin(S.yaw), fz = -Math.cos(S.yaw);
   const inArc = (x, z, y) => {
     const dx = x - S.x, dz = z - S.z, d = Math.hypot(dx, dz);

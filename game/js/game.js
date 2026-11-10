@@ -146,7 +146,7 @@ function onFloor(p, r) {
 }
 const SATHA_CHUNKS = 1;   // one tube: each ring carries its own light (buildSathaTube shade), so no seams
 let sathaMeshes = null;
-const sathaRadius = t => t < 0.12 ? 0.68 + 0.17 * smoothstep(0, 0.12, t) : t < 0.45 ? 0.85 + 0.03 * smoothstep(0.12, 0.45, t) : Math.max(0.04, 0.88 * Math.pow(1 - (t - 0.45) / 0.55, 0.85));
+const sathaRadius = t => t < 0.16 ? 0.4 + 0.45 * smoothstep(0.01, 0.16, t) : t < 0.45 ? 0.85 + 0.03 * smoothstep(0.16, 0.45, t) : Math.max(0.04, 0.88 * Math.pow(1 - (t - 0.45) / 0.55, 0.85));   // a viper's narrow neck behind the broad head, swelling into the body
 // head (i=0), segments, tail: positions with a slither offset baked into the track
 function sathaPoints(sHead) {
   const out = [];
@@ -177,7 +177,7 @@ function newState(seed, carry) {
     giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0,  wp: 0, arms: 0, grabT: 0, fall: 0 },
     satha: { start: entitySpec('scripted_satha') ? Math.round(3 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
-    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, combo: 0, lastSwing: -999, pendingHit: null,
+    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, spears: carry && carry.spears ? carry.spears.slice() : [], combo: 0, lastSwing: -999, pendingHit: null,
     weapons: armed || (carry ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry ? carry.weapon : 'fists', hits: 0,
     foes: newFoes(), alerted: new Set(), areas: new Set([LEVEL.areas[0].id]), portc: { open: 0, target: 0, dropT: 0 },
     gates: Object.fromEntries(LEVEL.links.filter(l => !fixed.includes(l.name)).map(l => [l.name, { open: 0, target: 0 }])),
@@ -465,7 +465,10 @@ function takeItem(it) {
     if (S.flags.has_spear) { it.taken = false; log('You already carry a spear.', 'dim'); return; }
     setFlag('has_spear'); log('You take up the dead man\'s spear and sling it across your back.');
   } else if (it.kind === 'spear') {
-    if (S.weapons.spear) { it.taken = false; log('You already carry a spear.', 'dim'); return; }
+    if (S.weapons.spear) {                                // one in the hand, up to nine more slung on your back
+      if (S.spears.length >= SPEAR_CARRY - 1) { it.taken = false; log('You carry ' + SPEAR_CARRY + ' spears already. Your back will take no more.', 'dim'); return; }
+      S.spears.push(it.uses || 0); Sfx.pickup(); log('You sling the spear across your back with the others (' + (S.spears.length + 1) + ').', 'dim'); return;
+    }
     S.weapons.spear = true; S.weapon = 'spear'; S.spearUses = it.uses || 0;
     log(S.hints.has('spear') ? 'You take up the spear.' : 'You take up the spear. Thrust with it, or throw it (G). A spear won\'t last: the haft splits after a few blows.', 'good'); S.hints.add('spear');
   } else if (it.kind === 'keys') {
@@ -481,10 +484,15 @@ function parry() {
 function throwSpear() {
   if (S.weapon !== 'spear' || S.throwT > 0 || S.swing > 0) return;
   const f = camFwd();
-  S.weapons.spear = false; S.throwT = 0.4;
-  S.weapon = S.weapons.sword ? 'sword' : S.weapons.dagger ? 'dagger' : 'fists';
+  S.throwT = 0.4;
   S.proj.push({ type: 'jav', x: S.x + f[0] * 0.6, y: S.y + 1.5 + f[1] * 0.6, z: S.z + f[2] * 0.6, vx: f[0] * 24, vy: f[1] * 24 + 1.0, vz: f[2] * 24, life: 3, spin: 0, uses: S.spearUses });
+  nextSpear();
   Sfx.whoosh();
+}
+// the spear in hand is gone (thrown or broken): draw the next from your back, or fall back to the sword
+function nextSpear() {
+  if (S.spears.length) { S.spearUses = S.spears.pop(); S.weapons.spear = true; S.weapon = 'spear'; return; }
+  S.weapons.spear = false; S.weapon = S.weapons.sword ? 'sword' : S.weapons.dagger ? 'dagger' : 'fists';
 }
 function onFire(kick) {
   if (S.shamu && S.shamu.tsotha.state === 'offer' && !kick) { startAttack(false); tsothaTouch(); return; }
@@ -1277,7 +1285,7 @@ async function finishLevel() {
   const next = LEVEL.next;
   if (next) {
     await showSplash(next, stats);
-    loadLevel(next, { health: S.health, weapons: S.weapons, weapon: S.weapon, kills: S.kills, deaths: S.deaths, hints: [...S.hints], playTicks: S.playTicks });
+    loadLevel(next, { health: S.health, weapons: S.weapons, weapon: S.weapon, spears: S.spears, kills: S.kills, deaths: S.deaths, hints: [...S.hints], playTicks: S.playTicks });
     startPlay(false);
   } else {
     await showSplash('end', stats + '<p class="sub">' + Math.round(S.playTicks / SIM_HZ / 60) + ' minutes in the saddle, the pits and the tower.</p>', 'Click to begin again');
@@ -1289,7 +1297,7 @@ async function finishLevel() {
 function updateHUD() {
   $('hpFill').style.width = Math.max(0, S.health) + '%';
   $('hpNum').textContent = Math.ceil(Math.max(0, S.health));
-  const carry = [S.flags.has_bone ? 'thighbone (click to throw)' : S.weapon === 'fists' ? 'bare fists' : 'the ' + S.weapon];
+  const carry = [S.flags.has_bone ? 'thighbone (click to throw)' : S.weapon === 'fists' ? 'bare fists' : 'the ' + S.weapon + (S.weapon === 'spear' && S.spears.length ? ' (' + S.spears.length + ' more on your back)' : '')];
   if (S.flags.has_spear) carry.push('a spear, to jam the winch');
   if (S.flags.has_keys) carry.push('keys');
   $('carry').textContent = carry.join(' · ') + (S.kills ? '  ·  ' + S.kills + ' slain' : '');
@@ -1524,14 +1532,17 @@ function render(alpha) {
       if (h[1] > -10) {
         const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
-        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.12); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.12);   // she shimmers: pale even in the dark, but the torch still models her
+        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.2); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.2);   // she shimmers: pale even in the dark, but the torch still models her
       }
       if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS, fw = norm3([hm[8], hm[9], hm[10]]);
       // the neck: the first stretch of the body grows out of the back of the skull, then joins the spine
+      // the neck grows out of the skull's own stump (measured on the model: 0.4 m behind its origin, 0.21 m up, about 0.4 m across)
+      const upv = norm3([hm[4], hm[5], hm[6]]), hs = typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82;
+      const stump = [h[0] + upv[0] * 0.21 * hs - fw[0] * 0.4 * hs, h[1] + upv[1] * 0.21 * hs - fw[1] * 0.4 * hs, h[2] + upv[2] * 0.21 * hs - fw[2] * 0.4 * hs];
       const body = dd => {
         const p = onFloor(spineAt(sHead - 0.55 - dd), sathaRadius(Math.min(1, Math.max(0, dd) / L))); p[1] += rear * (1 - smoothstep(0, 5.5, dd));   // the reared neck eases down to the floor, no crease
-        const w = smoothstep(-0.3, 2.4, dd), q = [h[0] - fw[0] * (0.85 + dd), h[1] - 0.06 - fw[1] * (0.85 + dd), h[2] - fw[2] * (0.85 + dd)];
+        const w = smoothstep(-0.3, 2.4, dd), q = [stump[0] - fw[0] * dd, stump[1] - fw[1] * dd, stump[2] - fw[2] * dd];
         return [lerp(q[0], p[0], w), lerp(q[1], p[1], w), lerp(q[2], p[2], w)];
       };
       let B = down;
