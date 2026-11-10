@@ -17,7 +17,8 @@ const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32
 //   grille (puzzle) -> guardroom + barracks (action) -> winch (puzzle) ->
 //   captain's landing (action) -> exit.
 const LEVEL_E1M2 = {
-  level: 'e1m2', next: 'e1m1', ambient: [0.05, 0.046, 0.04], exitVoid: { from: [65.5, 14], to: [72, 14], w: 3.5 }, title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [72, 32],
+  // strip: the king wakes in chains; whatever he carried on the plain is gone
+  level: 'e1m2', next: 'e1m3', strip: true, ambient: [0.05, 0.046, 0.04], exitVoid: { from: [65.5, 14], to: [72, 14], w: 3.5 }, title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [72, 32],
   // README §9, e1m2: the book's beats in the book's order (ch. II–III)
   areas: [
     { id: 'vault', type: 'puzzle', name: 'The Vault', rooms: ['cell', 'arch'] },
@@ -297,7 +298,7 @@ const LEVEL_E1M3 = {
 const FIELD = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' };   // open ground under the red sky
 const STREAM = { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M1 = {
-  level: 'e1m1', next: 'e1m3', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
+  level: 'e1m1', next: 'e1m2', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
   // no walls: the plain goes on to the horizon under the sky; a stream and lines of boulders close the field in
   open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -0.5,

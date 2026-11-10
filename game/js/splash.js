@@ -24,7 +24,7 @@ SPLASHES.e1m4 = {
 };
 SPLASHES.e1m1 = {
   title: 'THE PLAIN OF SHAMU', scene: 'battle', seed: 11, accent: [[0.5, 0.18, 0.09]],
-  text: 'How did the king come to lie in chains beneath the Scarlet Citadel? Remember. Remember the plain of Shamu: Amalrus of Ophir\'s betrayal, five thousand Aquilonian knights riding into a trap, and the sun going down red on the last of them.',
+  text: 'Conan, King of Aquilonia, rode into Koth with five thousand knights to aid Amalrus of Ophir. Amalrus has betrayed him to Strabonus. On the plain of Shamu the trap has closed, and the sun is going down red on the last of the five thousand.',
 };
 SPLASHES.e1m5 = {
   title: 'THE SCARLET CITADEL', scene: 'descent', seed: 43, accent: [],

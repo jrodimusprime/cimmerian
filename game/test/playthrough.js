@@ -83,7 +83,7 @@ window.__jumpTo = (x, z, maxTicks = 400) => {
 true`);
 const O = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health)} wep=${o.weapon} kills=${o.kills} satha=${typeof o.satha.phase === 'number' ? o.satha.phase.toFixed(1) : o.satha.phase} flags=${Object.entries(o.flags).filter(([, v]) => v).map(([k]) => k).join(',')}`;
-let o = await O('CIM.step({}, 1)');
+let o = await O('(CIM.load("e1m2"), CIM.step({}, 1))');
 // THE VAULT (puzzle): lie still while Satha passes; the black; the keys at your feet
 for (let i = 0; i < 120 && !o.flags.keys_down; i++) o = await O('__wait(36)');
 log('keys down:', brief(o));

@@ -227,8 +227,8 @@ function newState(seed, carry) {
     giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0,  wp: 0, arms: 0, grabT: 0, fall: 0 },
     satha: { start: entitySpec('scripted_satha') ? Math.round(3 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
-    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, spears: carry && carry.spears ? carry.spears.slice() : [], combo: 0, lastSwing: -999, pendingHit: null,
-    weapons: armed || (carry ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry ? carry.weapon : 'fists', hits: 0,
+    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, spears: carry && carry.spears && !LEVEL.strip ? carry.spears.slice() : [], combo: 0, lastSwing: -999, pendingHit: null,
+    weapons: armed || (carry && !LEVEL.strip ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry && !LEVEL.strip ? carry.weapon : 'fists', hits: 0,
     foes: newFoes(), alerted: new Set(), areas: new Set([LEVEL.areas[0].id]), portc: { open: 0, target: 0, dropT: 0 },
     gates: Object.fromEntries(LEVEL.links.filter(l => !fixed.includes(l.name)).map(l => [l.name, { open: 0, target: 0 }])),
     wind: 0, windNow: 0, windSnd: 0,
@@ -1896,7 +1896,7 @@ function boot() {
     R.setPalette(gamePalette());
     const q = new URLSearchParams(location.search);
     if (q.has('cast')) loadCastModels(ALL_MODELS).then(() => galleryShow(galleryIdx));
-    loadLevel(LEVELS[q.get('level')] ? q.get('level') : 'e1m2');
+    loadLevel(LEVELS[q.get('level')] ? q.get('level') : 'e1m1');   // the campaign opens on the plain of Shamu; the pits come second
     lastFrame = performance.now();
     requestAnimationFrame(frame);
     if (q.has('cast')) { startGallery(q.get('cast')); return; }

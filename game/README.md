@@ -1,6 +1,6 @@
 # The game: The Scarlet Citadel, e1m1 to e1m8
 
-All eight levels of the book are playable, told out of joint as README §9 plans: **e1m2, The Pits** opens cold in the chains, **e1m1, The Plain of Shamu** is the flashback to how the king got there, and from **e1m3, The Tunnels Below** the story runs straight on: **e1m4 Yothga**, **e1m5 The Scarlet Citadel**, **e1m6 The Tower of Tamar**, **e1m7 The Relief of Shamar** and **e1m8 The Tybor**, to the eagle and the ending. They are built on the engine from **The Endless Cave** (`colossal_cave_adventure_3d`): pure JavaScript and WebGL2, no build step and no asset files. It is drawn in the Quake manner: low resolution, every pixel snapped to the game's palette, banded light and a dark haze.
+All eight levels of the book are playable, in the story's order: **e1m1, The Plain of Shamu** opens the game with the betrayal and the last charge, **e1m2, The Pits** wakes the king in chains with Satha in the dark, and from **e1m3, The Tunnels Below** the story runs straight on: **e1m4 Yothga**, **e1m5 The Scarlet Citadel**, **e1m6 The Tower of Tamar**, **e1m7 The Relief of Shamar** and **e1m8 The Tybor**, to the eagle and the ending. They are built on the engine from **The Endless Cave** (`colossal_cave_adventure_3d`): pure JavaScript and WebGL2, no build step and no asset files. It is drawn in the Quake manner: low resolution, every pixel snapped to the game's palette, banded light and a dark haze.
 
 **Play:** https://jrodimusprime.github.io/cimmerian/ (the site opens straight into the game), or open `index.html` in a browser. Everything is generated at load time. A five-second title card opens the game, and each level opens with its story splash. `?level=e1m1` (or any `e1mN`) starts at that level. `?cheat=true` turns on god mode (no damage; a fatal fall puts you back at the last checkpoint), lets **N** skip to the next level, and adds **Let the AI play this level** (and a 3× version) to the pause menu: the level restarts and the golden bot's recorded run plays out in front of you, exactly as the test replays it; any key takes back control. The runs live in `autoplay/`; `test/record_autoplay.sh` re-records them after a level changes. `?cast` opens the **cast gallery**: every creature and person the campaign uses, prologue to the Tybor, front and profile in the game's own renderer (left and right arrows step through them; `?cast=gromel` starts at one). The rendered sheets are in [`docs/cast/`](../docs/cast/).
 
@@ -19,7 +19,7 @@ All eight levels of the book are playable, told out of joint as README §9 plans
 
 Each level alternates puzzle areas and action areas (README §9). The HUD names each area as you enter, and entering one sets a checkpoint. When you die, enemies go back to their posts but keep their wounds, as Quake's monsters did.
 
-Play order: e1m2 → e1m1 → e1m3 → e1m4 → … → e1m8. Map names keep the book's numbering.
+Play order: e1m1 → e1m2 → e1m3 → e1m4 → … → e1m8. Map names keep the book's numbering.
 
 ### e1m2, The Pits
 
