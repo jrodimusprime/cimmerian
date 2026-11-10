@@ -103,7 +103,7 @@ def tile(kind):
 
 # ---- recipe materials: what gets baked ----------------------------------------------
 def recipe(name, *, base=(0.5, 0.5, 0.5), tile_kind=None, scale=12.0, image=None, grime=0.35, edge_wear=0.0,
-           stripes=None, glow=0.0, uv_mode='UV'):
+           stripes=None, glow=0.0, uv_mode='UV', photo=None):
     """A node tree whose emission is the surface colour: a tint, an optional tiled pattern
     (UV-mapped), an optional image (UV), large-scale grime in object space."""
     m = bpy.data.materials.new(name)
@@ -124,6 +124,26 @@ def recipe(name, *, base=(0.5, 0.5, 0.5), tile_kind=None, scale=12.0, image=None
         L.new(tc.outputs['UV'], it.inputs[0])
         mul = N.new('ShaderNodeMix'); mul.data_type = 'RGBA'; mul.blend_type = 'MULTIPLY'; mul.inputs[0].default_value = 1.0
         L.new(it.outputs[0], mul.inputs[6]); L.new(cur, mul.inputs[7]); cur = mul.outputs[2]
+    if photo:                                             # a CC0 photographed surface (ambientCG): colour x its relief
+        pdir, pscale, relief = photo
+        import glob
+        mp = N.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (pscale, pscale, pscale)
+        L.new(tc.outputs['UV'], mp.inputs[0])
+        ci = N.new('ShaderNodeTexImage'); ci.image = bpy.data.images.load(glob.glob(pdir + '/*_Color.jpg')[0], check_existing=True)
+        L.new(mp.outputs[0], ci.inputs[0])
+        gray = N.new('ShaderNodeRGBToBW'); L.new(ci.outputs[0], gray.inputs[0])   # keep the photo's light and dark, take its hue from `base`
+        mul = N.new('ShaderNodeMix'); mul.data_type = 'RGBA'; mul.blend_type = 'MULTIPLY'; mul.inputs[0].default_value = 1.0
+        px = np.array(ci.image.pixels[:], np.float32).reshape(-1, 4)[::7, :3]
+        norm = 1.0 / max(1e-3, float((px * [0.2126, 0.7152, 0.0722]).sum(1).mean()))   # the photo's own mean brightness -> 1: only its detail is kept
+        g2 = N.new('ShaderNodeMath'); g2.operation = 'MULTIPLY'; g2.inputs[1].default_value = norm; L.new(gray.outputs[0], g2.inputs[0])
+        L.new(g2.outputs[0], mul.inputs[6]); L.new(cur, mul.inputs[7]); cur = mul.outputs[2]
+        di = N.new('ShaderNodeTexImage'); di.image = bpy.data.images.load(glob.glob(pdir + '/*_Displacement.jpg')[0], check_existing=True)
+        di.image.colorspace_settings.name = 'Non-Color'
+        L.new(mp.outputs[0], di.inputs[0])
+        rm = N.new('ShaderNodeMapRange'); rm.inputs[3].default_value = 1.0 - relief * 0.6; rm.inputs[4].default_value = 1.0 + relief * 0.3
+        L.new(di.outputs[0], rm.inputs[0])
+        mul2 = N.new('ShaderNodeMix'); mul2.data_type = 'RGBA'; mul2.blend_type = 'MULTIPLY'; mul2.inputs[0].default_value = 1.0
+        L.new(cur, mul2.inputs[6]); L.new(rm.outputs[0], mul2.inputs[7]); cur = mul2.outputs[2]
     if tile_kind:
         mp = N.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (scale, scale, scale)
         L.new(tc.outputs['UV'] if uv_mode == 'UV' else tc.outputs['Object'], mp.inputs[0])
