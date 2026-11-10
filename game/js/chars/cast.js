@@ -86,4 +86,5 @@ const CAST = {
   // "stolid Bossonian archers, and keen pikemen from Gunderland, their tawny locks blowing from under their steel caps"
   bossonian: { scale: 1.0, bulk: 1.05, belly: 0.05, skin: 'FACE', head: 'helm_kettle', torso: 'leather', hips: 'leather', arms: 'leather', legs: 'trousers', feet: 'boots', weapon: 'bow', quiver: true, leatherTex: 'LIVERY_BOSSON' },
   gunderman: { scale: 1.06, bulk: 1.05, belly: 0, skin: 'FACE', head: 'helm_kettle', torso: 'mail', hips: 'mail', arms: 'mail', legs: 'trousers', feet: 'boots', weapon: 'pike', tabard: 'LIVERY_GUNDER', locks: 'TAWNY' },
+  yothga: { scale: 1, bulk: 1 },   // drawn by drawYothga; here only so the shared foe code finds a scale
 };

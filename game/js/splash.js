@@ -26,6 +26,26 @@ SPLASHES.e1m1 = {
   title: 'THE PLAIN OF SHAMU', scene: 'battle', seed: 11, accent: [[0.5, 0.18, 0.09]],
   text: 'How did the king come to lie in chains beneath the Scarlet Citadel? Remember. Remember the plain of Shamu: Amalrus of Ophir\'s betrayal, five thousand Aquilonian knights riding into a trap, and the sun going down red on the last of them.',
 };
+SPLASHES.e1m5 = {
+  title: 'THE SCARLET CITADEL', scene: 'descent', seed: 43, accent: [],
+  text: 'Pelias, freed from the flower, leads the way up out of the pits: a long stair, a door with a skull carved in it, and halls where Tsotha\'s guards sleep on their feet under his spell. On the roof, under the stars, he means to call a steed for the king.',
+};
+SPLASHES.e1m6 = {
+  title: 'THE TOWER OF TAMAR', scene: 'descent', seed: 53, accent: [],
+  text: 'Pelias\'s steed has carried the king through the night to Tamar, where Arpello of Pellia has seized the crown while the people believe their king dead. Arpello is in the tower. Shamar is besieged, and Aquilonia\'s host must be gathered to relieve it.',
+};
+SPLASHES.e1m7 = {
+  title: 'THE RELIEF OF SHAMAR', scene: 'battle', seed: 61, accent: [[0.5, 0.18, 0.09]],
+  text: 'The host of Koth and Ophir lies around Shamar, its siege towers hung with raw bull-hides against the walls. On the ridge behind the king the Bossonians draw their bows and the Gundermen level their pikes. Below them, Strabonus.',
+};
+SPLASHES.e1m8 = {
+  title: 'THE TYBOR', scene: 'battle', seed: 71, accent: [[0.5, 0.18, 0.09]],
+  text: 'The host breaks and runs for the river, and the men of Shamar cut the barge bridge adrift. On the far bank, Tsotha-lanti flees on a gaunt steed no natural horse could match, and the king rides after him alone.',
+};
+SPLASHES.end = {
+  title: 'THE SCARLET CITADEL', scene: 'battle', seed: 83, accent: [[0.5, 0.18, 0.09]],
+  text: 'The head of Tsotha-lanti went into the sunset in the talons of an eagle that laughed in the voice of Pelias, and the headless body stumbled away after it and was lost. Koth and Ophir are broken, and Shamar is relieved.',
+};
 SPLASHES.title = { image: 'art/title.jpg', credit: 'John Martin, <i>Pandemonium</i>, 1841' };
 new Image().src = SPLASHES.title.image;
 const INK = [11, 10, 9], BONE_C = [232, 220, 192], SCARLET = [196, 48, 43];

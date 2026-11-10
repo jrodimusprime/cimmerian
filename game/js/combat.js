@@ -31,6 +31,19 @@ const FOES = {
   // "monsters with dripping jaws agape"; "something whimpered in fear and slunk away in the darkness" (ch. III-IV)
   thing: { hp: 32, speed: 4.6, reach: 1.9, dmg: 9, windup: 0.42, strike: 0.25, recover: 0.55, sight: 15, leap: 6, name: 'pit-thing' },
   // the weeping thing (ch. III): Conan fled it, "doubting the power of man-made weapons to harm it"
+  // ---- e1m4-e1m8 ----
+  // Yothga (ch. III): rooted; "the long tendrils arched toward him"; cut through the stem
+  yothga: { hp: 240, speed: 0, reach: 4.2, dmg: 14, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
+  // Tsotha's household: "a rush of slaves" (ch. III); the black guard (above)
+  slave: { hp: 26, speed: 3.8, reach: 1.9, dmg: 7, windup: 0.45, strike: 0.2, recover: 0.5, sight: 14, name: 'citadel slave' },
+  // Tamar (ch. IV): "the swaggering Pellian soldiery", the archers on the tower, Arpello
+  pellian: { hp: 60, speed: 3.3, reach: 3.2, dmg: 14, windup: 0.6, strike: 0.22, recover: 0.7, block: 'alternate', sight: 18, name: 'Pellian man-at-arms', spears: 3, throwAt: [6, 14] },
+  pellian_archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 16], sight: 26, name: 'Pellian archer' },
+  arpello: { hp: 230, speed: 4.0, reach: 2.7, dmg: 18, windup: 0.5, strike: 0.22, recover: 0.5, block: 'alternate', sight: 24, name: 'Arpello of Pellia', boss: true },
+  // Shamar (ch. V): Strabonus among his palace troops, "his axe ... clanged on Conan's helmet"
+  strabonus: { hp: 320, speed: 3.6, reach: 2.9, dmg: 22, windup: 0.62, strike: 0.26, recover: 0.6, block: 'front', sight: 24, name: 'Strabonus of Koth', boss: true },
+  // the Tybor (ch. V): Tsotha at bay, throwing the globes of fire
+  tsotha: { hp: 210, speed: 3.4, reach: 0, dmg: 0, windup: 0.9, strike: 0.2, recover: 1.1, ranged: true, globe: true, keep: [5, 13], sight: 30, name: 'Tsotha-lanti', boss: true },
   weeper: { hp: 1e9, speed: 2.7, reach: 1.7, dmg: 30, windup: 0.3, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: null },
 };
 const ALERT_LINES = {
@@ -58,7 +71,7 @@ function newFoes() {
     const p = { x: e.at[0] * CELL, z: e.at[1] * CELL };
     return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw || 0, yaw: e.yaw || 0,
       hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
-      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold, territory: e.territory || FOES[e.class].territory || null };
+      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold, territory: e.territory || FOES[e.class].territory || null, asleep: !!e.asleep, boss: !!FOES[e.class].boss };
   });
 }
 
@@ -127,10 +140,11 @@ function updateFoes() {
     f.flash = Math.max(0, f.flash - DT); f.cool -= DT; f.t += DT;
     if (f.dead) {
       f.deathT += DT;
-      if (f.falling) { f.vy = (f.vy || 0) - 24 * DT; f.y += f.vy * DT; }
+      if (f.falling) { f.vy = (f.vy || 0) - 24 * DT; f.y += f.vy * DT; if (f.fallTo !== undefined && f.y < f.fallTo) { f.y = f.fallTo; f.falling = 0; f.vy = 0; } }
       continue;
     }
     if (f.state === 'dormant') { if (f.wake !== undefined && S.tick >= f.wake) f.state = 'lurk'; continue; }
+    if (f.state === 'sleep') continue;
     if (f.state === 'lurk') {                           // clinging to the roof in the dark, waiting for something warm
       f.y = groundInfo(f.x, f.z).ceil - 0.05;
       const near = Math.hypot(S.x - f.x, S.z - f.z);
@@ -236,6 +250,11 @@ function foeStrike(f, st) {
     if (f.spears <= 0) f.sidearm = true;
     return;
   }
+  if (st.globe) {                                       // Tsotha: a globe of fire, lobbed
+    const ox = f.x + Math.sin(f.yaw) * 0.6, oy = f.y + 1.6, oz = f.z + Math.cos(f.yaw) * 0.6, T_ = Math.max(0.6, d / 11);
+    S.proj.push({ type: 'globe', x: ox, y: oy, z: oz, vx: (S.x + S.vx * T_ * 0.5 - ox) / T_, vy: (S.y + 0.5 - oy) / T_ + 4.9 * T_, vz: (S.z + S.vz * T_ * 0.5 - oz) / T_, life: 4, spin: 0, g: 9.8, from: f.id });
+    Sfx.whoosh(); return;
+  }
   if (st.ranged) {                                      // loose an arrow, leading the target a little
     const ox = f.x + Math.sin(f.yaw) * 0.5, oy = f.y + 1.45 * CAST[f.cls].scale, oz = f.z + Math.cos(f.yaw) * 0.5;
     const lead = d / 24, tx = S.x + S.vx * lead + (S.rng.next() - 0.5) * 0.5, tz = S.z + S.vz * lead + (S.rng.next() - 0.5) * 0.5, ty = S.y + 1.25;
@@ -340,7 +359,7 @@ function killFoe(f, how) {
   f.dead = true; f.state = 'dead'; f.deathT = 0; f.how = how; f.hp = 0; S.kills++;
   Sfx.death(f.cls === 'thing', panOf(f)); if (how === 'fall') Sfx.scream();
   log(DEATH_LINES[how](FOES[f.cls].name), 'good');
-  if (how === 'fall') return;
+  if (how === 'fall' || f.cls === 'yothga') return;
   fitDeath(f);
   // his weapon leaves his hand: a pickup if you can use it, otherwise it lies broken beside him
   const c = CAST[f.cls], w = c.weapon, tip = deathPoint(f, 0.9), side = deathPoint(f, 0.5, 0.9), far = deathPoint(f, 1.15, -0.7);
@@ -484,10 +503,13 @@ function drawFoes() {
   for (const f of S.foes) {
     if (f.state === 'dormant' || (f.dead && f.falling && f.y < -12)) continue;
     if (f.cls === 'weeper') { drawWeeper(f); continue; }
+    if (f.cls === 'yothga') { const l = sampleLight(f.x, f.y + 1.4, f.z); drawYothga(f.x, f.y, f.z, f.yaw, gameTime, f.dead ? -0.8 * Math.min(1, f.deathT) : f.state === 'windup' || f.state === 'strike' ? 1 : 0.4, l); continue; }
+    if (f.state === 'sleep') { const l = sampleLight(f.x, f.y + 1.4, f.z); drawCharacter(f.cls, f.x, f.y, f.z, f.yaw, Object.assign(poseIdle({}, gameTime * 0.3 + f.homeX), { lean: 0.35, headX: 0.7, drop: -0.35, txL: -1.4, txR: -1.4, sxL: 2.2, sxR: 2.2, uxL: -0.4, uxR: -0.4, fxL: -1.2, fxR: -1.2, unarmed: false, we: -1.2 }), l); continue; }   // slumped asleep against the wall
     const l = sampleLight(f.x, f.y + 1.4, f.z);
     const yaw = f.dead && f.dieYaw !== undefined && f.cls !== 'thing' ? f.dieYaw : f.yaw;
     const cid = f.cls === 'thing' ? ['thing', 'thing_b', 'thing_c'][Math.floor(hrand(Math.round(f.homeX * 10), Math.round(f.homeZ * 10), 7, 1) * 3)] : f.cls;   // each malformed its own way
-    drawCharacter(cid, f.x, f.y, f.z, yaw, foePose(f), l, f.flash > 0 ? 0.55 : 0);
+    const fp = foePose(f); if (f.sidearm) fp.weapon = 'sword';
+    drawCharacter(cid, f.x, f.y, f.z, yaw, fp, l, f.flash > 0 ? 0.55 : 0);
     if (f.debris) for (const d of f.debris) {               // the weapon falls from his hand, and lies broken
       const k = smoothstep(0, 0.45, f.deathT), fl = groundInfo(d.x, d.z).floor;
       const x = lerp(f.x, d.x, k), z = lerp(f.z, d.z, k), y = lerp(f.y + 1.1, fl + 0.03, k * k);

@@ -3,6 +3,7 @@
 // The script file holds an async function body with `ev(expr)`, `shot(name)`, `sleep(ms)` in scope.
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
 
 const [url, scriptPath, outDir] = process.argv.slice(2);
 mkdirSync(outDir, { recursive: true });
@@ -45,7 +46,7 @@ try {
     console.log('[shot]', name);
   };
   for (let i = 0; i < 100; i++) { if (await ev('!!(window.CIM && CIM.state)').catch(() => false)) break; await sleep(100); }   // the game has loaded its first level
-  const body = readFileSync(scriptPath, 'utf8');
+  const body = readFileSync(scriptPath, 'utf8').replace(/^\/\/@include (\S+)$/m, (m, f) => readFileSync(join(dirname(resolve(scriptPath)), f), 'utf8'));
   const fn = new Function('ev', 'shot', 'sleep', 'log', `return (async () => { ${body} })();`);
   await fn(ev, shot, sleep, (...a) => console.log(...a));
 } catch (e) { console.log('[harness error]', e.stack || e); }

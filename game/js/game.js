@@ -290,6 +290,8 @@ function updatePlayer(inp) {
 
 // ---------------------------------------------------------------- damage & death
 const DEATHS = {
+  fire: 'The globe bursts against you in a sheet of green fire, and you burn.',
+  roots: 'You set your hands to the roots, and something below the stone takes hold of them. "Yothga\'s roots are set in hell."',
   drown: 'You go down the bank into the black water. The mail you fought in drags you under, and the plain goes on without you.',
   crush: 'Satha\'s coils roll over you like a landslide of white iron. Bones go like kindling.',
   blunder: 'You blunder into the great sliding body. The coils close on you like a fist, and the pits grow very quiet.',
@@ -733,6 +735,8 @@ function updateProjectiles() {
           S.items.push({ id: 'b' + S.tick, kind: 'bone', name: 'thighbone', x, z, y: gg.floor, taken: false });
           if (!p.noisy) noiseAt(x, z);
         } else Sfx.clatter();
+      } else if (p.type === 'globe') {
+        globeBurst(p.x, Math.max(p.y, groundInfo(p.x, p.z).floor), p.z);
       } else if (p.type === 'jav') {                     // a spear comes down and lies where it fell
         const gg = groundInfo(p.x, p.z);
         if (gg.kind === 1 && !(gg.flags & F_NOPASS) && p.uses < SPEAR_USES) S.items.push({ id: 'jav' + S.tick + '_' + i, kind: 'spear', name: 'spear', uses: p.uses, x: p.x, z: p.z, y: gg.floor, taken: false });
@@ -862,6 +866,10 @@ const ROOM_DESC = {
 };
 function objective() {
   const f = S.flags, live = g => S.foes.some(x => x.group === g && !x.dead && x.alert);
+  if (LEVEL.objectives) {                                  // the later levels: the first objective whose flag isn't set yet
+    if (S.foes.some(x => !x.dead && x.alert && x.state !== 'sleep' && Math.hypot(x.x - S.x, x.z - S.z) < 14 && FOES[x.cls].hp < 1e8)) return 'Fight!';
+    const o = LEVEL.objectives.find(o => !f[o[0]]); return o ? o[1] : '';
+  }
   if (LEVEL.level === 'e1m1') {
     const M = S.shamu;
     if (S.paralysed > 0) return '';
@@ -1114,6 +1122,7 @@ function tick(inp) {
   updateTunnels();
   updateShamu();
   updatePlanks();
+  updateBeats();
   updateProjectiles();
   if (mode !== 'play') return;
   resolvePlayerHit();
@@ -1134,7 +1143,7 @@ function tick(inp) {
   if (S.onGround && sp > 0.8) { stepAcc += sp * DT; bobPhase += sp * DT * 2.2; if (stepAcc > 2.0) { stepAcc = 0; Sfx.step(hiddenAt(S.x, S.z), LEVEL.open ? 'turf' : 'stone'); } }
   bobAmt += ((S.onGround && sp > 0.8 ? Math.min(1, sp / 5) : 0) - bobAmt) * Math.min(1, DT * 8);
   const exE = LEVEL.entities.find(e => e.class === 'trigger_exit'), ex = exE ? exE.rect : [1e9, 1e9, 1e9, 1e9];
-  if (S.x > ex[0] * CELL && S.x < ex[2] * CELL && S.z > ex[1] * CELL && S.z < ex[3] * CELL && (LEVEL.level !== 'e1m3' || S.flags.satha_passed)) finishLevel();
+  if (S.x > ex[0] * CELL && S.x < ex[2] * CELL && S.z > ex[1] * CELL && S.z < ex[3] * CELL && (LEVEL.level !== 'e1m3' || S.flags.satha_passed) && (!LEVEL.exitNeeds || S.flags[LEVEL.exitNeeds])) finishLevel();
 }
 
 // ---------------------------------------------------------------- determinism helpers
@@ -1194,7 +1203,7 @@ function startPlay(agent) {
   Sfx.init();
   hideOverlay(); hud.classList.remove('hidden');
   mode = 'play'; fade = 1; fadeTarget = 0; acc = 0;
-  for (const [t, c] of LEVEL_INTRO[LEVEL.level] || []) log(t, c);
+  for (const [t, c] of LEVEL_INTRO[LEVEL.level] || LEVEL.intro || []) log(t, c);
   if (CHEAT && !agent) log('Cheat mode: god mode is on. N skips to the next level.', 'dim');
   if (!agent) lockPointer();
 }
@@ -1214,7 +1223,7 @@ function loadLevel(id, carry) {
   R.gfog = gf ? [gf.density, gf.falloff, gf.floor || 0, 1] : [0, 0, 0, 0]; R.gfogCol = gf ? gf.col : [0, 0, 0];
   FLOW = null; GRILLE_CELLS.clear(); particles = []; interactTarget = null;
   const seed = parseInt(new URLSearchParams(location.search).get('seed'), 10) || 1;
-  S = newState(seed, carry);
+  S = newState(seed, carry); beatsInit();
   S.y = groundInfo(S.x, S.z).floor; prev = { x: S.x, y: S.y, z: S.z };
   S.room = roomIdAt(S.x, S.z); S.visited.add(S.room);
   const room = LV.rooms.find(r => r.id === S.room); $('locName').textContent = room ? cap(room.name) : '';
@@ -1255,7 +1264,7 @@ async function finishLevel() {
     loadLevel(next, { health: S.health, weapons: S.weapons, weapon: S.weapon, kills: S.kills, deaths: S.deaths, hints: [...S.hints], playTicks: S.playTicks });
     startPlay(false);
   } else {
-    await showSplash('e1m4', stats + '<p class="sub">End of the demo. Yothga, Pelias and the climb through the citadel are next in the plan (README §9).</p>', 'Click to begin again');
+    await showSplash('end', stats + '<p class="sub">' + Math.round(S.playTicks / SIM_HZ / 60) + ' minutes in the saddle, the pits and the tower.</p>', 'Click to begin again');
     location.reload();
   }
 }
@@ -1394,6 +1403,7 @@ function render(alpha) {
     }
   }
   drawFoes();
+  drawNPC(); drawAllies();
   if (S.shamu) {
     const M = S.shamu;
     LEVEL.charges.forEach((c, i) => {

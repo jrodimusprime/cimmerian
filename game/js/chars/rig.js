@@ -44,15 +44,16 @@ function drawCharacter(id, x, y, z, yaw, P, light, glow = 0) {
       M('shin', m4mul(th, m4mul(m4t(0, -RIG.thigh, 0), m4rx(P['sx' + k] || 0))));
     }
   }
-  if (c.weapon && !P.unarmed) {
+  const weapon = P.weapon || c.weapon;
+  if (weapon && !P.unarmed) {
     // the weapon sits in the right fist, blade pointing along the forearm's forward axis
     // P.we: blade elevation above horizontal, in the body's frame (arm angles subtracted out)
     const wx = P.we !== undefined ? -P.we - ((P.uxR || 0) + (P.fxR === undefined ? -0.15 : P.fxR)) : (P.wx || 0);
     const wm = m4mul(handR, m4mul(m4rx(Math.PI / 2 + wx), m4ry(P.wy || 0)));
-    if (c.weapon === 'bow') {
+    if (weapon === 'bow') {
       const lh = m4mul(farmL, m4t(0, -0.32, 0.03));
       M('bow', m4mul(lh, m4rx(Math.PI / 2 - 0.1)));
-    } else M(c.weapon, c.weapon === 'spear' ? m4mul(wm, m4t(0, -0.35, 0)) : c.weapon === 'pike' ? m4mul(wm, m4t(0, -0.9, 0)) : c.weapon === 'axe' ? m4mul(wm, m4t(0, -0.45, 0)) : c.weapon === 'greatsword' ? m4mul(wm, m4t(0, -0.05, 0)) : wm);
+    } else M(weapon, weapon === 'spear' ? m4mul(wm, m4t(0, -0.35, 0)) : weapon === 'pike' ? m4mul(wm, m4t(0, -0.9, 0)) : weapon === 'axe' ? m4mul(wm, m4t(0, -0.45, 0)) : weapon === 'greatsword' ? m4mul(wm, m4t(0, -0.05, 0)) : wm);
   }
   if (c.shield && !P.noShield) M('shield', m4mul(farmL, m4mul(m4t(-0.06, -0.17, 0.04), m4mul(m4ry(-Math.PI / 2 + 0.25), m4rx(0.1)))));
 }
