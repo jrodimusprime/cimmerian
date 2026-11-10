@@ -233,6 +233,25 @@ function addPrefab(mb, p) {
       addLathe(mb, p.x, p.y, p.z, [[0, 0], [0.3, 0], [0.26, 5.6], [0, 5.7]], 8, T.WOOD);
       for (const y of [0.4, 5.2]) addLathe(mb, p.x, p.y + y, p.z, [[0.3, 0], [0.32, 0.06], [0.32, 0.16], [0.3, 0.22]], 8, T.IRON);
       break;
+    case 'stakes': {                                      // a field-work: a heaped earth bank, sharpened stakes driven into it, slanting at the enemy
+      const yaw = p.rot || 0, fx = Math.sin(yaw), fz = Math.cos(yaw), px = fz, pz = -fx, sd = Math.floor(p.x * 7 + p.z * 13);
+      for (let k = -1; k <= 1; k++) addRock(mb, p.x + px * k * 0.85 - fx * 0.2, p.y + 0.18, p.z + pz * k * 0.85 - fz * 0.2, 0.75, 0.5, 0.85, sd + k, T.MUD, 0.25);
+      for (let row = 0; row < 2; row++) for (let k = 0; k < 6; k++) {
+        const w = (k - 2.5) * 0.42 + (row ? 0.2 : 0) + (hrand(sd, k, row, 3) - 0.5) * 0.12, back = row ? -0.35 : 0.15;
+        const bx = p.x + px * w + fx * back, bz = p.z + pz * w + fz * back, tilt = 0.75 + hrand(sd, k, row, 4) * 0.25;
+        addSpike(mb, bx, p.y + 0.35 + row * 0.15, bz, [fx * tilt, 0.65, fz * tilt], 1.5 + hrand(sd, k, row, 5) * 0.5, 0.065, 5, T.WOOD);
+      }
+      break;
+    }
+    case 'stakepit': {                                    // a lily: a pit with a fire-hardened stake at the bottom, and more around it
+      const sd = Math.floor(p.x * 5 + p.z * 11);
+      for (let k = 0; k < 9; k++) {
+        const a = k / 9 * Math.PI * 2 + hrand(sd, k, 1, 1), r = k ? 0.35 + hrand(sd, k, 2, 2) * 0.55 : 0;
+        addSpike(mb, p.x + Math.cos(a) * r, p.y, p.z + Math.sin(a) * r, [(hrand(sd, k, 3, 3) - 0.5) * 0.3, 1, (hrand(sd, k, 4, 4) - 0.5) * 0.3], 0.7 + hrand(sd, k, 5, 5) * 0.35, 0.06, 5, T.WOOD);
+      }
+      for (let k = 0; k < 5; k++) addBox(mb, p.x + (hrand(sd, k, 6, 6) - 0.5) * 1.6, p.y + 0.85, p.z + (hrand(sd, k, 7, 7) - 0.5) * 1.6, 0.6, 0.02, 0.03, T.WOOD, hrand(sd, k, 8, 8) * 6);   // brush that hid it, fallen in
+      break;
+    }
     case 'deadhorse': {                                   // a dead horse on its side: cover from arrows
       const yaw = p.rot || 0, c = Math.cos(yaw), sn = Math.sin(yaw), P = (lx, lz) => [p.x + lx * c + lz * sn, p.z - lx * sn + lz * c];
       const b = P(0, 0); addRock(mb, b[0], p.y + 0.45, b[1], 0.55, 0.45, 1.0, 11, T.HIDE, 0.12);

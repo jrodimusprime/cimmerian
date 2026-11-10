@@ -354,6 +354,7 @@ function updatePlayer(inp) {
 
 // ---------------------------------------------------------------- damage & death
 const DEATHS = {
+  stakes: 'You go onto the sharpened stakes, and they hold you there.',
   fire: 'The globe bursts against you in a sheet of green fire, and you burn.',
   roots: 'You set your hands to the roots, and something below the stone takes hold of them. "Yothga\'s roots are set in hell."',
   drown: 'You go down the bank into the black water. The mail you fought in drags you under, and the plain goes on without you.',
@@ -536,6 +537,28 @@ function autoSpears() {
     it.taken = true; Sfx.pickup();
     if (S.weapon === 'fists') { S.weapons.spear = true; S.weapon = 'spear'; S.spearUses = it.uses || 0; log('You snatch up a spear.', 'dim'); }
     else { S.spears.push(it.uses || 0); S.weapons.spear = true; log('You sling a spear across your back (' + (have + 1) + '). Press 4 to draw one.', 'dim'); }
+  }
+}
+// the field-works wound: run onto a bank of stakes and it throws you back bleeding; drop into a stake-pit and the stakes find you
+function fieldWorks(g) {
+  S.stakeT = (S.stakeT || 0) - DT;
+  if (S.stakeT > 0 || mode !== 'play') return;
+  if (g.idx >= 0 && LV.spikes[g.idx] && S.onGround) {
+    S.stakeT = 1.1; hurt(22, 'stakes'); if (mode !== 'play') return;
+    if (!S.hints.has('lily')) { S.hints.add('lily'); log('The ground gives under you: a pit, and a fire-hardened stake at the bottom of it. Jump out!', 'bad'); }
+    return;
+  }
+  const gx = Math.floor(S.x / CELL), gz = Math.floor(S.z / CELL);
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const idx = cellIdx(gx + dx, gz + dz); if (idx < 0 || !(LV.flags[idx] & F_STAKE)) continue;
+    const ex = dx ? (dx > 0 ? (gx + 1) * CELL - S.x : S.x - gx * CELL) : 9, ez = dz ? (dz > 0 ? (gz + 1) * CELL - S.z : S.z - gz * CELL) : 9;
+    const toward = dx * S.vx + dz * S.vz;
+    if (Math.min(ex, ez) < RADIUS + 0.12 && toward > 1.2) {
+      S.stakeT = 0.8; hurt(Math.round(6 + toward * 1.5), 'stakes'); if (mode !== 'play') return;
+      S.vx -= dx * 6; S.vz -= dz * 6;
+      if (!S.hints.has('stakes')) { S.hints.add('stakes'); log('Sharpened stakes, driven into a bank of earth: you run onto them. Find the gap.', 'bad'); }
+      return;
+    }
   }
 }
 function parry() {
@@ -1228,6 +1251,7 @@ function tick(inp) {
   if (inp.kick) { if (S.weapon === 'spear') throwSpear(); else parry(); }   // right-click: with a spear in hand it's thrown; no parrying with a spear
   if (inp.throwSpear) throwSpear();
   if ((g.flags & F_WATER) && S.y < (LEVEL.waterY || -1) - 0.6) { die('drown'); return; }
+  fieldWorks(g);
   if (g.kind === 2 && S.y < g.floor + 30 && S.y < -4) { die('fall'); return; }
   const id = roomIdAt(S.x, S.z);
   if (id && id !== S.room) {

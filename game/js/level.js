@@ -9,7 +9,7 @@
 // Heights in the spec are in cells, like the README's level YAML.
 // ---------------------------------------------------------------------------
 
-const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32, F_WATER = 64;
+const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32, F_WATER = 64, F_STAKE = 128;
 
 // Pacing (README §9): every level alternates PUZZLE areas (think, read,
 // time things) and ACTION areas (fight). e1m2 runs:
@@ -360,6 +360,9 @@ const LEVEL_E1M1 = {
     { kind: 'wine', name: 'Ophirean wine', at: [86, 46], heal: 25 },
   ],
   // "Ophirean knights in gilded mail ... squat Shemites with blue-black beards, and dark-faced Kothian knights"
+  // the Shemite rise: the archers' stakes planted before them, a gap where the captains stand; stake-pits sown in the arrow ground
+  stakes: [{ from: [61, 16], to: [61, 27], face: -Math.PI / 2 }, { from: [61, 35], to: [61, 46], face: -Math.PI / 2 }],
+  lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16]],
   entities: [
     { class: 'info_player_start', at: [6, 31], yaw: -Math.PI / 2 },
     { class: 'kknight', id: 'c1', at: [15, 24], group: 'charge', yaw: Math.PI / 2 },
@@ -787,7 +790,10 @@ const LEVEL_E1M7 = {
   items: [{ kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [25, 12] }, { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [26, 33] }, { kind: 'wine', name: 'a captain\'s wine-flask', heal: 40, at: [74, 30] },
     { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [19, 17] }, { kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [21, 27] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [28, 22] },
     { kind: 'bread', name: 'a Bossonian\'s bread', heal: 30, at: [32, 19] }, { kind: 'wine', name: 'a pikeman\'s wine-skin', heal: 35, at: [34, 38] },
-    { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [57, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [71, 28] }, { kind: 'wine', name: 'a wine-skin', heal: 35, at: [73, 12] }],
+    { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [57, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [71, 28] }, { kind: 'wine', name: 'a wine-skin', heal: 35, at: [75, 12] }],
+  // the siege lines of Koth: banks of stakes before the spearmen and round the king's own troops, with gaps to sally through; stake-pits in the press
+  stakes: [{ from: [48, 5], to: [48, 19], face: -Math.PI / 2 }, { from: [48, 25], to: [48, 39], face: -Math.PI / 2 }, { from: [73, 5], to: [73, 18], face: -Math.PI / 2 }, { from: [73, 26], to: [73, 39], face: -Math.PI / 2 }],
+  lilia: [[61, 12], [64, 31], [68, 15], [66, 34], [70, 28], [62, 36], [69, 8]],
   entities: [
     { class: 'info_player_start', at: [9, 22], yaw: -Math.PI / 2 },
     { class: 'archer', id: 'a1', at: [22, 12], group: 'shemites' }, { class: 'archer', id: 'a2', at: [24, 18], group: 'shemites' }, { class: 'archer', id: 'a3', at: [23, 26], group: 'shemites' },
@@ -884,6 +890,9 @@ const LEVEL_E1M8 = {
     { kind: 'wine', name: 'a Kothian captain\'s wine', heal: 40, at: [14, 50] }, { kind: 'bread', name: 'camp bread', heal: 30, at: [24, 42] },
     { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 35, at: [18, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [26, 28] },
     { kind: 'wine', name: 'a fugitive\'s wine-skin', heal: 35, at: [60, 12] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [64, 30] }],
+  // the Kothian camp by the river, fortified on its landward side: a bank of stakes with a gate, stake-pits before it
+  stakes: [{ from: [3, 36], to: [8, 36], face: Math.PI }, { from: [13, 36], to: [29, 36], face: Math.PI }],
+  lilia: [[6, 32], [16, 31], [21, 33], [26, 30], [18, 27]],
   entities: [
     { class: 'info_player_start', at: [8, 57], yaw: Math.PI },
     { class: 'kknight', id: 'c1', at: [10, 50], group: 'camp' }, { class: 'spearman', id: 'c2', at: [14, 47], group: 'camp' }, { class: 'archer', id: 'c3', at: [20, 52], group: 'camp' },
@@ -961,7 +970,7 @@ function buildLevel(spec) {
   const [W, H] = spec.grid, N = W * H;
   Object.assign(LV, {
     spec, W, H, kind: new Uint8Array(N), floor: new Float32Array(N), ceil: new Float32Array(N), flags: new Uint8Array(N),
-    room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), planks: [],
+    room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), spikes: new Uint8Array(N), planks: [],
     rooms: spec.rooms, features: [], props: [], lights: [], colliders: [], items: [], blockers: new Set(), corners: null,
   });
   spec.rooms.forEach((r, ri) => {
@@ -998,7 +1007,25 @@ function buildLevel(spec) {
     const [x0, z0] = W2(pk.from[0], pk.from[1]), [x1, z1] = W2(pk.to[0], pk.to[1]);
     LV.planks.push({ x0, z0, x1, z1, hw: 0.36, y: Math.max(groundInfo(x0, z0).floor, groundInfo(x1, z1).floor) });
   }
-  for (const p of spec.props.concat(scatterProps(spec))) {
+  // field-works (README rule 1: how the battle is fought): banks of stakes that block and wound, and stake-pits ("lilies")
+  //   stakes: [{ from: [x, z], to: [x, z], face: yaw }]  cells along an axis; the stakes point toward face
+  //   lilia: [[x, z], ...]                               single cells: a pit 0.9 deep, a stake at the bottom
+  const fort = [];
+  for (const st of spec.stakes || []) {
+    const [x0, z0] = st.from, [x1, z1] = st.to, n = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
+    for (let k = 0; k <= n; k++) {
+      const gx = Math.round(x0 + (x1 - x0) * k / (n || 1)), gz = Math.round(z0 + (z1 - z0) * k / (n || 1)), idx = cellIdx(gx, gz);
+      if (idx < 0 || LV.kind[idx] !== 1) continue;
+      LV.flags[idx] |= F_NOPASS | F_STAKE;
+      fort.push({ prefab: 'stakes', at: [gx + 0.5, gz + 0.5], rot: st.face || 0 });
+    }
+  }
+  for (const [gx, gz] of spec.lilia || []) {
+    const idx = cellIdx(gx, gz); if (idx < 0 || LV.kind[idx] !== 1) continue;
+    LV.kind[idx] = 2; LV.floor[idx] -= 0.9; LV.deep[idx] = 1; LV.spikes[idx] = 1;   // monsters keep out of them
+    fort.push({ prefab: 'stakepit', at: [gx + 0.5, gz + 0.5] });
+  }
+  for (const p of spec.props.concat(scatterProps(spec), fort)) {
     const [x, z] = W2(p.at[0], p.at[1]);
     const prop = Object.assign({}, p, { x, z, y: p.level !== undefined ? p.level : groundInfo(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6).floor });
     LV.props.push(prop);
