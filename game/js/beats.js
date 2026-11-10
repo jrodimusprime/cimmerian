@@ -13,6 +13,10 @@ function beatsInit() {
   const n = LEVEL.npc;
   S.npc = n ? { id: n.id, x: n.at[0] * CELL, z: n.at[1] * CELL, yaw: n.yaw || 0, walk: 0, mode: n.mode || 'stay', t: 0 } : null;
   for (const f of S.foes) if (f.asleep) f.state = 'sleep';
+  // allies who fight (the Gundermen): simulated men, in S, marching behind the king and closing with the enemy
+  S.allyMen = []; S.allyAnchor = null;
+  for (const a of LEVEL.allies || []) if (a.fight) for (let k = 0; k < a.n; k++)
+    S.allyMen.push({ id: a.id, k, x: (a.at[0] + (k % a.cols) * a.step) * CELL, z: (a.at[1] + Math.floor(k / a.cols) * a.step) * CELL, yaw: a.yaw, walk: 0, t: hrand(k, 3, 5, 1) * 1.4, tgt: null, mv: false, groups: a.fight });
 }
 function roomsOf(at) { return Array.isArray(at) ? at : [at]; }
 function groupDead(g) { const m = S.foes.filter(f => f.group === g); return m.length > 0 && m.every(f => f.dead); }
@@ -37,6 +41,56 @@ function updateBeats() {
   while (B.queue.length && B.queue[0].at <= S.tick) { const q = B.queue.shift(); log(q.t, q.c); if (q.c === 'voice') Sfx.voice(0); }
   updateSleepers();
   updateNPC();
+  updateAllyMen();
+}
+// "they were met by the spears of the pikemen. No infantry was a match for the wild Gundermen" (ch. V):
+// the pike line follows the king in ranks ten metres behind him, and any of the enemy who come within reach of it are spitted.
+// Nobody singles them out (the fight is the king's), so they come to no harm.
+const ALLY_COLS = 4, ALLY_GAP = 1.9, PIKE_REACH = 3.0, PIKE_PERIOD = 1.4;
+function updateAllyMen() {
+  const M = S.allyMen; if (!M || !M.length) return;
+  const A = S.allyAnchor || (S.allyAnchor = { x: M[0].x, z: M[0].z });
+  A.x = Math.max(A.x, S.x - 10); A.z += (S.z - A.z) * 0.02;
+  if (!S.allyFlow || S.tick % 36 === 0) { const g = groundInfo(A.x, A.z); S.allyFlow = g.idx >= 0 ? bfs(g.idx) : null; }
+  for (const m of M) {
+    m.t += DT; m.mv = false;
+    if (!m.tgt || m.tgt.dead || S.tick % 18 === m.k % 18) {
+      let best = 12, tg = null;
+      for (const f of S.foes) { if (f.dead || !m.groups.includes(f.group) || f.state === 'dormant' || f.state === 'lurk' || f.state === 'sleep') continue; const d = Math.hypot(f.x - m.x, f.z - m.z); if (d < best && Math.abs(f.y - groundInfo(m.x, m.z).floor) < 1.5) { best = d; tg = f; } }
+      m.tgt = tg;
+    }
+    let tx, tz, sp = 3.6;
+    if (m.tgt) {
+      const f = m.tgt, d = Math.hypot(f.x - m.x, f.z - m.z);
+      m.yaw = Math.atan2(f.x - m.x, f.z - m.z);
+      if (d > PIKE_REACH - 0.2) { tx = f.x; tz = f.z; sp = 4.2; }
+      if (m.t >= PIKE_PERIOD) m.t -= PIKE_PERIOD;
+      if (m.t >= 0.5 && m.t - DT < 0.5 && d < PIKE_REACH + 0.4) allyHit(f, 13 + (m.k % 3) * 2, m);   // the thrust lands at the end of the draw-back
+    } else {
+      const row = Math.floor(m.k / ALLY_COLS), col = m.k % ALLY_COLS;
+      tx = A.x - row * ALLY_GAP; tz = A.z + (col - (ALLY_COLS - 1) / 2) * ALLY_GAP;
+      m.t = Math.min(m.t, 0.2);
+    }
+    if (tx !== undefined) {
+      const dx = tx - m.x, dz = tz - m.z, d = Math.hypot(dx, dz);
+      if (d > 0.3) {
+        let ux = dx / d, uz = dz / d;
+        const st = !m.tgt && d > 6 && S.allyFlow ? flowStep({ x: m.x, z: m.z }, S.allyFlow) : null;
+        if (st) { const sx = st[0] - m.x, sz = st[1] - m.z, sl = Math.hypot(sx, sz) || 1; ux = sx / sl; uz = sz / sl; }
+        const step = Math.min(d, sp * DT), r = collide(m.x + ux * step, m.z + uz * step, 0.35, groundInfo(m.x, m.z).floor, m, false);
+        m.walk += Math.hypot(r[0] - m.x, r[1] - m.z); m.mv = Math.hypot(r[0] - m.x, r[1] - m.z) > step * 0.3; m.x = r[0]; m.z = r[1];
+        if (!m.tgt) m.yaw = Math.atan2(ux, uz);
+      } else if (!m.tgt) m.yaw = Math.PI / 2;
+    }
+    for (const o of M) if (o !== m) { const ox = m.x - o.x, oz = m.z - o.z, od = Math.hypot(ox, oz); if (od < 0.8 && od > 1e-4) { m.x += ox / od * (0.8 - od) * 0.5; m.z += oz / od * (0.8 - od) * 0.5; } }   // shoulder to shoulder, not inside each other
+  }
+}
+function allyHit(f, dmg, m) {
+  if (f.dead) return;
+  f.hp -= dmg; f.flash = 0.12; Sfx.stab && Sfx.stab();
+  for (let q = 0; q < 5; q++) particles.push({ m: 'blood', x: f.x, y: f.y + 1.2, z: f.z, vx: (Math.random() - 0.5) * 2 + Math.sin(m.yaw) * 2, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 2 + Math.cos(m.yaw) * 2, life: 0.6, max: 0.6, g: 9, s: 1 });
+  if (f.hp <= 0) killFoe(f, 'blade');
+  else if (!['windup', 'strike', 'stagger'].includes(f.state)) { f.state = 'pain'; f.t = 0; }
 }
 // the citadel under Pelias's spell: guards asleep where they stand; running feet or a fight close by rouse them
 function updateSleepers() {
@@ -93,8 +147,21 @@ function drawAllies() {
         allyArrow(a, k, x, y, z, cyc, (gameTime + k * 1.37) % cyc);
       }
       else Object.assign(P, { we: 1.35 });
+      if (a.fight) continue;                             // these march and fight: drawn from S.allyMen below
       drawCharacter(a.id, x, y, z, a.yaw + Math.sin(k * 3.1) * 0.12, P, sampleLight(x, y + 1.5, z));
     }
+  }
+  for (const m of S.allyMen || []) {
+    if (Math.hypot(m.x - S.x, m.z - S.z) > 120) continue;
+    const y = groundInfo(m.x, m.z).floor, P = poseIdle({}, gameTime * 0.8 + m.k);
+    if (m.mv) poseWalk(P, m.walk * 3.4, 0.8, false);
+    if (m.tgt) {                                         // pike levelled; draw back, then drive it home
+      const u = m.t;
+      if (u < 0.5) { const k = smoothstep(0, 0.5, u); Object.assign(P, { uxR: lerp(-0.6, 0.35, k), fxR: lerp(-1.3, -1.9, k), twist: -0.35 * k, lean: -0.1 * k, we: 0.05 }); }
+      else if (u < 0.75) { const k = smoothstep(0.5, 0.62, u); Object.assign(P, { uxR: lerp(0.35, -1.45, k), fxR: lerp(-1.9, -0.05, k), twist: lerp(-0.35, 0.2, k), lean: 0.3 * k, we: 0.0 }); }
+      else { const k = smoothstep(0.75, 1.4, u); Object.assign(P, { uxR: lerp(-1.45, -0.6, k), fxR: lerp(-0.05, -1.3, k), lean: 0.3 * (1 - k), we: 0.05 }); }
+    } else Object.assign(P, { we: 1.35 });
+    drawCharacter(m.id, m.x, y, m.z, m.yaw, P, sampleLight(m.x, y + 1.5, m.z));
   }
 }
 // a Bossonian's shaft in flight: loosed at the top of the draw, arcing high over the field onto the enemy line (drawn only)

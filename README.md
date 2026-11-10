@@ -15,14 +15,14 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:35 (11132 ticks) | ~10.3 min |
-> | `e1m2` The Pits | 2:08 (9218 ticks) | ~8.5 min |
-> | `e1m3` The Tunnels Below | 3:22 (14573 ticks) | ~13.5 min |
-> | `e1m4` Yothga | 3:54 (16827 ticks) | ~15.6 min |
-> | `e1m5` The Scarlet Citadel | 3:06 (13413 ticks) | ~12.4 min |
-> | `e1m6` The Tower of Tamar | 2:20 (10114 ticks) | ~9.4 min |
-> | `e1m7` The Relief of Shamar | 4:00 (17270 ticks) | ~16.0 min |
+> | `e1m2` The Pits | 2:00 (8638 ticks) | ~8.0 min |
+> | `e1m3` The Tunnels Below | 2:37 (11335 ticks) | ~10.5 min |
+> | `e1m4` Yothga | 3:50 (16541 ticks) | ~15.3 min |
+> | `e1m5` The Scarlet Citadel | 2:56 (12672 ticks) | ~11.7 min |
+> | `e1m6` The Tower of Tamar | 2:25 (10439 ticks) | ~9.7 min |
+> | `e1m7` The Relief of Shamar | 3:53 (16795 ticks) | ~15.6 min |
 > | `e1m8` The Tybor | 3:18 (14257 ticks) | ~13.2 min |
-> | **Campaign** | **24:43** (106804 ticks) | **~99 min** |
+> | **Campaign** | **23:34** (101809 ticks) | **~94 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.

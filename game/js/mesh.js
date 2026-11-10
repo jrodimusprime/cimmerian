@@ -117,21 +117,12 @@ function addPrefab(mb, p) {
       const bx = p.x + n[0] * 0.12, bz = p.z + n[1] * 0.12, by = p.y + 2.2, yaw = Math.atan2(n[0], n[1]);
       addBox(mb, bx, by, bz, 0.1, 0.16, 0.06, T.IRON, yaw);
       addLathe(mb, bx + n[0] * 0.1, by - 0.1, bz + n[1] * 0.1, [[0.03, 0], [0.05, 0], [0.07, 0.55], [0.0, 0.58]], 5, T.WOOD, 0, ONE3, norm3([n[0] * 0.5, 1, n[1] * 0.5]));
-      const fx = p.x + n[0] * 0.48, fz = p.z + n[1] * 0.48, fy = by + 0.4;
-      for (let k = 0; k < 4; k++) {
-        const a = k / 4 * Math.PI * 2;
-        addSpike(mb, fx + Math.cos(a) * 0.05, fy, fz + Math.sin(a) * 0.05, [Math.cos(a) * 0.25, 1, Math.sin(a) * 0.25], 0.3 + (k % 2) * 0.2, 0.08, 4, T.FIRE);
-      }
-      break;
+      break;                                              // its flame is a sprite (LV.flames, drawn each frame)
     }
     case 'brazier':
       for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2; addBox(mb, p.x + Math.cos(a) * 0.38, p.y + 0.4, p.z + Math.sin(a) * 0.38, 0.04, 0.42, 0.04, T.IRON, -a, ONE3, 0.2); }
       addLathe(mb, p.x, p.y + 0.75, p.z, [[0.1, 0], [0.55, 0.2], [0.62, 0.42], [0.5, 0.42], [0.0, 0.3]], 8, T.IRON);
       for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; addRock(mb, p.x + Math.cos(a) * 0.25, p.y + 1.1, p.z + Math.sin(a) * 0.25, 0.14, 0.08, 0.14, k + 3, T.BLACK); }
-      for (let k = 0; k < 6; k++) {
-        const a = k / 6 * Math.PI * 2;
-        addSpike(mb, p.x + Math.cos(a) * 0.2, p.y + 1.05, p.z + Math.sin(a) * 0.2, [Math.cos(a) * 0.25, 1, Math.sin(a) * 0.25], 0.55 + (k % 2) * 0.4, 0.13, 4, T.FIRE);
-      }
       break;
     case 'table':
       addBox(mb, p.x, p.y + 0.98, p.z, 1.0, 0.06, 0.62, T.WOOD, 0.08);
@@ -140,7 +131,6 @@ function addPrefab(mb, p) {
         addBox(mb, p.x + dx * c + dz * s, p.y + 0.46, p.z - dx * s + dz * c, 0.06, 0.46, 0.06, T.WOOD, 0.08);
       }
       addLathe(mb, p.x - 0.4, p.y + 1.04, p.z + 0.15, [[0, 0], [0.07, 0], [0.07, 0.22], [0, 0.22]], 6, T.BONE);   // candle
-      addSpike(mb, p.x - 0.4, p.y + 1.26, p.z + 0.15, [0, 1, 0], 0.14, 0.035, 4, T.FIRE);
       addLathe(mb, p.x + 0.3, p.y + 1.04, p.z - 0.2, [[0, 0], [0.16, 0], [0.13, 0.04], [0, 0.04]], 7, T.IRON);      // plate
       addRock(mb, p.x + 0.3, p.y + 1.12, p.z - 0.2, 0.1, 0.06, 0.08, 4, T.STRAW);
       break;
@@ -213,7 +203,6 @@ function addPrefab(mb, p) {
       for (let k = 0; k < 4; k++) {
         const cx = p.x + Math.cos(k * 2.3) * 0.25, cz = p.z + Math.sin(k * 2.3) * 0.25, h = 0.08 + (k % 3) * 0.06;
         addLathe(mb, cx, p.y, cz, [[0, 0], [0.06, 0], [0.05, h], [0, h]], 6, T.BONE);
-        addSpike(mb, cx, p.y + h, cz, [0, 1, 0], 0.08, 0.02, 4, T.FIRE);
       }
       break;
     case 'stal': {                                       // a stalagmite and the stalactite reaching down to it
@@ -533,6 +522,20 @@ function buildModel(name) {
       break;
     case 'blood': addRock(mb, 0, 0, 0, 0.045, 0.045, 0.045, 4, T.BLOOD, 0.3); break;
     case 'spark': addRock(mb, 0, 0, 0, 0.03, 0.03, 0.03, 4, T.FIRE, 0.3); break;
+    case 'hate_ring': {                                   // a flat ring of radius 1 (scaled to the wave's radius), a hand's breadth of livid light
+      const N = 64;
+      for (let k = 0; k < N; k++) {
+        const a0 = k / N * Math.PI * 2, a1 = (k + 1) / N * Math.PI * 2, P = (a, r) => [Math.cos(a) * r, 0, Math.sin(a) * r];
+        const q = [P(a0, 0.9), P(a1, 0.9), P(a1, 1.0), P(a0, 1.0)];
+        for (const i of [0, 2, 1, 0, 3, 2]) mb.v(q[i], 0, 1, 0, ONE3, T.YOTHGA_BLOOM);
+      }
+      break;
+    }
+    case 'flame_sprite:0': case 'flame_sprite:1': case 'flame_sprite:2': case 'flame_sprite:3': {   // a unit quad, root at the origin, for one flame frame
+      const layer = T['FLAME' + name.slice(-1)], c = [[-0.5, 0, 0, 1], [0.5, 0, 1, 1], [0.5, 1, 1, 0], [-0.5, 1, 0, 0]];
+      for (const i of [0, 1, 2, 0, 2, 3]) mb.v([c[i][0], c[i][1], 0], 0, 0, 1, [c[i][2], c[i][3], 1], layer);
+      break;
+    }
     case 'vm_leg':                                       // the kick: a booted shin and foot, sole forward (+z is up the leg)
       smoothLathe(mb, 0, 0, 0, [[0.06, -0.02], [0.068, 0.1], [0.06, 0.3], [0.055, 0.42]], 8, T.LEATHER, ONE3, [0, 0, 1]);
       loft(mb, [S_(-0.06, 0.05, 0.05, 0.05, 0), S_(-0.1, 0.055, 0.06, 0.05, 0.03), S_(-0.16, 0.05, 0.035, 0.035, 0.08), S_(-0.2, 0.03, 0.02, 0.02, 0.1)], 10, T.LEATHER);

@@ -4,6 +4,8 @@ const C = 2.5;
 { const st = CIM.step.bind(CIM); CIM.step = (a = {}, n = 1) => { const s = CIM.state; if (s && s.health > 0 && s.health < 55 && s.pouch.length && !a.respawn) a = Object.assign({}, a, { drink: true });
   // fallen into a stake-pit: jump out, the way it was going
   if (s && s.onGround && !a.respawn) { const i = cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)); if (i >= 0 && LV.spikes[i]) a = Object.assign({}, a, { jump: true, forward: 1, run: true }); }
+  // Yothga's wave of hate rolling up: jump it as it passes
+  if (s && s.onGround && !a.respawn && s.hate && s.hate.some(w => { const d = Math.hypot(s.x - w.x, s.z - w.z); return d > w.r && d - w.r < 0.55; })) a = Object.assign({}, a, { jump: true });
   return st(a, n); }; }
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
 window.__go = (x, z, run = true, maxTicks = 3000) => {
@@ -43,7 +45,7 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
     if (s.health < 55 && s.pouch.length) { CIM.step({ drink: true, yaw: s.yaw, pitch: s.pitch }, 1); continue; }   // low: eat or drink from the satchel
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
     if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
-    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && f.state !== "lurk" && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     if (!live.length) {   // a group held back (dormant) may be about to come in: give the beat a moment before calling it done
       if (grace-- > 0 && s.foes.some(q => !q.dead && groups.includes(q.group) && q.state === 'dormant')) { CIM.step({ yaw: s.yaw, pitch: s.pitch }, 1); continue; }
       break;

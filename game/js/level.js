@@ -425,7 +425,7 @@ const LEVEL_E1M1 = {
 // pits with him; Satha flees from what she sees in him; the dead jailer works the bolt.
 // ---------------------------------------------------------------------------
 const LEVEL_E1M4 = {
-  level: 'e1m4', next: 'e1m5', torch: true, title: 'Yothga', ramps: ['ink', 'jade', 'scarlet'], grid: [64, 36], ambient: [0.06, 0.06, 0.055], arms: 'sword', torch: false,
+  level: 'e1m4', next: 'e1m5', torch: true, title: 'Yothga', ramps: ['ink', 'jade', 'scarlet'], grid: [64, 36], ambient: [0.06, 0.06, 0.055], arms: 'sword',
   intro: [['YOTHGA', 'title'], ['Within the bars lay a figure, "twined and bound about with the tendrils of a thick vine which seemed to grow through the solid stone of the floor." Crimson blossoms, "a livid, unnatural crimson, like a perversity of flower-life."', ''],
     ['You find a key for the cage among the keys you carry.', 'dim']],
   objectives: [['stem_cut', 'Cut the stem. Do not touch the roots.'], ['pelias_up', 'Wait for the freed man.'], ['works_crossed', 'Follow Pelias through the old works.'],
@@ -760,7 +760,7 @@ const LEVEL_E1M7 = {
     ['spears_broken', 'The Kothian spearmen, with the Gunderman pikes beside you.'], ['press_through', 'Find the gap through the press of knights.'], ['guards_down', 'Cut through his palace troops.'], ['strabonus_dead', 'Strabonus.'], ['zz', 'The host breaks: east along the road between the camp-fires, after it to the river.']],
   exitNeeds: 'strabonus_dead',
   // on the ridge, facing the enemy (+x): the Bossonian archers loosing over your head, the Gunderman pikes in reserve behind them
-  allies: [{ id: 'bossonian', at: [8, 13], n: 18, cols: 3, step: 1.6, yaw: Math.PI / 2, loose: true }, { id: 'gunderman', at: [4, 26], n: 12, cols: 3, step: 1.5, yaw: Math.PI / 2 }],
+  allies: [{ id: 'bossonian', at: [8, 13], n: 18, cols: 3, step: 1.6, yaw: Math.PI / 2, loose: true }, { id: 'gunderman', at: [4, 26], n: 12, cols: 3, step: 1.5, yaw: Math.PI / 2, fight: ['shemites2', 'spears', 'press'] }],
   areas: [
     { id: 'ridge', type: 'action', name: 'The Ridge', rooms: ['ridge'], cp: [4.5, 21.5, -Math.PI / 2] },
     { id: 'towers', type: 'puzzle', name: 'The Siege Towers', rooms: ['climb1', 'tp1', 'tp2', 'climb2', 'ttop'], cp: [33, 12, -Math.PI / 2] },
@@ -988,7 +988,7 @@ function buildLevel(spec) {
   Object.assign(LV, {
     spec, W, H, kind: new Uint8Array(N), floor: new Float32Array(N), ceil: new Float32Array(N), flags: new Uint8Array(N),
     room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), spikes: new Uint8Array(N), planks: [],
-    rooms: spec.rooms, features: [], props: [], lights: [], colliders: [], items: [], blockers: new Set(), corners: null,
+    rooms: spec.rooms, features: [], props: [], lights: [], flames: [], colliders: [], items: [], blockers: new Set(), corners: null,
   });
   spec.rooms.forEach((r, ri) => {
     const st = r.style === 'hewn';
@@ -1049,10 +1049,13 @@ function buildLevel(spec) {
     if (p.prefab === 'torch') {
       const n = wallIn(p.wall);
       LV.lights.push({ x: x + n[0] * 0.9, y: prop.y + 2.6, z: z + n[1] * 0.9, r: 1.0, g: 0.6, b: 0.28, rad: 15 * Math.sqrt(p.dim || 1), i: 1.6 * (p.dim || 1) });
+      LV.flames.push({ x: x + n[0] * 0.5, y: prop.y + 2.58, z: z + n[1] * 0.5, w: 0.36, h: 0.6 });
     } else if (p.prefab === 'brazier') {
       LV.lights.push({ x, y: prop.y + 1.6, z, r: 1.0, g: 0.55, b: 0.22, rad: 16 * Math.sqrt(p.dim || 1), i: 1.9 * (p.dim || 1) });
+      LV.flames.push({ x, y: prop.y + 1.0, z, w: 0.95, h: 1.3 }, { x: x + 0.18, y: prop.y + 1.0, z: z - 0.12, w: 0.6, h: 0.9 });
       LV.colliders.push({ x, z, r: 0.75 });
-    } else if (p.prefab === 'table') LV.colliders.push({ x, z, r: 1.15 });
+    } else if (p.prefab === 'table') { LV.colliders.push({ x, z, r: 1.15 }); LV.flames.push({ x: x - 0.4, y: prop.y + 1.26, z: z + 0.15, w: 0.07, h: 0.15 }); }
+    else if (p.prefab === 'candles') for (let k = 0; k < 4; k++) LV.flames.push({ x: x + Math.cos(k * 2.3) * 0.25, y: prop.y + 0.08 + (k % 3) * 0.06, z: z + Math.sin(k * 2.3) * 0.25, w: 0.05, h: 0.1 });
     else if (p.prefab === 'heap') LV.colliders.push({ x, z, r: 2.0 });
     else if (p.prefab === 'boulder') LV.colliders.push({ x, z, r: p.size * 0.85 });
     else if (p.prefab === 'deadhorse') { LV.colliders.push({ x, z, r: 0.75 }); if (p.cover) { const ci = cellIdx(Math.floor(p.at[0]), Math.floor(p.at[1])); if (ci >= 0) LV.flags[ci] |= F_HIDE; } }

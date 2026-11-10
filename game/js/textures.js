@@ -18,11 +18,23 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
   'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
   'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
-  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER'];
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
 
+// one frame of the flame sprite (64-texel space, tip at the top): a teardrop whose edge the noise tears into tongues, hot at the root
+function flameTex(x, y, k) {
+  const px = x / 64 - 0.5, h = 1 - y / 64, ty = ((y / 64 + k * 0.25) % 1 + 1) % 1;
+  const sway = 0.05 * Math.sin(h * 5 + k * Math.PI / 2) * h;
+  const w = 0.3 * (h < 0.2 ? Math.sqrt(h / 0.2) : Math.pow(Math.max(0, 1 - (h - 0.2) / 0.8), 0.9));
+  const n = tfbm(x / 64, ty, 4, 3, 9100), n2 = tfbm(x / 64, ty, 8, 2, 9200);
+  const edge = w * (0.6 + 0.8 * n), d = Math.abs(px - sway);
+  const fleck = h > 0.55 && h < 0.97 && n2 > 0.68 && d < 0.16;                      // a torn-off tongue above the body
+  if (h < 0.03 || (d > edge && !fleck)) return { v: 0, ramp: 'fire', cut: false };
+  const core = fleck ? 0.2 : 1 - d / Math.max(edge, 1e-3);
+  return { v: clamp(0.25 + 0.75 * core * (1.05 - 0.75 * h) + 0.15 * (n2 - 0.5), 0, 1), ramp: 'fire', lo: 0.05, hi: 1, cut: true };
+}
 function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
 // n-step ramp between two anchors, slightly gamma-curved like Quake's palette rows
 function makeRamp(lo, hi, n, gamma = 1.15, mid = null) {
@@ -202,6 +214,8 @@ const TEXGEN = {
   } },
   BONE: { f: (x, y, s) => ({ v: 0.5 + tfbm(x / 64, y / 64, 8, 3, s) * 0.5 - (hrand(x, y, s, 2) > 0.95 ? 0.4 : 0), ramp: 'ink', lo: 0.45, hi: 1, h: 0.15 }) },
   FIRE: { f: (x, y, s) => ({ v: 0.08 + 0.72 * tfbm(x / 64, y / 64, 4, 3, s), ramp: 'fire', hi: 0.85, e: 1 }) },   // orange and red, never pale
+  // Quake-style fire: four frames of a cut-out flame, its tongues climbing from frame to frame (the noise scrolls a quarter-tile each)
+  FLAME0: { f: (x, y, s) => flameTex(x, y, 0) }, FLAME1: { f: (x, y, s) => flameTex(x, y, 1) }, FLAME2: { f: (x, y, s) => flameTex(x, y, 2) }, FLAME3: { f: (x, y, s) => flameTex(x, y, 3) },
   EYE: { f: (x, y, s) => ({ v: 0.4 + 0.6 * tfbm(x / 64, y / 64, 8, 2, s), ramp: 'fire', lo: 0.4, e: 1 }) },
   VENOM: { f: (x, y, s) => ({ v: 0.3 + 0.7 * tfbm(x / 64, y / 64, 4, 3, s), ramp: 'jade', lo: 0.4, hi: 1, e: 0.7 }) },
   BLACK: { f: (x, y, s) => ({ v: tfbm(x / 64, y / 64, 8, 2, s), ramp: 'ink', hi: 0.08 }) },
@@ -476,7 +490,7 @@ const TEXGEN = {
   LIVERY_POITAIN: { f: (x, y, s) => livery(x, y, s, 'night', 'bronze', 'cross') },   // Trocero's Poitanians: night-blue, a bronze cross
   LIVERY_PELLIA: { f: (x, y, s) => livery(x, y, s, 'bronze', 'ink', 'halves') },     // Arpello's Pellians: tawny and black, per pale
   LIVERY_BOSSON: { f: (x, y, s) => ({ v: 0.4 + 0.3 * tfbm(x / 64, y / 64, 8, 3, s) - (Math.abs(((y / 16) % 1) - 0.5) < 0.04 ? 0.25 : 0), ramp: 'jade', lo: 0.08, hi: 0.5, h: 0.12 }) },   // a green jerkin
-  LIVERY_GUNDER: { f: (x, y, s) => livery(x, y, s, 'ink', 'scarlet', 'bars') },       // Gunderland: grey-white, scarlet bars
+  LIVERY_GUNDER: { f: (x, y, s) => livery(x, y, s, 'ink', 'scarlet', 'cross') },      // Gunderland: a dark surcoat over the mail, a scarlet cross
   VELVET: { f: (x, y, s) => ({ v: 0.45 + 0.25 * tfbm(x / 64, y / 64, 8, 3, s) - 0.2 * tfbm(x / 64, y / 64, 2, 2, s + 9), ramp: 'scarlet', lo: 0.02, hi: 0.4, h: 0.08 }) },   // Ascalante's worn velvet
   TAWNY: { f: (x, y, s) => ({ v: 0.35 + 0.5 * Math.abs(Math.sin(TAU * (x / 3 + tfbm(x / 64, y / 64, 4, 2, s) * 2))), ramp: 'bronze', lo: 0.1, hi: 0.7 }) },   // "their tawny locks"
   DEMON_HIDE: { f: (x, y, s) => {                       // the baboon-shape: grey pelt, shadow in the fur

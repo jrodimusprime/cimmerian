@@ -199,6 +199,11 @@ function autoplayFrame(dt) {
     if (A.done >= k) { A.i++; A.done = 0; }
   }
 }
+// one flame sprite at (x, y, z) (its root), w by h, turned about the vertical to face the eye (cx, cz); phase staggers the frames
+function drawFlame(x, y, z, w, h, phase, cx, cz) {
+  const k = ((Math.floor(gameTime * 12 + phase * 4) % 4) + 4) % 4, fl = 1 + 0.1 * Math.sin(gameTime * 13 + phase * 7) + 0.05 * Math.sin(gameTime * 37 + phase);
+  R.drawEntity(getModel('flame_sprite:' + k), m4mul(m4trs(x, y, z, Math.atan2(cx - x, cz - z), 0, 0, 1), m4s3(w * (2 - fl), h * fl, 1)), [1, 1, 1], 1, 1, true, true);
+}
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 // ---------------------------------------------------------------- state
@@ -277,6 +282,7 @@ function onFloor(p, r) {
   if (g.kind === 1 && p[1] < g.floor + 2.5) p[1] = g.floor + r * 0.8 + 0.02;
   return p;
 }
+const GIANT_COIL = 4.5;   // how far behind her head the strangler hangs in her coils (back of the neck, in the body proper)
 const SATHA_CHUNKS = 1;   // one tube: each ring carries its own light (buildSathaTube shade), so no seams
 let sathaMeshes = null;
 const sathaRadius = t => t < 0.16 ? 0.4 + 0.45 * smoothstep(0.01, 0.16, t) : t < 0.45 ? 0.85 + 0.03 * smoothstep(0.16, 0.45, t) : Math.max(0.04, 0.88 * Math.pow(1 - (t - 0.45) / 0.55, 0.85));   // a viper's narrow neck behind the broad head, swelling into the body
@@ -362,7 +368,7 @@ function blockedCell(gx, gz, feet, foe) {
 function dynColliders(self) {
   const c = [];
   const sh = S.shukeli; if (sh.state !== 'dead') c.push({ x: sh.x, z: sh.z, r: 0.55 });
-  const g = S.giant; if (g.state !== 'crushed') c.push({ x: g.x, z: g.z, r: 0.6 });
+  const g = S.giant; if (!giantTaken()) c.push({ x: g.x, z: g.z, r: 0.6 });
   for (const f of S.foes) if (!f.dead && f !== self) c.push({ x: f.x, z: f.z, r: 0.42 });
   if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
   // Satha's body is solid: you cannot walk through her coils (only lie still while she passes)
@@ -382,6 +388,8 @@ function collide(x, z, r, feet, self, knocked) {
     const east = (self ? self.x : S.x) > GRILLE_X;
     x = east ? Math.max(x, GRILLE_X + r) : Math.min(x, GRILLE_X - r);
   }
+  // the step test is cell to cell: on a smoothed ramp the feet sit below their own cell's floor, and that must not hide a ledge that isn't there
+  const me = self || S, oi = cellIdx(Math.floor(me.x / CELL), Math.floor(me.z / CELL)), stepFrom = oi >= 0 && LV.kind[oi] === 1 ? Math.max(feet, LV.floor[oi]) : feet;
   for (let it = 0; it < 3; it++) {
     for (const c of cols) {
       const dx = x - c.x, dz = z - c.z, rr = r + c.r, d2 = dx * dx + dz * dz;
@@ -390,7 +398,7 @@ function collide(x, z, r, feet, self, knocked) {
     }
     const gx0 = Math.floor((x - r) / CELL), gx1 = Math.floor((x + r) / CELL), gz0 = Math.floor((z - r) / CELL), gz1 = Math.floor((z + r) / CELL);
     for (let gz = gz0; gz <= gz1; gz++) for (let gx = gx0; gx <= gx1; gx++) {
-      if (!blockedCell(gx, gz, feet, !!self && !knocked)) continue;   // a monster won't walk into a pit; a blow can still send him over
+      if (!blockedCell(gx, gz, stepFrom, !!self && !knocked)) continue;   // a monster won't walk into a pit; a blow can still send him over
       const minx = gx * CELL, maxx = minx + CELL, minz = gz * CELL, maxz = minz + CELL;
       const px = clamp(x, minx, maxx), pz = clamp(z, minz, maxz), dx = x - px, dz = z - pz, d2 = dx * dx + dz * dz;
       if (d2 >= r * r) continue;
@@ -438,10 +446,11 @@ function updatePlayer(inp) {
 // ---------------------------------------------------------------- damage & death
 const DEATHS = {
   stakes: 'You go onto the sharpened stakes, and they hold you there.',
+  hate: 'The plant\'s hate rolls over you like heat from a furnace door, and something behind your eyes goes dark.',
   fire: 'The globe bursts against you in a sheet of green fire, and you burn.',
   roots: 'You set your hands to the roots, and something below the stone takes hold of them. "Yothga\'s roots are set in hell."',
   drown: 'You go down the bank into the black water. The mail you fought in drags you under, and the plain goes on without you.',
-  crush: 'Satha\'s coils roll over you like a landslide of white iron. Bones go like kindling.',
+  crush: 'Satha\'s coils roll over you like a landslide of living iron. Bones go like kindling.',
   blunder: 'You blunder into the great sliding body. The coils close on you like a fist, and the pits grow very quiet.',
   bite: 'The great head strikes faster than thought. The pits grow very quiet.',
   venom: 'The venom eats through you like fire through dry grass. You die on the flagstones of the hall.',
@@ -749,12 +758,34 @@ function updateGiant() {
     case 'raise':
       face(); g.arms = Math.min(1, g.arms + DT * 2.5);
       break;
-    case 'crushed':
-      g.fall = Math.min(1, g.fall + DT * 2.2);
+    case 'struck': {                                     // "the blow knocked the great black body clear across the corridor"
+      const k = 1 - Math.pow(1 - Math.min(1, g.t / 0.45), 3);
+      g.x = lerp(g.from[0], g.to[0], k); g.z = lerp(g.from[1], g.to[1], k); g.fall = Math.min(1, g.fall + DT * 3);
+      // he lies where he fell until the coiling stretch of her comes level with him: no sliding body
+      if (g.t >= 0.45) { const ph = sathaPhase(); if (ph >= 0 && sathaS(ph) - GIANT_COIL >= g.sWait - 0.3) { g.state = 'coiled'; g.t = 0; g.attach = [g.x, g.z]; } }
       break;
+    }
+    case 'coiled': {                                     // "whipped around it in glistening coils": she wears him on her body and carries him off
+      const ph = sathaPhase(), sc = ph < 0 ? -1 : sathaS(ph) - GIANT_COIL;
+      if (ph < 0 || ph < (g.ph || 0) || sc > SATHA_PATH.len - 1) { g.state = 'gone'; break; }
+      g.ph = ph;
+      const p = spineAt(sc), k = smoothstep(0, 0.6, g.t), ox = g.x, oz = g.z;
+      g.x = lerp(g.attach[0], p[0], k); g.z = lerp(g.attach[1], p[2], k);
+      if ([0.5, 1.1, 1.8].some(c => g.t >= c && g.t - DT < c)) { Sfx.crush(); for (let q = 0; q < 8; q++) particles.push({ m: 'blood', x: g.x, y: g.y + 0.6, z: g.z, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2.5, vz: (Math.random() - 0.5) * 3, life: 0.8, max: 0.8, g: 9, s: 1.2 }); }   // the snap and splintering of bones
+      g.drag = (g.drag || 0) + Math.hypot(g.x - ox, g.z - oz);
+      if (g.drag > 0.6) { g.drag = 0; (g.smear = g.smear || []).push([g.x, g.z]); if (g.smear.length > 60) g.smear.shift(); }   // "only a great smear of blood on the stone floor"
+      break;
+    }
   }
   if ((g.state === 'raise' || g.state === 'gloat') && S.satha.pts && S.satha.pts[0].y > -0.5 && Math.hypot(S.satha.pts[0].x - g.x, S.satha.pts[0].z - g.z) < 2.6) {
-    g.state = 'crushed'; g.t = 0; Sfx.crush(); Sfx.scream(); setFlag('keys_down');
+    // the wedge-shaped head smites him from behind and knocks him across the corridor, away from her line
+    { const hd = S.satha.pts[0], ax = g.x - hd.x, az = g.z - hd.z, ad = Math.hypot(ax, az) || 1;
+      let tx = g.x + ax / ad * 1.8, tz = g.z + az / ad * 1.8;
+      if (groundInfo(tx, tz).kind !== 1) { tx = g.x + ax / ad * 0.6; tz = g.z + az / ad * 0.6; }
+      g.from = [g.x, g.z]; g.to = [tx, tz];
+      const sh = sathaS(sathaPhase()); let best = 1e9; g.sWait = sh;            // where her path runs closest to where he will land
+      for (let q = Math.max(0, sh - 16); q <= sh; q += 0.25) { const p = spineAt(q), d = Math.hypot(p[0] - tx, p[2] - tz); if (d < best) { best = d; g.sWait = q; } } }
+    g.state = 'struck'; g.t = 0; Sfx.crush(); Sfx.scream(); setFlag('keys_down');
     const ring = feature('ring');
     S.items.push({ id: 'cellkey', kind: 'cellkey', name: 'keys to your chains', x: ring.x + 2.3, z: ring.z + 1.0, y: groundInfo(ring.x + 2.3, ring.z + 1.0).floor, taken: false });
     S.items.push({ id: 'giant_sword', kind: 'sword', name: 'black\'s sword', x: g.x + 1.2, z: g.z + 1.6, y: groundInfo(g.x + 1.2, g.z + 1.6).floor, taken: false });
@@ -765,6 +796,7 @@ function updateGiant() {
 }
 
 // ---------------------------------------------------------------- Satha
+function giantTaken() { const st = S.giant.state; return st === 'struck' || st === 'coiled' || st === 'gone'; }
 function sathaPhase() {
   const st = S.satha.start;
   if (st === null || S.tick < st) return -1;
@@ -1566,13 +1598,19 @@ function render(alpha) {
   }
   R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, LEVEL.fog || 0.034);
   R.drawWorld(levelMesh);
+  // every torch, brazier and candle flame: an upright sprite turned to the eye, cycling its four frames
+  for (let i = 0; i < LV.flames.length; i++) {
+    const f = LV.flames[i];
+    if (Math.abs(f.x - px) + Math.abs(f.z - pz) > 70) continue;
+    drawFlame(f.x, f.y, f.z, f.w, f.h, i * 0.37, px, pz);
+  }
   // items
   for (const it of S.items) {
     if (it.taken) continue;
     const light = sampleLight(it.x, it.y + 0.5, it.z);
     if (it.kind === 'ember') {                             // the dropped torch, lying on the rim, its head a red ember
       const tm = m4trs(it.x, it.y + 0.06, it.z, 0.7, Math.PI / 2, 0, 1.3), pulse = 0.55 + 0.3 * Math.sin(gameTime * 2.3) + 0.1 * Math.sin(gameTime * 7.1);
-      drawM('vm_torch', tm, light); drawM('vm_flame_core', m4mul(tm, m4trs(0, 0.3, 0, 0, 0, 0, 0.45)), [0.9, 0.18, 0.06], pulse);
+      drawM('vm_torch', tm, light); drawM('vm_flame_core', m4mul(tm, m4trs(0, 0.3, 0, 0, 0, 0, 0.45)), [0.9, 0.18, 0.06], pulse);   // an ember, not a flame
       continue;
     }
     const mesh = it.kind === 'wine' && it.name.startsWith('jug') ? 'jug' : it.kind === 'dagger' ? 'dagger2' : it.kind === 'cellkey' ? 'keys' : it.kind;
@@ -1601,7 +1639,8 @@ function render(alpha) {
   if (nt && !S.flags.has_torch) {
     const tm = m4trs(nt.x + 0.16, nt.y + 0.1, nt.z, 0, 0, -0.25, 1.3), ll = [1, 0.7, 0.45]; ll.d = [0, 1, 0];   // a hand torch, about a metre long
     drawM('vm_torch', tm, ll);
-    for (let k = 0; k < 3; k++) drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(tm, m4trs(0, 0.33, 0, gameTime * (1.5 + k) + k, 0.08 * Math.sin(gameTime * 9 + k), 0, [1.05, 0.8, 0.55][k] * (1 + 0.2 * Math.sin(gameTime * (13 + k * 5))))), ll, k === 2 ? 0.6 : 0.3);
+    const fp = [0, 1, 2].map(i => tm[i] * 0 + tm[4 + i] * 0.3 + tm[8 + i] * 0 + tm[12 + i]);
+    drawFlame(fp[0], fp[1], fp[2], 0.2, 0.36, 0.5, px, pz);
   }
   // the cell door (swings into the hall) and the grille (slides up)
   const dl = sampleLight(8 * CELL, 1.5, 12.2 * CELL);
@@ -1612,9 +1651,16 @@ function render(alpha) {
   if (has('portcullis')) drawM('bars:5:6', m4trs(45 * CELL, 0.4 + S.portc.open * 5.2, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), sampleLight(45 * CELL, 2, HALL_Z));
   // the black giant
   const g = S.giant, gl = sampleLight(g.x, 1.5, g.z);
-  if (g.state === 'gone') { /* not in this level */ } else if (g.state === 'crushed') {
+  for (const [x, z] of (g.smear || [])) { const y = groundInfo(x, z).floor; drawM('blood', m4mul(m4trs(x, y + 0.02, z, x * 7 + z * 3, 0, 0, 1), m4s3(7, 0.25, 4.5)), sampleLight(x, y + 0.5, z)); }   // the smear he leaves
+  if (g.state === 'gone') { /* not here, or carried off */ } else if (g.state === 'struck') {
     const k = smoothstep(0, 1, g.fall);
-    drawCharacter('giant', g.x, g.y, g.z, g.yaw, { unarmed: true, pitch: -1.5 * k, roll: 0.3 * k, drop: 0.1 * k, uzL: 1.2 * k, uzR: 1.2 * k, txL: -0.4 * k, sxL: 0.8 * k, headX: -0.4 * k }, gl);
+    drawCharacter('giant', g.x, g.y + 0.25 * Math.sin(Math.PI * Math.min(1, g.t / 0.45)), g.z, g.yaw + 0.6 * k, { unarmed: true, pitch: -1.4 * k, roll: 0.5 * k, uzL: 1.4 * k, uzR: 1.1 * k, uxL: -1.2 * k, uxR: -0.6 * k, txL: -0.5 * k, sxL: 0.9 * k, txR: 0.3 * k, headX: -0.6 * k }, gl);
+  } else if (g.state === 'coiled') {
+    // lying in her coils, along her body, carried with it; limbs hanging out and jolted at each crush
+    const ph = sathaPhase() + alpha * DT, sc = sathaS(ph) - GIANT_COIL, a = spineAt(sc + 0.4), b = spineAt(sc - 0.4), T = norm3([a[0] - b[0], 0, a[2] - b[2]]);
+    const k = smoothstep(0, 0.6, g.t), cx = lerp(g.attach[0], (a[0] + b[0]) / 2, k), cz = lerp(g.attach[1], (a[2] + b[2]) / 2, k), y = groundInfo(cx, cz).floor;
+    const jolt = [0.5, 1.1, 1.8].reduce((m, c) => Math.max(m, Math.exp(-Math.abs(g.t - c) * 12)), 0);
+    drawCharacter('giant', cx + T[0] * 1.05, y + 0.6, cz + T[2] * 1.05, Math.atan2(T[0], T[2]), { unarmed: true, pitch: -1.5, roll: 0.2 + 0.25 * jolt, uzL: 1.2 + 0.3 * jolt, uzR: 0.9, uxL: -2.2, uxR: -1.4 + 0.4 * jolt, fxL: -0.6, txL: -0.3, sxL: 0.6 + 0.3 * jolt, txR: 0.2, headX: -0.7 - 0.3 * jolt, headY: 0.4 }, gl);
   } else {
     // at rest he stands tall and easy, gloating: sword point-down, keys dangling, weight shifting, eyes on you
     const P = poseIdle({}, gameTime), sway = Math.sin(gameTime * 0.7);
@@ -1626,7 +1672,7 @@ function render(alpha) {
       uxL: 0.02, uzL: 0.12, fxL: -0.35 - 0.1 * Math.sin(gameTime * 2.1) });          // the keys jingling in the other fist
     if (g.arms > 0) Object.assign(P, { uxR: lerp(0.05, -2.9, g.arms), fxR: lerp(-0.2, -0.5, g.arms), uzR: lerp(0.14, 0.3, g.arms), we: lerp(-1.35, 2.5, g.arms),
       uxL: lerp(0.02, -0.6, g.arms), fxL: lerp(-0.35, -0.4, g.arms), lean: lerp(-0.06, -0.12, g.arms), headX: lerp(0.12, -0.25, g.arms), headY: P.headY * (1 - g.arms), twist: P.twist * (1 - g.arms) });
-    if (g.state === 'enter') { poseWalk(P, g.walk * 2.9, 1.0, false); P.roll = Math.sin(g.walk * 2.9) * 0.05; P.lean = 0.04; P.uxL = 0.1 + Math.sin(g.walk * 2.9) * 0.25; P.headX = 0.05; }   // a big man's heavy, rolling stride, matched to the ground he covers
+    if (g.state === 'enter') { const ph = g.walk * 3.85; poseWalk(P, ph, 0.68, false); P.roll = Math.sin(ph) * 0.035; P.lean = 0.05; P.uxL = 0.1 + Math.sin(ph) * 0.18; P.headX = 0.05; P.twist = Math.sin(ph) * 0.06; }   // a big man's heavy, rolling pad: steps of about 0.8 m, the cadence matched to the ground he covers
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
   // Shukeli, the jailer
@@ -1761,8 +1807,19 @@ function render(alpha) {
       // the neck grows out of the skull's own stump (measured on the model: 0.4 m behind its origin, 0.21 m up, about 0.4 m across)
       const upv = norm3([hm[4], hm[5], hm[6]]), hs = typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82;
       const stump = [h[0] + upv[0] * 0.21 * hs - fw[0] * 0.4 * hs, h[1] + upv[1] * 0.21 * hs - fw[1] * 0.4 * hs, h[2] + upv[2] * 0.21 * hs - fw[2] * 0.4 * hs];
+      const gc = S.giant.state === 'coiled' ? S.giant : null, gct = gc ? gc.t + alpha * DT : 0;
       const body = dd => {
         const p = onFloor(spineAt(sHead - 0.55 - dd), sathaRadius(Math.min(1, Math.max(0, dd) / L))); p[1] += rear * (1 - smoothstep(0, 5.5, dd));   // the reared neck eases down to the floor, no crease
+        if (gc) {                                         // the stretch of her that holds the strangler winds round him in tightening coils
+          const u = dd - (GIANT_COIL - 0.55), au = Math.abs(u);
+          if (au < 1.6) {
+            const env = (1 - smoothstep(1.0, 1.6, au)) * smoothstep(0, 0.35, gct), a = spineAt(sHead - 0.55 - dd + 0.2), b = spineAt(sHead - 0.55 - dd - 0.2);
+            // her body is near two metres thick: the coils are wide loops, low on the floor, that hide him ("coils that hid it from view")
+            const T = norm3([a[0] - b[0], 0, a[2] - b[2]]), sd = [T[2], 0, -T[0]], R = lerp(1.3, 1.0, smoothstep(0.3, 1.9, gct)), th = u / 1.6 * Math.PI * 2 * 1.5 + gct * 0.5;
+            const fl = groundInfo(p[0], p[2]).floor;
+            p[0] += sd[0] * Math.sin(th) * R * env; p[2] += sd[2] * Math.sin(th) * R * env; p[1] = lerp(p[1], fl + 0.85 + Math.cos(th) * R * 0.8, env);
+          }
+        }
         const w = smoothstep(-0.3, 2.4, dd), q = [stump[0] - fw[0] * dd, stump[1] - fw[1] * dd, stump[2] - fw[2] * dd];
         return [lerp(q[0], p[0], w), lerp(q[1], p[1], w), lerp(q[2], p[2], w)];
       };
@@ -1772,7 +1829,8 @@ function render(alpha) {
         const d0 = c * cl, st = c === 0 ? -0.55 : d0, len = d0 + cl - st, mid = body(d0 + cl / 2);   // the first chunk starts inside the skull
         const lc = sampleLight(mid[0], mid[1] + 1, mid[2]), lm = lum(lc);
         const shade = p => clamp(lum(sampleLight(p[0], p[1] + 1, p[2])) / lm, 0.5, 1.6);   // each ring lit where it is: no step in brightness at the joins
-        const data = buildSathaTube(d => body(st + d), len, 0.6, B, tt => sathaRadius(Math.max(0, st + tt * len) / L), shade);
+        const coilThin = dd => { if (!gc) return 1; const au = Math.abs(dd - (GIANT_COIL - 0.55)); return 1 - 0.42 * (1 - smoothstep(1.0, 1.7, au)) * smoothstep(0, 0.35, gct); };   // drawn out thinner where she wraps him
+        const data = buildSathaTube(d => body(st + d), len, gc ? 0.2 : 0.6, B, tt => sathaRadius(Math.max(0, st + tt * len) / L) * coilThin(st + tt * len), shade);
         B = buildSathaTube.endB;
         // shift v so the pattern runs continuously from chunk to chunk
         for (let i = 7; i < data.length; i += 10) data[i] += st / 4.4;
@@ -1818,7 +1876,7 @@ function render(alpha) {
     if (torchInHand()) {                     // the torch in his left fist: the right hand's model, mirrored
       const tf = norm3([-0.32 + sb * 2, 1.3, -0.7]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
       const td = tarm[0] * TX[0] + tarm[1] * TX[1] + tarm[2] * TX[2], TZ = norm3([tarm[0] - TX[0] * td, tarm[1] - TX[1] * td, tarm[2] - TX[2] * td]), TY = cross3(TZ, TX);
-      const tpos = [0.5 - sb, -0.47 + cb, -0.52];
+      const tpos = [0.43 - sb, -0.43 + cb, -0.55];
       const handR = new Float32Array([TX[0], TX[1], TX[2], 0, TY[0], TY[1], TY[2], 0, TZ[0], TZ[1], TZ[2], 0, tpos[0], tpos[1], tpos[2], 1]);
       const handL = m4mul(m4s3(-1, 1, 1), handR), tl = [0.85, 0.55, 0.3];
       tl.d = [0.2, 1, 0.3];
@@ -1828,9 +1886,10 @@ function render(alpha) {
       // the flame: three nested tongues, each flickering on its own, leaning with the draft
       const dr = S.tun ? S.tun.draft : [0, 0], lat = dr[0] * Math.cos(S.yaw) - dr[1] * Math.sin(S.yaw), fwd = -dr[0] * Math.sin(S.yaw) - dr[1] * Math.cos(S.yaw);
       const lean = clamp(S.tun ? fwd * 0.9 : S.windNow * 0.4, -0.9, 0.9), roll = clamp(-lat * 0.9, -0.9, 0.9);
-      for (let k = 0; k < 3 && torchLit(); k++) {
-        const fl = 1 + 0.22 * Math.sin(gameTime * (13 + k * 5) + k * 2) + 0.1 * Math.sin(gameTime * (31 + k * 7));
-        drawM(k === 2 ? 'vm_flame_core' : 'vm_flame', m4mul(m4mul(torch, m4trs(0, 0.33, 0, 0, lean + 0.08 * Math.sin(gameTime * 9 + k), roll + 0.06 * Math.sin(gameTime * 7 + k * 3))), m4trs(0, 0, 0, gameTime * (1.5 + k) + k, 0, 0, [1.05, 0.8, 0.55][k] * fl)), tl, 0.6);
+      if (torchLit()) {                                   // the flame: the same sprite, in view space facing the eye, leaning with the draft
+        const fp = [0, 1, 2].map(i => torch[4 + i] * 0.29 + torch[12 + i]), fl = 1 + 0.12 * Math.sin(gameTime * 17) + 0.06 * Math.sin(gameTime * 41);
+        const k = ((Math.floor(gameTime * 12) % 4) + 4) % 4;
+        R.drawEntity(getModel('flame_sprite:' + k), m4mul(m4trs(fp[0], fp[1], fp[2], 0, -lean * 0.5, roll * 0.8, 1), m4s3(0.12 * (2 - fl), 0.2 * fl, 1)), [1, 1, 1], 1, 1, true, true);
       }
     }
   }
@@ -1986,6 +2045,8 @@ function levelCast(L) {
   for (const e of L.entities) for (const id of (map[e.class] || (CAST[e.class] ? [e.class] : []))) ids.add(id);
   if (L.kings) { for (const r of L.kings.riders) ids.add(r[2]); ids.add('tsotha'); ids.add('horse'); ids.add('oknight'); }
   if (L.host) ids.add('pikeman');
+  for (const a of L.allies || []) ids.add(a.id);                      // the Bossonians and Gundermen: their built models, not the old part-built rig
+  if (L.npc) ids.add(L.npc.id);
   return [...ids];
 }
 

@@ -40,7 +40,7 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
     if (s.health < 55 && s.pouch.length) { CIM.step({ drink: true, yaw: s.yaw, pitch: s.pitch }, 1); continue; }   // low: eat or drink from the satchel
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
     if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
-    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && f.state !== "lurk" && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     if (!live.length) break;
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
     const f = live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));

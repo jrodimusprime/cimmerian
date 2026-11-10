@@ -145,6 +145,7 @@ function updateFoes() {
     }
     if (f.state === 'dormant') { if (f.wake !== undefined && S.tick >= f.wake) f.state = 'lurk'; continue; }
     if (f.state === 'sleep') continue;
+    if (f.cls === 'yothga') yothgaHate(f);
     if (f.state === 'lurk') {                           // clinging to the roof in the dark, waiting for something warm
       f.y = groundInfo(f.x, f.z).ceil - 0.05;
       const near = Math.hypot(S.x - f.x, S.z - f.z);
@@ -198,6 +199,14 @@ function updateFoes() {
         if (Math.hypot(f.homeX - f.x, f.homeZ - f.z) < 0.8) f.state = 'idle';
         else if (f.t > 1.5 && foeSees(f) && f.territory && f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }
         break;
+      case 'cower':                                     // backs off from the flame, hissing, then comes again
+        move(f.x - dx / (d || 1) * 3, f.z - dz / (d || 1) * 3, st.speed * 0.75); turn(10);
+        if (f.t >= 0.9) { f.state = 'chase'; f.t = 0; f.cool = 0.5; }
+        break;
+      case 'flee':                                      // slinks away into the dark, then the hunger brings it back
+        move(f.x - dx / (d || 1) * 4, f.z - dz / (d || 1) * 4, st.speed * 1.05);
+        if (f.t >= 2.6) { f.state = 'chase'; f.t = 0; f.cool = 0.4; }
+        break;
       case 'investigate':
         move(f.tx, f.tz, st.speed * 0.8);
         if (Math.hypot(f.tx - f.x, f.tz - f.z) < 0.6) { f.state = 'idle'; }
@@ -205,6 +214,11 @@ function updateFoes() {
       case 'chase':
         if (mode !== 'play') break;
         if (f.territory && !f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'home'; f.t = 0; break; }
+        if (f.cls === 'thing') {                         // things of the dark: "something whimpered in fear and slunk away in the darkness"
+          if (!f.fled && f.hp < st.hp * 0.4) { f.state = 'flee'; f.t = 0; f.fled = true; Sfx.grunt(true, clamp(-dx / 15, -1, 1)); break; }   // badly hurt, it slinks off, and comes back
+          const faced = (-Math.sin(S.yaw) * -dx - Math.cos(S.yaw) * -dz) / (d || 1);
+          if (torchLit() && d < 3.4 && faced > 0.75 && S.tick >= (f.cowerAt || 0) && S.rng.next() < 0.03) { f.state = 'cower'; f.t = 0; f.cowerAt = S.tick + Math.round(3.5 * SIM_HZ); break; }   // the torch thrust in its face: it shies off
+        }
         if (st.ranged) {
           const see = los(f.x, f.y + 1.6, f.z, S.x, S.y + 1.4, S.z);
           if (d < st.keep[0]) { const bx = f.x - dx / d * 2, bz = f.z - dz / d * 2; move(bx, bz, st.speed); turn(10); }
@@ -315,8 +329,23 @@ function resolvePlayerHit() {
   const head = S.satha.pts && S.satha.active ? S.satha.pts[0] : null;
   if (!hit && head && head.y > -0.5 && Math.hypot(head.x - S.x, head.z - S.z) < spec.reach + 1.2) { Sfx.clank(); log(h.w === 'fists' || h.kick ? 'You might as well kick the mountain.' : 'Your blade skates off her scales like a stone off a tiled roof.', 'dim'); hit = true; }
   const g = S.giant;
-  if (!hit && g.state !== 'crushed' && g.state !== 'wait' && g.state !== 'gone' && inArc(g.x, g.z, g.y) >= 0) { Sfx.stab(); log('You hammer at him. It is like striking an oak.', 'dim'); hit = true; }
+  if (!hit && !giantTaken() && g.state !== 'wait' && inArc(g.x, g.z, g.y) >= 0) { Sfx.stab(); log('You hammer at him. It is like striking an oak.', 'dim'); hit = true; }
   if (!hit) Sfx.miss();
+}
+// "he felt its hate emanate from it in almost tangible waves": once roused, Yothga sends a ring of livid light rolling out over
+// the floor every few seconds. Jump it as it passes, or it sears you. (S.hate holds the rings; drawn in drawFoes.)
+const HATE_EVERY = 3.0, HATE_SPEED = 4.2, HATE_MAX = 9;
+function yothgaHate(f) {
+  S.hate = S.hate || [];
+  for (const w of S.hate) {
+    const r0 = w.r; w.r += HATE_SPEED * DT;
+    const d = Math.hypot(S.x - w.x, S.z - w.z);
+    if (!w.hit && r0 < d && w.r >= d && mode === 'play' && S.y - groundInfo(S.x, S.z).floor < 0.3) { w.hit = true; hurt(9, 'hate'); punchView(0.05, 0.05); }
+  }
+  S.hate = S.hate.filter(w => w.r < HATE_MAX);
+  if (!f.alert || Math.hypot(S.x - f.x, S.z - f.z) > 11) return;
+  f.hateT = (f.hateT || 0) + DT;
+  if (f.hateT >= HATE_EVERY) { f.hateT = 0; S.hate.push({ x: f.x, z: f.z, r: 0.6 }); Sfx.hate(clamp((f.x - S.x) / 15, -1, 1)); Sfx.rattle(); }
 }
 function hitFoe(f, dmg, kick) {
   const st = FOES[f.cls], dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz) || 1;
@@ -503,6 +532,8 @@ function foePose(f) {
     if (f.state === 'windup') { const k = smoothstep(0, FOES.thing.windup, f.t); Object.assign(P, { lean: lerp(P.lean, 0.05, k), headX: lerp(P.headX, -0.1, k), uxL: lerp(P.uxL, -2.5, k), uxR: lerp(P.uxR, -2.5, k), uzL: 0.45, uzR: 0.45, fxL: -0.7, fxR: -0.7 }); }
     if (f.state === 'strike') Object.assign(P, { lean: 0.85, headX: -0.6, uxL: -1.5, uxR: -1.5, fxL: -0.05, fxR: -0.05, txL: -0.8, sxL: 0.9, drop: -0.25 });
     if (f.state === 'stagger' || f.state === 'pain') Object.assign(P, { lean: -0.15, roll: 0.35, headX: 0.35, uxL: 0.4, uxR: -0.2, uzL: 0.8, uzR: 0.8 });
+    if (f.state === 'cower') Object.assign(P, { lean: -0.1, headX: 0.5, uxL: -1.6, uxR: -1.3, fxL: -1.4, fxR: -1.5, uzL: 0.2, uzR: 0.2, drop: -0.28 });   // arms up across its face against the light
+    if (f.state === 'flee') Object.assign(P, { lean: 0.75, headX: -0.2, drop: -0.3 });   // low and scuttling
     return P;
   }
   if (f.cls === 'thing') {
@@ -557,7 +588,9 @@ function drawFoes() {
     if (f.state === 'dormant' || (f.dead && f.falling && f.y < -12)) continue;
     if (f.cls === 'weeper') { drawWeeper(f); continue; }
     if (f.dead && LEVEL.eagle && f.cls === LEVEL.eagle.foe && drawBeheaded(f)) continue;
-    if (f.cls === 'yothga') { const l = sampleLight(f.x, f.y + 1.4, f.z); drawYothga(f.x, f.y, f.z, f.yaw, gameTime, f.dead ? -0.8 * Math.min(1, f.deathT) : f.state === 'windup' || f.state === 'strike' ? 1 : 0.4, l); continue; }
+    if (f.cls === 'yothga') { const l = sampleLight(f.x, f.y + 1.4, f.z);
+      if (!f.dead) for (const w of S.hate || []) { const a = 1 - w.r / HATE_MAX; R.blend(true); drawM('hate_ring', m4mul(m4t(w.x, groundInfo(w.x, w.z).floor + 0.06, w.z), m4s3(w.r, 1, w.r)), [1, 1, 1], 1, 0.75 * a); R.blend(false); }
+      drawYothga(f.x, f.y, f.z, f.yaw, gameTime, f.dead ? -0.8 * Math.min(1, f.deathT) : f.state === 'windup' || f.state === 'strike' ? 1 : 0.4, l); continue; }
     if (f.state === 'sleep') { const l = sampleLight(f.x, f.y + 1.4, f.z); drawCharacter(f.cls, f.x, f.y, f.z, f.yaw, Object.assign(poseIdle({}, gameTime * 0.3 + f.homeX), { lean: 0.35, headX: 0.7, drop: -0.35, txL: -1.4, txR: -1.4, sxL: 2.2, sxR: 2.2, uxL: -0.4, uxR: -0.4, fxL: -1.2, fxR: -1.2, unarmed: false, we: -1.2 }), l); continue; }   // slumped asleep against the wall
     const l = sampleLight(f.x, f.y + 1.4, f.z);
     const yaw = f.dead && f.dieYaw !== undefined && (f.cls !== 'thing' || f.rag) ? f.dieYaw : f.yaw;

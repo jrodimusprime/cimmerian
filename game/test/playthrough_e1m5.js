@@ -1,5 +1,5 @@
 // Golden playthrough of e1m5, the Scarlet Citadel, through the CIM agent API (README §11).
-const EXPECTED = { tick: 13413, hash: '359a3d4e' };
+const EXPECTED = { tick: 12672, hash: '7d963154' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m5"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };

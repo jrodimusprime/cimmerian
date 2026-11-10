@@ -160,6 +160,9 @@ const Sfx = (() => {
     die() { if (play('voice', 0.7, undefined, 0.75, 0.02)) { play('flesh', 0.6, undefined, 0.7); play('die', 0.5, undefined, 0.8, 0, 0.25); return; } tone(200, 1.6, 'triangle', 0.12, 40); noise(1.2, 0.1, 600, 'lowpass', 60); },
     sting() { [196, 233, 294, 392].forEach((f, i) => tone(f, 1.2, 'triangle', 0.05, null, i * 0.16)); },
     blip() { tone(880, 0.05, 'square', 0.02); },
+    // Yothga's hate, "in almost tangible waves": a low beating chord that swells and sinks, and a glassy shimmer over it
+    hate(pan) { tone(98, 1.6, 'sine', 0.09, 82, 0, pan, 0.25); tone(104, 1.6, 'sine', 0.08, 86, 0, pan, 0.25); tone(587, 1.1, 'triangle', 0.025, 523, 0.05, pan, 0.3); tone(880, 0.9, 'sine', 0.015, 932, 0.12, pan, 0.4); },
+    rattle(pan) { noise(0.5, 0.08, 3200, 'bandpass', 1800, 0, 0.7, pan, 0.05); },
     // combat
     shout() { if (play('voice', 0.4, Math.random() - 0.5, 0.7, 0.05)) { play('voice', 0.3, Math.random() - 0.5, 0.8, 0.05, 0.2); return; } const b = 150 + Math.random() * 30; for (let i = 0; i < 3; i++) tone(b * (1 + 0.15 * i), 0.22, 'sawtooth', 0.05, b * 0.8, i * 0.15); },
     ready(pan) { tone(1400, 0.08, 'square', 0.03, 900, 0, pan); noise(0.12, 0.05, 2500, 'highpass', null, 0, 1, pan); },

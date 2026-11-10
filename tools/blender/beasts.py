@@ -651,7 +651,8 @@ def goblin(variant=0):
     import numpy as np
     import body as B
     from mathutils import Matrix
-    names = ('Armature', 'Body', 'Belt', 'Cloth', 'Ear', 'Eyes', 'Neck', 'Tooth')
+    # no loincloth, belt or gold earring: Howard's nameless things wear nothing (README §3, "dark, misshapen shapes")
+    names = ('Armature', 'Body', 'Eyes', 'Neck', 'Tooth')
     with bpy.data.libraries.load(GOBLIN_BLEND, link=False) as (src, dst):
         dst.objects = [n for n in src.objects if n in names]
         dst.images = [n for n in src.images if n.startswith('gobli-tex')]
@@ -659,6 +660,28 @@ def goblin(variant=0):
         bpy.context.collection.objects.link(o)
     arm = bpy.data.objects['Armature']
     meshes = [o for o in dst.objects if o.type == 'MESH']
+    # the goblin's great flared ears made it a fairy-tale goblin (an "alien"): fold them back flat against the skull
+    bd = bpy.data.objects['Body']; mw = bd.matrix_world; inv = mw.inverted()
+    zs = [(mw @ v.co).z for v in bd.data.vertices]; z0, H = min(zs), max(zs) - min(zs)
+    for v in bd.data.vertices:
+        p = mw @ v.co; h = (p.z - z0) / H; ax = abs(p.x)
+        if h > 0.8 and ax > 0.92:
+            k = min(1.0, (h - 0.8) / 0.06)                        # blend in above the jaw, so the neck isn't pinched
+            nx = 0.92 + (ax - 0.92) * (1 - 0.8 * k)
+            p.x = nx if p.x > 0 else -nx
+            p.z -= (ax - 0.92) * 0.35 * k; p.y += (ax - 0.92) * 0.45 * k   # swept back and down, like a bat's
+            v.co = inv @ p
+    # each misshapen in its own way ("monstrous and abnormal in outline"): a hunchback, a starveling
+    import math
+    for v in bd.data.vertices:
+        p = mw @ v.co; h = (p.z - z0) / H
+        if variant == 1 and p.y > -1.6:                              # a great hump over the shoulders, on the back (+y)
+            g = math.exp(-((h - 0.66) / 0.08) ** 2) * math.exp(-(p.x / 1.1) ** 2)
+            p.y += 1.3 * g; p.z += 0.4 * g
+        elif variant == 2 and 0.35 < h < 0.78:                       # starved: a pinched waist and a caved-in chest
+            w = math.sin((h - 0.35) / 0.43 * math.pi)
+            p.x *= 1 - 0.22 * w; p.y = p.y * (1 - 0.18 * w)
+        v.co = inv @ p
     for m in meshes:                                      # the painted hide is laid out on the 'UV' map: keep only that
         uv = m.data.uv_layers
         if 'UV' in uv:
@@ -723,7 +746,7 @@ def goblin(variant=0):
         md = m.modifiers.new('rig', 'ARMATURE'); md.object = arm
     # its painted hide (darkened toward the pits' black, each variant its own cast), burning eyes, a gold ring
     hide = _img_px('gobli-tex')
-    tint = [(0.55, 0.58, 0.5), (0.5, 0.47, 0.45), (0.58, 0.55, 0.6)][variant]
+    tint = [(0.32, 0.33, 0.29), (0.3, 0.27, 0.25), (0.33, 0.3, 0.33)][variant]   # near the pits' black: the eyes and the wet maw carry the face
     hide[..., :3] *= np.array(tint, np.float32)
     mat = _tex_mat('hide', hide)
     for m in meshes:
