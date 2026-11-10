@@ -186,13 +186,13 @@ def _outward(obj):
     bm.to_mesh(obj.data); bm.free()
 
 
-def _done(parts, tex=512):
+def _done(parts, tex=512, ao=0.6):
     for p in parts:
         _outward(p)
         if not p.data.uv_layers:
             O.smart_uv(p, angle=55)
         p['tex_size'] = p.get('tex_size', tex)
-    O.bake(parts, ao_strength=0.6)
+    O.bake(parts, ao_strength=ao)
     return parts
 
 
@@ -797,3 +797,181 @@ def cobra_head():
         O.assign(f, O.recipe('fang', base=(0.9, 0.88, 0.8), grime=0.2))
         parts += [e, pu, f]
     return _done(parts, 512)
+
+
+# ---- Satha, sculpted: a broad-jowled viper's head and a jaw to match, lofted from cross-sections
+# (glTF frame via G(): forward +z, up +y; the head's origin sits on her spine; the game scales it 1.3)
+def _loft(name, stations, seg=40, close_bottom=True):
+    """stations: [(y_blender, half_width, z_bottom, z_top, flat)]; each a superellipse from the mouth line up."""
+    me = bpy.data.meshes.new(name); ob = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(ob)
+    bm = bmesh.new(); rings = []
+    for (y, w, zb, zt, n) in stations:
+        ring = []
+        for k in range(seg):
+            a = k / seg * 2 * math.pi
+            c, s = math.cos(a), math.sin(a)
+            x = w * math.copysign(abs(c) ** (2 / n), c)
+            if s >= 0:
+                z = zb + (zt - zb) * abs(s) ** (2 / n)
+            else:
+                z = zb - (zb - zb * 0.0 if not close_bottom else 0.06) * abs(s) ** (2 / 4) if False else zb - 0.05 * abs(s) ** 0.5
+            ring.append(bm.verts.new((x, y, z)))
+        rings.append(ring)
+    for i in range(len(rings) - 1):
+        for k in range(seg):
+            bm.faces.new((rings[i][k], rings[i][(k + 1) % seg], rings[i + 1][(k + 1) % seg], rings[i + 1][k]))
+    tip = bm.verts.new((0, stations[-1][0] - 0.06, (stations[-1][2] + stations[-1][3]) / 2))
+    for k in range(seg):
+        bm.faces.new((rings[-1][k], rings[-1][(k + 1) % seg], tip))
+    bm.faces.new(list(reversed(rings[0])))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(me); bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    return ob
+
+
+def _top_uv(ob, scale=1.0):
+    """UVs projected from above, scales running nose to neck"""
+    me = ob.data
+    uv = me.uv_layers.new(name='UVMap')
+    for p in me.polygons:
+        for li in p.loop_indices:
+            v = me.vertices[me.loops[li].vertex_index].co
+            uv.data[li].uv = (0.5 + v.x * scale * 0.5, 0.5 - v.y * scale * 0.35)
+
+
+def satha_sculpt_head():
+    # stations from the back of the skull (Blender y +0.85) to the snout tip (y -1.55): width, mouth line, crown, squareness
+    S = [(0.85, 0.50, 0.30, 0.70, 2.4), (0.55, 0.70, 0.27, 0.80, 2.6), (0.25, 0.80, 0.26, 0.83, 2.8), (-0.05, 0.76, 0.27, 0.82, 2.8),
+         (-0.40, 0.66, 0.29, 0.78, 2.6), (-0.75, 0.53, 0.31, 0.72, 2.4), (-1.05, 0.42, 0.32, 0.64, 2.2), (-1.30, 0.31, 0.33, 0.56, 2.0), (-1.48, 0.2, 0.35, 0.5, 2.0), (-1.58, 0.1, 0.38, 0.47, 2.0), (-1.62, 0.04, 0.41, 0.45, 2.0)]
+    head = _loft('satha_head', S, seg=48)
+    sub = head.modifiers.new('s', 'SUBSURF'); sub.levels = 2; O.apply_mod(head, sub)
+    _top_uv(head, 1.0)
+    O.assign(head, O.recipe('satha_scales', base=(1.0, 1.0, 0.97), tile_kind=None if ph('Leather008', 1) else 'scales', scale=11, grime=0.08, edge_wear=0.25, photo=ph('Leather008', 5, 0.75)))
+    parts = [head]
+    def put(o, mat):
+        O.smart_uv(o) if not o.data.uv_layers else None; O.assign(o, mat); parts.append(o)
+    pale = lambda n, s=4: O.recipe(n, base=(1.0, 0.99, 0.95), tile_kind=None if ph('Leather008', 1) else 'scales', scale=s, grime=0.25, edge_wear=0.3, photo=ph('Leather008', s, 0.7))
+    for sx in (-1, 1):
+        # the supraocular shields: a heavy brow over each eye, the head's scowl
+        brow = _sphere('brow', Vector((sx * 0.5, -0.5, 0.77)), 0.2, dims=(0.9, 1.5, 0.28), seg=16, ring=8)   # a flat shield over the eye, not a horn
+        put(brow, pale('brow'))
+        eye = _sphere('eye', Vector((sx * 0.63, -0.55, 0.62)), 0.11, dims=(0.75, 1.0, 0.95), seg=16, ring=10)
+        put(eye, O.recipe('eye', base=(0.96, 0.64, 0.12), grime=0.25, glow=0.9))
+        pupil = _sphere('pupil', Vector((sx * 0.71, -0.55, 0.62)), 0.07, dims=(0.25, 0.22, 1.25), seg=10, ring=8)
+        put(pupil, O.recipe('slit', base=(0.02, 0.02, 0.02), grime=0))
+        orbit = _tube('orbit', [Vector((sx * (0.63 + 0.06 * math.cos(t) * 0.3), -0.55 + 0.12 * math.cos(t), 0.62 + 0.12 * math.sin(t))) for t in [k / 16 * 2 * math.pi for k in range(17)]], [0.02] * 17, seg=5)
+        put(orbit, O.recipe('orbit', base=(0.3, 0.29, 0.27), grime=0.2))
+        nost = _sphere('nostril', Vector((sx * 0.13, -1.5, 0.47)), 0.025, dims=(0.7, 1, 1), seg=8, ring=6)
+        put(nost, O.recipe('nostril', base=(0.03, 0.03, 0.03), grime=0))
+        pit = _sphere('pit', Vector((sx * 0.3, -1.12, 0.42)), 0.04, dims=(0.6, 1, 1), seg=8, ring=6)     # the heat-pit below the eye
+        put(pit, O.recipe('pit', base=(0.08, 0.07, 0.06), grime=0))
+        # the upper lip: a line of larger pale labial scales along the mouth
+        lab = _tube('labial', [Vector((sx * (0.12 + 0.6 * t ** 0.7), -1.45 + 1.9 * t, 0.29 + 0.03 * t)) for t in [k / 10 for k in range(11)]], [0.045] * 11, seg=8)
+        put(lab, O.recipe('labial', base=(0.98, 0.95, 0.88), tile_kind=None if ph('Leather008', 1) else 'scales', scale=8, grime=0.2, photo=ph('Leather008', 9, 0.6)))
+        fang = _tube('fang', [Vector((sx * 0.2, -1.12, 0.3)), Vector((sx * 0.21, -1.15, 0.14)), Vector((sx * 0.19, -1.1, 0.04))], [0.035, 0.022, 0.002], seg=8)
+        put(fang, O.recipe('fang', base=(0.93, 0.9, 0.82), grime=0.2))
+    roof = _loft('roof', [(0.5, 0.55, 0.27, 0.31, 2), (-0.2, 0.52, 0.28, 0.32, 2), (-0.9, 0.36, 0.3, 0.33, 2), (-1.2, 0.18, 0.32, 0.34, 2)], seg=24)
+    put(roof, O.recipe('mouth', base=(0.42, 0.1, 0.12), tile_kind='leather', scale=3, grime=0.35))
+    return _done(parts, 1024, ao=0.0)
+
+
+def satha_sculpt_jaw():
+    S = [(0.75, 0.46, 0.04, 0.27, 2.2), (0.35, 0.66, 0.0, 0.26, 2.3), (-0.1, 0.66, 0.02, 0.26, 2.3), (-0.6, 0.52, 0.06, 0.27, 2.2), (-1.05, 0.34, 0.1, 0.28, 2.0), (-1.38, 0.16, 0.14, 0.29, 2.0)]
+    # the jaw is the head's mirror below the mouth line: flip the loft upside down about z=0.27
+    j = _loft('satha_jaw', [(y, w, 0.27, 0.27 - (zt - zb), n) for (y, w, zb, zt, n) in S], seg=40)
+    sub = j.modifiers.new('s', 'SUBSURF'); sub.levels = 2; O.apply_mod(j, sub)
+    _top_uv(j, 1.0)
+    O.assign(j, O.recipe('chin', base=(1.0, 0.98, 0.93), tile_kind=None if ph('Leather008', 1) else 'scales', scale=7, grime=0.2, photo=ph('Leather008', 6, 0.55)))
+    tongue = _tube('tongue', [Vector((0, 0.1, 0.24)), Vector((0, -0.6, 0.25)), Vector((0.05, -1.25, 0.27)), Vector((0.11, -1.5, 0.3)), Vector((0, -1.42, 0.27)), Vector((-0.1, -1.5, 0.3))], [0.07, 0.05, 0.03, 0.006, 0.02, 0.006], seg=8)
+    O.smart_uv(tongue); O.assign(tongue, O.recipe('tongue', base=(0.45, 0.06, 0.09), grime=0.2))
+    gums = _loft('gums', [(0.5, 0.58, 0.22, 0.27, 2), (-0.2, 0.56, 0.22, 0.27, 2), (-0.9, 0.4, 0.23, 0.28, 2), (-1.3, 0.2, 0.25, 0.29, 2)], seg=24)
+    O.smart_uv(gums); O.assign(gums, O.recipe('gums', base=(0.4, 0.1, 0.12), tile_kind='leather', scale=3, grime=0.35))
+    return _done([j, tongue, gums], 512, ao=0.0)
+
+
+STATIC.update({'satha_head': satha_sculpt_head, 'satha_jaw': satha_sculpt_jaw})
+
+
+# ---- Satha's head from "Snake" by Swp (supplied by the project's owner): the head and a stump of neck, its own
+# painted hide bleached to ivory ("the great shimmering white form"), the red mouth kept
+SWP_OBJ = os.environ.get('SWP_OBJ', '')
+SWP_PITCH = 90
+
+
+def _bleach(px):
+    import numpy as np
+    rgb = px[..., :3]
+    mx_ = rgb.max(-1); mn_ = rgb.min(-1); lum = rgb @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    green = ~((rgb[..., 0] > rgb[..., 1] * 1.35) & (rgb[..., 0] > rgb[..., 2] * 1.25)) & (mx_ > 0.05)   # all but the red of the mouth
+    l = np.clip((lum - 0.05) / 0.5, 0, 1) ** 0.8
+    ivory = np.stack([0.38 + 0.5 * l, 0.37 + 0.49 * l, 0.33 + 0.46 * l], -1)
+    rgb[green] = ivory[green]
+    return px
+
+
+def satha_swp_head():
+    import numpy as np
+    from mathutils import Vector, Matrix
+    bpy.ops.wm.obj_import(filepath=SWP_OBJ)
+    o = next(x for x in bpy.data.objects if x.type == 'MESH')
+    me = o.data; uv = me.uv_layers.active.data
+    vuv = {}
+    for p in me.polygons:
+        for li in p.loop_indices:
+            vuv[me.loops[li].vertex_index] = uv[li].uv
+    V = [o.matrix_world @ v.co for v in me.vertices]
+    sel = lambda f: [V[i] for i, u in vuv.items() if f(u)]
+    head = sel(lambda u: u.x > 0.8 and u.y > 0.86)
+    neck = sel(lambda u: 0.72 < u.x < 0.9 and 0.68 < u.y < 0.76)
+    hc = sum(head, Vector()) / len(head); nc = sum(neck, Vector()) / len(neck)
+    reach = (hc - nc).length
+    # the snout's direction: the head's long axis (principal component), pointing away from the neck
+    import numpy as np
+    H = np.array([tuple(p - hc) for p in head]); w_, vecs = np.linalg.eigh(H.T @ H); ax = Vector(vecs[:, -1])
+    fwd = ax if ax.dot(hc - nc) > 0 else -ax
+    eyes = sel(lambda u: 0.765 < u.x < 0.815 and (0.915 < u.y < 0.955 or 0.785 < u.y < 0.825))
+    ec = sum(eyes, Vector()) / len(eyes) if eyes else hc + Vector((0, 0, 1))
+    # keep what lies within reach of the head and in front of the neck cut (fangs, tongue, eyes come with it)
+    bm = bmesh.new(); bm.from_mesh(me); bm.verts.ensure_lookup_table()
+    kill = [v for v in bm.verts if (o.matrix_world @ v.co - hc).length > 1.25 * reach or (o.matrix_world @ v.co - hc).dot(Vector((0, -1, 0))) < -0.9 * reach]
+    bmesh.ops.delete(bm, geom=kill, context='VERTS')
+    bm.to_mesh(me); bm.free()
+    # into the game's head frame: forward = glTF +z = Blender -y, up = Blender +z
+    fwd = Vector((0, -1, 0)); up = Vector((0, 0, 1)); side = fwd.cross(up)   # as the model lies: snout toward -y, jaws opening up and down
+    R = Matrix((side, -fwd, up)).to_4x4()                # rows: new x, new y, new z
+    o.data.transform(Matrix.Translation(-nc)); o.data.transform(R)
+    o.data.transform(Matrix.Rotation(math.radians(SWP_PITCH), 4, 'X'))   # the model's head is reared; bring the snout down level
+    ys = [v.co.y for v in me.vertices]; zs = [v.co.z for v in me.vertices]
+    near = [v.co for v in me.vertices if v.co.y > max(ys) - 0.08 * (max(ys) - min(ys))]
+    neck_w = max(v.x for v in near) - min(v.x for v in near)
+    s = 2.0 / max(max(ys) - min(ys), 1e-3)               # her head, jaws agape, about 2 m from snout to neck (the game scales it 1.15)
+    o.data.transform(Matrix.Scale(s, 4))
+    ys = [v.co.y for v in me.vertices]; zs = [v.co.z for v in me.vertices]
+    xs = [v.co.x for v in me.vertices]
+    o.data.transform(Matrix.Translation((-(min(xs) + max(xs)) / 2, -1.6 - min(ys), 0.48 - (min(zs) + max(zs)) / 2)))
+    o.parent = None; o.matrix_world = Matrix()
+    for p in me.polygons:
+        p.use_smooth = True
+    img = next(i for i in bpy.data.images if i.size[0] >= 1024)
+    w, hgt = img.size
+    px = np.array(img.pixels[:], np.float32).reshape(hgt, w, 4)
+    px = _bleach(px)[::2, ::2].copy()
+    mat = _tex_mat('satha_skin', px)
+    mat['glow'] = 0.0
+    me.materials.clear(); me.materials.append(mat)
+    o.name = 'satha_head'
+    dec = o.modifiers.new('d', 'DECIMATE'); dec.ratio = 0.5; O.apply_mod(o, dec)
+    return [o]
+
+
+def satha_no_jaw():
+    """the Swp head has its jaws already gaping: the separate jaw is a speck, out of sight inside the head"""
+    o = _sphere('satha_jaw', Vector((0, 0, 0.48)), 0.01, seg=4, ring=3)
+    O.assign(o, O.recipe('none', base=(0.9, 0.9, 0.9), grime=0))
+    return _done([o], 16, ao=0.0)
+
+
+if SWP_OBJ and os.path.exists(SWP_OBJ):
+    STATIC.update({'satha_head': satha_swp_head, 'satha_jaw': satha_no_jaw})

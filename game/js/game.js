@@ -1454,12 +1454,12 @@ function render(alpha) {
       const fa = [ahead[0], h[1], ahead[2]], fb = behind;
       const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
       const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
-      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.3 : 0.82);   // the built head: a viper's, broader than her neck
+      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82);   // the built head: a viper's, broader than her neck
       const hl = sampleLight(h[0], h[1] + 1, h[2]);
       if (h[1] > -10) {
         const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
-        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.6); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.55);   // she shimmers: white even in torchlight
+        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.25); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.25);   // she shimmers: white even in torchlight
       }
       if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS, fw = norm3([hm[8], hm[9], hm[10]]);

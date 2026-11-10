@@ -86,7 +86,7 @@ function gallerySize(id) {
   if (id === '@yothga') return [3.6, 1.3];
   if (id === '@weeper') return [6.5, 1.6];
   if (id === '@eagle') return [5.5, 0.9];
-  if (id === '@satha_head') return [4.2, 0.7];
+  if (id === '@satha_head') return [7, 1.2];
   if (id === '@presence') return [10, 2.5];
   const c = CAST[id] || {};
   return [2.3 * (c.scale || 1), 1.0 * (c.scale || 1)];
