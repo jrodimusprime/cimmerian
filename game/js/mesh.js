@@ -595,7 +595,7 @@ function buildSathaHead(part) {
 // ---- Satha's body: one smooth tube rebuilt every frame along her spine ------
 // spine(d) gives the point d units behind the head; B0 is the head's "down".
 const TUBE_SIDES = 12;
-function buildSathaTube(spine, len, step, B0, radius) {
+function buildSathaTube(spine, len, step, B0, radius, shade) {   // shade(point): this ring's light relative to the chunk's (smooth across chunks)
   const n = Math.ceil(len / step) + 1, mb = new MeshBuilder(n * TUBE_SIDES * 6);
   let B = B0, prevRing = null;
   for (let i = 0; i < n; i++) {
@@ -603,21 +603,22 @@ function buildSathaTube(spine, len, step, B0, radius) {
     const Tn = norm3([a[0] - b[0], a[1] - b[1], a[2] - b[2]]);     // points toward the tail
     const bd = B[0] * Tn[0] + B[1] * Tn[1] + B[2] * Tn[2];
     B = norm3([B[0] - Tn[0] * bd, B[1] - Tn[1] * bd, B[2] - Tn[2] * bd]);   // parallel transport
-    const Sd = cross3(Tn, B), r = radius(d / len);
+    const Sd = cross3(Tn, B), r = radius(d / len), sh = shade ? shade(c) : 1;
     const ring = [];
     for (let k = 0; k <= TUBE_SIDES; k++) {
       const ang = k / TUBE_SIDES * Math.PI * 2, ca = Math.cos(ang), sa = Math.sin(ang);
       const h = ca > 0 ? r * 0.78 : r * 0.92, w = r;               // flatter belly
       const p = [c[0] + B[0] * ca * h + Sd[0] * sa * w, c[1] + B[1] * ca * h + Sd[1] * sa * w, c[2] + B[2] * ca * h + Sd[2] * sa * w];
       const nn = norm3([B[0] * ca / h + Sd[0] * sa / w, B[1] * ca / h + Sd[1] * sa / w, B[2] * ca / h + Sd[2] * sa / w]);
-      ring.push({ p, n: nn, u: k / TUBE_SIDES, v: d / 4.4 });
+      ring.push({ p, n: nn, u: k / TUBE_SIDES, v: d / 4.4, s: sh });
     }
     if (prevRing) for (let k = 0; k < TUBE_SIDES; k++) {
       const q0 = prevRing[k], q1 = prevRing[k + 1], q2 = ring[k + 1], q3 = ring[k];
-      for (const q of [q0, q1, q2, q0, q2, q3]) mb.v(q.p, q.n[0], q.n[1], q.n[2], [q.u, q.v, 1], T.SATHA);
+      for (const q of [q0, q1, q2, q0, q2, q3]) mb.v(q.p, q.n[0], q.n[1], q.n[2], [q.u, q.v, q.s], T.SATHA);
     }
     prevRing = ring;
   }
+  buildSathaTube.endB = B;                              // the frame at the last ring: the next chunk starts from it, so the scales don't twist at the join
   return mb.finish();
 }
 

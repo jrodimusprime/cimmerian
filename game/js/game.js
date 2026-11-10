@@ -99,8 +99,9 @@ function buildSathaPath() {
   SATHA_PATHS.regular = roundedPath([[wx, -36, HALL_Z], [wx, y, HALL_Z]].concat(tail), 2.6);
   // "Satha came out of the dark ... the head was poised high above his own, as the monster
   // investigated the torch": up the arch, a slow circle round the vault, and out again
-  SATHA_PATHS.vault = roundedPath([[wx, -36, HALL_Z], [wx, y, HALL_Z], [ax, y, HALL_Z], [ax, y, 11.6 * CELL], [9.0 * CELL, y, 10.4 * CELL],
-    [8.4 * CELL, y, 8.9 * CELL], [7.0 * CELL, y, 9.5 * CELL], [7.3 * CELL, y, 11.0 * CELL], [ax, y, 12.6 * CELL], [9.5 * CELL, y, HALL_Z]].concat(tail), 1.1);
+  // she circles the far side of the vault, two metres off the chained king, and only her head comes to him
+  SATHA_PATHS.vault = roundedPath([[wx, -36, HALL_Z], [wx, y, HALL_Z], [ax, y, HALL_Z], [ax, y, 11.6 * CELL], [9.1 * CELL, y, 11.0 * CELL],
+    [9.3 * CELL, y, 9.4 * CELL], [8.6 * CELL, y, 8.5 * CELL], [7.8 * CELL, y, 8.8 * CELL], [7.75 * CELL, y, 9.9 * CELL], [8.1 * CELL, y, 11.1 * CELL], [ax, y, 12.6 * CELL], [9.5 * CELL, y, HALL_Z]].concat(tail), 1.3);
   SATHA_PATH = SATHA_PATHS.regular;
 }
 function sathaCycle() { const st = S.satha.start; return st === null || S.tick < st ? -1 : Math.floor((S.tick - st) / (SATHA_PERIOD * SIM_HZ)); }
@@ -125,7 +126,7 @@ const BODY_LEN = (SATHA_SEGS + 1) * SATHA_SPACING + 1.2;
 // (Hirose): heading = alpha * sin(2*pi*s / lambda) around the path, so its
 // curvature varies smoothly instead of being a sine wobble glued on top.
 // alpha ~ 35 degrees, lambda ~ half a body length: about two waves along her.
-const SERP_ALPHA = 0.6, SERP_LAMBDA = 13;
+const SERP_ALPHA = 0.8, SERP_LAMBDA = 11;   // a lateral swing of 1.4 m: clear S-curves, still inside the 5 m corridor
 const SERP_K = 2 * Math.PI / SERP_LAMBDA, SERP_AMP = SERP_ALPHA / SERP_K;    // lateral amplitude of that heading swing
 function spineAt(s) {
   const p = pathAt(s), q = pathAt(s + 0.3), r = pathAt(s - 0.3);
@@ -143,7 +144,7 @@ function onFloor(p, r) {
   if (g.kind === 1 && p[1] < g.floor + 2.5) p[1] = g.floor + r * 0.8 + 0.02;
   return p;
 }
-const SATHA_CHUNKS = 4;
+const SATHA_CHUNKS = 1;   // one tube: each ring carries its own light (buildSathaTube shade), so no seams
 let sathaMeshes = null;
 const sathaRadius = t => t < 0.12 ? 0.68 + 0.17 * smoothstep(0, 0.12, t) : t < 0.45 ? 0.85 + 0.03 * smoothstep(0.12, 0.45, t) : Math.max(0.04, 0.88 * Math.pow(1 - (t - 0.45) / 0.55, 0.85));
 // head (i=0), segments, tail: positions with a slither offset baked into the track
@@ -1512,36 +1513,41 @@ function render(alpha) {
       if (hg.kind === 1 && h[1] < hg.floor + 2.5) h[1] = hg.floor + 0.62 + rear + 0.1 * Math.sin(gameTime * 2.3);       // held up, gently bobbing
       const fa = [ahead[0], h[1], ahead[2]], fb = behind;
       const tx = fa[0] - fb[0], ty = fa[1] - fb[1], tz = fa[2] - fb[2], th = Math.hypot(tx, tz);
-      const yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz);
-      const hm = m4trs(h[0], h[1], h[2], yaw, -Math.atan2(ty, th), 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82);   // the built head: a viper's, broader than her neck
-      const hl = sampleLight(h[0], h[1] + 1, h[2]);
+      let yaw = th < 0.2 * Math.hypot(tx, ty, tz) ? (sHead < SATHA_PATH.len / 2 ? Math.PI / 2 : Math.PI) : Math.atan2(tx, tz), hp = -Math.atan2(ty, th);
+      if (rear) {                                         // "the head was poised high above his own": she turns it down to look at him
+        const kd = Math.hypot(S.x - h[0], S.z - h[2]), w = clamp(1.6 - kd / 3.2, 0, 0.85);
+        let dy = Math.atan2(S.x - h[0], S.z - h[2]) - yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        yaw += dy * w; hp = lerp(hp, Math.atan2(h[1] - (S.y + 0.4), Math.max(0.5, kd)) * 0.8, w);
+      }
+      const hm = m4trs(h[0], h[1], h[2], yaw, hp, 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82);   // the built head: a viper's, broader than her neck
+      const hl0 = sampleLight(h[0], h[1] + 1, h[2]), hl = [hl0[0] * 1.0, hl0[1] * 1.06, hl0[2] * 1.4]; hl.d = hl0.d;   // the head's bleached hide is yellower than the body's: cool the light on it so both read bone-cream
       if (h[1] > -10) {
         const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
-        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.25); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.25);   // she shimmers: white even in torchlight
+        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.12); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.12);   // she shimmers: pale even in the dark, but the torch still models her
       }
       if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS, fw = norm3([hm[8], hm[9], hm[10]]);
       // the neck: the first stretch of the body grows out of the back of the skull, then joins the spine
       const body = dd => {
-        const p = onFloor(spineAt(sHead - 0.55 - dd), sathaRadius(Math.min(1, Math.max(0, dd) / L))); p[1] += rear * Math.max(0, 1 - dd / 3.5);
+        const p = onFloor(spineAt(sHead - 0.55 - dd), sathaRadius(Math.min(1, Math.max(0, dd) / L))); p[1] += rear * (1 - smoothstep(0, 5.5, dd));   // the reared neck eases down to the floor, no crease
         const w = smoothstep(-0.3, 2.4, dd), q = [h[0] - fw[0] * (0.85 + dd), h[1] - 0.06 - fw[1] * (0.85 + dd), h[2] - fw[2] * (0.85 + dd)];
         return [lerp(q[0], p[0], w), lerp(q[1], p[1], w), lerp(q[2], p[2], w)];
       };
       let B = down;
+      const lum = l => l[0] + l[1] + l[2] + 1e-3, km = body(L * 0.3), key = sampleLight(km[0], km[1] + 1, km[2]).d;   // one key direction for the whole body
       for (let c = 0; c < SATHA_CHUNKS; c++) {
         const d0 = c * cl, st = c === 0 ? -0.55 : d0, len = d0 + cl - st, mid = body(d0 + cl / 2);   // the first chunk starts inside the skull
-        const data = buildSathaTube(d => body(st + d), len, 0.75, B, tt => sathaRadius(Math.max(0, st + tt * len) / L));
-        // carry the frame across chunks: recompute 'down' at the chunk end from the last ring
-        const e = body(d0 + cl), e2 = body(d0 + cl + 0.2), Tn = norm3([e2[0] - e[0], e2[1] - e[1], e2[2] - e[2]]);
-        const bd = B[0] * Tn[0] + B[1] * Tn[1] + B[2] * Tn[2]; B = norm3([B[0] - Tn[0] * bd, B[1] - Tn[1] * bd, B[2] - Tn[2] * bd]);
+        const lc = sampleLight(mid[0], mid[1] + 1, mid[2]), lm = lum(lc);
+        const shade = p => clamp(lum(sampleLight(p[0], p[1] + 1, p[2])) / lm, 0.5, 1.6);   // each ring lit where it is: no step in brightness at the joins
+        const data = buildSathaTube(d => body(st + d), len, 0.6, B, tt => sathaRadius(Math.max(0, st + tt * len) / L), shade);
+        B = buildSathaTube.endB;
         // shift v so the pattern runs continuously from chunk to chunk
         for (let i = 7; i < data.length; i += 10) data[i] += st / 4.4;
         R.updateMesh(sathaMeshes[c], data);
         if (mid[1] < -14) continue;
-        const lc = sampleLight(mid[0], mid[1] + 1, mid[2]);
-        R.key = lc.d;
-        R.drawEntity(sathaMeshes[c], m4ident(), lc, 0.03, 1, true);
+        R.key = key;
+        R.drawEntity(sathaMeshes[c], m4ident(), lc, 0.1, 1, true);   // "the great shimmering white form": a faint light of her own, so she shows coming in the dark
       }
     }
   }
@@ -1790,12 +1796,12 @@ function boot() {
   addEventListener('resize', onResize);
   setTimeout(() => {
     R.uploadTextures(generateTextures());
-    // Satha's hide: a photographed reptile skin (ambientCG Leather008, CC0), pale as "the great shimmering white form"
+    // Satha's hide: overlapping scales and belly plates (tools/textures/satha_scales.py), pale as "the great shimmering white form"
     { const im = new Image(); im.onload = () => {
         const c = document.createElement('canvas'); c.width = c.height = TEX_SIZE; const x = c.getContext('2d'); x.drawImage(im, 0, 0, TEX_SIZE, TEX_SIZE);
         const d = x.getImageData(0, 0, TEX_SIZE, TEX_SIZE).data;
         let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i]; m /= d.length / 4 * 255;
-        for (let i = 0; i < d.length; i += 4) { const v = Math.min(1, 0.78 * (d[i] / 255) / m); d[i] = 238 * v + 10; d[i + 1] = 234 * v + 10; d[i + 2] = 222 * v + 12; d[i + 3] = 70; }   // pale; a faint shimmer
+        for (let i = 0; i < d.length; i += 4) { const v = Math.min(1, 0.78 * (d[i] / 255) / m); d[i] = 234 * v + 10; d[i + 1] = 226 * v + 10; d[i + 2] = 206 * v + 10; d[i + 3] = 70; }   // the palette's own bone-cream: warmer and torchlight turns her orange, cooler and her highlights snap to steel
         R.updateLayer(T.SATHA, new Uint8Array(d.buffer));
       }; im.src = 'textures/satha_skin.png'; }
     R.setPalette(gamePalette());

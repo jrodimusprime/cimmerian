@@ -23,6 +23,9 @@ for (const rec of recs) {
     const r = await ev('__chunk(' + (+process.env.CIM_EVERY || 12) + ')');
     if (r === 'end') break;
     if (r.startsWith('load')) continue;
+    const tk = await ev('CIM.state.tick');
+    if (process.env.CIM_TO && tk > +process.env.CIM_TO) break;
+    if (process.env.CIM_FROM && tk < +process.env.CIM_FROM) continue;
     await grab(`${dir}/${tag}_${String(frame++).padStart(6, '0')}.jpg`);
     if (frame % 300 === 0) log('frames', frame, rec, await ev('CIM.state.tick'));
   }

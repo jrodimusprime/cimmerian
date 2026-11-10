@@ -1,6 +1,6 @@
 // Golden playthrough of e1m2, The Pits, through the CIM agent API (README §11).
 // It plays the level in the book's order, using only player inputs.
-const EXPECTED = { tick: 9443, hash: '84095d10' };
+const EXPECTED = { tick: 9443, hash: 'dfd0cb36' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };

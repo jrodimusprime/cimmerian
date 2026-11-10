@@ -115,7 +115,7 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load for every level (e.g. e1m2 *6 states*, e1m7 *14 states*): goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, parry, throwSpear, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m1 `11707` `9b1a737a`; e1m2 `9443` `84095d10`; e1m3 `9704` `acf9f759`; e1m4 `14276` `f0a50d2b`; e1m5 `15358` `f04118f8`; e1m6 `10537` `fa1fdb5a`; e1m7 `16975` `ea966265`; e1m8 `11218` `76d0c87e`). With `CIM_RECORD=file` a run's inputs are saved, and `test/video.js` replays them, grabbing a frame every 12 ticks (5× speed at 30 fps); `test/video_assemble.py` makes the MP4 in Blender |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m1 `11707` `9b1a737a`; e1m2 `9443` `dfd0cb36`; e1m3 `9632` `cca0eddb`; e1m4 `14276` `f0a50d2b`; e1m5 `15358` `f04118f8`; e1m6 `10537` `fa1fdb5a`; e1m7 `16975` `ea966265`; e1m8 `11218` `76d0c87e`). With `CIM_RECORD=file` a run's inputs are saved, and `test/video.js` replays them, grabbing a frame every 12 ticks (5× speed at 30 fps); `test/video_assemble.py` makes the MP4 in Blender |
 
 ## Not the real build
 
