@@ -20,9 +20,9 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | `e1m4` Yothga | 3:18 (14276 ticks) | ~13.2 min |
 > | `e1m5` The Scarlet Citadel | 3:33 (15358 ticks) | ~14.2 min |
 > | `e1m6` The Tower of Tamar | 2:26 (10537 ticks) | ~9.8 min |
-> | `e1m7` The Relief of Shamar | 3:45 (16224 ticks) | ~15.0 min |
+> | `e1m7` The Relief of Shamar | 3:55 (16975 ticks) | ~15.7 min |
 > | `e1m8` The Tybor | 2:35 (11218 ticks) | ~10.4 min |
-> | **Campaign** | **22:47** (98467 ticks) | **~91 min** |
+> | **Campaign** | **22:58** (99218 ticks) | **~92 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **The telling is out of joint.** The game opens *in medias res*, in the pits, chained in the dark, the best possible first level. When the pits are behind you it flashes back to the plain of Shamu: *how did we get here?* Then it jumps forward again into the tunnels and follows the book to the end. This changes only the order in which levels are **played**, never what happens inside them; each level is still its stretch of the book, beat for beat. (Howard does the same: chapter III opens with the chained king remembering.)
@@ -53,7 +53,7 @@ From play-testing, in no particular order:
 
 - Nothing open. Add play-testing notes here.
 
-Done since the list was made: the pit-things' own poses on the goblin body (a hunched lope, rearing to strike, a lunge, falling on their backs dead, where before the body sank through the floor); the strangler's stride matched to the ground he covers (no sliding feet), and every walker's; sword cuts in three beats (wind-up, fast cut, follow-through) with the arm travelling along each arc, a real jab for the fists and a thrust for dagger and spear; **parry** in place of the kick (right-click or F: turns a blow aside and staggers the man who struck it); **spears** you pick up, thrust with or throw (G), that break after 5 uses, while enemy spearmen throw two of their three and then draw a sword; cheat mode (`?cheat=true`: god mode, and N skips the level); rotten plank bridges over the deep pits in e1m2 and e1m3 (they give way if you walk, hold if you run); monsters never walk into a pit or the water (a blow can still knock one in); a sound volume and an ambience slider in the pause menu, and the treble cut well down; Pelias's nipples (painted out of his old skin and the dents left in the mesh smoothed flat); levels e1m4 to e1m8 built and the campaign lengthened to about 91 minutes; a 5× walkthrough video of the bots' runs.
+Done since the list was made: the pit-things' own poses on the goblin body (a hunched lope, rearing to strike, a lunge, falling on their backs dead, where before the body sank through the floor); the strangler's stride matched to the ground he covers (no sliding feet), and every walker's; sword cuts in three beats (wind-up, fast cut, follow-through) with the arm travelling along each arc, a real jab for the fists and a thrust for dagger and spear; **parry** in place of the kick (right-click or F: turns a blow aside and staggers the man who struck it); **spears** you pick up, thrust with or throw (G), that break after 5 uses, while enemy spearmen throw two of their three and then draw a sword; cheat mode (`?cheat=true`: god mode, and N skips the level); rotten plank bridges over the deep pits in e1m2 and e1m3 (they give way if you walk, hold if you run); monsters never walk into a pit or the water (a blow can still knock one in); a sound volume and an ambience slider in the pause menu, and the treble cut well down; Pelias's nipples (painted out of his old skin and the dents left in the mesh smoothed flat); levels e1m4 to e1m8 built and the campaign lengthened to about 92 minutes; a 5× walkthrough video of the bots' runs.
 
 ## 1. Source material
 

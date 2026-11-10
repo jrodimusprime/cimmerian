@@ -1,12 +1,12 @@
 // Golden playthrough of e1m7, the Relief of Shamar, through the CIM agent API (README §11).
-const EXPECTED = { tick: 16224, hash: 'f83ae900' };
+const EXPECTED = { tick: 16975, hash: 'ea966265' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m7"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
 // THE RIDGE, and down onto the Shemite line
 o = await O('__route([[14, 22], [18, 22]])'); o = await O('__fight(["shemites"], 12000, 40)'); await O('__heal()'); o = await O('__fight(["shemites2"], 12000, 60)'); await O('__heal(40)'); log('shemites:', brief(o));
 // THE SIEGE TOWER: its guard, then up the ladders, over the gap, to the top
-o = await O('__route([[28, 20], [33, 17]])'); o = await O('__fight(["tower"], 9000, 30)'); await O('__heal()'); log('tower guard:', brief(o));
+o = await O('__route([[28, 20]])'); o = await O('__fight(["tower", "shemites2"], 9000, 50)'); await O('__heal(40)'); o = await O('__route([[33, 17]])'); o = await O('__fight(["tower"], 9000, 50)'); await O('__heal(40)'); log('tower guard:', brief(o));
 o = await O('__route([[33.5, 10.5]])'); o = await O('__jumpTo(40, 10.5)'); o = await O('__jumpTo(42.6, 10.6)'); log('gap:', brief(o));
 o = await O('__jumpTo(42.6, 14.5)'); o = await O('__jumpTo(45.5, 13.5)'); o = await waitFlag('tower_fired', 6); log('fired:', brief(o));
 o = await O('__jumpTo(42.6, 14.5)'); o = await O('__jumpTo(42.6, 10.6)'); o = await O('__jumpTo(40, 10.5)'); o = await O('__jumpTo(33.5, 10.5)'); log('down:', brief(o));
