@@ -437,7 +437,7 @@ function buildModel(name) {
   if (name.startsWith('satha_head') || name.startsWith('satha_jaw')) return buildSathaHead(name);
   if (name === 'vm_hand_grip') return buildHand('grip');
   if (name === 'vm_hand_open') return buildHand('open');
-  if (['vm_forearm', 'vm_manacle', 'vm_chain', 'dagger2'].includes(name)) return buildViewModel(name);
+  if (['vm_forearm', 'vm_manacle', 'vm_chain', 'vm_hilt', 'vm_upper', 'dagger2'].includes(name)) return buildViewModel(name);
   const mb = new MeshBuilder(512);
   if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
   if (name.startsWith('weeper:')) return buildWeeperPart(name.split(':')[1]);
@@ -565,7 +565,7 @@ function buildModel(name) {
 // Detailed models (Quake view-model / boss density): smooth normals, UVs.
 // UV meshes put (u, v, shade) in the colour slot and draw with uv = true.
 // ===========================================================================
-const UV_MODELS = new Set(['satha_head_uv', 'satha_jaw_uv', 'vm_forearm', 'vm_manacle', 'decal:scratch', 'decal:tally1', 'decal:tally2', 'decal:tally3']);
+const UV_MODELS = new Set(['satha_head_uv', 'satha_jaw_uv', 'vm_forearm', 'vm_upper', 'vm_manacle', 'decal:scratch', 'decal:tally1', 'decal:tally2', 'decal:tally3']);
 
 // Loft through elliptical stations along +z. Each station: {z, w, ht, hb, cy, x?}
 // (half-width, height above and below the centre). u runs around from the
@@ -712,14 +712,24 @@ function buildViewModel(name) {
         S_(0.38, 0.06, 0.049, 0.04, 0.006), S_(0.5, 0.057, 0.047, 0.041, 0.004), S_(0.62, 0.054, 0.046, 0.043, 0)], 12, T.ARM, 1 / 0.62);
       break;
     case 'vm_manacle':
-      loft(mb, [S_(0.016, 0.041, 0.032, 0.032, 0.002), S_(0.022, 0.05, 0.041, 0.041, 0.002), S_(0.086, 0.05, 0.041, 0.041, 0.002), S_(0.092, 0.041, 0.032, 0.032, 0.002)], 12, T.MANACLE, 1 / 0.076);
+      // a closed iron band: lip, outer face, lip, then the inner face back again, centred on the arm's wrist
+      // (models/cast/vm_arm.glb measured across z 0.016..0.092: centre (0.011, 0.014), at most 0.035 x 0.032 half-size)
+      { const cx = 0.011, cy = 0.014, wi = 0.038, hi = 0.035, wo = 0.045, ho = 0.042;
+        loft(mb, [S_(0.016, wi, hi, hi, cy, cx), S_(0.019, wo, ho, ho, cy, cx), S_(0.089, wo, ho, ho, cy, cx), S_(0.092, wi, hi, hi, cy, cx), S_(0.016, wi, hi, hi, cy, cx)], 16, T.MANACLE, 1 / 0.076); }
+      break;
+    case 'vm_upper':                                        // the upper arm, elbow (z 0) to shoulder (z 1): placed each frame so the arm never ends on screen
+      loft(mb, [S_(0, 0.05, 0.05, 0.05, 0), S_(0.04, 0.056, 0.055, 0.055, 0), S_(0.5, 0.062, 0.06, 0.06, 0), S_(1, 0.07, 0.066, 0.066, 0)], 14, T.ARM, 2);
+      break;
+    case 'vm_hilt':                                         // a wrapped grip through the fist and a pommel at the little finger
+      smoothLathe(mb, -0.045, GRIP_C[1], GRIP_C[2], [[0.012, 0], [0.013, 0.05], [0.012, 0.095]], 8, T.GRIP, ONE3, [1, 0, 0]);
+      addRock(mb, 0.058, GRIP_C[1], GRIP_C[2], 0.016, 0.016, 0.016, 2, T.IRON, 0.05);
       break;
     case 'vm_chain':                                        // the broken chain still hanging from the cuff
-      addBox(mb, 0, -0.05, 0.055, 0.008, 0.012, 0.012, T.IRON);
+      addBox(mb, 0.011, -0.034, 0.055, 0.008, 0.012, 0.012, T.IRON);   // the staple, on the underside of the band
       for (let k = 0; k < 3; k++) {
-        const y = -0.064 - k * 0.026;
-        if (k % 2) { addBox(mb, -0.009, y, 0.055, 0.003, 0.014, 0.003, T.IRON); addBox(mb, 0.009, y, 0.055, 0.003, 0.014, 0.003, T.IRON); }
-        else { addBox(mb, 0, y, 0.046, 0.003, 0.014, 0.003, T.IRON); addBox(mb, 0, y, 0.064, 0.003, 0.014, 0.003, T.IRON); }
+        const y = -0.048 - k * 0.026;
+        if (k % 2) { addBox(mb, 0.002, y, 0.055, 0.003, 0.014, 0.003, T.IRON); addBox(mb, 0.02, y, 0.055, 0.003, 0.014, 0.003, T.IRON); }
+        else { addBox(mb, 0.011, y, 0.046, 0.003, 0.014, 0.003, T.IRON); addBox(mb, 0.011, y, 0.064, 0.003, 0.014, 0.003, T.IRON); }
       }
       break;
     case 'dagger2':                                         // along +y: pommel, wrapped grip, guard, diamond blade

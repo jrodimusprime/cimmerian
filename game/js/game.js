@@ -39,6 +39,85 @@ function getModel(name) {
   return m;
 }
 // draw a cached model; `light` comes from sampleLight and carries its key direction
+// the sword's three cuts (right-to-left, the backhand, overhead), each as key poses [blade dir, fist pos, forearm dir] in view space
+const SWORD_CUTS = [
+  [[[0.75, 0.55, 0.3], [0.3, 0.0, -0.3], [0.25, -0.85, 0.45]], [[-0.35, 0.3, -0.9], [0.1, -0.08, -0.5], [0.55, -0.45, 0.75]], [[-0.85, -0.15, 0.35], [-0.12, -0.16, -0.42], [0.8, -0.25, 0.55]]],
+  [[[-0.8, 0.5, 0.25], [-0.08, 0.02, -0.32], [0.6, -0.7, 0.4]], [[0.25, 0.6, -0.75], [0.1, -0.06, -0.48], [0.75, -0.5, 0.45]], [[0.85, -0.2, 0.2], [0.32, -0.16, -0.4], [0.2, -0.6, 0.8]]],
+  [[[0.05, 0.6, 0.8], [0.12, 0.1, -0.26], [0.3, -0.8, 0.5]], [[-0.1, 0.6, -0.8], [0.08, 0.02, -0.45], [0.55, -0.75, 0.35]], [[-0.35, -0.6, -0.7], [0.02, -0.08, -0.48], [0.45, -0.25, 0.85]]]];
+// the view-model's pose: where the fist is, which way its grip runs, and which way the forearm runs back to the elbow (view space)
+function viewPose(wep, prog, sw, th, sb, cb, combo, parryT) {
+  // the swing: dagger and fists thrust; the sword cuts right-to-left, left-to-right, then overhead
+  let fwd, pos, arm = [0.62, -0.5, 0.6], blade = null;   // arm: which way the forearm runs back from the fist to the elbow
+  // strokes in three beats: draw back (anticipation), the cut (fast, eased out), follow-through and recovery
+  const beat = (p, a0, a1) => clamp((p - a0) / (a1 - a0), 0, 1), eOut = t => 1 - (1 - t) * (1 - t) * (1 - t), eIo = t => t * t * (3 - 2 * t);
+  const idleF = [-0.1, wep === 'sword' ? 0.75 : wep === 'spear' ? 0.05 : 0.5, -1], idleP = [0.17 - sb, -0.19 + cb, -0.33];
+  if (parryT > 0 && (wep === 'sword' || wep === 'spear' || wep === 'dagger')) {          // parry: the blade across the body, high
+    const k = Math.sin(Math.min(1, (PARRY.window - parryT) / 0.08) * Math.PI / 2);
+    fwd = norm3([lerp(idleF[0], -1, k), lerp(idleF[1], 0.25, k), lerp(idleF[2], -0.35, k)]);
+    pos = [lerp(idleP[0], 0.12, k), lerp(idleP[1], -0.05, k), lerp(idleP[2], -0.42, k)];
+  } else if (wep === 'sword' && prog > 0) {
+    // each cut in key poses (wind-up, mid-cut, follow-through), each [blade direction, fist position, forearm toward the elbow]:
+    // the forearm always runs back out of the frame at the lower right, and the wrist cocks the blade off the line of the fist
+    const K = SWORD_CUTS[combo], I = [idleF, idleP, [0.62, -0.5, 0.6]];
+    const wind = eIo(beat(prog, 0, 0.28)), cut = eOut(beat(prog, 0.28, 0.52)), back = eIo(beat(prog, 0.58, 1));
+    const pose = (a, b, t) => a.map((v, i) => (i === 0 ? norm3(v) : v).map((x, j) => lerp(x, (i === 0 ? norm3(b[i]) : b[i])[j], t)));
+    let P = pose(I, K[0], wind);
+    if (cut > 0) P = cut < 0.5 ? pose(K[0], K[1], cut * 2) : pose(K[1], K[2], cut * 2 - 1);
+    if (back > 0) P = pose(K[2], I, back);
+    blade = norm3(P[0]); pos = P[1]; arm = P[2];
+    const w = wind * (1 - back), An = norm3(arm), bd = blade[0] * An[0] + blade[1] * An[1] + blade[2] * An[2];
+    const perp = norm3([blade[0] - An[0] * bd, blade[1] - An[1] * bd, blade[2] - An[2] * bd]);
+    // the fist follows the blade until the blade swings past 125 degrees off the forearm; beyond that the wrist takes up the rest
+    const cl = bd / Math.hypot(...blade) < -0.57 ? norm3(perp.map((v, i) => v * 0.82 - An[i] * 0.57)) : blade;
+    fwd = norm3(blade.map((v, i) => lerp(v, cl[i], w)));
+  } else if (wep === 'fists' && prog > 0) {
+    // a jab: cock back, then the fist turns over as it drives out, palm down and knuckles to the target,
+    // the forearm running straight back below the eye (the elbow drops out of sight, never the arm's cut end in view), and snaps back to guard
+    const cock = eIo(beat(prog, 0, 0.22)), drive = eOut(beat(prog, 0.22, 0.46)), ret = eIo(beat(prog, 0.62, 1)), out = drive * (1 - ret);
+    const fC = [idleF[0] + 0.15, idleF[1] + 0.2, -1], pC = [idleP[0] + 0.03, idleP[1] - 0.02, idleP[2] + 0.07];
+    const fO = [-1, 0.06, 0.38], pO = [0.085, -0.11, -0.46], aO = [0.4, -0.42, 1];
+    const c = cock * (1 - drive);
+    const turn = eIo(beat(prog, 0.06, 0.26)) * (1 - ret);   // the fist turns over while still low, before it drives: never mid-turn in the middle of the frame
+    fwd = norm3(fO.map((v, i) => lerp(lerp(idleF[i], fC[i], c), v, turn)));
+    pos = pO.map((v, i) => lerp(lerp(idleP[i], pC[i], c), v, out));
+    pos[1] -= 0.08 * Math.sin(Math.PI * turn) * (1 - drive);   // and dips as it turns
+    pos[1] -= 0.2 * Math.sin(Math.PI * ret); pos[0] += 0.06 * Math.sin(Math.PI * ret);   // pulled back low and out to the side: the fist turns back over below the frame
+    arm = arm.map((v, i) => lerp(v, aO[i], turn));
+  } else if ((wep === 'dagger' || wep === 'spear') && prog > 0) {
+    // a jab or thrust: cock back, drive straight out, snap back
+    const reach = wep === 'spear' ? 0.42 : wep === 'dagger' ? 0.3 : 0.26;
+    const cock = eIo(beat(prog, 0, 0.25)), drive = eOut(beat(prog, 0.25, 0.5)), ret = eIo(beat(prog, 0.6, 1));
+    const z = idleP[2] + 0.08 * cock - (reach + 0.08) * drive * (1 - ret) + 0.08 * cock * ret * 0;
+    const out = drive * (1 - ret);
+    fwd = norm3([idleF[0] + 0.05 * cock - 0.05 * out, idleF[1] - 0.25 * out, -1]);
+    pos = [idleP[0] - 0.08 * out + 0.03 * cock, idleP[1] + 0.03 * cock + 0.06 * out, z + 0.08 * cock * (1 - drive)];
+  } else {
+    fwd = norm3([idleF[0] - sw * 0.05, idleF[1] - sw * 0.35 + th * 0.4, -1]);
+    pos = [idleP[0] + fwd[0] * sw * 0.16, idleP[1] + fwd[1] * sw * 0.16 + th * 0.06, idleP[2] + fwd[2] * sw * 0.16];
+  }
+  fwd = norm3(fwd);
+  // the hand's frame: X back along the grip, Z up the forearm toward the elbow
+  const frame = (f, p) => {
+    const X = [-f[0], -f[1], -f[2]], ad = arm[0] * X[0] + arm[1] * X[1] + arm[2] * X[2];
+    const Z = norm3([arm[0] - X[0] * ad, arm[1] - X[1] * ad, arm[2] - X[2] * ad]), Y = cross3(Z, X);
+    return new Float32Array([X[0], X[1], X[2], 0, Y[0], Y[1], Y[2], 0, Z[0], Z[1], Z[2], 0, p[0], p[1], p[2], 1]);
+  };
+  const hand = frame(fwd, pos);
+  let swordAt = hand;
+  if (blade) {                                          // the blade on its own line, pivoting about the grip
+    const ap = (m, v) => [0, 1, 2].map(i => m[i] * v[0] + m[4 + i] * v[1] + m[8 + i] * v[2] + m[12 + i]);
+    const g = ap(hand, GRIP_C), gr = ap(frame(blade, [0, 0, 0]), GRIP_C);
+    swordAt = frame(blade, [g[0] - gr[0], g[1] - gr[1], g[2] - gr[2]]);
+  }
+  // the upper arm: from inside the forearm's elbow end back to the shoulder, behind and below the eye
+  const ap = (m, v) => [0, 1, 2].map(i => m[i] * v[0] + m[4 + i] * v[1] + m[8 + i] * v[2] + m[12 + i]);
+  const E = ap(hand, [-0.003, 0.0, 0.24]), Sh = [0.24 - sb, -0.36 + cb, 0.16], L = [Sh[0] - E[0], Sh[1] - E[1], Sh[2] - E[2]];
+  const ux = norm3(cross3(norm3(L), [hand[4], hand[5], hand[6]])), uy = norm3(cross3(ux, norm3(L)));
+  const upper = new Float32Array([ux[0], ux[1], ux[2], 0, uy[0], uy[1], uy[2], 0, L[0], L[1], L[2], 0, E[0], E[1], E[2], 1]);
+  return { hand, swordAt, blade, upper };
+}
+// Satha's colouring: a dark hide, dimmed head, and only a faint sheen of her own
+const SATHA_HIDE = [28, 27, 20], SATHA_HEAD_L = [0.85, 0.85, 0.88], SATHA_GLOW = 0.04;
 function drawM(name, m, light, glow = 0, alpha = 1) {
   R.key = light.d || [0.3, 0.9, 0.3];
   R.drawEntity(getModel(name), m, light, glow, alpha, UV_MODELS.has(name) || name.endsWith(':face') || name.startsWith('char:thing'));
@@ -1640,11 +1719,11 @@ function render(alpha) {
         yaw += dy * w; hp = lerp(hp, Math.atan2(h[1] - (S.y + 0.4), Math.max(0.5, kd)) * 0.8, w);
       }
       const hm = m4trs(h[0], h[1], h[2], yaw, hp, 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82);   // the built head: a viper's, broader than her neck
-      const hl0 = sampleLight(h[0], h[1] + 1, h[2]), hl = [hl0[0] * 1.0, hl0[1] * 1.06, hl0[2] * 1.4]; hl.d = hl0.d;   // the head's bleached hide is yellower than the body's: cool the light on it so both read bone-cream
+      const hl0 = sampleLight(h[0], h[1] + 1, h[2]), hl = [hl0[0] * SATHA_HEAD_L[0], hl0[1] * SATHA_HEAD_L[1], hl0[2] * SATHA_HEAD_L[2]]; hl.d = hl0.d;   // the head's own texture is pale: dim the light on it to match the dark hide
       if (h[1] > -10) {
         const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
-        drawPart('satha_head', 'satha_head_uv', hm, hl, 0.2); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, 0.2);   // she shimmers: pale even in the dark, but the torch still models her
+        drawPart('satha_head', 'satha_head_uv', hm, hl, SATHA_GLOW); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, SATHA_GLOW);   // only a faint sheen of her own: the torch models her
       }
       if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS, fw = norm3([hm[8], hm[9], hm[10]]);
@@ -1670,7 +1749,7 @@ function render(alpha) {
         R.updateMesh(sathaMeshes[c], data);
         if (mid[1] < -14) continue;
         R.key = key;
-        R.drawEntity(sathaMeshes[c], m4ident(), lc, 0.1, 1, true);   // "the great shimmering white form": a faint light of her own, so she shows coming in the dark
+        R.drawEntity(sathaMeshes[c], m4ident(), lc, SATHA_GLOW / 2, 1, true);   // a faint sheen of her own, so she shows coming in the dark
       }
     }
   }
@@ -1697,46 +1776,14 @@ function render(alpha) {
     const sb = Math.sin(bobPhase) * 0.012 * bobAmt, cb = Math.abs(Math.cos(bobPhase)) * 0.012 * bobAmt;
     const prog = S.swing > 0 ? 1 - S.swing / S.swingLen : 0, sw = S.swing > 0 ? Math.sin(prog * Math.PI) : 0, th = S.throwT > 0 ? Math.sin((1 - S.throwT / 0.35) * Math.PI) : 0;
     const wep = S.flags.has_bone ? 'bone' : S.weapon;
-    // the swing: dagger and fists thrust; the sword cuts right-to-left, left-to-right, then overhead
-    let fwd, pos;
-    // strokes in three beats: draw back (anticipation), the cut (fast, eased out), follow-through and recovery
-    const beat = (p, a0, a1) => clamp((p - a0) / (a1 - a0), 0, 1), eOut = t => 1 - (1 - t) * (1 - t) * (1 - t), eIo = t => t * t * (3 - 2 * t);
-    const idleF = [-0.1, wep === 'sword' ? 0.75 : wep === 'spear' ? 0.05 : 0.5, -1], idleP = [0.17 - sb, -0.19 + cb, -0.33];
-    if (S.parryT > 0 && (wep === 'sword' || wep === 'spear' || wep === 'dagger')) {          // parry: the blade across the body, high
-      const k = Math.sin(Math.min(1, (PARRY.window - S.parryT) / 0.08) * Math.PI / 2);
-      fwd = norm3([lerp(idleF[0], -1, k), lerp(idleF[1], 0.25, k), lerp(idleF[2], -0.35, k)]);
-      pos = [lerp(idleP[0], 0.12, k), lerp(idleP[1], -0.05, k), lerp(idleP[2], -0.42, k)];
-    } else if (wep === 'sword' && S.swing > 0) {
-      // each cut: [start dir, end dir, start pos, end pos] (right-to-left, left-to-right, overhead)
-      const C = [[[0.95, 0.6, -0.45], [-0.95, -0.25, -0.6], [0.34, 0.02, -0.3], [-0.14, -0.17, -0.44]],
-                 [[-0.95, 0.5, -0.45], [0.95, -0.25, -0.6], [-0.1, 0.04, -0.32], [0.3, -0.18, -0.44]],
-                 [[0.0, 1.0, 0.35], [0.0, -0.9, -0.75], [0.12, 0.14, -0.24], [0.08, -0.2, -0.5]]][S.combo];
-      const wind = eIo(beat(prog, 0, 0.28)), cut = eOut(beat(prog, 0.28, 0.5)), back = eIo(beat(prog, 0.55, 1));
-      const f0 = idleF.map((v, i) => lerp(v, C[0][i], wind)), p0 = idleP.map((v, i) => lerp(v, C[2][i], wind));
-      const f1 = f0.map((v, i) => lerp(v, C[1][i], cut)), p1 = p0.map((v, i) => lerp(v, C[3][i], cut));
-      fwd = norm3(f1.map((v, i) => lerp(v, idleF[i], back))); pos = p1.map((v, i) => lerp(v, idleP[i], back));
-    } else if ((wep === 'fists' || wep === 'dagger' || wep === 'spear') && S.swing > 0) {
-      // a jab or thrust: cock back, drive straight out, snap back
-      const reach = wep === 'spear' ? 0.42 : wep === 'dagger' ? 0.3 : 0.26;
-      const cock = eIo(beat(prog, 0, 0.25)), drive = eOut(beat(prog, 0.25, 0.5)), ret = eIo(beat(prog, 0.6, 1));
-      const z = idleP[2] + 0.08 * cock - (reach + 0.08) * drive * (1 - ret) + 0.08 * cock * ret * 0;
-      const out = drive * (1 - ret);
-      fwd = norm3([idleF[0] + 0.05 * cock - 0.05 * out, idleF[1] - 0.25 * out, -1]);
-      pos = [idleP[0] - 0.08 * out + 0.03 * cock, idleP[1] + 0.03 * cock + 0.06 * out, z + 0.08 * cock * (1 - drive)];
-    } else {
-      fwd = norm3([idleF[0] - sw * 0.05, idleF[1] - sw * 0.35 + th * 0.4, -1]);
-      pos = [idleP[0] + fwd[0] * sw * 0.16, idleP[1] + fwd[1] * sw * 0.16 + th * 0.06, idleP[2] + fwd[2] * sw * 0.16];
-    }
-    const X = [-fwd[0], -fwd[1], -fwd[2]];
-    const arm = [0.62, -0.5, 0.6], ad = arm[0] * X[0] + arm[1] * X[1] + arm[2] * X[2];
-    const Z = norm3([arm[0] - X[0] * ad, arm[1] - X[1] * ad, arm[2] - X[2] * ad]), Y = cross3(Z, X);
-    const hand = new Float32Array([X[0], X[1], X[2], 0, Y[0], Y[1], Y[2], 0, Z[0], Z[1], Z[2], 0, pos[0], pos[1], pos[2], 1]);
+    const { hand, swordAt, blade, upper } = viewPose(wep, prog, sw, th, sb, cb, S.combo, S.parryT);
+    drawM('vm_upper', upper, vl);
     // his own forearm and fist (the CC0 body, his baked skin), else the old modelled ones
     if (typeof SKINNED !== 'undefined' && SKINNED.vm_arm) { drawStatic('vm_arm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); }
     else { drawM('vm_forearm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); drawM('vm_hand_grip', hand, vl); }
     if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
     else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
-    else if (wep === 'sword') drawM('sword', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl);
+    else if (wep === 'sword') { drawM('sword', m4mul(swordAt, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl); if (blade) drawM('vm_hilt', hand, vl); }   // the hilt seated in the fist while the wrist cocks the blade
     else if (wep === 'spear') drawPart('w_spear', 'spear', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2] - 0.0, 0, 0, Math.PI / 2, 0.55)), vl);
     if (torchInHand()) {                     // the torch in his left fist: the right hand's model, mirrored
       const tf = norm3([-0.32 + sb * 2, 1.3, -0.7]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
@@ -1920,12 +1967,12 @@ function boot() {
   addEventListener('resize', onResize);
   setTimeout(() => {
     R.uploadTextures(generateTextures());
-    // Satha's hide: overlapping scales and belly plates (tools/textures/satha_scales.py), pale as "the great shimmering white form"
+    // Satha's hide: overlapping scales and belly plates (tools/textures/satha_scales.py), tinted dark (SATHA_HIDE)
     { const im = new Image(); im.onload = () => {
         const c = document.createElement('canvas'); c.width = c.height = TEX_SIZE; const x = c.getContext('2d'); x.drawImage(im, 0, 0, TEX_SIZE, TEX_SIZE);
         const d = x.getImageData(0, 0, TEX_SIZE, TEX_SIZE).data;
         let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i]; m /= d.length / 4 * 255;
-        for (let i = 0; i < d.length; i += 4) { const v = Math.min(1, 0.78 * (d[i] / 255) / m); d[i] = 234 * v + 10; d[i + 1] = 226 * v + 10; d[i + 2] = 206 * v + 10; d[i + 3] = 70; }   // the palette's own bone-cream: warmer and torchlight turns her orange, cooler and her highlights snap to steel
+        for (let i = 0; i < d.length; i += 4) { const v = Math.min(1, 0.78 * (d[i] / 255) / m); d[i] = SATHA_HIDE[0] * v + 6; d[i + 1] = SATHA_HIDE[1] * v + 6; d[i + 2] = SATHA_HIDE[2] * v + 6; d[i + 3] = 0; }   // a dark hide: the scales' edges catch the torch, the rest stays in shadow
         R.updateLayer(T.SATHA, new Uint8Array(d.buffer));
       }; im.src = 'textures/satha_skin.png'; }
     R.setPalette(gamePalette());

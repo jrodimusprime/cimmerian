@@ -110,7 +110,9 @@ function skinInit() {
 }
 
 // ---- .glb loading --------------------------------------------------------------
-async function loadGLB(url) {
+// a model's own texture darkened at load (Satha's head was painted pale; her hide is dark)
+const SKIN_TINT = { satha_head: [0.15, 0.145, 0.125], satha_jaw: [0.15, 0.145, 0.125] };
+async function loadGLB(url, tint) {
   const buf = await new Promise((ok, no) => {          // XHR, not fetch: it also reads file:// pages (the tests)
     const x = new XMLHttpRequest(); x.open('GET', url); x.responseType = 'arraybuffer';
     x.onload = () => (x.status === 200 || x.status === 0) && x.response && x.response.byteLength ? ok(x.response) : no(new Error(url));
@@ -163,7 +165,13 @@ async function loadGLB(url) {
   const images = await Promise.all((json.images || []).map(async im => {
     const bv = json.bufferViews[im.bufferView];
     const blob = new Blob([new Uint8Array(bin.buffer, bin.byteOffset + (bv.byteOffset || 0), bv.byteLength)], { type: im.mimeType });
-    return createImageBitmap(blob, { imageOrientation: 'none', colorSpaceConversion: 'none' });
+    const bmp = await createImageBitmap(blob, { imageOrientation: 'none', colorSpaceConversion: 'none' });
+    if (!tint) return bmp;
+    const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+    const x = c.getContext('2d'); x.drawImage(bmp, 0, 0);
+    const id = x.getImageData(0, 0, c.width, c.height), d = id.data;
+    for (let i = 0; i < d.length; i += 4) { d[i] *= tint[0]; d[i + 1] *= tint[1]; d[i + 2] *= tint[2]; }
+    x.putImageData(id, 0, 0); return c;
   }));
   const gl = R.gl;
   const texOf = img => {
@@ -339,7 +347,7 @@ async function loadCastModels(ids) {
   if (!skinProg) skinInit();
   ids = ids.filter(id => !SKINNED[id] && !SKIN_LOADING.has(id)); ids.forEach(id => SKIN_LOADING.add(id));
   await Promise.all(ids.map(async id => {
-    try { SKINNED[id] = await loadGLB('models/cast/' + id + '.glb'); }
+    try { SKINNED[id] = await loadGLB('models/cast/' + id + '.glb', SKIN_TINT[id]); }
     catch (e) { /* not built yet: the part-built rig stands in */ }
   }));
 }
