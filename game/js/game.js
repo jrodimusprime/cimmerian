@@ -83,6 +83,39 @@ function cineCam(alpha) {
   const dx = tg[0] - eye[0], dy = tg[1] - eye[1], dz = tg[2] - eye[2];
   return { eye, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(dy, Math.hypot(dx, dz)) };
 }
+// Cheat mode: the AI plays the level for you. It replays the golden bot's recorded run (game/autoplay/<level>.json,
+// made by test/record_autoplay.sh) tick by tick in real time, from a fresh start of the level, exactly as the test
+// replays it. Any key takes back control.
+let AUTO = null;
+const AUTO_FRESH = () => ({ health: 100, weapons: { fists: true, dagger: false, sword: false }, weapon: 'fists', kills: 0, deaths: 0, hints: [], playTicks: 0 });
+function startAutoplay(speed) {
+  const id = LEVEL.level, x = new XMLHttpRequest();
+  x.open('GET', 'autoplay/' + id + '.json'); x.responseType = 'text';
+  x.onload = () => {
+    let R; try { R = JSON.parse(x.responseText); } catch (e) { log('[No recorded run for ' + id + '.]', 'bad'); return; }
+    hideOverlay();
+    if (R[0][0] !== 'load') loadLevel(id);               // e1m2's run begins as the game does
+    AUTO = { R, i: 0, done: 0, acc: 0, speed }; agentInput = {}; mode = 'splash';
+    log('[The AI plays ' + LEVEL.title + (speed > 1 ? ' at ' + speed + '× speed' : '') + '. Press any key to take back control.]', 'dim');
+  };
+  x.onerror = () => log('[No recorded run for ' + id + '.]', 'bad');
+  x.send();
+}
+function autoplayFrame(dt) {
+  const A = AUTO; A.acc += dt * SIM_HZ * A.speed;
+  let n = 0;
+  while (AUTO && A.acc >= 1 && n < 60 && (mode === 'play' || mode === 'splash' || mode === 'dead')) {
+    if (A.i >= A.R.length) { AUTO = null; agentInput = null; return; }
+    const [a, k] = A.R[A.i];
+    if (a === 'load') { loadLevel(k, AUTO_FRESH()); mode = 'splash'; A.i++; continue; }
+    let act = a;
+    if (A.done > 0) act = Object.assign({}, a, { use: false, torch: false, attack: false, parry: false, kick: false, throwSpear: false, weapon: undefined });
+    if (A.done + 1 < k) act = Object.assign({}, act, { respawn: false });
+    prev = { x: S.x, y: S.y, z: S.z };
+    CIM.step(act, 1); A.done++; A.acc -= 1; n++;
+    if (A.done >= k) { A.i++; A.done = 0; }
+  }
+}
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 // ---------------------------------------------------------------- state
@@ -340,7 +373,7 @@ const DEATHS = {
 };
 function hurt(n, why) {
   if (mode !== 'play') return;
-  if (CHEAT) { flash = Math.min(0.3, flash + n / 140); flashCol = [0.75, 0.06, 0.02]; return; }   // god mode: you feel it, and nothing more
+  if (CHEAT && !AUTO) { flash = Math.min(0.3, flash + n / 140); flashCol = [0.75, 0.06, 0.02]; return; }   // god mode: you feel it, and nothing more (not while the AI plays: its run was recorded mortal)
   S.health -= n;
   if (why === 'venom') flashCol = [0.12, 0.55, 0.3]; else flashCol = [0.75, 0.06, 0.02];
   flash = Math.min(0.6, flash + n / 70);
@@ -349,7 +382,7 @@ function hurt(n, why) {
 }
 function die(why) {
   if (mode !== 'play') return;
-  if (CHEAT) {                                           // god mode: a fatal fall puts you back at the last safe place
+  if (CHEAT && !AUTO) {                                   // god mode: a fatal fall puts you back at the last safe place
     const c = S.checkpoint; S.x = c.x; S.z = c.z; S.y = groundInfo(c.x, c.z).floor; S.vx = S.vy = S.vz = 0; prev = { x: S.x, y: S.y, z: S.z };
     return;
   }
@@ -1266,7 +1299,7 @@ function startPlay(agent) {
   hideOverlay(); hud.classList.remove('hidden');
   mode = 'play'; fade = 1; fadeTarget = 0; acc = 0;
   for (const [t, c] of LEVEL_INTRO[LEVEL.level] || LEVEL.intro || []) log(t, c);
-  if (CHEAT && !agent) log('Cheat mode: god mode is on. N skips to the next level.', 'dim');
+  if (CHEAT && !agent) log('Cheat mode: god mode is on. N skips to the next level; Esc, then "Let the AI play this level", to watch it done.', 'dim');
   if (!agent) lockPointer();
 }
 // load a level; `carry` brings the hero's state across (health, weapons, tally)
@@ -1302,12 +1335,13 @@ function showPause() {
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
     '<div class="setting"><label for="volIn">Sound volume</label><input type="range" id="volIn" min="0" max="1.5" step="0.05" value="' + volume + '"><span id="volVal">' + Math.round(volume * 100) + '%</span></div>' +
     '<div class="setting"><label for="ambIn">Ambience</label><input type="range" id="ambIn" min="0" max="1.5" step="0.05" value="' + ambience + '"><span id="ambVal">' + Math.round(ambience * 100) + '%</span></div>' +
-    '<div class="btns"><button id="bRes">Resume</button><button id="bRestart">Restart level</button></div></div>';
+    '<div class="btns"><button id="bRes">Resume</button><button id="bRestart">Restart level</button>' + (CHEAT ? '<button id="bAuto">Let the AI play this level</button><button id="bAuto3">… at 3× speed</button>' : '') + '</div></div>';
   $('sensIn').oninput = e => { sensMul = parseFloat(e.target.value); $('sensVal').textContent = sensMul.toFixed(2) + '×'; try { localStorage.setItem(SENS_KEY, String(sensMul)); } catch (err) { /* ignore */ } };
   $('brIn').oninput = e => { brightness = parseFloat(e.target.value); R.gamma = brightness; $('brVal').textContent = brightness.toFixed(2); try { localStorage.setItem(BRIGHT_KEY, String(brightness)); } catch (err) { /* ignore */ } };
   $('volIn').oninput = e => { volume = parseFloat(e.target.value); Sfx.setVolume(volume); $('volVal').textContent = Math.round(volume * 100) + '%'; try { localStorage.setItem(VOL_KEY, String(volume)); } catch (err) { /* ignore */ } };
   $('ambIn').oninput = e => { ambience = parseFloat(e.target.value); Sfx.setAmbience(ambience); $('ambVal').textContent = Math.round(ambience * 100) + '%'; try { localStorage.setItem(AMB_KEY, String(ambience)); } catch (err) { /* ignore */ } };
   $('bRes').onclick = () => { hideOverlay(); mode = 'play'; lockPointer(); };
+  if (CHEAT) { $('bAuto').onclick = () => startAutoplay(1); $('bAuto3').onclick = () => startAutoplay(3); }
   $('bRestart').onclick = () => location.reload();
 }
 async function finishLevel() {
@@ -1317,7 +1351,8 @@ async function finishLevel() {
   const secs = Math.round(S.tick / SIM_HZ), slain = S.foes.filter(f => f.dead).length;
   const stats = '<p class="stats">' + LEVEL.level + ' complete · ' + Math.floor(secs / 60) + 'm ' + (secs % 60) + 's · ' + S.deaths + ' death' + (S.deaths === 1 ? '' : 's') +
     ' · ' + slain + ' of ' + S.foes.filter(f => FOES[f.cls].hp < 1e8).length + ' foes slain · tick ' + S.tick + ' · state ' + S.doneHash + '</p>';
-  if (agentInput) return;                         // the test harness drives level changes itself
+  if (agentInput && !AUTO) return;                // the test harness drives level changes itself
+  if (AUTO) { AUTO = null; agentInput = null; }    // the AI's run is over: the game goes on as usual
   await new Promise(r => setTimeout(r, 900));
   hud.classList.add('hidden');
   const next = LEVEL.next;
@@ -1704,6 +1739,7 @@ function frame(now) {
   lastFrame = now; gameTime += dt;
   if (window.GALLERY_ON) { renderGallery(dt); requestAnimationFrame(frame); return; }   // index.html?cast: the cast gallery
   if (S) {
+    if (AUTO) autoplayFrame(dt);
     if (mode === 'play' && !agentInput) {
       const sens = BASE_SENS * sensMul;
       S.yaw -= mouseDX * sens; S.pitch = clamp(S.pitch - mouseDY * sens, -1.45, 1.45);
@@ -1713,7 +1749,7 @@ function frame(now) {
       while (acc >= DT && n < 10 && mode === 'play') { tick(humanInput()); acc -= DT; n++; }
       if (n === 10) acc = 0;
     }
-    renderAlpha = mode === 'play' && !agentInput ? clamp(acc / DT, 0, 1) : 1;
+    renderAlpha = mode === 'play' && (!agentInput || AUTO) ? clamp((AUTO ? AUTO.acc : acc / DT), 0, 1) : 1;
     updateParticles(dt);
     fade += (fadeTarget - fade) * Math.min(1, dt * (fadeTarget > fade ? 4 : 2));
     flash = Math.max(0, flash - dt * 1.2);
@@ -1732,7 +1768,7 @@ addEventListener('keydown', e => {
   if (mode === 'paused' && e.code === 'Enter') { hideOverlay(); mode = 'play'; lockPointer(); return; }
   if (e.code === 'F3') { e.preventDefault(); debugOn = !debugOn; return; }
   if (mode !== 'play') return;
-  if (agentInput) { agentInput = null; log('[You take back control.]', 'dim'); }
+  if (agentInput) { agentInput = null; AUTO = null; log('[You take back control.]', 'dim'); }
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   keys[e.code] = true;
   if (e.repeat) return;
