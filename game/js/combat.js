@@ -357,6 +357,7 @@ const DEATH_LINES = {
 function killFoe(f, how) {
   if (f.dead) return;
   f.dead = true; f.state = 'dead'; f.deathT = 0; f.how = how; f.hp = 0; S.kills++;
+  f.ragYaw = Math.atan2(f.x - S.x, f.z - S.z); f.ragPow = how === 'kick' ? 1.5 : how === 'crush' ? 2.2 : 0.8 + 0.5 * hrand(Math.round(f.homeX * 10), 5, 3, 3);   // the killing blow drives him away from you (drawn only: not in the state)
   Sfx.death(f.cls === 'thing', panOf(f)); if (how === 'fall') Sfx.scream();
   if (!FOES[f.cls].boss) log(DEATH_LINES[how](FOES[f.cls].name), 'good');   // a boss's death has its own lines, in the level's beats
   if (how === 'fall' || f.cls === 'yothga') return;
@@ -392,6 +393,10 @@ function fitDeath(f) {
     return true;
   };
   const offs = [0, 0.45, -0.45, 0.9, -0.9, 1.35, -1.35, 1.8, -1.8, 2.3, -2.3, Math.PI];
+  if (f.ragYaw !== undefined) for (const o of offs) {   // the way the blow drives him: on his back if it took him from the front, on his face from behind
+    const A = f.ragYaw + o, s = Math.cos(f.yaw - A) > 0 ? 1 : -1;
+    if (clear(A)) { f.dieS = s; f.dieYaw = A - (s < 0 ? Math.PI : 0); f.slump = false; return; }
+  }
   for (const s of [sPref, -sPref]) for (const o of offs) {
     const A = f.yaw + (s < 0 ? Math.PI : 0) + o;       // the direction the body will lie along
     if (clear(A)) { f.dieS = s; f.dieYaw = A - (s < 0 ? Math.PI : 0); f.slump = false; return; }
@@ -402,6 +407,44 @@ function fitDeath(f) {
 function deathPoint(f, t, w = 0) {
   const L = 1.9 * CAST[f.cls].scale, A = f.dieYaw + (f.dieS < 0 ? Math.PI : 0), dx = Math.sin(A), dz = Math.cos(A);
   return [f.x + dx * L * t - dz * w, f.z + dz * L * t + dx * w];
+}
+// Ragdoll: the body topples as a falling mass from the feet (an inverted pendulum, kicked off by the blow),
+// slides on along the ground, bounces once as it lands and settles; every joint hangs on a loose spring, so
+// arms fling and flop, the head whips, the knees fold. Integrated on the corpse's own sim clock (deathT),
+// so a replay draws it the same; it's drawing only, never part of the state.
+const RAG_LIE = 1.52, RAG_DT = 1 / 144;
+function ragStep(f, lie, start) {
+  const h = k => hrand(Math.round(f.homeX * 10), Math.round(f.homeZ * 10), k, 61), pow = f.ragPow || 1, sc = CAST[f.cls] ? CAST[f.cls].scale : 1;
+  let R = f.rag;
+  if (!R) {
+    R = f.rag = { t: 0, th: 0.04, w: 0.8 + 1.3 * pow, v: 0.6 + 1.1 * pow, off: 0, land: 0, J: {}, V: {} };
+    for (const k in lie) { R.J[k] = start[k] || 0; R.V[k] = 0; }
+    const fling = (f.dieS || -1) < 0 ? 1 : -1;            // falling backward the arms fly up and forward; on the face they trail
+    R.V.uxL = -5 * fling * (0.6 + h(1)); R.V.uxR = -5 * fling * (0.6 + h(2)); R.V.uzL = 3 * h(3); R.V.uzR = 3 * h(4); R.V.headX = 4 * fling;
+  }
+  const A = f.dieYaw + ((f.dieS || -1) < 0 ? Math.PI : 0), dx = Math.sin(A), dz = Math.cos(A), base = f.y;
+  while (R.t + RAG_DT <= f.deathT && R.t < 4) {
+    R.t += RAG_DT; const dt = RAG_DT;
+    if (!R.land) {
+      R.w += 9.8 / (1.05 * sc) * Math.sin(R.th) * dt; R.th += R.w * dt;
+      if (R.th >= RAG_LIE) { R.th = RAG_LIE; R.w *= -0.22; R.land = 1; for (const k in R.V) R.V[k] += (h(20 + k.length) - 0.5) * 9; }   // the thud jolts every limb
+    } else { R.w += (-(R.th - RAG_LIE) * 140 - R.w * 10) * dt; R.th = Math.min(RAG_LIE, R.th + R.w * dt); }
+    R.v = Math.max(0, R.v - (R.land ? 7 : 2) * dt);
+    const nx = R.off + R.v * dt, g = groundInfo(f.x + dx * (nx + 0.6), f.z + dz * (nx + 0.6));
+    if (g.kind !== 1 || (g.flags & F_NOPASS) || Math.abs(g.floor - base) > 0.4 || LV.colliders.some(c => Math.hypot(c.x - f.x - dx * (nx + 0.6), c.z - f.z - dz * (nx + 0.6)) < c.r)) R.v = 0; else R.off = nx;
+    const q = R.th / RAG_LIE, fold = Math.sin(Math.PI * Math.min(1, q * 1.1));   // knees fold as he goes over, straighten as he lies
+    for (const k in lie) {
+      let T = lerp(start[k] || 0, lie[k], Math.min(1, q * 1.15));
+      if (k === 'sxL' || k === 'sxR') T += 0.9 * fold; if (k === 'txL' || k === 'txR') T -= 0.5 * fold;
+      R.V[k] += (55 * (T - R.J[k]) - 4.5 * R.V[k]) * dt; R.J[k] += R.V[k] * dt;   // underdamped: limbs overshoot and flop
+    }
+  }
+  return R;
+}
+function ragOffset(f) {
+  if (!f.rag || f.dieYaw === undefined) return [0, 0];
+  const A = f.dieYaw + ((f.dieS || -1) < 0 ? Math.PI : 0);
+  return [Math.sin(A) * f.rag.off, Math.cos(A) * f.rag.off];
 }
 // The collapse: the knees go, then he topples and settles, each man differently.
 function deathPose(f, P) {
@@ -414,7 +457,7 @@ function deathPose(f, P) {
     return Object.assign(P, { drop: -0.52 * k, lean: -0.35 * k, txL: -1.45 * k, txR: -1.3 * k, sxL: 1.6 * k, sxR: 1.5 * k, tzL: 0.15 * k, tzR: 0.25 * k,
       uzL: 0.5 * k, uzR: 0.6 * k, uxL: 0.3 * k, uxR: 0.1 * k, fxL: -0.4, fxR: -0.6, headX: 0.7 * k, headY: (h(2) - 0.5) * 0.8 * k, unarmed: true, noShield: true });
   }
-  const sp = f.dieS;
+  const sp = f.dieS === undefined ? -1 : f.dieS;
   // limbs relax toward the floor: on his back the knees fall up and out, face down the legs trail straight
   const back = sp < 0;
   const fin = { uzL: 0.3 + h(3) * 1.1, uzR: 0.3 + h(4) * 1.1,
@@ -422,11 +465,11 @@ function deathPose(f, P) {
     txL: back ? -0.15 - h(9) * 0.35 : 0.05 + h(9) * 0.15, txR: back ? -h(10) * 0.2 : h(10) * 0.12,
     sxL: back ? 0.15 + h(11) * 0.55 : h(11) * 0.35, sxR: back ? h(12) * 0.3 : h(12) * 0.2,
     tzL: 0.08 + h(13) * 0.3, tzR: 0.08 + h(14) * 0.25, headY: (h(15) - 0.5) * 1.5, headX: back ? -0.25 : 0.2 };
-  for (const k in fin) P[k] = lerp(P[k] || 0, fin[k], fall);
-  P.sxL += 1.3 * kneel; P.sxR += 1.3 * kneel; P.txL -= 0.8 * kneel; P.txR -= 0.8 * kneel;    // knees buckle
-  P.lean = 0.45 * kneel + (sp > 0 ? 0.1 : -0.1) * fall; P.headX = (P.headX || 0) + 0.5 * kneel;
-  P.pitch = sp * (1.52 * fall + settle); P.roll = (h(16) - 0.5) * 0.6 * fall;
-  P.drop = -0.32 * kneel + (back ? 0.12 : 0.1) * fall;                  // down onto the knees, then lying on the floor, not in it
+  fin.lean = sp > 0 ? 0.1 : -0.1;
+  const R = ragStep(f, fin, P), q = R.th / RAG_LIE;
+  Object.assign(P, R.J);
+  P.pitch = sp * R.th; P.roll = (h(16) - 0.5) * 0.6 * q;
+  P.drop = -0.14 * Math.sin(Math.PI * Math.min(1, q)) + (back ? 0.12 : 0.1) * q;   // a sag as the knees go, then lying on the floor, not in it
   P.unarmed = true; P.noShield = true;
   return P;
 }
@@ -437,10 +480,11 @@ function foePose(f) {
   const st = FOES[f.cls], P = poseIdle({}, gameTime + f.homeX), c = CAST[f.cls];
   if (f.cls === 'thing' && typeof SKINNED !== 'undefined' && SKINNED.thing) {   // the goblin body: a hunched lope on two legs
     const t = gameTime + f.homeX;
-    if (f.dead) {                                     // pitched over backward, limbs flung out, then still
-      const k = smoothstep(0, 0.45, f.deathT), sd = hrand(Math.round(f.homeX * 10), 3, 5, 5) < 0.5 ? -1 : 1;
-      return Object.assign(P, { pitch: -1.45 * k, roll: 0.35 * sd * k, drop: 0.12 * k, lean: -0.2 * k, headX: 0.5 * k, headY: 0.6 * sd * k,
-        uxL: -0.6 * k, uxR: -0.9 * k, uzL: 1.3 * k, uzR: 1.1 * k, fxL: -0.8 * k, fxR: -0.4 * k, txL: -0.9 * k, txR: -0.3 * k, sxL: 1.4 * k, sxR: 0.6 * k });
+    if (f.dead) {                                     // a ragdoll like the men: over the way the blow drives it, limbs flung out, then still
+      const sd = hrand(Math.round(f.homeX * 10), 3, 5, 5) < 0.5 ? -1 : 1, sp = f.dieS === undefined ? -1 : f.dieS;
+      const lie = { lean: -0.2, headX: 0.5 * -sp, headY: 0.6 * sd, uxL: -0.6, uxR: -0.9, uzL: 1.3, uzR: 1.1, fxL: -0.8, fxR: -0.4, txL: -0.9, txR: -0.3, sxL: 1.4, sxR: 0.6 };
+      const R = ragStep(f, lie, P), q = R.th / RAG_LIE;
+      return Object.assign(P, R.J, { pitch: sp * R.th, roll: 0.35 * sd * q, drop: 0.12 * q });
     }
     if (f.state === 'lurk' || f.state === 'drop') return Object.assign(P, { pitch: Math.PI, drop: 0.42, uxL: -2.6, uxR: -2.6, fxL: -0.4, fxR: -0.4, txL: -0.6, txR: -0.6, sxL: 1.2, sxR: 1.2 });
     const ph = f.walk * 3.6, amt = f.moving ? 1 : 0.12, sw = Math.sin(ph) * amt;
@@ -506,10 +550,11 @@ function drawFoes() {
     if (f.cls === 'yothga') { const l = sampleLight(f.x, f.y + 1.4, f.z); drawYothga(f.x, f.y, f.z, f.yaw, gameTime, f.dead ? -0.8 * Math.min(1, f.deathT) : f.state === 'windup' || f.state === 'strike' ? 1 : 0.4, l); continue; }
     if (f.state === 'sleep') { const l = sampleLight(f.x, f.y + 1.4, f.z); drawCharacter(f.cls, f.x, f.y, f.z, f.yaw, Object.assign(poseIdle({}, gameTime * 0.3 + f.homeX), { lean: 0.35, headX: 0.7, drop: -0.35, txL: -1.4, txR: -1.4, sxL: 2.2, sxR: 2.2, uxL: -0.4, uxR: -0.4, fxL: -1.2, fxR: -1.2, unarmed: false, we: -1.2 }), l); continue; }   // slumped asleep against the wall
     const l = sampleLight(f.x, f.y + 1.4, f.z);
-    const yaw = f.dead && f.dieYaw !== undefined && f.cls !== 'thing' ? f.dieYaw : f.yaw;
+    const yaw = f.dead && f.dieYaw !== undefined && (f.cls !== 'thing' || f.rag) ? f.dieYaw : f.yaw;
     const cid = f.cls === 'thing' ? ['thing', 'thing_b', 'thing_c'][Math.floor(hrand(Math.round(f.homeX * 10), Math.round(f.homeZ * 10), 7, 1) * 3)] : f.cls;   // each malformed its own way
     const fp = foePose(f); if (f.sidearm) fp.weapon = 'sword';
-    drawCharacter(cid, f.x, f.y, f.z, yaw, fp, l, f.flash > 0 ? 0.55 : 0);
+    const ro = f.dead ? ragOffset(f) : [0, 0];          // the corpse slides on along the ground after the blow
+    drawCharacter(cid, f.x + ro[0], f.y, f.z + ro[1], yaw, fp, l, f.flash > 0 ? 0.55 : 0);
     if (f.debris) for (const d of f.debris) {               // the weapon falls from his hand, and lies broken
       const k = smoothstep(0, 0.45, f.deathT), fl = groundInfo(d.x, d.z).floor;
       const x = lerp(f.x, d.x, k), z = lerp(f.z, d.z, k), y = lerp(f.y + 1.1, fl + 0.03, k * k);
