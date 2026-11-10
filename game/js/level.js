@@ -300,7 +300,7 @@ const LEVEL_E1M1 = {
   level: 'e1m1', next: 'e1m3', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
   // no walls: the plain goes on to the horizon under the sky; a stream and lines of boulders close the field in
-  open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -1.0,
+  open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -0.5,
   groundFog: { density: 0.085, falloff: 0.7, floor: 0, col: [0.5, 0.15, 0.1] },   // the battle's smoke and the evening mist, lying on the dead
   areas: [
     { id: 'charge', type: 'action', name: 'The Broken Charge', rooms: ['charge'] },
@@ -841,7 +841,7 @@ const LEVEL_E1M7 = {
 // ---------------------------------------------------------------------------
 const LEVEL_E1M8 = {
   level: 'e1m8', title: 'The Tybor', ramps: ['earth', 'night', 'scarlet'], grid: [96, 64], arms: 'sword',
-  ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.16, 0.1], open: true, fog: 0.008, sun: [-1, 0.06, 0.2], waterY: -1.0,
+  ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.16, 0.1], open: true, fog: 0.008, sun: [-1, 0.06, 0.2], waterY: -0.25,   // the Tybor runs high: just under the barges' decks and the banks
   groundFog: { density: 0.05, falloff: 0.6, floor: 0, col: [0.5, 0.2, 0.12] },
   intro: [['THE TYBOR', 'title'], ['The rout runs down to the river. The men of Shamar are cutting the barge bridge adrift, and the fugitives drown.', ''],
     ['Tsotha has crossed already, "riding like the wind on a gaunt weird-looking steed whose stride no natural horse could match."', 'warn']],
