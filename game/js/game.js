@@ -29,7 +29,7 @@ const keys = {};
 let mouseDX = 0, mouseDY = 0, pressUse = false, pressFire = false, agentInput = null;
 let acc = 0, lastFrame = 0, gameTime = 0, fade = 1, fadeTarget = 0, flash = 0, flashCol = [0.75, 0.06, 0.02];
 let prev = { x: 0, y: 0, z: 0 }, renderAlpha = 0, hudT = 0, debugOn = false;
-let skyMesh = null, particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, pressTorch = false, pressThrow = false, wantWeapon = null;
+let skyMesh = null, particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, pressTorch = false, pressThrow = false, pressDrink = false, wantWeapon = null;
 let punchPitch = 0, punchYaw = 0;          // cosmetic view kick, never fed back into the sim
 
 const modelCache = new Map();
@@ -192,7 +192,7 @@ function autoplayFrame(dt) {
     const [a, k] = A.R[A.i];
     if (a === 'load') { loadLevel(k, AUTO_FRESH()); mode = 'splash'; A.i++; continue; }
     let act = a;
-    if (A.done > 0) act = Object.assign({}, a, { use: false, torch: false, attack: false, parry: false, kick: false, throwSpear: false, weapon: undefined });
+    if (A.done > 0) act = Object.assign({}, a, { use: false, torch: false, attack: false, parry: false, kick: false, throwSpear: false, drink: false, weapon: undefined });
     if (A.done + 1 < k) act = Object.assign({}, act, { respawn: false });
     prev = { x: S.x, y: S.y, z: S.z };
     CIM.step(act, 1); A.done++; A.acc -= 1; n++;
@@ -310,7 +310,7 @@ function newState(seed, carry) {
     giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0,  wp: 0, arms: 0, grabT: 0, fall: 0 },
     satha: { start: entitySpec('scripted_satha') ? -Math.round(8 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
-    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, spears: carry && carry.spears && !LEVEL.strip ? carry.spears.slice() : [], combo: 0, lastSwing: -999, pendingHit: null,
+    proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, spears: carry && carry.spears && !LEVEL.strip ? carry.spears.slice() : [], pouch: carry && carry.pouch && !LEVEL.strip ? carry.pouch.map(p => Object.assign({}, p)) : [], combo: 0, lastSwing: -999, pendingHit: null,
     weapons: armed || (carry && !LEVEL.strip ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry && !LEVEL.strip ? carry.weapon : 'fists', hits: 0,
     foes: newFoes(), alerted: new Set(), areas: new Set([LEVEL.areas[0].id]), portc: { open: 0, target: 0, dropT: 0 },
     gates: Object.fromEntries(LEVEL.links.filter(l => !fixed.includes(l.name)).map(l => [l.name, { open: 0, target: 0 }])),
@@ -565,10 +565,8 @@ function interact() {
 }
 function takeItem(it) {
   if (it.heal) {
-    if (S.health >= 100) { log('You are not hurt. You leave the ' + it.name.replace(/^(a|an|the) /, '') + ' for later.', 'dim'); return; }
-    S.health = Math.min(100, S.health + it.heal); it.taken = true; Sfx.heal();
-    const nm = it.name.replace(/^(a|an|the) /, '');   // 'a camp loaf' -> 'the camp loaf'
-    log(it.kind === 'bread' ? 'You wolf down the ' + nm + '. Stale, gritty, and better than any feast. (+' + it.heal + ')' : 'You drink the ' + nm + '. It burns going down. (+' + it.heal + ')', 'good');
+    if (S.health < 100) { it.taken = true; eat(it); return; }
+    if (!stow(it)) log('You are not hurt, and your satchel is full. You leave the ' + it.name.replace(/^(a|an|the) /, '') + ' for later.', 'dim');
     return;
   }
   if (it.kind === 'bone') {
@@ -608,6 +606,36 @@ function takeItem(it) {
   } else if (it.kind === 'keys') {
     setFlag('has_keys');
     log('You reach through the bars\' shadow and take up the ring of keys. They are warm from the jailer\'s belt.', 'good');
+  }
+}
+// food and drink: eaten now, or stowed in the satchel (POUCH_MAX) and taken later with H
+const POUCH_MAX = 4;
+function eat(it) {
+  S.health = Math.min(100, S.health + it.heal); Sfx.heal();
+  const nm = it.name.replace(/^(a|an|the) /, '');   // 'a camp loaf' -> 'the camp loaf'
+  log(it.kind === 'bread' ? 'You wolf down the ' + nm + '. Stale, gritty, and better than any feast. (+' + it.heal + ')' : 'You drink the ' + nm + '. It burns going down. (+' + it.heal + ')', 'good');
+}
+function stow(it) {
+  if (S.pouch.length >= POUCH_MAX) return false;
+  it.taken = true; S.pouch.push({ name: it.name, kind: it.kind, heal: it.heal }); Sfx.pickup();
+  log('You stow the ' + it.name.replace(/^(a|an|the) /, '') + ' in your satchel (' + S.pouch.length + '/' + POUCH_MAX + ').' + (S.hints.has('satchel') ? '' : ' Press H to eat or drink from it.'), 'dim');
+  S.hints.add('satchel');
+  return true;
+}
+// H: the satchel's smallest piece that makes good the hurt, else its biggest
+function useSatchel() {
+  if (!S.pouch.length) { log('Your satchel is empty.', 'dim'); return; }
+  if (S.health >= 100) { log('You are not hurt.', 'dim'); return; }
+  const miss = 100 - S.health, fits = S.pouch.filter(p => p.heal >= miss);
+  const pick = fits.length ? fits.reduce((a, b) => b.heal < a.heal ? b : a) : S.pouch.reduce((a, b) => b.heal > a.heal ? b : a);
+  S.pouch.splice(S.pouch.indexOf(pick), 1); eat(pick);
+}
+// walk over food or drink: eaten if you need all of it, else into the satchel if there's room
+function autoFood() {
+  for (const it of S.items) {
+    if (it.taken || !it.heal || Math.hypot(it.x - S.x, it.z - S.z) > 1.1 || Math.abs((it.y || 0) - S.y) > 1.2) continue;
+    if (100 - S.health >= it.heal) { it.taken = true; eat(it); }
+    else stow(it);
   }
 }
 // spears on the ground come to you as you pass: into your hand if it's empty, otherwise onto your back (4 to draw one)
@@ -1012,7 +1040,7 @@ function promptText(t) {
   if (!t) return '';
   if (t.type === 'item' && t.it.kind === 'cellkey') return S.hints.has('stoop') ? '[E] slip your foot from its sandal and grip the keys with your toes' : '[E] bend to the keys';
   if (t.type === 'item' && t.it.kind === 'ember') return '[E] take up the torch and blow on the ember';
-  if (t.type === 'item') return t.it.heal ? '[E] ' + (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name.replace(/^(a|an|the) /, '') : '[E] take the ' + t.it.name.replace(/^(a|an|the) /, '');
+  if (t.type === 'item') return t.it.heal ? '[E] ' + (S.health < 100 ? (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name.replace(/^(a|an|the) /, '') : 'stow the ' + t.it.name.replace(/^(a|an|the) /, '') + ' in your satchel') : '[E] take the ' + t.it.name.replace(/^(a|an|the) /, '');
   switch (t.type) {
     case 'ring': return '[E] strain at the chain';
     case 'niche_torch': return '[E] take the torch';
@@ -1293,9 +1321,9 @@ function humanInput() {
   const inp = {
     fwd: (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0),
     side: (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0),
-    run: !!(keys.ShiftLeft || keys.ShiftRight), jump: !!keys.Space, use: pressUse, torch: pressTorch, fire: pressFire, kick: pressKick, throwSpear: pressThrow, weapon: wantWeapon,
+    run: !!(keys.ShiftLeft || keys.ShiftRight), jump: !!keys.Space, use: pressUse, torch: pressTorch, fire: pressFire, kick: pressKick, throwSpear: pressThrow, drink: pressDrink, weapon: wantWeapon,
   };
-  pressUse = pressFire = pressKick = pressTorch = pressThrow = false; wantWeapon = null;
+  pressUse = pressFire = pressKick = pressTorch = pressThrow = pressDrink = false; wantWeapon = null;
   return inp;
 }
 function tick(inp) {
@@ -1317,7 +1345,7 @@ function tick(inp) {
     if (inp.weapon === 'spear') S.spearUses = S.spears.pop() || 0;  // draw one from your back
     S.weapon = inp.weapon;
   }
-  autoSpears();
+  autoSpears(); autoFood();
   if (inp.torch) shakeOutTorch();
   const { g, sp } = updatePlayer(inp);
   for (const d of [S.door, S.grille, S.portc]) d.open += clamp(d.target - d.open, -DT * 0.9, DT * (d === S.portc && d.target === 0 ? 4 : 0.9));
@@ -1340,6 +1368,7 @@ function tick(inp) {
   if (inp.fire) onFire(false);
   if (inp.kick) { if (S.weapon === 'spear') throwSpear(); else parry(); }   // right-click: with a spear in hand it's thrown; no parrying with a spear
   if (inp.throwSpear) throwSpear();
+  if (inp.drink) useSatchel();
   if ((g.flags & F_WATER) && S.y < (LEVEL.waterY || -1) - 0.6) { die('drown'); return; }
   fieldWorks(g);
   if (g.kind === 2 && S.y < g.floor + 30 && S.y < -4) { die('fall'); return; }
@@ -1361,7 +1390,7 @@ function stateHash() {
   const q = v => Math.round(v * 100);
   const sh = S.shukeli, g = S.giant;
   const parts = [S.tick, q(S.x), q(S.y), q(S.z), Math.round(S.health), Object.values(S.flags).map(Number).join(''), q(S.door.open), q(S.grille.open),
-    S.satha.start, g.state, q(g.x), q(g.z), sh.state, q(sh.x), q(sh.z), S.proj.length, S.items.filter(i => i.taken).length,
+    S.satha.start, g.state, q(g.x), q(g.z), sh.state, q(sh.x), q(sh.z), S.proj.length, S.items.filter(i => i.taken).length, S.pouch.length,
     S.foes.map(f => f.state + q(f.x) + q(f.z) + f.hp).join(','), q(S.portc.open), S.weapon].concat(S.tun ? [S.torch, S.tun.pres, S.passes] : []);
   const s = parts.join('|');
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
@@ -1381,7 +1410,7 @@ window.CIM = {
     if (mode === 'splash') startPlay(true);
     agentInput = action;
     for (let i = 0; i < ticks && mode === 'play'; i++) tick({ fwd: action.forward || 0, side: action.side || 0, run: !!action.run, jump: !!action.jump,
-      use: !!action.use && i === 0, torch: !!action.torch && i === 0, fire: !!action.attack && i === 0, kick: !!(action.parry || action.kick) && i === 0, throwSpear: !!action.throwSpear && i === 0, weapon: i === 0 ? action.weapon : null, yaw: action.yaw, pitch: action.pitch });
+      use: !!action.use && i === 0, torch: !!action.torch && i === 0, fire: !!action.attack && i === 0, kick: !!(action.parry || action.kick) && i === 0, throwSpear: !!action.throwSpear && i === 0, drink: !!action.drink && i === 0, weapon: i === 0 ? action.weapon : null, yaw: action.yaw, pitch: action.pitch });
     if (mode === 'dead' && action.respawn) respawn();
     return this.obs();
   },
@@ -1444,7 +1473,7 @@ function showPause() {
   mode = 'paused';
   overlay.className = '';
   overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">' + LEVEL.level + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
-    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> parry (with a spear: throw) · <b>G</b> throw spear · <b>1 2 3 4</b> fists, dagger, sword, spear · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
+    '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> parry (with a spear: throw) · <b>G</b> throw spear · <b>H</b> eat or drink from your satchel · <b>1 2 3 4</b> fists, dagger, sword, spear · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
     '<div class="setting"><label for="brIn">Brightness</label><input type="range" id="brIn" min="0.8" max="2.2" step="0.05" value="' + brightness + '"><span id="brVal">' + brightness.toFixed(2) + '</span></div>' +
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
     '<div class="setting"><label for="volIn">Sound volume</label><input type="range" id="volIn" min="0" max="1.5" step="0.05" value="' + volume + '"><span id="volVal">' + Math.round(volume * 100) + '%</span></div>' +
@@ -1472,7 +1501,7 @@ async function finishLevel() {
   const next = LEVEL.next;
   if (next) {
     await showSplash(next, stats);
-    loadLevel(next, { health: S.health, weapons: S.weapons, weapon: S.weapon, spears: S.spears, kills: S.kills, deaths: S.deaths, hints: [...S.hints], playTicks: S.playTicks });
+    loadLevel(next, { health: S.health, weapons: S.weapons, weapon: S.weapon, spears: S.spears, pouch: S.pouch, kills: S.kills, deaths: S.deaths, hints: [...S.hints], playTicks: S.playTicks });
     startPlay(false);
   } else {
     await showSplash('end', stats + '<p class="sub">' + Math.round(S.playTicks / SIM_HZ / 60) + ' minutes in the saddle, the pits and the tower.</p>', 'Click to begin again');
@@ -1488,6 +1517,7 @@ function updateHUD() {
   if (S.weapon !== 'spear' && S.spears.length) carry.push(S.spears.length + (S.spears.length > 1 ? ' spears' : ' spear') + ' on your back (4)');
   if (S.flags.has_spear) carry.push('a spear, to jam the winch');
   if (S.flags.has_keys) carry.push('keys');
+  if (S.pouch.length) carry.push('satchel ' + S.pouch.length + '/' + POUCH_MAX + ' (H)');
   $('carry').textContent = carry.join(' · ') + (S.kills ? '  ·  ' + S.kills + ' slain' : '');
   $('objective').textContent = objective();
   promptEl.textContent = mode === 'play' ? promptText(interactTarget) : '';
@@ -1860,6 +1890,7 @@ addEventListener('keydown', e => {
     case 'KeyN': if (CHEAT && mode === 'play') finishLevel(); break;
     case 'KeyF': case 'KeyQ': pressKick = true; break;
     case 'KeyG': pressThrow = true; break;
+    case 'KeyH': pressDrink = true; break;
     case 'Digit1': wantWeapon = 'fists'; break;
     case 'Digit2': wantWeapon = 'dagger'; break;
     case 'Digit3': wantWeapon = 'sword'; break;

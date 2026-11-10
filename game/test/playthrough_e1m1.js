@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 12009, hash: 'a296218e' };
+const EXPECTED = { tick: 11132, hash: '38513472' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -37,16 +37,24 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
     if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); reachable = null; continue; }
+    if (s.health < 55 && s.pouch.length) { CIM.step({ drink: true, yaw: s.yaw, pitch: s.pitch }, 1); continue; }   // low: eat or drink from the satchel
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
     if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
-    const live = s.foes.filter(f => !f.dead && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     if (!live.length) break;
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
     const f = live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
     const shielded = !!FOES[f.cls].block;
     const reach = s.weapon === 'sword' ? 2.6 : 2.0;
     let act = { yaw, pitch: Math.max(-0.4, Math.min(0.3, Math.atan2(f.y - s.y, d))) };
-    if (d > reach) {
+    // a blow about to land, from anyone: turn to it and parry (not with a spear in hand: right-click throws it)
+    const blow = s.weapon !== 'spear' && s.parryCool <= 0 && s.swing <= 0 && s.foes.find(q => !q.dead && q.state === 'windup' && !q.throwing && !FOES[q.cls].ranged && !FOES[q.cls].invulnerable &&
+      Math.hypot(q.x - s.x, q.z - s.z) < foeReach(q) + 0.7 && FOES[q.cls].windup * (q.combo ? 0.6 : 1) - q.t < 0.28 && FOES[q.cls].windup * (q.combo ? 0.6 : 1) - q.t > 0.04);
+    // low, and food or drink lying close by (a fallen man's ration): go and take it, fighting can wait a moment
+    const food = s.health < 55 && s.items.filter(it => !it.taken && it.heal && Math.abs((it.y || 0) - s.y) < 1.2 && Math.hypot(it.x - s.x, it.z - s.z) < 7 && los(s.x, s.y + 1, s.z, it.x, (it.y || 0) + 0.5, it.z)).sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z))[0];
+    if (blow) { act.yaw = Math.atan2(-(blow.x - s.x), -(blow.z - s.z)); act.parry = true; }
+    else if (food) { act.yaw = Math.atan2(-(food.x - s.x), -(food.z - s.z)); act.forward = 1; act.run = true; }
+    else if (d > reach) {
       act.forward = 1; act.run = true;
       if (!los(s.x, s.y + 1.2, s.z, f.x, f.y + 1.2, f.z)) {
         const st = flowStep({ x: s.x, z: s.z }, bfs(cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))));
@@ -62,11 +70,21 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
     }
     if (f.state === 'block') blocked++;
     if (window.__dbg && i % 600 === 0) console.log('[fight]', i, (s.x / C).toFixed(1), (s.z / C).toFixed(1), 'hp', Math.round(s.health), live.map(q => q.id + ':' + q.state + '@' + (q.x / C).toFixed(1) + ',' + (q.z / C).toFixed(1)).join(' '));
+    // an arrow or a thrown spear about to arrive: sidestep out of its line
+    for (const p of s.proj) {
+      if (p.type !== 'arrow' && p.type !== 'jav') continue;
+      const rx = s.x - p.x, rz = s.z - p.z, v2 = p.vx * p.vx + p.vz * p.vz, t = (rx * p.vx + rz * p.vz) / (v2 || 1);
+      if (t <= 0 || t > 0.6) continue;
+      const mx = rx - p.vx * t, mz = rz - p.vz * t;
+      if (Math.hypot(mx, mz) > 0.9) continue;
+      const yw = act.yaw ?? s.yaw;
+      act.side = (mx * Math.cos(yw) - mz * Math.sin(yw)) >= 0 ? 1 : -1; act.run = true; break;
+    }
     CIM.step(act, 1);
   }
   return CIM.obs();
 };
-window.__heal = (maxX = 1e9) => { for (const it of CIM.state.items) if (!it.taken && it.heal && it.x < maxX * C && CIM.state.health < 80 && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+window.__heal = (maxX = 1e9) => { for (const it of CIM.state.items) if (!it.taken && it.heal && it.x < maxX * C && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
   x *= C; z *= C;

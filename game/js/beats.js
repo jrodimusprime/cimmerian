@@ -28,7 +28,7 @@ function updateBeats() {
     B.fired.add(b.id); B.when[b.id] = S.tick;
     (b.lines || []).forEach(([t, c], i) => B.queue.push({ at: S.tick + Math.round(i * 2.6 * SIM_HZ), t, c: c || '' }));
     if (b.sets) setFlag(b.sets);
-    for (const g of b.wake || []) alertGroup(g, false);
+    for (const g of b.wake || []) { for (const f of S.foes) if (f.group === g && f.state === 'dormant' && f.delay < 0) f.state = 'idle'; alertGroup(g, false); }   // delay -1: held back, out of sight, until a beat sends them in
     if (b.npc && S.npc) S.npc.mode = b.npc;
     if (b.sound) Sfx[b.sound] && Sfx[b.sound](1);
     if (b.hurl) { const f = S.foes.find(q => q.id === b.hurl); if (f) { f.y += 2.2; f.vy = 5; f.falling = 1; f.vx = 0; f.fallTo = 0; const a = f.yaw + Math.PI; f.x += Math.sin(a) * 0; f.z -= 14; } }   // over the parapet: far out, and down

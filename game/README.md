@@ -10,14 +10,18 @@ All eight levels of the book are playable, in the story's order: **e1m1, The Pla
 | E | Use: read, take, try doors, wind winches |
 | T | Shake out your torch (e1m3, when Satha comes) |
 | Click | Strike (click, click, click for the sword's three-blow combination), or throw the bone you're holding |
-| Right-click, F or Q | Kick: knocks men back, staggers them and breaks a shield's guard |
-| 1 2 3, mouse wheel | Fists, dagger, sword |
+| Right-click, F or Q | Parry: turns a blow aside and staggers the man who struck it (with a spear in hand, right-click throws it) |
+| G | Throw the spear in your hand (spears on the ground come to you as you walk over them; you carry ten) |
+| H | Eat or drink from your satchel |
+| 1 2 3 4, mouse wheel | Fists, dagger, sword, spear |
 | Esc | Pause (brightness, mouse sensitivity, restart) |
 | P, K, F3, F4 | Render resolution, sound, debug line, the palette (Quake look) on or off |
 
 ## The levels: puzzle areas and action areas
 
 Each level alternates puzzle areas and action areas (README §9). The HUD names each area as you enter, and entering one sets a checkpoint. When you die, enemies go back to their posts but keep their wounds, as Quake's monsters did.
+
+**Food and drink.** Bread and wine-skins heal you. Walk over one and you eat it if you need all of it, otherwise it goes into your **satchel** (four pieces, shown on the HUD; it comes with you from level to level). Press **H** to eat or drink from it: you take the smallest piece that makes good your hurt. Fallen soldiers leave their rations about one time in two, a wine-skin or a heel of bread by the body.
 
 Play order: e1m1 → e1m2 → e1m3 → e1m4 → … → e1m8. Map names keep the book's numbering.
 
@@ -115,7 +119,7 @@ The title card is John Martin's *Pandemonium* (public domain, processed by `tool
 | §10 solver | `solvePuzzle()` searches every flag state. It logs at load for every level (e.g. e1m2 *6 states*, e1m7 *14 states*): goal reachable, no softlocks |
 | §11 determinism | Fixed 72 Hz tick, seeded RNG for every sim decision (AI included), FNV-1a state hash |
 | §11 agent API | `window.CIM.step({forward, side, yaw, pitch, use, attack, parry, throwSpear, weapon, run, jump}, ticks)` returns an observation, including every enemy. Load with `?agent` to skip the splash |
-| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m1 `12009` `a296218e`; e1m2 `8809` `96143eee`; e1m3 `10610` `798f959c`; e1m4 `14329` `4f06d0b5`; e1m5 `13361` `d8b2d1ea`; e1m6 `9683` `8926aa82`; e1m7 `17516` `93cde8d1`; e1m8 `11949` `31fffbdc`). With `CIM_RECORD=file` a run's inputs are saved, and `test/video.js` replays them, grabbing a frame every 12 ticks (5× speed at 30 fps); `test/video_assemble.py` makes the MP4 in Blender |
+| §11 recorded solutions | `test/run.sh` replays a full scripted playthrough of each level (fights included) in headless Chrome and checks the final tick and hash (e1m1 `11132` `38513472`; e1m2 `9218` `151a5243`; e1m3 `14573` `101afab1`; e1m4 `16827` `1bd76304`; e1m5 `13413` `359a3d4e`; e1m6 `10114` `6199e3ae`; e1m7 `17270` `5ae22a26`; e1m8 `14257` `53031f82`). The bot plays to stay alive: it parries any blow about to land, sidesteps arrows and thrown spears, keeps off the stakes, gathers food into its satchel and eats when it's low; across the campaign it now dies five times (it was thirty). With `CIM_RECORD=file` a run's inputs are saved, and `test/video.js` replays them, grabbing a frame every 12 ticks (5× speed at 30 fps); `test/video_assemble.py` makes the MP4 in Blender |
 
 ## Not the real build
 

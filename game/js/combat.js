@@ -376,7 +376,16 @@ function killFoe(f, how) {
   else if (w === 'axe') { deb('broken:axe_head', side, 0.8); deb('broken:axe_haft', far, 2.6); }
   else if (w === 'bow') deb('broken:bow', side, 0.6);
   if (c.shield) { deb('broken:shield_half', tip, 0.5); deb('broken:shield_half', deathPoint(f, 0.6, -1.1), 3.4); }
+  // a soldier carries his rations: about one man in two leaves a wine-skin or a heel of bread by his body (walk over it)
+  const kit = RATIONS[f.cls], roll = hrand(Math.round(f.homeX * 7), Math.round(f.homeZ * 7), 11, 4);
+  if (kit && roll < RATION_ODDS) {
+    const p = deathPoint(f, 0.25, -0.9), wine = roll < RATION_ODDS / 2;
+    S.items.push({ id: 'ration_' + f.id, kind: wine ? 'wine' : 'bread', name: 'the ' + kit + (wine ? '\'s wine-skin' : '\'s bread'), heal: wine ? 25 : 20, x: p[0], z: p[1], y: groundInfo(p[0], p[1]).floor, taken: false });
+  }
 }
+// who carries food and drink into the fight (men, not monsters; bosses have their own ends)
+const RATION_ODDS = 0.5;
+const RATIONS = { warden: 'guard', spearman: 'spearman', archer: 'archer', kknight: 'knight', oknight: 'knight', axeman: 'axeman', slave: 'slave', pellian: 'man-at-arms', pellian_archer: 'archer' };
 // ---- falling well: a body must land on open floor, not through a wall ------------
 // The body lies along a direction from the feet. Try his natural fall first (back if kicked,
 // otherwise by a per-man hash), then sweep round; if nothing fits he slumps where he stands.

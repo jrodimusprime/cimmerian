@@ -14,25 +14,25 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 >
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
-> | `e1m1` The Plain of Shamu | 2:46 (12009 ticks) | ~11.1 min |
-> | `e1m2` The Pits | 2:02 (8809 ticks) | ~8.2 min |
-> | `e1m3` The Tunnels Below | 2:27 (10610 ticks) | ~9.8 min |
-> | `e1m4` Yothga | 3:19 (14329 ticks) | ~13.3 min |
-> | `e1m5` The Scarlet Citadel | 3:05 (13361 ticks) | ~12.4 min |
-> | `e1m6` The Tower of Tamar | 2:14 (9683 ticks) | ~9.0 min |
-> | `e1m7` The Relief of Shamar | 4:03 (17516 ticks) | ~16.2 min |
-> | `e1m8` The Tybor | 2:45 (11949 ticks) | ~11.1 min |
-> | **Campaign** | **22:44** (98266 ticks) | **~91 min** |
+> | `e1m1` The Plain of Shamu | 2:35 (11132 ticks) | ~10.3 min |
+> | `e1m2` The Pits | 2:08 (9218 ticks) | ~8.5 min |
+> | `e1m3` The Tunnels Below | 3:22 (14573 ticks) | ~13.5 min |
+> | `e1m4` Yothga | 3:54 (16827 ticks) | ~15.6 min |
+> | `e1m5` The Scarlet Citadel | 3:06 (13413 ticks) | ~12.4 min |
+> | `e1m6` The Tower of Tamar | 2:20 (10114 ticks) | ~9.4 min |
+> | `e1m7` The Relief of Shamar | 4:00 (17270 ticks) | ~16.0 min |
+> | `e1m8` The Tybor | 3:18 (14257 ticks) | ~13.2 min |
+> | **Campaign** | **24:43** (106804 ticks) | **~99 min** |
 > | **Total** | **≥ 90 min** | | |
 
-**The telling is out of joint.** The game opens *in medias res*, in the pits, chained in the dark, the best possible first level. When the pits are behind you it flashes back to the plain of Shamu: *how did we get here?* Then it jumps forward again into the tunnels and follows the book to the end. This changes only the order in which levels are **played**, never what happens inside them; each level is still its stretch of the book, beat for beat. (Howard does the same: chapter III opens with the chained king remembering.)
+**Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
 
-| Play order | Map | Level | Book | Frame |
-|---|---|---|---|---|
-| 1 | `e1m2` | The Pits | II–III | Opens cold: chained in the vault |
-| 2 | `e1m1` | The Plain of Shamu | I | Flashback: a splash asks how the king came to be in Tsotha's pits; the level ends at the ring's fang and cuts back to the dark |
-| 3 | `e1m3` | The Tunnels Below | III | Forward again: the weeping in the dark |
-| 4–8 | `e1m4`–`e1m8` | Yothga to the Tybor | III–V | In order |
+| Play order | Map | Level | Book |
+|---|---|---|---|
+| 1 | `e1m1` | The Plain of Shamu | I |
+| 2 | `e1m2` | The Pits | II–III |
+| 3 | `e1m3` | The Tunnels Below | III |
+| 4–8 | `e1m4`–`e1m8` | Yothga to the Tybor | III–V |
 
 Map names keep the book's numbering; the play order is the table above. The optional prologue `e0m1` stands outside it.
 
@@ -53,7 +53,7 @@ From play-testing, in no particular order:
 
 - Nothing open. Add play-testing notes here.
 
-Done since the list was made: the pit-things' own poses on the goblin body (a hunched lope, rearing to strike, a lunge, falling on their backs dead, where before the body sank through the floor); the strangler's stride matched to the ground he covers (no sliding feet), and every walker's; sword cuts in three beats (wind-up, fast cut, follow-through) with the arm travelling along each arc, a real jab for the fists and a thrust for dagger and spear; **parry** in place of the kick (right-click or F: turns a blow aside and staggers the man who struck it); **spears** you pick up, thrust with or throw (G), that break after 5 uses, while enemy spearmen throw two of their three and then draw a sword; cheat mode (`?cheat=true`: god mode, and N skips the level); rotten plank bridges over the deep pits in e1m2 and e1m3 (they give way if you walk, hold if you run); monsters never walk into a pit or the water (a blow can still knock one in); a sound volume and an ambience slider in the pause menu, and the treble cut well down; Pelias's nipples (painted out of his old skin and the dents left in the mesh smoothed flat); levels e1m4 to e1m8 built and the campaign lengthened to about 92 minutes; a 5× walkthrough video of the bots' runs.
+Done since the list was made: the pit-things' own poses on the goblin body (a hunched lope, rearing to strike, a lunge, falling on their backs dead, where before the body sank through the floor); the strangler's stride matched to the ground he covers (no sliding feet), and every walker's; sword cuts in three beats (wind-up, fast cut, follow-through) with the arm travelling along each arc, a real jab for the fists and a thrust for dagger and spear; **parry** in place of the kick (right-click or F: turns a blow aside and staggers the man who struck it); **spears** you pick up, thrust with or throw (G), that break after 5 uses, while enemy spearmen throw two of their three and then draw a sword; cheat mode (`?cheat=true`: god mode, and N skips the level); rotten plank bridges over the deep pits in e1m2 and e1m3 (they give way if you walk, hold if you run); monsters never walk into a pit or the water (a blow can still knock one in); a sound volume and an ambience slider in the pause menu, and the treble cut well down; Pelias's nipples (painted out of his old skin and the dents left in the mesh smoothed flat); levels e1m4 to e1m8 built and the campaign lengthened to about 92 minutes; a 5× walkthrough video of the bots' runs. Then: a **satchel** for food and drink (four pieces, H to use, walk over food to take it), rations left by fallen soldiers, more food where the fights are hardest, the Tamar stair and guardroom fought in two waves, and a bot that parries, sidesteps missiles and keeps its satchel stocked (five deaths across the campaign, from thirty); Satha darkened; the hand's jab and sword cuts re-posed with an upper arm, and a shackle that goes all the way round.
 
 ## 1. Source material
 
@@ -708,3 +708,28 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - Art: see `story/credits.json`. Every source is public domain or CC0, with the artist's death year recorded.
 - The cast's bodies: [MakeHuman / MPFB](https://static.makehumancommunity.org/mpfb.html) base mesh, shape targets, game-engine skeleton and weights, and the [MakeHuman system assets](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html) and [Skins 02](https://static.makehumancommunity.org/assets/assetpacks/skins02.html) packs (skins, eyes, eyebrows, hair). All **CC0**. The war-horse and Tsotha's steed are OpenGameArt's CC0 [Rigged Horse](https://opengameart.org/content/rigged-horse), and the pit-things its CC0 [Goblin](https://opengameart.org/content/goblin-1). Satha's head is "Snake" by Swp, supplied by the project's owner, its hide bleached ivory (licence as supplied). Photographed skins for the weeping thing and Satha's head are CC0 from [ambientCG](https://ambientcg.com/). The armour, helms, masks, robes, other beasts and weapons are this project's own. How they're built: [`tools/blender/`](tools/blender/README.md).
 - This project: GPL-2 code, CC0 generated assets. Non-commercial fan work, not affiliated with any rights holder.
+
+
+# TASKS
+
+- [ ] Level2:walking of the guy in the vault is weird stilll, the one that gets eaten by the snake. the snake should grab him and do something to him that would be interesting if you can pull it off
+
+- [ ] Level3: the character does get stuck temporarily in one spot for ages
+
+
+
+- [ ] general: torch still looks weird… use ome kind of fire effect there that is compatable with quake 1 at the moment it looksl like a weird poly flower
+
+- [ ] Level4: make the plant look more magical and do magical style sfx, things to dodge maybe to make the gameplay more interactive
+
+- [ ] level 4 has weird alien type creatures are they from the book? they feel out of place like aliens dude… if they are suposed to be npcs make sure they have hitboxes etc so you cant walk through them and make them move and respond to the player like running away
+
+- [ ] level 7: the relief of shamwar leel has weird looking ugly spear me that dontdo anthing - fix it, also the AI gets jammed walking up onto towers there so fix whatever that was.
+
+
+- [ ] general: on any open field level it should have more of the roman style arrow things everywhere to make the terrain more  challenging and provide natural looking mazes. they shouldn’t all be straight either so make more curves and complexit
+
+- [ ] general: what happened to the level with the weird Thog thing concan encounters that we tried to make bloody? can you add that back in as it was part of the novel but spend lots of time making the creature look right
+
+
+- [ ] general: level 8 and level 1 - make sure there are squads of lets say 5 and 6 guys that move together that are tactically ard to kill
