@@ -24,7 +24,7 @@ def build(cid):
                                   export_apply=True, export_image_format='JPEG', export_jpeg_quality=86, export_materials='EXPORT')
         print('BUILT', cid, path, 'faces', sum(len(p.data.polygons) for p in parts))
         return
-    if cid in ('horse', 'steed'):
+    if cid in ('horse', 'steed') or (cid.startswith('thing') and os.environ.get('GOBLIN_BLEND')):
         rig, parts = beasts.build_beast(cid)
     else:
         rig = casting.build(cid, casting.CAST[cid])['rig']

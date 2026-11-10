@@ -273,7 +273,10 @@ def region_shell(src, name, groups, *, offset=0.012, min_weight=0.35, keep=None,
             bmesh.ops.smooth_vert(bm, verts=inner, factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
         # smoothing shrinks: anything that sank toward (or into) the body goes back out to `offset` above its skin
         from mathutils.bvhtree import BVHTree
-        sb = bmesh.new(); sb.from_mesh(src.data); sb.normal_update()
+        sb = bmesh.new(); sb.from_mesh(src.data)
+        for _ in range(smooth if smooth >= 20 else 0):  # loose cloth answers to the body's mass, not its anatomy
+            bmesh.ops.smooth_vert(sb, verts=sb.verts, factor=0.7, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+        sb.normal_update()
         tree = BVHTree.FromBMesh(sb)
         for v in inner:
             loc, nrm, idx, dist = tree.find_nearest(v.co)

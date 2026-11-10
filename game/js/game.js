@@ -1342,7 +1342,7 @@ function render(alpha) {
       if (M.hoof[i] < 0) return;
       const x = c.x * CELL, z = M.hoof[i], y = groundInfo(x, z).floor, yaw = c.dir > 0 ? 0 : Math.PI, l = sampleLight(x, y + 1.5, z), gal = gameTime * 14 + i;
       drawHorse(x, y, z, yaw, gal, l);
-      drawCharacter('oknight', x, y + 0.5 + Math.abs(Math.sin(gal)) * 0.1, z - (c.dir > 0 ? 0.1 : -0.1), yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
+      drawCharacter('oknight', x, y + seatY() + Math.abs(Math.sin(gal)) * 0.1, z - (c.dir > 0 ? 0.1 : -0.1), yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
     });
     if (LEVEL.host) {                                  // the ranks of the host, pikes up, closing the field to the east
       const H = LEVEL.host;
@@ -1358,7 +1358,7 @@ function render(alpha) {
     if (M.phase !== 'fight') {                         // the kings, watching from their horses
       for (const [kx, kz, who] of LEVEL.kings.riders) {
         const x = kx * CELL, z = kz * CELL, y = groundInfo(x, z).floor, l = sampleLight(x, y + 1.5, z);
-        drawHorse(x, y, z, -Math.PI / 2, 0, l); drawCharacter(who, x, y + 0.5, z, -Math.PI / 2, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, unarmed: true, noShield: true }, l);
+        drawHorse(x, y, z, -Math.PI / 2, 0, l); drawCharacter(who, x, y + seatY(), z, -Math.PI / 2, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, unarmed: true, noShield: true }, l);
       }
       const ts = M.tsotha, tl = sampleLight(ts.x, 2, ts.z);
       const th = LEVEL.kings.horse; drawHorse(th[0] * CELL, groundInfo(th[0] * CELL, th[1] * CELL).floor, th[1] * CELL, -Math.PI / 2, 0, tl);
@@ -1592,6 +1592,8 @@ document.addEventListener('pointerlockchange', () => {
 });
 
 // ---------------------------------------------------------------- the cast's built models
+// a rider's seat: the built war-horse stands taller than the old part-built one
+function seatY() { return typeof SKINNED !== 'undefined' && SKINNED.horse ? 0.68 : 0.5; }
 const W_MODELS = ['vm_arm', 'w_sword', 'w_greatsword', 'w_dagger', 'w_axe', 'w_spear', 'w_pike', 'w_bow'];
 const ALL_MODELS = Object.keys(CAST).concat(['horse', 'steed', 'weeper_body', 'weeper_tentacle', 'weeper_head', 'yothga_stem', 'yothga_tendril', 'yothga_bloom', 'eagle_body', 'eagle_wing', 'satha_head', 'satha_jaw', 'presence'], W_MODELS);
 // only what this level puts on screen

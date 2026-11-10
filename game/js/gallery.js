@@ -70,7 +70,7 @@ function galleryShow(i) {
   const [id, name, lv, q] = GALLERY_LIST[galleryIdx];
   galleryLabel.innerHTML = `<div style="font-size:22px;letter-spacing:2px;color:#d8a24a">${name.toUpperCase()}</div>` +
     `<div style="opacity:.85"><i>"${q}"</i> &nbsp;·&nbsp; ${lv} &nbsp;·&nbsp; ${galleryIdx + 1}/${GALLERY_LIST.length}</div>` +
-    `<div style="opacity:.6;font-size:12px;margin-top:2px">${CAST[id] && !CAST[id].pit && !CAST[id].ape ? 'CC0 MakeHuman body, skin, eyes and hair; armour and dress built in Blender (tools/blender)' : id.startsWith('@') ? 'built in Blender (tools/blender)' : 'CC0 MakeHuman body, reshaped; built in Blender (tools/blender)'}</div>` +
+    `<div style="opacity:.6;font-size:12px;margin-top:2px">${id === '@horse' || id === '@steed' ? 'CC0 "Rigged Horse" (OpenGameArt), refitted in Blender (tools/blender)' : CAST[id] && CAST[id].pit !== undefined ? 'CC0 "Goblin" (OpenGameArt), refitted in Blender (tools/blender)' : CAST[id] && !CAST[id].pit && !CAST[id].ape ? 'CC0 MakeHuman body, skin, eyes and hair; armour and dress built in Blender (tools/blender)' : id.startsWith('@') ? 'built in Blender (tools/blender)' : 'CC0 MakeHuman body, reshaped; built in Blender (tools/blender)'}</div>` +
     `<div style="position:fixed;bottom:12px;left:0;right:0;display:flex;justify-content:space-around;opacity:.7;font-size:13px;letter-spacing:3px"><span>FRONT</span><span>PROFILE</span></div>`;
   return id;
 }
@@ -94,7 +94,8 @@ function gallerySize(id) {
 // the pose each is shown in: Quake's killers hunched and armed, the others at their ease
 function galleryPose(id, t) {
   const c = CAST[id], P = poseIdle({}, t);
-  if (c.pit !== undefined) return poseCrawl(P, 0, 0.1, t);
+  if (c.pit !== undefined && !SKINNED[id]) return poseCrawl(P, 0, 0.1, t);
+  if (c.pit !== undefined) return Object.assign(poseMenace(P, t), { lean: 0.5, headX: -0.5, uxL: -0.5, uxR: -0.5, fxL: -0.6, fxR: -0.6, uzL: 0.3, uzR: 0.3 });
   if (c.ape) return Object.assign(poseMenace(P, t), { lean: 0.75, headX: -0.65, uxL: -0.75, uxR: -0.75, fxL: -0.3, fxR: -0.3, uzL: 0.3, uzR: 0.3, txL: -0.6, txR: -0.5, sxL: 0.9, sxR: 0.8, drop: -0.2 });
   if (!c.weapon) return P;
   if (c.weapon !== 'bow') poseMenace(P, t);

@@ -133,6 +133,18 @@ def hide_covered(h, cover):
     bm.to_mesh(h.data); bm.free()
 
 
+def smooth_torso(h):
+    """Under a robe nobody sees the chest: smooth its anatomy away so the cloth cut from it hangs plain."""
+    import bmesh
+    gi = [h.vertex_groups[g].index for g in ('spine_02', 'spine_03', 'clavicle_l', 'clavicle_r') if g in h.vertex_groups]
+    bm = bmesh.new(); bm.from_mesh(h.data)
+    dl = bm.verts.layers.deform.active
+    vs = [v for v in bm.verts if sum(v[dl].get(i, 0) for i in gi) > 0.3 and not v.is_boundary]
+    for _ in range(25):
+        bmesh.ops.smooth_vert(bm, verts=vs, factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(h.data); bm.free()
+
+
 def finish(objs, rig, body_ratio=0.38):
     """Smooth, bake, decimate."""
     for o in objs:
@@ -146,6 +158,8 @@ def finish(objs, rig, body_ratio=0.38):
 def build(cid, spec):
     h, rig, helpers = human(spec)
     objs = [h] + helpers.pop('assets')
+    if any(isinstance(i, dict) and i.get('kind') == 'robe' for i in spec.get('outfit', [])):
+        smooth_torso(h)
     for item in spec.get('outfit', []):
         objs += gear.make(item, h, rig, helpers, spec)
     for k, o in helpers.items():                    # unused helper geometry goes
