@@ -75,11 +75,15 @@ function cineT(alpha = 0) {
 function cineCam(alpha) {
   const t = cineT(alpha); if (t < 0) return null;
   const f = S.foes.find(q => q.cls === LEVEL.cine.foe); if (!f) return null;
-  const gy = groundInfo(f.x, f.z).floor, a0 = Math.atan2(S.x - f.x, S.z - f.z), a = a0 + t * 0.16, r = 7.5 - Math.min(2, t * 0.25);
-  const eye = [f.x + Math.sin(a) * r, gy + 2.2 + t * 0.35, f.z + Math.cos(a) * r];
-  const ep = typeof eaglePos === 'function' ? eaglePos(alpha) : null, body = [f.x, gy + 0.4, f.z];
-  const sun = norm3(LEVEL.sun || [-1, 0.06, 0.2]), west = [eye[0] + sun[0] * 120, eye[1] + 14, eye[2] + sun[2] * 120];   // gone into the sunset: keep looking there
-  const w = clamp((t - 1.2) / 3, 0, 0.75), far = ep || (t > 2 ? west : body), tg = [lerp(body[0], far[0], w), lerp(body[1], far[1], w), lerp(body[2], far[2], w)];
+  const E = typeof tsothaEnd === 'function' ? tsothaEnd(f, t) : { head: [f.x, f.y + 0.4, f.z], body: [f.x, f.y + 1, f.z], eagle: null };
+  const gy = groundInfo(f.x, f.z).floor, sun = norm3(LEVEL.sun || [-1, 0.06, 0.2]);
+  // four shots: the head where it fell; the eagle taking it up; the headless body rising and stumbling away; the sunset
+  const west = [f.x + sun[0] * 140, gy + 16, f.z + sun[2] * 140], eagle = E.eagle ? [E.eagle[0], E.eagle[1], E.eagle[2]] : west;
+  const shots = [[0, E.head], [2.3, eagle], [RISE0 - 0.4, E.body], [RISE0 + 5.5, west]];
+  let tg = shots[0][1];
+  for (let k = 1; k < shots.length; k++) { const w = smoothstep(shots[k][0], shots[k][0] + 0.9, t); tg = [lerp(tg[0], shots[k][1][0], w), lerp(tg[1], shots[k][1][1], w), lerp(tg[2], shots[k][1][2], w)]; }
+  const a0 = Math.atan2(S.x - f.x, S.z - f.z), a = a0 + t * 0.12, r = lerp(4.2, 8.5, smoothstep(RISE0, RISE0 + 5, t)), up = lerp(1.7, 3.2, smoothstep(2, RISE0 + 5, t));
+  const eye = [f.x + Math.sin(a) * r, gy + up, f.z + Math.cos(a) * r];
   const dx = tg[0] - eye[0], dy = tg[1] - eye[1], dz = tg[2] - eye[2];
   return { eye, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(dy, Math.hypot(dx, dz)) };
 }

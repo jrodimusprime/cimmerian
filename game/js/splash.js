@@ -46,6 +46,22 @@ SPLASHES.end = {
   title: 'THE END', scene: 'battle', seed: 83, accent: [[0.5, 0.18, 0.09]],
   text: 'The head of Tsotha-lanti went into the sunset in the talons of an eagle that laughed in the voice of Pelias, and the headless body stumbled away after it and was lost. Koth and Ophir are broken, and Shamar is relieved. You have finished The Scarlet Citadel.',
 };
+// Every level opens on a public-domain plate (tools/splashgen.sh; story/credits.json), treated as the title card is.
+const PLATES = {
+  e1m1: ['art/e1m1.jpg', 'Albrecht Altdorfer, <i>The Battle of Alexander at Issus</i>, 1529'],
+  e1m2: ['art/e1m2.jpg', 'Giovanni Battista Piranesi, <i>Carceri d\'invenzione</i>, plate VII, 1761'],
+  e1m3: ['art/e1m3.jpg', 'Giovanni Battista Piranesi, <i>Carceri d\'invenzione</i>, plate XIII, 1761'],
+  e1m4: ['art/e1m4.jpg', 'Giovanni Battista Piranesi, <i>Carceri d\'invenzione</i>, plate VI, 1761'],
+  e1m5: ['art/e1m5.jpg', 'John Martin, <i>Belshazzar\'s Feast</i>, 1820'],
+  e1m6: ['art/e1m6.jpg', 'Pieter Bruegel the Elder, <i>The Tower of Babel</i>, 1563'],
+  e1m7: ['art/e1m7.jpg', 'John Martin, <i>Joshua Commanding the Sun to Stand Still</i>, 1816'],
+  e1m8: ['art/e1m8.jpg', 'John Martin, <i>The Destruction of Pharaoh\'s Host</i>, 1836'],
+  end: ['art/end.jpg', 'Thomas Cole, <i>The Course of Empire: Desolation</i>, 1836'],
+};
+for (const id in PLATES) if (SPLASHES[id]) { SPLASHES[id].image = PLATES[id][0]; SPLASHES[id].credit = PLATES[id][1]; new Image().src = PLATES[id][0]; }
+SPLASHES.end.title = '';
+SPLASHES.end.closing = true;
+SPLASHES.end.text = 'The head of Tsotha-lanti went into the sunset in the talons of an eagle that laughed in the voice of Pelias, and the headless body stumbled away after it across the meadow and was lost to sight. Koth and Ophir are broken, and Shamar is relieved.';
 SPLASHES.title = { image: 'art/title.jpg', credit: 'John Martin, <i>Pandemonium</i>, 1841' };
 new Image().src = SPLASHES.title.image;
 const INK = [11, 10, 9], BONE_C = [232, 220, 192], SCARLET = [196, 48, 43];
@@ -285,10 +301,20 @@ function paintCarceri(cv, sp) {
 function showSplash(id, extraHtml, buttonLabel) {
   const sp = SPLASHES[id];
   overlay.classList.remove('hidden');
-  overlay.className = 'splash';
-  overlay.innerHTML = '<canvas id="splashArt"></canvas><div class="splashText"><div class="map">' + id.toUpperCase() + '</div><h1>' + sp.title + '</h1><p>' + sp.text + '</p>' +
-    (extraHtml || '') + '<div class="go">' + (buttonLabel || 'Press any key') + '</div></div>';
-  paintCarceri($('splashArt'), sp);
+  let stopEmbers = null;
+  if (sp.image) {                                        // a plate: the picture pushes in slowly, embers rise through it
+    overlay.className = 'splash plate';
+    overlay.innerHTML = '<img id="splashArt" src="' + sp.image + '" alt=""><canvas id="embers"></canvas><div class="platecredit">' + sp.credit + '</div>' +
+      '<div class="splashText">' + (sp.closing ? '' : '<div class="map">' + id.toUpperCase() + '</div>') + (sp.title ? '<h1>' + sp.title + '</h1>' : '') +
+      '<p' + (sp.closing ? ' class="closing"' : '') + '>' + sp.text + '</p>' + (sp.closing ? '<p class="fin">Here ends The Scarlet Citadel</p>' : '') +
+      (extraHtml || '') + '<div class="go">' + (buttonLabel || 'Press any key') + '</div></div>';
+    stopEmbers = embers($('embers'), 60);
+  } else {
+    overlay.className = 'splash';
+    overlay.innerHTML = '<canvas id="splashArt"></canvas><div class="splashText"><div class="map">' + id.toUpperCase() + '</div><h1>' + sp.title + '</h1><p>' + sp.text + '</p>' +
+      (extraHtml || '') + '<div class="go">' + (buttonLabel || 'Press any key') + '</div></div>';
+    paintCarceri($('splashArt'), sp);
+  }
   return new Promise(resolve => {
     let armed = false;
     setTimeout(() => { armed = true; }, 600);
@@ -296,12 +322,32 @@ function showSplash(id, extraHtml, buttonLabel) {
       if (!armed) return;
       if (e && e.type === 'keydown' && ['F5', 'F12', 'Meta', 'Alt', 'Control', 'Shift'].includes(e.key)) return;
       removeEventListener('keydown', go); overlay.removeEventListener('mousedown', go);
+      if (stopEmbers) stopEmbers();
       resolve();
     };
     addEventListener('keydown', go); overlay.addEventListener('mousedown', go);
   });
 }
 
+// embers rising through a plate, as on the title card; returns a function that stops them
+function embers(ec, n) {
+  const ex = ec.getContext('2d'); ec.width = innerWidth; ec.height = innerHeight;
+  const E = Array.from({ length: n }, () => ({ x: Math.random() * ec.width, y: ec.height + Math.random() * ec.height, v: 15 + Math.random() * 45, s: 1 + Math.random() * 2.2, w: Math.random() * 6 }));
+  let on = true; const t0 = performance.now();
+  const tick = now => {
+    if (!on) return; const t = (now - t0) / 1000;
+    ex.clearRect(0, 0, ec.width, ec.height);
+    for (const e of E) {
+      e.y -= e.v * 0.016; e.x += Math.sin(t * 2 + e.w) * 0.4;
+      if (e.y < -10) { e.y = ec.height + 10; e.x = Math.random() * ec.width; }
+      const a = Math.max(0, Math.min(1, e.y / ec.height)) * (0.5 + 0.5 * Math.sin(t * 6 + e.w)) * 0.8;
+      ex.fillStyle = 'rgba(255,' + (120 + Math.floor(e.w * 15)) + ',40,' + a.toFixed(2) + ')'; ex.fillRect(e.x, e.y, e.s, e.s);
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  return () => { on = false; };
+}
 // The title card: five seconds, then the story. Embers rise; the plate pushes in.
 function showTitleCard() {
   overlay.className = 'titlecard';

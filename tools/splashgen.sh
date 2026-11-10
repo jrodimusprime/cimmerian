@@ -31,5 +31,29 @@ plate() { # src out crop accentx accenty
 }
 # Martin's Pandemonium: already ink and fire; lock it to the ink, scarlet and fire ramps
 magick "$SRC/martin_pandemonium.jpg" -modulate 95,115 -dither FloydSteinberg -remap "$TMP/fire.png" -quality 86 "$OUT/title.jpg"
+# Level plates (README §6): each level opens on a public-domain plate, treated as the title card is. crop gives
+# the part of the picture that suits the level (WxH+X+Y as fractions of the source), then the plate is fitted
+# to the screen's shape and locked to the game's ramps. Piranesi's etchings to ink with a scarlet accent;
+# the paintings to the ink, scarlet and fire ramps like Martin's Pandemonium.
+level() { # src out cropW cropH cropX cropY kind
+  SW=$(magick identify -format %w "$SRC/$1"); SH=$(magick identify -format %h "$SRC/$1")
+  G=$(python3 -c "print('%dx%d+%d+%d' % (round($SW*$3), round($SH*$4), round($SW*$5), round($SH*$6)))")
+  if [ "$7" = etch ]; then
+    magick "$SRC/$1" -crop "$G" +repage -resize 1600x900^ -gravity center -extent 1600x900 -colorspace gray -level 8%,90% \
+      -dither FloydSteinberg -remap "$TMP/ink.png" -quality 84 "$OUT/$2"
+  else
+    magick "$SRC/$1" -crop "$G" +repage -resize 1600x900^ -gravity center -extent 1600x900 -modulate 92,110 \
+      -dither FloydSteinberg -remap "$TMP/fire.png" -quality 84 "$OUT/$2"
+  fi
+}
+level altdorfer_issus.jpg e1m1.jpg 1.0 0.42 0 0.40 paint            # the Battle of Issus: the host, the sun going down
+level piranesi_drawbridge.jpg e1m2.jpg 0.80 0.40 0.10 0.40 etch      # Carceri VII: the pits under the hill
+level piranesi_well.jpg e1m3.jpg 0.86 0.80 0.07 0.08 etch            # Carceri XIII, the Well
+level piranesi_smoking_fire.jpg e1m4.jpg 0.80 0.42 0.10 0.40 etch    # Carceri VI: smoke and dark below
+level martin_belshazzar.jpg e1m5.jpg 1.0 1.0 0 0 paint              # Martin: a hall of the citadel by night
+level bruegel_babel.jpg e1m6.jpg 0.80 0.80 0.12 0.0 paint           # Bruegel: the tower over the city
+level martin_joshua.jpg e1m7.jpg 1.0 1.0 0 0 paint                  # Martin: the host on the plain under the storm
+level martin_pharaoh.jpg e1m8.jpg 0.96 0.92 0.02 0.04 paint         # Martin: the host drowning in the waters
+level cole_desolation.jpg end.jpg 1.0 1.0 0 0 paint                 # Cole: desolation at sunset, the moon rising
 rm -rf "$TMP"
 ls -la "$OUT"

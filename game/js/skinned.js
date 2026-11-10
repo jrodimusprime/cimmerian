@@ -259,6 +259,15 @@ function skinSolve(M, root, P) {
     W[i] = w;
     if (i < 32) S.set(m4mul(w, m4t(-b.rest[0], -b.rest[1], -b.rest[2])), i * 16);
   });
+  // P.cut: 'head' takes the head off (it shrinks to nothing at the neck), 'body' leaves only the head (everything else shrinks into it)
+  if (P.cut && M.byName.head !== undefined) {
+    const hi = M.byName.head, hr = M.bones[hi].rest, under = i => { for (let k = i; k >= 0; k = M.bones[k].parent) if (k === hi) return true; return false; };
+    M.bones.forEach((b, i) => {
+      if (i >= 32 || under(i) !== (P.cut === 'head')) return;
+      const at = P.cut === 'head' ? W[hi] : W[hi], r = P.cut === 'head' ? hr : hr;
+      S.set(m4mul(m4mul(at, m4s3(0.001, 0.001, 0.001)), m4t(-r[0], -r[1], -r[2])), i * 16);
+    });
+  }
   return { W, S };
 }
 // the old rig's weapon and shield mounts, from the skinned skeleton
@@ -306,7 +315,8 @@ function skinDraw(M, root, S, light, glow, alpha) {
 }
 function drawSkinned(id, x, y, z, yaw, P, light, glow = 0, alpha = 1) {
   const M = SKINNED[id];
-  const root = m4trs(x, y + (P.drop || 0), z, yaw, P.pitch || 0, P.roll || 0, SKIN_SCALE[id] || 1);
+  let root = m4trs(x, y + (P.drop || 0), z, yaw, P.pitch || 0, P.roll || 0, SKIN_SCALE[id] || 1);
+  if (P.cut === 'body' && M.byName.head !== undefined) { const hr = M.bones[M.byName.head].rest; root = m4mul(root, m4t(-hr[0], -hr[1], -hr[2])); }   // the head alone, hung by its neck at (x, y, z)
   const { W, S } = skinSolve(M, m4ident(), P);
   skinDraw(M, root, S, light, glow, alpha);
   // the weapon and shield, mounted on the skeleton's hands as the old rig mounted them

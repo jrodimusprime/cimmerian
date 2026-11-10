@@ -139,3 +139,40 @@ function eaglePos(alpha) {
   }
   return [x, y, z, yaw, ts.dead];
 }
+// Tsotha's end (ch. V): "the great sword ... took his head"; the eagle "seized it" and was gone into the sunset,
+// and "the headless body ... staggered away after it" across the meadow. Drawn only: the wizard is simply dead in the sim.
+const RISE0 = 4.8;                                     // when the headless body gets up
+// where the closing scene's players are: the head (on the ground, then in the talons) and the body (lying, then walking away)
+function tsothaEnd(f, td) {
+  const ro = ragOffset(f), dp = deathPoint(f, 1.02), ep = eaglePos(renderAlpha);
+  const head = td > 2.0 && ep ? [ep[0], ep[1] - 0.6, ep[2]] : [dp[0] + ro[0], groundInfo(dp[0] + ro[0], dp[1] + ro[1]).floor + 0.18, dp[1] + ro[1]];
+  const sun = norm3(LEVEL.sun || [-1, 0.06, 0.2]), walk = Math.max(0, td - RISE0 - 1.4) * 1.1, bx = f.x + ro[0] + sun[0] * walk, bz = f.z + ro[1] + sun[2] * walk;
+  return { head, body: [bx, groundInfo(bx, bz).floor + 1.0, bz], eagle: ep };
+}
+function drawBeheaded(f) {
+  const E = LEVEL.eagle, when = S.beats && S.beats.when[E.dead];
+  if (when === undefined || typeof SKINNED === 'undefined' || !SKINNED[f.cls]) return false;
+  const td = (S.tick - when) / SIM_HZ + renderAlpha * DT, l = sampleLight(f.x, f.y + 1.4, f.z);
+  const ro = ragOffset(f), bx = f.x + ro[0], bz = f.z + ro[1];
+  // the head: where it fell, then in the eagle's talons
+  const ep = eaglePos(renderAlpha), dp = deathPoint(f, 1.02);
+  let hx = dp[0] + ro[0], hz = dp[1] + ro[1], hy = groundInfo(hx, hz).floor + 0.18, hyaw = f.dieYaw + 1.2, hp = 0.4;
+  if (td > 2.0 && ep) { hx = ep[0]; hy = ep[1] - 0.6; hz = ep[2]; hyaw = ep[3]; hp = 0.3 + Math.sin(td * 4) * 0.15; }
+  if (td <= 2.0 || ep) drawCharacter(f.cls, hx, hy, hz, hyaw, { cut: 'body', pitch: hp, unarmed: true, noShield: true }, sampleLight(hx, hy + 0.3, hz));
+  // the body: lying headless, then up, and away after the eagle, arms groping
+  const P = foePose(f); P.cut = 'head'; P.unarmed = true; P.noShield = true;
+  const rise = smoothstep(RISE0, RISE0 + 1.4, td);
+  let x = bx, z = bz, yaw = f.dieYaw;
+  if (rise > 0) {
+    const sun = norm3(LEVEL.sun || [-1, 0.06, 0.2]), walk = Math.max(0, td - RISE0 - 1.4) * 1.1;
+    x = bx + sun[0] * walk; z = bz + sun[2] * walk; yaw = lerp(f.dieYaw, Math.atan2(sun[0], sun[2]), rise);
+    const W = poseWalk(poseIdle({}, gameTime), walk * 2.6, Math.min(1, walk), true);
+    Object.assign(W, { lean: 0.2, roll: Math.sin(td * 2.1) * 0.2 * rise, uxL: -1.3, uxR: -0.9, fxL: -0.3, fxR: -0.5, cut: 'head', unarmed: true, noShield: true });
+    for (const k of ['pitch', 'drop', 'uxL', 'uxR', 'fxL', 'fxR', 'txL', 'txR', 'sxL', 'sxR', 'lean', 'roll']) W[k] = lerp(P[k] || 0, W[k] || 0, rise);
+    if (walk > 40) return true;                           // lost to sight across the meadow
+    drawCharacter(f.cls, x, groundInfo(x, z).floor, z, yaw, W, sampleLight(x, f.y + 1.4, z));
+    return true;
+  }
+  drawCharacter(f.cls, x, f.y, z, yaw, P, l);
+  return true;
+}

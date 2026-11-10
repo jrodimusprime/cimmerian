@@ -937,7 +937,7 @@ const LEVEL_E1M8 = {
         ['Old Tsotha rises and faces you, "his eyes those of a maddened serpent, his face an inhuman mask." A globe of fire in each hand.', 'voice']] },
     { id: 'dead', killed: 'tsotha', sets: 'tsotha_dead', lines: [['The great sword takes his head before he can throw again.', 'good'],
       ['The eagle swoops, seizes the head, and is gone into the sunset, laughing in the voice of Pelias; and the headless body staggers away after it, across the meadow, and is lost to sight.', 'voice']] },
-    { id: 'end', needs: ['tsotha_dead'], after: 11, sets: 'the_end' },
+    { id: 'end', needs: ['tsotha_dead'], after: 13, sets: 'the_end' },
   ],
   puzzle: {
     flags: ['camp_done', 'rout_done', 'crossed', 'bank_cleared', 'tsotha_found', 'tsotha_dead', 'the_end'],

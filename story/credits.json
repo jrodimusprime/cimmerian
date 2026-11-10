@@ -1,5 +1,5 @@
 {
-  "note": "Title card source (README §6). The artist died before 1955, so the work is public domain in Australia; Wikimedia Commons marks the scan public domain. Processed by tools/splashgen.sh into game/art/. Level splashes are painted procedurally in game/js/splash.js.",
+  "note": "Splash plates (README §6). Every artist died before 1955, so the works are public domain in Australia; Wikimedia Commons marks the scans public domain (one CC0). Processed by tools/splashgen.sh into game/art/: the title card and one plate per level, and the closing screen.",
   "art": [
     {
       "used_for": "game/art/title.jpg",
@@ -9,6 +9,96 @@
       "work": "Pandemonium",
       "year": "1841",
       "scan": "https://commons.wikimedia.org/wiki/File:John_Martin_-_Pandemonium_-_WGA14149.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m1.jpg",
+      "source_file": "art/src/altdorfer_issus.jpg",
+      "artist": "Albrecht Altdorfer",
+      "artist_lived": "c. 1480–1538",
+      "work": "The Battle of Alexander at Issus",
+      "year": "1529",
+      "scan": "https://commons.wikimedia.org/wiki/File:Albrecht_Altdorfer_-_Schlacht_bei_Issus_(Alte_Pinakothek,_M%C3%BCnchen)_-_Google_Art_Project.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m2.jpg",
+      "source_file": "art/src/piranesi_drawbridge.jpg",
+      "artist": "Giovanni Battista Piranesi",
+      "artist_lived": "1720–1778",
+      "work": "Carceri d'invenzione, plate VII (The Drawbridge)",
+      "year": "1761",
+      "scan": "https://commons.wikimedia.org/wiki/File:Giovanni_Battista_Piranesi_-_Le_Carceri_d%27Invenzione_-_Second_Edition_-_1761_-_07_-_The_Drawbridge.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m3.jpg",
+      "source_file": "art/src/piranesi_well.jpg",
+      "artist": "Giovanni Battista Piranesi",
+      "artist_lived": "1720–1778",
+      "work": "Carceri d'invenzione, plate XIII (The Well)",
+      "year": "1761",
+      "scan": "https://commons.wikimedia.org/wiki/File:Giovanni_Battista_Piranesi_-_Le_Carceri_d%27Invenzione_-_Second_Edition_-_1761_-_13_-_The_Well.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m4.jpg",
+      "source_file": "art/src/piranesi_smoking_fire.jpg",
+      "artist": "Giovanni Battista Piranesi",
+      "artist_lived": "1720–1778",
+      "work": "Carceri d'invenzione, plate VI (The Smoking Fire)",
+      "year": "1761",
+      "scan": "https://commons.wikimedia.org/wiki/File:Giovanni_Battista_Piranesi_-_Le_Carceri_d%27Invenzione_-_Second_Edition_-_1761_-_06_-_The_Smoking_Fire.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m5.jpg",
+      "source_file": "art/src/martin_belshazzar.jpg",
+      "artist": "John Martin",
+      "artist_lived": "1789–1854",
+      "work": "Belshazzar's Feast",
+      "year": "1820",
+      "scan": "https://commons.wikimedia.org/wiki/File:John_Martin_-_Belshazzar%27s_Feast_-_Google_Art_Project.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m6.jpg",
+      "source_file": "art/src/bruegel_babel.jpg",
+      "artist": "Pieter Bruegel the Elder",
+      "artist_lived": "c. 1525–1569",
+      "work": "The Tower of Babel",
+      "year": "1563",
+      "scan": "https://commons.wikimedia.org/wiki/File:Pieter_Bruegel_the_Elder_-_The_Tower_of_Babel_(Vienna)_-_Google_Art_Project_-_edited.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m7.jpg",
+      "source_file": "art/src/martin_joshua.jpg",
+      "artist": "John Martin",
+      "artist_lived": "1789–1854",
+      "work": "Joshua Commanding the Sun to Stand Still upon Gibeon",
+      "year": "1816",
+      "scan": "https://commons.wikimedia.org/wiki/File:John_Martin_-_Joshua_Commanding_the_Sun_to_Stand_Still_-_Google_Art_Project.jpg",
+      "licence": "Public domain"
+    },
+    {
+      "used_for": "game/art/e1m8.jpg",
+      "source_file": "art/src/martin_pharaoh.jpg",
+      "artist": "John Martin",
+      "artist_lived": "1789–1854",
+      "work": "The Destruction of Pharaoh's Host",
+      "year": "1836",
+      "scan": "https://commons.wikimedia.org/wiki/File:The_Destruction_of_Pharaoh%27s_Host,_by_John_Martin_(Getty_103QTX).jpg",
+      "licence": "CC0 (public domain dedication)"
+    },
+    {
+      "used_for": "game/art/end.jpg",
+      "source_file": "art/src/cole_desolation.jpg",
+      "artist": "Thomas Cole",
+      "artist_lived": "1801–1848",
+      "work": "The Course of Empire: Desolation",
+      "year": "1836",
+      "scan": "https://commons.wikimedia.org/wiki/File:Cole_Thomas_The_Course_of_Empire_Desolation_1836.jpg",
       "licence": "Public domain"
     }
   ],
