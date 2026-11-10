@@ -18,7 +18,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
   'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
   'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
-  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3'];
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -215,6 +215,14 @@ const TEXGEN = {
   BONE: { f: (x, y, s) => ({ v: 0.5 + tfbm(x / 64, y / 64, 8, 3, s) * 0.5 - (hrand(x, y, s, 2) > 0.95 ? 0.4 : 0), ramp: 'ink', lo: 0.45, hi: 1, h: 0.15 }) },
   FIRE: { f: (x, y, s) => ({ v: 0.08 + 0.72 * tfbm(x / 64, y / 64, 4, 3, s), ramp: 'fire', hi: 0.85, e: 1 }) },   // orange and red, never pale
   // Quake-style fire: four frames of a cut-out flame, its tongues climbing from frame to frame (the noise scrolls a quarter-tile each)
+  // the weeping thing's substance: "a quaking, jelly-like stuff which made him physically sick to look at": livid grey-green gel,
+  // darker clots sunk in it, threads of blood, and a faint phosphor of its own
+  JELLY: { f: (x, y, s) => {
+    const px = x / 64, py = y / 64, n = tfbm(px, py, 4, 4, s), c = tfbm(px, py, 8, 2, s + 5);
+    if (Math.abs(tfbm(px, py, 6, 3, s + 9) - 0.5) < 0.008) return { v: 0.5, ramp: 'scarlet', lo: 0.25, hi: 0.7, e: 0.12 };   // a thread of blood
+    if (c > 0.68) return { v: 0.3 + 0.15 * n, ramp: 'jade', lo: 0.12, hi: 0.5, e: 0.12 };                                   // a clot, sunk in the gel
+    return { v: 0.3 + 0.5 * n + 0.15 * c, ramp: 'jade', lo: 0.16, hi: 0.68, e: 0.24 };
+  } },
   FLAME0: { f: (x, y, s) => flameTex(x, y, 0) }, FLAME1: { f: (x, y, s) => flameTex(x, y, 1) }, FLAME2: { f: (x, y, s) => flameTex(x, y, 2) }, FLAME3: { f: (x, y, s) => flameTex(x, y, 3) },
   EYE: { f: (x, y, s) => ({ v: 0.4 + 0.6 * tfbm(x / 64, y / 64, 8, 2, s), ramp: 'fire', lo: 0.4, e: 1 }) },
   VENOM: { f: (x, y, s) => ({ v: 0.3 + 0.7 * tfbm(x / 64, y / 64, 4, 3, s), ramp: 'jade', lo: 0.4, hi: 1, e: 0.7 }) },

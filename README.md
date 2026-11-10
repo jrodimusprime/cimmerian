@@ -14,15 +14,15 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 >
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
-> | `e1m1` The Plain of Shamu | 2:35 (11132 ticks) | ~10.3 min |
+> | `e1m1` The Plain of Shamu | 2:22 (10245 ticks) | ~9.5 min |
 > | `e1m2` The Pits | 2:00 (8638 ticks) | ~8.0 min |
 > | `e1m3` The Tunnels Below | 2:37 (11335 ticks) | ~10.5 min |
 > | `e1m4` Yothga | 3:50 (16541 ticks) | ~15.3 min |
 > | `e1m5` The Scarlet Citadel | 2:56 (12672 ticks) | ~11.7 min |
 > | `e1m6` The Tower of Tamar | 2:25 (10439 ticks) | ~9.7 min |
-> | `e1m7` The Relief of Shamar | 3:53 (16795 ticks) | ~15.6 min |
-> | `e1m8` The Tybor | 3:18 (14257 ticks) | ~13.2 min |
-> | **Campaign** | **23:34** (101809 ticks) | **~94 min** |
+> | `e1m7` The Relief of Shamar | 3:43 (16086 ticks) | ~14.9 min |
+> | `e1m8` The Tybor | 4:04 (17541 ticks) | ~16.2 min |
+> | **Campaign** | **23:57** (103497 ticks) | **~96 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -706,30 +706,39 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - Map tools: ericw-tools (GPL-2).
 - Sound (`game/sound/`, all **CC0** from OpenGameArt, converted to mono MP3): [sword swings](https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes) and clashes (StarNinjas), [footsteps on stone and sand](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone) (Fantozzi), [blows to the body](https://opengameart.org/content/40-wet-towel-clubpoundhitattack-sounds) and [men in pain](https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds), [hit and death sounds](https://opengameart.org/content/5-hit-sounds-dying), [creatures](https://opengameart.org/content/80-cc0-creature-sfx) (the pit-things), [metal and wood](https://opengameart.org/content/100-cc0-metal-and-wood-sfx) (grilles, keys, chains), and the ambiences [dungeon](https://opengameart.org/content/loopable-dungeon-ambience), [dripping water](https://opengameart.org/content/dripping-water-loop) and [ambient horror](https://opengameart.org/content/ambient-horror). The plain's wind and distant battle are synthesised from these.
 - Art: see `story/credits.json`. Every source is public domain or CC0, with the artist's death year recorded.
-- The cast's bodies: [MakeHuman / MPFB](https://static.makehumancommunity.org/mpfb.html) base mesh, shape targets, game-engine skeleton and weights, and the [MakeHuman system assets](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html) and [Skins 02](https://static.makehumancommunity.org/assets/assetpacks/skins02.html) packs (skins, eyes, eyebrows, hair). All **CC0**. The war-horse and Tsotha's steed are OpenGameArt's CC0 [Rigged Horse](https://opengameart.org/content/rigged-horse), and the pit-things its CC0 [Goblin](https://opengameart.org/content/goblin-1). Satha's head is "Snake" by Swp, supplied by the project's owner, its hide bleached ivory (licence as supplied). Photographed skins for the weeping thing and Satha's head are CC0 from [ambientCG](https://ambientcg.com/). The armour, helms, masks, robes, other beasts and weapons are this project's own. How they're built: [`tools/blender/`](tools/blender/README.md).
+- The cast's bodies: [MakeHuman / MPFB](https://static.makehumancommunity.org/mpfb.html) base mesh, shape targets, game-engine skeleton and weights, and the [MakeHuman system assets](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html) and [Skins 02](https://static.makehumancommunity.org/assets/assetpacks/skins02.html) packs (skins, eyes, eyebrows, hair). All **CC0**. The war-horse and Tsotha's steed are OpenGameArt's CC0 [Rigged Horse](https://opengameart.org/content/rigged-horse), and the pit-things its CC0 [Goblin](https://opengameart.org/content/goblin-1). Satha's head is "Snake" by Swp, supplied by the project's owner, its hide darkened to match her body (licence as supplied). Photographed skins for the weeping thing and Satha's head are CC0 from [ambientCG](https://ambientcg.com/). The armour, helms, masks, robes, other beasts and weapons are this project's own. How they're built: [`tools/blender/`](tools/blender/README.md).
 - This project: GPL-2 code, CC0 generated assets. Non-commercial fan work, not affiliated with any rights holder.
 
 
 # TASKS
 
-- [ ] Level2:walking of the guy in the vault is weird stilll, the one that gets eaten by the snake. the snake should grab him and do something to him that would be interesting if you can pull it off
+- [x] Level2:walking of the guy in the vault is weird stilll, the one that gets eaten by the snake. the snake should grab him and do something to him that would be interesting if you can pull it off
+  - *Done:* a big man's pad (0.8 m steps, not the splits). As Howard tells it, the strike knocks him across the corridor, a stretch of Satha winds round him in tightening coils that hide him, his bones crack, and she carries him off down the corridor leaving a smear of blood.
 
-- [ ] Level3: the character does get stuck temporarily in one spot for ages
-
-
-
-- [ ] general: torch still looks weird… use ome kind of fire effect there that is compatable with quake 1 at the moment it looksl like a weird poly flower
-
-- [ ] Level4: make the plant look more magical and do magical style sfx, things to dodge maybe to make the gameplay more interactive
-
-- [ ] level 4 has weird alien type creatures are they from the book? they feel out of place like aliens dude… if they are suposed to be npcs make sure they have hitboxes etc so you cant walk through them and make them move and respond to the player like running away
-
-- [ ] level 7: the relief of shamwar leel has weird looking ugly spear me that dontdo anthing - fix it, also the AI gets jammed walking up onto towers there so fix whatever that was.
+- [x] Level3: the character does get stuck temporarily in one spot for ages
+  - *Done:* the bot stood for 33 s and then 48 s in the dark swinging at pit-things still lurking unseen in their niches; it now leaves lurkers alone (the run is 47 s shorter).
 
 
-- [ ] general: on any open field level it should have more of the roman style arrow things everywhere to make the terrain more  challenging and provide natural looking mazes. they shouldn’t all be straight either so make more curves and complexit
 
-- [ ] general: what happened to the level with the weird Thog thing concan encounters that we tried to make bloody? can you add that back in as it was part of the novel but spend lots of time making the creature look right
+- [x] general: torch still looks weird… use ome kind of fire effect there that is compatable with quake 1 at the moment it looksl like a weird poly flower
+  - *Done:* every torch, brazier and candle (and the one in your hand) burns as a Quake-style flame: four frames of a cut-out flame sprite turned to the eye, full-bright. Also found that e1m4's torch was being switched off by a duplicate setting: it has its torch now.
+
+- [x] Level4: make the plant look more magical and do magical style sfx, things to dodge maybe to make the gameplay more interactive
+  - *Done:* from the book, "waves of changing hues surged over them" (pulses of colour run round its tendrils and blooms) and "he felt its hate emanate from it in almost tangible waves": once roused it rolls out a ring of livid light every 3 s that you must jump, with a low beating hum and a rattle of leaves.
+
+- [x] level 4 has weird alien type creatures are they from the book? they feel out of place like aliens dude… if they are suposed to be npcs make sure they have hitboxes etc so you cant walk through them and make them move and respond to the player like running away
+  - *Done:* they're the book's ("monsters with dripping jaws agape", "shadowy forms, monstrous and abnormal in outline"), and they're enemies, solid to walk into. Less goblin now: the great ears folded back, no loincloth or earring, a hide near the pits' black with burning eyes, and each misshapen its own way (a hunchback, a starveling). They behave as Howard has them, "something whimpered in fear and slunk away in the darkness": thrust a torch in one's face and it shies off, and a badly hurt one slinks away into the dark and comes back.
+
+- [x] level 7: the relief of shamwar leel has weird looking ugly spear me that dontdo anthing - fix it, also the AI gets jammed walking up onto towers there so fix whatever that was.
+  - *Done:* the allies were drawn with the old box rig because the level never loaded their built models; now they have them, and the Gundermen's surcoat is a dark field with a scarlet cross instead of stripes. The Gundermen march behind you in ranks and close with the Kothian spearmen and the press, spitting them on their pikes ("they were met by the spears of the pikemen"). The tower jam was an invisible ledge on every smoothed ramp (the step test compared the next cell with your feet, which sit below the cell's floor on a ramp): fixed in the step test, so nobody jams on the ladders.
 
 
-- [ ] general: level 8 and level 1 - make sure there are squads of lets say 5 and 6 guys that move together that are tactically ard to kill
+- [x] general: on any open field level it should have more of the roman style arrow things everywhere to make the terrain more  challenging and provide natural looking mazes. they shouldn’t all be straight either so make more curves and complexit
+  - *Done:* stake banks can now follow a curve (`stakes: [{ pts: [...] }]`, each stake-cell turned to the bend). The plain of Shamu has wings funnelling the attack into the arrow ground and a crescent before the heap. Shamar has curving banks on the Shemites' flanks and a crescent and hook in the press. The Tybor has the camp's bank curling round the river bank and earthworks on the meadow.
+
+- [x] general: what happened to the level with the weird Thog thing concan encounters that we tried to make bloody? can you add that back in as it was part of the novel but spend lots of time making the creature look right
+  - *Done:* that's the weeping thing in e1m3 (its den, then the flight), still there. Its body was a heap of rocky metaballs; now it's built each frame to the book: "an amorphic bulk" of "quaking, jelly-like stuff" (a see-through livid gel with clots and threads of blood sunk in it, its outline heaving on several waves, hitching itself along), "malformed tentacles … too short for its size", the frog-like head reared out of it with "great unstable eyes" that swell and shrink and "obscene blubbery lips". It sobs with tears dripping while it weeps, and shudders when it titters.
+
+
+- [x] general: level 8 and level 1 - make sure there are squads of lets say 5 and 6 guys that move together that are tactically ard to kill
+  - *Done:* squads (`squads: [groups]`, combat.js `squadChase`). Far off they come on as a body, abreast and at the pace of the slowest; close in they spread to ring you, each at his own bearing, and the blows come from whoever is furthest round your flank, never more than two at once. On the plain: the last charge and four waves at the heap (a fourth added). On the Tybor: the camp, a new rear-guard on the bank, the rout, the far bank and the reed-beds.

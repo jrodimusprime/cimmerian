@@ -303,6 +303,7 @@ const FIELD = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' };   // open ground u
 const STREAM = { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M1 = {
   level: 'e1m1', next: 'e1m2', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
+  squads: ['charge', 'heap1', 'heap2', 'heap3', 'heap4'],                // five or six men who fight as one (combat.js squadChase)
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
   // no walls: the plain goes on to the horizon under the sky; a stream and lines of boulders close the field in
   open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -0.5,
@@ -365,7 +366,12 @@ const LEVEL_E1M1 = {
   ],
   // "Ophirean knights in gilded mail ... squat Shemites with blue-black beards, and dark-faced Kothian knights"
   // the Shemite rise: the archers' stakes planted before them, a gap where the captains stand; stake-pits sown in the arrow ground
-  stakes: [{ from: [61, 16], to: [61, 27], face: -Math.PI / 2 }, { from: [61, 35], to: [61, 46], face: -Math.PI / 2 }],
+  stakes: [{ from: [61, 16], to: [61, 27], face: -Math.PI / 2 }, { from: [61, 35], to: [61, 46], face: -Math.PI / 2 },
+    // the arrow ground's own works, bent to the lie of the land: wings that funnel the attack into the archers' killing ground
+    { pts: [[40, 8], [44, 12], [46, 18], [45, 24]], face: -Math.PI / 2 }, { pts: [[45, 38], [47, 43], [45, 49], [41, 53]], face: -Math.PI / 2 },
+    { pts: [[52, 12], [55, 17], [54, 23]], face: -Math.PI / 2 }, { pts: [[54, 39], [56, 44], [53, 50]], face: -Math.PI / 2 },
+    // and before the heap, a crescent the knights rallied behind
+    { pts: [[74, 9], [78, 14], [79, 21], [77, 25]], face: -Math.PI / 2 }, { pts: [[77, 37], [79, 42], [77, 48], [73, 52]], face: -Math.PI / 2 }],
   lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16]],
   entities: [
     { class: 'info_player_start', at: [6, 31], yaw: -Math.PI / 2 },
@@ -398,6 +404,12 @@ const LEVEL_E1M1 = {
     { class: 'spearman', id: 'h14', at: [101.6, 36], group: 'heap3', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h15', at: [102.4, 39], group: 'heap3', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h16', at: [101.6, 30.5], group: 'heap3', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h17', at: [102.4, 26.5], group: 'heap4', yaw: Math.PI / 2, hold: true },     // a fourth, the last before the kings ride in
+    { class: 'oknight', id: 'h18', at: [101.6, 29], group: 'heap4', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h19', at: [102.4, 31.5], group: 'heap4', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h20', at: [101.6, 34], group: 'heap4', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h21', at: [102.4, 36.5], group: 'heap4', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h22', at: [101.6, 38.5], group: 'heap4', yaw: Math.PI / 2, hold: true },
   ],
   // the arrow ground: "Strabonus' Shemitish bowmen had wrought havoc among his knights"
   volley: { rooms: ['gully', 'arrowground'], group: 'line', period: 4.2 },
@@ -805,7 +817,11 @@ const LEVEL_E1M7 = {
     { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [57, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [71.6, 28.5] }, { kind: 'wine', name: 'a wine-skin', heal: 35, at: [75, 12] },
     { kind: 'wine', name: 'a Gunderman\'s wine-skin', heal: 35, at: [56, 19] }, { kind: 'bread', name: 'a Gunderman\'s bread', heal: 30, at: [56, 25] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [69, 19.5] }, { kind: 'bread', name: 'a knight\'s saddle-bread', heal: 30, at: [69, 24.5] }],
   // the siege lines of Koth: banks of stakes before the spearmen and round the king's own troops, with gaps to sally through; stake-pits in the press
-  stakes: [{ from: [48, 5], to: [48, 19], face: -Math.PI / 2 }, { from: [48, 25], to: [48, 39], face: -Math.PI / 2 }, { from: [73, 5], to: [73, 18], face: -Math.PI / 2 }, { from: [73, 26], to: [73, 39], face: -Math.PI / 2 }],
+  stakes: [{ from: [48, 5], to: [48, 19], face: -Math.PI / 2 }, { from: [48, 25], to: [48, 39], face: -Math.PI / 2 }, { from: [73, 5], to: [73, 18], face: -Math.PI / 2 }, { from: [73, 26], to: [73, 39], face: -Math.PI / 2 },
+    // the Shemites' line: curving banks on its flanks, so the way in bends toward its centre
+    { pts: [[18, 6], [22, 9], [24, 13]], face: -Math.PI / 2 }, { pts: [[24, 31], [22, 35], [18, 38]], face: -Math.PI / 2 },
+    // in the press of knights, banks thrown up in a crescent and a hook
+    { pts: [[62, 6], [65, 9], [66, 14], [65, 17]], face: -Math.PI / 2 }, { pts: [[65, 27], [66, 31], [64, 36], [61, 38]], face: -Math.PI / 2 }],
   lilia: [[61, 12], [64, 31], [68, 15], [66, 34], [70, 28], [62, 36], [69, 8]],
   entities: [
     { class: 'info_player_start', at: [4.5, 21.5], yaw: -Math.PI / 2 },   // at the back of the ridge, behind your own archers
@@ -866,6 +882,7 @@ const LEVEL_E1M7 = {
 // ---------------------------------------------------------------------------
 const LEVEL_E1M8 = {
   level: 'e1m8', title: 'The Tybor', ramps: ['earth', 'night', 'scarlet'], grid: [96, 64], arms: 'sword',
+  squads: ['camp', 'rear', 'rout', 'far', 'bay'],                // five or six men who fight as one (combat.js squadChase)
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.16, 0.1], open: true, fog: 0.008, sun: [-1, 0.06, 0.2], waterY: -0.25,   // the Tybor runs high: just under the barges' decks and the banks
   groundFog: { density: 0.05, falloff: 0.6, floor: 0, col: [0.5, 0.2, 0.12] },
   intro: [['THE TYBOR', 'title'], ['The rout runs down to the river. The men of Shamar are cutting the barge bridge adrift, and the fugitives drown.', ''],
@@ -906,9 +923,16 @@ const LEVEL_E1M8 = {
     { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 35, at: [18, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [26, 28] },
     { kind: 'wine', name: 'a fugitive\'s wine-skin', heal: 35, at: [60, 12] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [64, 30] }],
   // the Kothian camp by the river, fortified on its landward side: a bank of stakes with a gate, stake-pits before it
-  stakes: [{ from: [3, 36], to: [8, 36], face: Math.PI }, { from: [13, 36], to: [29, 36], face: Math.PI }],
+  stakes: [{ from: [3, 36], to: [8, 36], face: Math.PI }, { from: [13, 36], to: [29, 36], face: Math.PI },
+    // the rout's own works: the camp's outer bank curls round the river bank, and on the meadow the fugitives' last stand
+    { pts: [[8, 9], [12, 12], [14, 17], [13, 22]], face: Math.PI }, { pts: [[20, 8], [24, 12], [25, 16]], face: Math.PI },
+    { pts: [[70, 8], [74, 12], [75, 18]], face: -Math.PI / 2 }, { pts: [[80, 30], [84, 27], [88, 28]], face: Math.PI }],
   lilia: [[6, 32], [16, 31], [21, 33], [26, 30], [18, 27]],
   entities: [
+    // the rear-guard: six of Koth's men who turn and stand on the bank while the rest run for the bridge
+    { class: 'kknight', id: 'r1', at: [18, 27], group: 'rear', yaw: Math.PI }, { class: 'spearman', id: 'r2', at: [20, 28], group: 'rear', yaw: Math.PI },
+    { class: 'oknight', id: 'r3', at: [22, 27], group: 'rear', yaw: Math.PI }, { class: 'spearman', id: 'r4', at: [19, 30], group: 'rear', yaw: Math.PI },
+    { class: 'kknight', id: 'r5', at: [21, 30.5], group: 'rear', yaw: Math.PI }, { class: 'oknight', id: 'r6', at: [23.5, 29.5], group: 'rear', yaw: Math.PI },
     { class: 'info_player_start', at: [8, 57], yaw: Math.PI },
     { class: 'kknight', id: 'c1', at: [10, 50], group: 'camp' }, { class: 'spearman', id: 'c2', at: [14, 47], group: 'camp' }, { class: 'archer', id: 'c3', at: [20, 52], group: 'camp' },
     { class: 'oknight', id: 'c4', at: [18, 44], group: 'camp' }, { class: 'spearman', id: 'c5', at: [8, 41], group: 'camp' }, { class: 'spearman', id: 'c6', at: [24, 46], group: 'camp' },
@@ -929,7 +953,7 @@ const LEVEL_E1M8 = {
   beats: [
     { id: 'camp', at: 'bank_s', wake: ['camp'], lines: [['The camp of Koth by the river: men cutting loose horses, men dragging plunder to the water, and some who turn and fight.', 'warn']] },
     { id: 'camp2', killed: 'camp', sets: 'camp_done', lines: [['North, along the bank, to the barge bridge.', 'dim']] },
-    { id: 'rout', at: 'bank', wake: ['rout'] },
+    { id: 'rout', at: 'bank', wake: ['rout', 'rear'] },
     { id: 'rout2', killed: 'rout', needs: ['camp_done'], sets: 'rout_done', lines: [['The fugitives ahead of you scatter along the bank. Out on the river the men of Shamar hack at the lashings of the barge bridge.', 'warn']] },
     { id: 'bridge', at: ['b1', 'b2'], lines: [['The barges lurch under you; the lashings part one by one. Leap, and do not stop!', 'warn']] },
     { id: 'crossed', at: 'far', sets: 'crossed', wake: ['far'], lines: [['Behind you the bridge breaks up, and the fugitives on it go down into the Tybor. On the far bank some who crossed ahead of you turn at bay.', 'warn']] },
@@ -1028,7 +1052,27 @@ function buildLevel(spec) {
   //   stakes: [{ from: [x, z], to: [x, z], face: yaw }]  cells along an axis; the stakes point toward face
   //   lilia: [[x, z], ...]                               single cells: a pit 0.9 deep, a stake at the bottom
   const fort = [];
+  //   stakes: [{ pts: [[x, z], ...], face: yaw }]        a curving bank through the points (Catmull-Rom); each stake-cell turns
+  //                                                       to the curve, its stakes pointing to whichever side faces `face`
   for (const st of spec.stakes || []) {
+    if (!st.pts) continue;
+    const P = st.pts, seen = new Set(), fx = Math.sin(st.face || 0), fz = Math.cos(st.face || 0);
+    const cr = (a, b, c, d, t) => 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+    for (let i = 0; i < P.length - 1; i++) {
+      const a = P[Math.max(0, i - 1)], b = P[i], c = P[i + 1], d = P[Math.min(P.length - 1, i + 2)];
+      for (let t = 0; t <= 1; t += 0.05) {
+        const x = cr(a[0], b[0], c[0], d[0], t), z = cr(a[1], b[1], c[1], d[1], t);
+        const tx = cr(a[0], b[0], c[0], d[0], Math.min(1, t + 0.05)) - cr(a[0], b[0], c[0], d[0], Math.max(0, t - 0.05)), tz = cr(a[1], b[1], c[1], d[1], Math.min(1, t + 0.05)) - cr(a[1], b[1], c[1], d[1], Math.max(0, t - 0.05));
+        const gx = Math.floor(x), gz = Math.floor(z), idx = cellIdx(gx, gz);
+        if (idx < 0 || LV.kind[idx] !== 1 || seen.has(idx)) continue;
+        seen.add(idx); LV.flags[idx] |= F_NOPASS | F_STAKE;
+        let nx = tz, nz = -tx; if (nx * fx + nz * fz < 0) { nx = -nx; nz = -nz; }
+        fort.push({ prefab: 'stakes', at: [gx + 0.5, gz + 0.5], rot: Math.atan2(nx, nz) });
+      }
+    }
+  }
+  for (const st of spec.stakes || []) {
+    if (st.pts) continue;
     const [x0, z0] = st.from, [x1, z1] = st.to, n = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
     for (let k = 0; k <= n; k++) {
       const gx = Math.round(x0 + (x1 - x0) * k / (n || 1)), gz = Math.round(z0 + (z1 - z0) * k / (n || 1)), idx = cellIdx(gx, gz);

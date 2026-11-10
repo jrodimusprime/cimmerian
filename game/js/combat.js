@@ -70,7 +70,7 @@ function newFoes() {
   return LEVEL.entities.filter(e => FOES[e.class]).map(e => {
     const p = { x: e.at[0] * CELL, z: e.at[1] * CELL };
     return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw || 0, yaw: e.yaw || 0,
-      hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
+      squad: !!(LEVEL.squads && LEVEL.squads.includes(e.group)), hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
       dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold, territory: e.territory || FOES[e.class].territory || null, asleep: !!e.asleep, boss: !!FOES[e.class].boss };
   });
 }
@@ -226,6 +226,8 @@ function updateFoes() {
           else { turn(8); if (f.cool <= 0) { f.state = 'windup'; f.t = 0; Sfx.bowdraw(); } }
         } else if (st.spears && (f.spears === undefined ? st.spears : f.spears) > 1 && d > st.throwAt[0] && d < st.throwAt[1] && f.cool <= 0 && los(f.x, f.y + 1.6, f.z, S.x, S.y + 1.4, S.z)) {
           turn(8); f.state = 'windup'; f.t = 0; f.throwing = true; Sfx.ready(clamp(-dx / 15, -1, 1));   // he keeps his last spear in hand
+        } else if (f.squad && squadChase(f, st, d, dx, dz, move, turn)) {
+          /* the squad moved him */
         } else if (d <= foeReach(f) * 0.92 && Math.abs(S.y - f.y) < 1.6) {
           turn(8);
           if (f.cool <= 0) { f.state = 'windup'; f.t = 0; f.throwing = false; Sfx.ready(clamp(-dx / 15, -1, 1)); }
@@ -346,6 +348,32 @@ function yothgaHate(f) {
   if (!f.alert || Math.hypot(S.x - f.x, S.z - f.z) > 11) return;
   f.hateT = (f.hateT || 0) + DT;
   if (f.hateT >= HATE_EVERY) { f.hateT = 0; S.hate.push({ x: f.x, z: f.z, r: 0.6 }); Sfx.hate(clamp((f.x - S.x) / 15, -1, 1)); Sfx.rattle(); }
+}
+// Squads (LEVEL.squads): five or six men who fight as one. Far off they come on as a body, a line abreast at the pace of the
+// slowest; close in they spread to ring the king, each at his own bearing, and only two strike at a time while the rest
+// hold their places, so he is always flanked and never facing them one by one.
+function squadChase(f, st, d, dx, dz, move, turn) {
+  const mates = S.foes.filter(o => o.group === f.group && !o.dead && !FOES[o.cls].ranged && (o.state === 'chase' || o.state === 'windup' || o.state === 'strike' || o.state === 'recover' || o.state === 'block'));
+  const n = mates.length, k = mates.indexOf(f);
+  if (n < 2 || k < 0 || Math.abs(S.y - f.y) > 1.6) return false;
+  let cx = 0, cz = 0; for (const o of mates) { cx += o.x; cz += o.z; } cx /= n; cz /= n;
+  const cd = Math.hypot(S.x - cx, S.z - cz) || 1;
+  if (cd > 8 && d > 6) {                                   // the advance: abreast, keeping their dressing
+    const fx = (S.x - cx) / cd, fz = (S.z - cz) / cd, off = (k - (n - 1) / 2) * 1.5;
+    move(cx + fx * 2 + fz * off, cz + fz * 2 - fx * off, st.speed * 0.78); turn(6);
+    return true;
+  }
+  const reach = foeReach(f), base = Math.atan2(cx - S.x, cz - S.z), a = base + (k - (n - 1) / 2) * Math.min(0.95, 4.6 / n);
+  const sx = S.x + Math.sin(a) * reach * 0.88, sz = S.z + Math.cos(a) * reach * 0.88;
+  // a blow every half second at most, never more than two in the air, each from the man furthest round on the king's flank (he must keep turning)
+  const busy = mates.filter(o => o.state === 'windup' || o.state === 'strike').length >= 2, fwdX = -Math.sin(S.yaw), fwdZ = -Math.cos(S.yaw);
+  const flank = o => -((o.x - S.x) * fwdX + (o.z - S.z) * fwdZ) / (Math.hypot(o.x - S.x, o.z - S.z) || 1);
+  const inReach = mates.filter(o => Math.hypot(o.x - S.x, o.z - S.z) <= foeReach(o) * 0.92 && o.cool <= 0);
+  const mine = !busy && S.tick >= (S.squadBeat || 0) && inReach.length && inReach.reduce((b, o) => flank(o) > flank(b) ? o : b) === f;
+  if (Math.hypot(sx - f.x, sz - f.z) > 0.7 && !mine) move(sx, sz, st.speed);   // to his place in the ring
+  turn(8);
+  if (mine) { f.state = 'windup'; f.t = 0; f.throwing = false; S.squadBeat = S.tick + Math.round(0.5 * SIM_HZ); Sfx.ready(clamp(-dx / 15, -1, 1)); }
+  return true;
 }
 function hitFoe(f, dmg, kick) {
   const st = FOES[f.cls], dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz) || 1;
