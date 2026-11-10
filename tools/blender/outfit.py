@@ -289,6 +289,14 @@ def region_shell(src, name, groups, *, offset=0.012, min_weight=0.35, keep=None,
         sb.free()
         for _ in range(max(3, smooth // 4)):                               # and smooth away any spikes that push made
             bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+        # and never inside the real body (the smoothed one shrinks at the arms and shoulders)
+        rb = bmesh.new(); rb.from_mesh(src.data); rb.normal_update(); real = BVHTree.FromBMesh(rb)
+        bm.normal_update()
+        for v in inner:
+            loc, nrm, idx, dist = real.find_nearest(v.co)
+            if loc is not None and (v.co - loc).dot(nrm) < 0.015:
+                v.co = loc + nrm * 0.015
+        rb.free()
         bm.normal_update()
     bm.to_mesh(obj.data); bm.free()
     if thickness > 0:

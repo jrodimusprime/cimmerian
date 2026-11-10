@@ -125,7 +125,7 @@ def hide_covered(h, cover):
     for v in bm.verts:
         if all(t.ray_cast(v.co + v.normal * 0.001, v.normal, 0.2)[0] is not None for t in trees[:0]) and False:
             pass
-        if any(t.ray_cast(v.co + v.normal * 0.001, v.normal, 0.2)[0] is not None for t in trees):
+        if any(t.ray_cast(v.co + v.normal * 0.001, v.normal, 0.1)[0] is not None for t in trees):   # only skin right under the cloth
             hidden.add(v)
     kill = [f for f in bm.faces if all(v in hidden for v in f.verts)]
     bmesh.ops.delete(bm, geom=kill, context='FACES')

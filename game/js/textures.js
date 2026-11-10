@@ -313,23 +313,23 @@ const TEXGEN = {
     const u = x / 64, v = y / 64, bu = Math.min(u, 1 - u);
     if (bu < 0.13) {                                   // belly scutes: broad transverse plates
       const band = (v * 8) % 1;
-      if (band < 0.09) return { v: 0.18, ramp: 'ink', lo: 0.2, hi: 0.6 };
+      if (band < 0.09) return { v: 0.4, ramp: 'ink', lo: 0.35, hi: 0.7 };
       return { v: 0.55 + 0.35 * (1 - band) + 0.1 * tfbm(u, v, 8, 2, s), ramp: 'ink', lo: 0.45, hi: 0.85, h: 0.08 };
     }
     // overlapping keeled scales, rows offset, highlight on each scale's crown
-    const su = u * 18, sv = v * 9, row = Math.floor(sv), fu = (su + (row % 2) * 0.5) % 1, fv = sv - row;
+    const su = u * 30, sv = v * 15, row = Math.floor(sv), fu = (su + (row % 2) * 0.5) % 1, fv = sv - row;
     const d = Math.hypot((fu - 0.5) * 1.2, (fv - 0.35) * 1.0);
-    let t = 0.75 - d * 1.1 + 0.25 * (1 - fv) - (Math.abs(fu - 0.5) < 0.05 && fv < 0.7 ? 0.12 : 0);
-    if (d > 0.55) t = 0.05;
+    let t = 0.8 - d * 0.6 + 0.12 * (1 - fv) - (Math.abs(fu - 0.5) < 0.05 && fv < 0.7 ? 0.06 : 0);
+    if (d > 0.55) t = 0.35;                                // the seams between scales: shadowed, not black
     t += 0.1 * tfbm(u, v, 4, 2, s);
     const du = Math.abs(u - 0.5);
     // dorsal saddles: dark diamonds with pale rims down the spine
     const dd = du / 0.2 + Math.abs(((v * 2) % 1) - 0.5) * 2.2;
     // "the great shimmering white form of Satha" (ch. III): pale scales, a faint grey saddle down the spine
-    let lo = 0.42, hi = 1;
-    if (dd < 0.9) { lo = 0.3; hi = 0.82; } else if (dd < 1.1) { lo = 0.5; hi = 1; }
+    let lo = 0.55, hi = 1;
+    if (dd < 0.9) { lo = 0.45; hi = 0.88; } else if (dd < 1.1) { lo = 0.6; hi = 1; }
     if (du > 0.3) { lo += 0.06; }
-    return { v: t, ramp: 'ink', lo, hi, h: 0.08, e: 0.12 };                // a faint shimmer, so she stays white under orange torchlight
+    return { v: t, ramp: 'ink', lo, hi, h: 0.05, e: 0.22 };                // a faint shimmer, so she stays white under orange torchlight
   } },
   // The hero's right forearm: u around (0.5 = back of the arm), v from wrist (0) to elbow (1).
   ARM: { f: (x, y, s) => {
