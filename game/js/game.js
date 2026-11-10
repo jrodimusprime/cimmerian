@@ -827,11 +827,11 @@ function objective() {
     if (S.paralysed > 0) return '';
     if (M.tsotha.state === 'offer') return 'Answer him with the sword.';
     if (M.phase !== 'fight') return 'The kings ride up.';
-    if (!S.areas.has('arrows')) return 'Fight your way across the field.';
+    if (!S.areas.has('arrows')) return 'Fight your way east across the field, toward the standards.';
     if (!S.areas.has('line')) return 'Cross the arrow ground between volleys. Use the dead for cover.';
     if (!f.line_broken) return 'Break the Shemite line.';
     if (!f.lanes_crossed) return 'Cross the riders\' ground between charges.';
-    return 'Stand on the heap of dead. Hold.';
+    return 'Make for the standards in the east: put your back to the heap of dead, and hold.';
   }
   if (LEVEL.level === 'e1m3') {
     const T = S.tun;
@@ -1344,6 +1344,17 @@ function render(alpha) {
       drawHorse(x, y, z, yaw, gal, l);
       drawCharacter('oknight', x, y + seatY() + Math.abs(Math.sin(gal)) * 0.1, z - (c.dir > 0 ? 0.1 : -0.1), yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
     });
+    const hp = LV.props.find(q => q.prefab === 'heap');   // the dead piled round the heap: horses and men (drawn only; the sim never sees them)
+    if (hp && Math.hypot(hp.x - S.x, hp.z - S.z) < 140) {
+      for (let k = 0; k < 5; k++) {
+        const a = k * 1.256 + 0.3, x = hp.x + Math.cos(a) * 2.9, z = hp.z + Math.sin(a) * 2.9, y = groundInfo(x, z).floor;
+        drawHorse(x, y, z, a + 1.2 + k, 0, sampleLight(x, y + 1, z), true);
+      }
+      for (let k = 0; k < 7; k++) {
+        const a = k * 0.9 + 0.75, r = 2.2 + (k % 3) * 0.5, x = hp.x + Math.cos(a) * r, z = hp.z + Math.sin(a) * r, y = groundInfo(x, z).floor;
+        drawCharacter(['kknight', 'oknight', 'spearman'][k % 3], x, y + 0.12, z, a * 2.3 + k, { unarmed: true, noShield: true, pitch: -1.5, roll: 0.3 * (k % 2 ? 1 : -1), drop: 0.08, uzL: 1.0, uzR: 0.7, txL: -0.3, sxL: 0.6, headX: -0.3 }, sampleLight(x, y + 0.5, z));
+      }
+    }
     if (LEVEL.host) {                                  // the ranks of the host, pikes up, closing the field to the east
       const H = LEVEL.host;
       H.x.forEach((hx, r) => {

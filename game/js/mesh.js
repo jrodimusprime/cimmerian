@@ -263,12 +263,19 @@ function addPrefab(mb, p) {
       if (hrand(sd, 3, 2, 3) < 0.6) { const a = p.rot, q = r * 0.55; addRock(mb, p.x + Math.cos(a) * r * 0.9, p.y + q * 0.25, p.z + Math.sin(a) * r * 0.9, q, q * 0.7, q, sd + 5, T.ROCK, 0.5); }
       break;
     }
-    case 'heap': {                                        // "a heap of dead horses and men"
-      for (let k = 0; k < 9; k++) {
-        const a = k * 2.399, r = 0.4 + (k % 4) * 0.45, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, hgt = 0.9 - r * 0.35;
-        addRock(mb, x, p.y + hgt * 0.5, z, 0.6, hgt * 0.55, 0.9, 20 + k, k % 3 ? T.HIDE : T.MAIL, 0.2);
+    case 'heap': {                                        // "a heap of dead horses and men": a mound you can see across the field
+      for (let k = 0; k < 18; k++) {
+        const a = k * 2.399, r = 0.2 + (k % 6) * 0.32, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, hgt = 2.6 - r * 1.05;
+        addRock(mb, x, p.y + hgt * 0.5, z, 0.65, hgt * 0.55, 0.95, 20 + k, k % 3 ? T.HIDE : k % 2 ? T.MAIL : T.GILT, 0.22);
       }
-      for (let k = 0; k < 5; k++) { const a = k * 1.7; addBox(mb, p.x + Math.cos(a) * 1.1, p.y + 0.9, p.z + Math.sin(a) * 1.1, 0.03, 0.03, 1.2, T.WOOD, a, ONE3, 0.6); }   // broken lances
+      for (let k = 0; k < 9; k++) { const a = k * 1.7; addBox(mb, p.x + Math.cos(a) * 0.9, p.y + 1.6 + (k % 3) * 0.3, p.z + Math.sin(a) * 0.9, 0.03, 0.03, 1.6, T.WOOD, a, ONE3, 0.5 + (k % 3) * 0.2); }   // broken lances
+      // "the heavy regal folds of silken standards": three left standing in the heap, seen over the mist from across the field
+      for (const [dx, dz, hgt, lean] of [[-0.3, -0.5, 9.5, 0.08], [0.6, 0.4, 8.0, -0.15], [-0.7, 0.8, 6.8, 0.22]]) {
+        const bx = p.x + dx, bz = p.z + dz, tx = bx + Math.sin(lean) * hgt, tz = bz;
+        addSeg(mb, [bx, p.y + 0.5, bz], [tx, p.y + hgt, tz], 0.09, 0.06, T.BLACK, ONE3);
+        addBox(mb, tx, p.y + hgt - 0.1, tz, 0.05, 0.05, 1.2, T.BLACK, 0);                           // the crossbar
+        addBox(mb, tx, p.y + hgt - 1.7, tz, 0.03, 1.55, 1.1, T.BLACK, 0, ONE3, 0.05);            // the banner hanging from it: black against the red sky
+      }
       break;
     }
     case 'grating': {
