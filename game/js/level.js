@@ -527,7 +527,7 @@ const LEVEL_E1M4 = {
 const HALL_TEX = { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' };
 const LEVEL_E1M5 = {
   level: 'e1m5', next: 'e1m6', title: 'The Scarlet Citadel', ramps: ['ink', 'scarlet', 'bronze'], grid: [70, 34], ambient: [0.07, 0.05, 0.045], arms: 'sword',
-  open: true, sun: [0.3, -0.2, 0.9], fog: 0.012, haze: [0.02, 0.02, 0.04],
+  open: true, night: true, moon: [-0.6, 0.3, 0.5], sun: [0.3, -0.2, 0.9], fog: 0.012, haze: [0.02, 0.02, 0.04],
   intro: [['THE SCARLET CITADEL', 'title'], ['Up the long stair, Pelias at your heels. "Tsotha\'s household sleeps," he says. "I have laid that on them. But a spell is thin where many men are; some will wake."', 'voice'],
     ['"Expected a rush of slaves, but silence gripped the citadel."', 'dim']],
   objectives: [['door_passed', 'Up the stair, to the skull-crowned door.'], ['black_cleared', 'Kill the black guards before they rouse the rest.'], ['censers_passed', 'Walk softly past the sleepers. Do not run.'],

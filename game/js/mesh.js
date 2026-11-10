@@ -372,24 +372,34 @@ function buildLevelMesh() {
 }
 
 // ---- the sky over an open level: a dome graded from a burning horizon to a dark zenith, and the sun going down
-function buildSkyMesh(sunDir) {
-  const mb = new MeshBuilder(8192), R = 1000, rings = 44, seg = 36;
-  const grade = e => e < 0.12 ? [1.25, 0.55, 0.32] : e < 0.35 ? [lerp(1.25, 0.62, (e - 0.12) / 0.23), lerp(0.55, 0.15, (e - 0.12) / 0.23), lerp(0.32, 0.12, (e - 0.12) / 0.23)]
+function buildSkyMesh(sunDir, night) {
+  const mb = new MeshBuilder(night ? 16384 : 8192), R = 1000, rings = 44, seg = 36, TX = night ? T.SKY : T.SUNSET;   // night: the pale ink ramp, not the sunset's reds
+  const grade = night ? e => [lerp(0.16, 0.015, Math.min(1, e / 0.6)), lerp(0.11, 0.015, Math.min(1, e / 0.6)), lerp(0.13, 0.035, Math.min(1, e / 0.6))] : e => e < 0.12 ? [1.25, 0.55, 0.32] : e < 0.35 ? [lerp(1.25, 0.62, (e - 0.12) / 0.23), lerp(0.55, 0.15, (e - 0.12) / 0.23), lerp(0.32, 0.12, (e - 0.12) / 0.23)]
     : [lerp(0.62, 0.2, Math.min(1, (e - 0.35) / 0.65)), lerp(0.15, 0.035, Math.min(1, (e - 0.35) / 0.65)), lerp(0.12, 0.05, Math.min(1, (e - 0.35) / 0.65))];
   const pt = (el, az) => [Math.cos(el) * Math.cos(az) * R, Math.sin(el) * R, Math.cos(el) * Math.sin(az) * R];
   for (let r = 0; r < rings; r++) {
     const e0 = -0.25 + (Math.PI / 2 + 0.25) * r / rings, e1 = -0.25 + (Math.PI / 2 + 0.25) * (r + 1) / rings, col = grade(Math.max(0, (e0 + e1) / 2) / (Math.PI / 2));
     for (let k = 0; k < seg; k++) {
       const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2;
-      mb.quad(pt(e0, a0), pt(e0, a1), pt(e1, a1), pt(e1, a0), T.SUNSET, 0, -1, 0, col);
+      mb.quad(pt(e0, a0), pt(e0, a1), pt(e1, a1), pt(e1, a0), TX, 0, -1, 0, col);
+    }
+  }
+  if (night) {                                          // "under the stars": a field of them, and a low moon
+    const rng = new RNG(97);
+    for (let k = 0; k < 900; k++) {
+      const el = Math.asin(rng.range(0.16, 1)), az = rng.range(0, Math.PI * 2), c = pt(el, az).map(v => v * 0.97), sz = rng.range(1.2, 3.2), b = rng.range(0.6, 1.6);
+      const up = [0, 1, 0], n = norm3(c), uu = norm3(cross3(Math.abs(n[1]) > 0.95 ? [1, 0, 0] : up, n)), ww = cross3(n, uu);
+      const p = (i, j) => [c[0] + (uu[0] * i + ww[0] * j) * sz, c[1] + (uu[1] * i + ww[1] * j) * sz, c[2] + (uu[2] * i + ww[2] * j) * sz];
+      mb.quad(p(-1, -1), p(1, -1), p(1, 1), p(-1, 1), TX, -n[0], -n[1], -n[2], [b, b * 0.95, b * 0.85]);
+      mb.quad(p(-1, -1), p(-1, 1), p(1, 1), p(1, -1), TX, n[0], n[1], n[2], [b, b * 0.95, b * 0.85]);
     }
   }
   const d = norm3(sunDir), up = [0, 1, 0], u = norm3(cross3(up, d)), w = cross3(d, u);
-  for (const [rad, col, dist] of [[150, [0.9, 0.18, 0.08], 960], [80, [1.6, 0.55, 0.22], 950], [52, [1.9, 0.95, 0.45], 940]]) {   // a halo, then the disc
+  for (const [rad, col, dist] of night ? [[70, [0.22, 0.2, 0.22], 960], [26, [1.3, 1.2, 1.0], 940]] : [[150, [0.9, 0.18, 0.08], 960], [80, [1.6, 0.55, 0.22], 950], [52, [1.9, 0.95, 0.45], 940]]) {   // a halo, then the disc
     const c = [d[0] * dist, d[1] * dist, d[2] * dist];
     for (let k = 0; k < 24; k++) {
       const a0 = k / 24 * Math.PI * 2, a1 = (k + 1) / 24 * Math.PI * 2, p = a => [c[0] + (u[0] * Math.cos(a) + w[0] * Math.sin(a)) * rad, c[1] + (u[1] * Math.cos(a) + w[1] * Math.sin(a)) * rad, c[2] + (u[2] * Math.cos(a) + w[2] * Math.sin(a)) * rad];
-      mb.tri(c, p(a0), p(a1), T.SUNSET, -d[0], -d[1], -d[2], col);
+      mb.tri(c, p(a0), p(a1), TX, -d[0], -d[1], -d[2], col);
     }
   }
   return mb.finish();

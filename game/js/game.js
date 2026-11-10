@@ -1231,7 +1231,7 @@ function loadLevel(id, carry) {
   if (levelMesh) R.deleteMesh(levelMesh);
   { const lm = buildLevelMesh(); levelMesh = R.createMesh(lm); buildWallDecals(lm); }
   if (skyMesh) { R.deleteMesh(skyMesh); skyMesh = null; }
-  if (LEVEL.open) skyMesh = R.createMesh(buildSkyMesh(LEVEL.sun || [-1, 0.05, 0.2]));
+  if (LEVEL.open) skyMesh = R.createMesh(buildSkyMesh(LEVEL.night ? (LEVEL.moon || [0.5, 0.35, -0.6]) : (LEVEL.sun || [-1, 0.05, 0.2]), LEVEL.night));
   R.haze = LEVEL.haze || [0.035, 0.026, 0.02];
   const gf = LEVEL.groundFog;                               // low fog lying on the field
   R.gfog = gf ? [gf.density, gf.falloff, gf.floor || 0, 1] : [0, 0, 0, 0]; R.gfogCol = gf ? gf.col : [0, 0, 0];

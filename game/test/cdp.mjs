@@ -9,7 +9,7 @@ const [url, scriptPath, outDir] = process.argv.slice(2);
 mkdirSync(outDir, { recursive: true });
 const port = 9300 + Math.floor(Math.random() * 500);
 const chrome = spawn(process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
-  '--headless=new', `--remote-debugging-port=${port}`, '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
+  '--headless=new', `--remote-debugging-port=${port}`, ...(process.env.CIM_GPU ? ['--use-angle=metal', '--enable-gpu'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']),
   '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check', `--user-data-dir=${outDir}/profile`,
   '--window-size=1280,720', '--allow-file-access-from-files', 'about:blank'], { stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
