@@ -15,14 +15,14 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:46 (12009 ticks) | ~11.1 min |
-> | `e1m2` The Pits | 2:00 (8651 ticks) | ~8.0 min |
-> | `e1m3` The Tunnels Below | 2:27 (10602 ticks) | ~9.8 min |
-> | `e1m4` Yothga | 3:18 (14276 ticks) | ~13.2 min |
-> | `e1m5` The Scarlet Citadel | 3:05 (13365 ticks) | ~12.4 min |
-> | `e1m6` The Tower of Tamar | 2:16 (9819 ticks) | ~9.1 min |
-> | `e1m7` The Relief of Shamar | 3:51 (16699 ticks) | ~15.5 min |
-> | `e1m8` The Tybor | 2:48 (12156 ticks) | ~11.3 min |
-> | **Campaign** | **22:35** (97577 ticks) | **~90 min** |
+> | `e1m2` The Pits | 2:02 (8809 ticks) | ~8.2 min |
+> | `e1m3` The Tunnels Below | 2:27 (10610 ticks) | ~9.8 min |
+> | `e1m4` Yothga | 3:19 (14329 ticks) | ~13.3 min |
+> | `e1m5` The Scarlet Citadel | 3:05 (13361 ticks) | ~12.4 min |
+> | `e1m6` The Tower of Tamar | 2:14 (9683 ticks) | ~9.0 min |
+> | `e1m7` The Relief of Shamar | 4:03 (17516 ticks) | ~16.2 min |
+> | `e1m8` The Tybor | 2:43 (11805 ticks) | ~10.9 min |
+> | **Campaign** | **22:42** (98122 ticks) | **~91 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **The telling is out of joint.** The game opens *in medias res*, in the pits, chained in the dark, the best possible first level. When the pits are behind you it flashes back to the plain of Shamu: *how did we get here?* Then it jumps forward again into the tunnels and follows the book to the end. This changes only the order in which levels are **played**, never what happens inside them; each level is still its stretch of the book, beat for beat. (Howard does the same: chapter III opens with the chained king remembering.)

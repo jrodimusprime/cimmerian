@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10602, hash: '9a433ca7' };
+const EXPECTED = { tick: 10610, hash: '798f959c' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -110,10 +110,10 @@ o = await O('__route([[39, 4], [39, 12], [39, 15.4]])'); log('well:', brief(o));
 o = await O('__leap(39, 15.4, 1)'); log('leapt:', brief(o), await ev('CIM.state.torch'));
 // THE DARK (combat): driven south into the black tunnels; round to the crossing again
 o = await O('__route([[41, 24]])');
-o = await O('__fight(["dark"], 9000, 30)'); log('dark:', brief(o));
+o = await O('__fight(["dark"], 9000, 14)'); log('dark:', brief(o));
 await O('__heal()');
 o = await O('__route([[41, 27.8], [43.3, 27.8]])'); o = await O('__jumpTo(46, 27.8)'); log('gap:', brief(o));
-o = await O('__fight(["dark"], 9000, 30)');
+o = await O('__fight(["dark"], 9000, 14)');
 o = await O('__route([[47, 27.8], [47, 15], [44.5, 15], [41, 15.2]])');
 // THE CROSSING (puzzle): the ember; go where the air comes from
 o = await O('(__take("ember"), CIM.obs())'); log('ember:', brief(o), await ev('CIM.state.torch'));

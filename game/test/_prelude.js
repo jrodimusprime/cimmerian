@@ -44,7 +44,11 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
     const shielded = !!FOES[f.cls].block;
     const reach = s.weapon === 'sword' ? 2.6 : 2.0;
     let act = { yaw, pitch: Math.max(-0.4, Math.min(0.3, Math.atan2(f.y - s.y, d))) };
-    if (d > reach) {
+    const archer = FOES[f.cls].ranged && !FOES[f.cls].boss, armed = s.weapon === 'spear' || (s.spears && s.spears.length);
+    if (archer && armed && d > 5 && d < 22 && s.throwT <= 0 && s.swing <= 0 && los(s.x, s.y + 1.5, s.z, f.x, f.y + 1.2, f.z)) {   // an archer who keeps his distance: throw a spear at him
+      if (s.weapon !== 'spear') act.weapon = 'spear'; else { act.throwSpear = true; act.pitch = Math.atan2(f.y + 1.0 - s.y - 1.5, d) + d * 0.012; }
+    }
+    else if (d > reach) {
       act.forward = 1; act.run = true;
       if (!los(s.x, s.y + 1.2, s.z, f.x, f.y + 1.2, f.z)) {
         const st = flowStep({ x: s.x, z: s.z }, bfs(cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))));
