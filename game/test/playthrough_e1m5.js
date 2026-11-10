@@ -1,5 +1,5 @@
 // Golden playthrough of e1m5, the Scarlet Citadel, through the CIM agent API (README §11).
-const EXPECTED = { tick: 15358, hash: 'f04118f8' };
+const EXPECTED = { tick: 13365, hash: '23b69e59' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m5"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
@@ -25,5 +25,5 @@ o = await O('__jumpTo(47.5, 26)'); o = await O('__fight(["roof"], 6000, 14)'); o
 // THE WEST BATTLEMENTS, to the tallest tower
 o = await O('__route([[35, 26]])'); o = await O('__fight(["roofw"], 4000, 8)'); o = await O('__jumpTo(30, 26)'); o = await O('__fight(["roofw"], 6000, 12)'); await O('__heal()');
 o = await O('__route([[27, 26]])'); o = await O('__jumpTo(22, 26)'); o = await O('__fight(["roofw"], 6000, 14)'); log('west:', brief(o));
-o = await waitFlag('beast_called', 15); o = await O('__route([[18, 27]])'); log('end:', brief(o));
+o = await O('__fight(["roofw", "roof"], 6000, 30)'); o = await waitFlag('beast_called', 15); o = await O('(CIM.state.x > 33 * C && (__route([[35, 26]]), __jumpTo(30, 26)), CIM.state.x > 25 * C && (__route([[27, 26]]), __jumpTo(22, 26)), __route([[18, 27]]))'); log('end:', brief(o));
 await finish(EXPECTED);

@@ -92,7 +92,8 @@ const LEVEL_E1M2 = {
   lights: [
     { at: [4, 14], y: -4, col: [0.25, 0.55, 0.38], rad: 10, i: 0.9 },             // slime glow in the well
     { at: [28, 7], y: -8, col: [0.25, 0.55, 0.38], rad: 9, i: 0.6 },              // slime glow in the serpent's hole
-    { at: [6.4, 9.4], y: 2.4, col: [1.0, 0.6, 0.28], rad: 11, i: 1.5 },           // the torch in the niche above the king
+    { at: [6.4, 9.4], y: 2.4, col: [1.0, 0.6, 0.28], rad: 14, i: 2.3 },           // the torch in the niche above the king: it lights the whole vault
+    { at: [8.6, 10.6], y: 1.2, col: [0.8, 0.45, 0.22], rad: 8, i: 0.7 },          // and its glow thrown back off the far wall
   ],
   features: [
     { type: 'ring', at: [6.08, 9.4], y: 1.0, wall: 'W' },
@@ -421,7 +422,7 @@ const LEVEL_E1M1 = {
 // pits with him; Satha flees from what she sees in him; the dead jailer works the bolt.
 // ---------------------------------------------------------------------------
 const LEVEL_E1M4 = {
-  level: 'e1m4', next: 'e1m5', title: 'Yothga', ramps: ['ink', 'jade', 'scarlet'], grid: [64, 36], ambient: [0.06, 0.06, 0.055], arms: 'sword', torch: false,
+  level: 'e1m4', next: 'e1m5', torch: true, title: 'Yothga', ramps: ['ink', 'jade', 'scarlet'], grid: [64, 36], ambient: [0.06, 0.06, 0.055], arms: 'sword', torch: false,
   intro: [['YOTHGA', 'title'], ['Within the bars lay a figure, "twined and bound about with the tendrils of a thick vine which seemed to grow through the solid stone of the floor." Crimson blossoms, "a livid, unnatural crimson, like a perversity of flower-life."', ''],
     ['You find a key for the cage among the keys you carry.', 'dim']],
   objectives: [['stem_cut', 'Cut the stem. Do not touch the roots.'], ['pelias_up', 'Wait for the freed man.'], ['works_crossed', 'Follow Pelias through the old works.'],
@@ -530,7 +531,7 @@ const LEVEL_E1M4 = {
 // ---------------------------------------------------------------------------
 const HALL_TEX = { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' };
 const LEVEL_E1M5 = {
-  level: 'e1m5', next: 'e1m6', title: 'The Scarlet Citadel', ramps: ['ink', 'scarlet', 'bronze'], grid: [70, 34], ambient: [0.07, 0.05, 0.045], arms: 'sword',
+  level: 'e1m5', next: 'e1m6', torch: true, title: 'The Scarlet Citadel', ramps: ['ink', 'scarlet', 'bronze'], grid: [70, 34], ambient: [0.07, 0.05, 0.045], arms: 'sword',
   open: true, night: true, moon: [-0.6, 0.3, 0.5], sun: [0.3, -0.2, 0.9], fog: 0.012, haze: [0.02, 0.02, 0.04],
   intro: [['THE SCARLET CITADEL', 'title'], ['Up the long stair, Pelias at your heels. "Tsotha\'s household sleeps," he says. "I have laid that on them. But a spell is thin where many men are; some will wake."', 'voice'],
     ['"Expected a rush of slaves, but silence gripped the citadel."', 'dim']],
@@ -602,6 +603,7 @@ const LEVEL_E1M5 = {
     { class: 'axeman', id: 'a1', at: [16, 3], group: 'armoury', yaw: -Math.PI / 2 }, { class: 'axeman', id: 'a2', at: [17, 7], group: 'armoury', yaw: -Math.PI / 2 }, { class: 'slave', id: 'a3', at: [15, 5], group: 'armoury' },
     { class: 'slave', id: 't1', at: [61, 12], group: 'tower' }, { class: 'axeman', id: 't2', at: [61, 16], group: 'tower', yaw: Math.PI }, { class: 'slave', id: 't3', at: [61.5, 19], group: 'tower' },
     { class: 'axeman', id: 't4', at: [60.5, 21], group: 'tower', yaw: Math.PI },
+    { class: 'axeman', id: 't5', at: [61.5, 14], group: 'tower', yaw: Math.PI }, { class: 'slave', id: 't6', at: [60.5, 18], group: 'tower' }, { class: 'axeman', id: 't7', at: [61.5, 22.5], group: 'tower', yaw: Math.PI },
     { class: 'axeman', id: 'r1', at: [52, 26], group: 'roof', yaw: -Math.PI / 2 }, { class: 'axeman', id: 'r2', at: [45, 26.5], group: 'roof', yaw: -Math.PI / 2 }, { class: 'slave', id: 'r3', at: [46, 25], group: 'roof' },
     { class: 'axeman', id: 'r4', at: [38, 26], group: 'roof', yaw: -Math.PI / 2 }, { class: 'slave', id: 'r5', at: [36, 24.5], group: 'roof' },
     { class: 'axeman', id: 'q1', at: [29, 26], group: 'roofw', yaw: -Math.PI / 2 }, { class: 'slave', id: 'q2', at: [27, 27.5], group: 'roofw' }, { class: 'axeman', id: 'q3', at: [21, 26], group: 'roofw', yaw: -Math.PI / 2 },
@@ -651,7 +653,7 @@ const LEVEL_E1M6 = {
   intro: [['THE TOWER OF TAMAR', 'title'], ['"Out of the crimson dawn came a flying speck that grew to a bat, then to an eagle." It roars over the great tower, and you spring from between its titan-wings onto the turret.', ''],
     ['Below, the mob in the square: "The king! It is the king!"', 'warn']],
   objectives: [['turret_cleared', 'Clear the turret.'], ['leads_crossed', 'Across the leads toward Arpello.'], ['archers_cleared', 'Silence the archers shooting down at the mob.'],
-    ['arpello_hurled', 'Arpello. Throw him from the parapet.'], ['stair_cleared', 'Drive his men down the tower stair.'], ['guard_broken', 'Down the lower stair: Arpello\'s household guard hold the gate-tower.'], ['zz', 'Out by the postern, into the arms of the mob.']],
+    ['arpello_hurled', 'Arpello. Throw him from the parapet.'], ['stair_cleared', 'Drive his men down the tower stair.'], ['guard_broken', 'Down the lower stair: Arpello\'s household guard hold the gate-tower.'], ['zz', 'Out by the postern in the north wall of the guardroom, where the daylight comes in.']],
   exitNeeds: 'guard_broken',
   areas: [
     { id: 'turret', type: 'action', name: 'The Turret', rooms: ['turret1'], cp: [6, 19, -Math.PI / 2] },
@@ -674,13 +676,14 @@ const LEVEL_E1M6 = {
     { id: 'tstair', name: 'the tower stair', at: [50, 14], size: [3, 14], h: 3, floor: 40, rise: -0.9, riseAxis: 'z', style: 'hewn' },
     { id: 'lstair', name: 'the lower stair', at: [57, 13], size: [3, 13], h: 3, floor: 17.2, rise: 0.9, riseAxis: 'z', style: 'hewn' },
     { id: 'guardroom', name: 'the guardroom of the gate-tower', at: [53, 2], size: [11, 11], h: 4, floor: 17, vault: 1, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' } },
+    { id: 'postern', name: 'the postern, open on the street', at: [53, 0], size: [2, 2], floor: 17, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SUNSET' } },
     { id: 'thall', name: 'the hall at the stair\'s foot', at: [53, 26], size: [9, 7], h: 3.6, floor: 28, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' } },
   ],
   shafts: [], links: [], features: [],
   planks: [{ from: [28.9, 19.5], to: [30.1, 19.5] }],
-  props: [{ prefab: 'torch', at: [53, 15], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [53, 21], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [55, 26], wall: 'N', dim: 0.8 },
+  props: [{ prefab: 'torch', at: [53, 15], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [53, 21], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [55, 26], wall: 'N', dim: 0.8 }, { prefab: 'brazier', at: [52.6, 2.6] }, { prefab: 'brazier', at: [55.6, 2.6] },
     { prefab: 'standard', at: [45, 14], rot: 1.2 }, { prefab: 'bones', at: [22, 20] }],
-  lights: [],
+  lights: [{ at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 2.2 }, ],
   items: [{ kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [9, 16] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [24, 22] },
     { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [40, 21] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [52, 20] },
     { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [61, 28] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [58, 14] }, { kind: 'wine', name: 'a cup of Arpello\'s wine', heal: 40, at: [62, 11] }],
@@ -704,7 +707,7 @@ const LEVEL_E1M6 = {
     { class: 'pellian', id: 'h7', at: [62, 10], group: 'guard' }, { class: 'pellian_archer', id: 'h8', at: [56, 11], group: 'guard' },
     { class: 'pellian', id: 'h9', at: [60, 6], group: 'guard' }, { class: 'pellian', id: 'h10', at: [55, 9], group: 'guard' }, { class: 'pellian_archer', id: 'h11', at: [61, 2.5], group: 'guard' },
     { class: 'pellian', id: 'd8', at: [54, 31], group: 'stair' }, { class: 'pellian', id: 'd9', at: [59, 27], group: 'stair' },
-    { class: 'trigger_exit', rect: [53, 2, 55, 4] },
+    { class: 'trigger_exit', rect: [53, 0, 55, 1.6] },
   ],
   beats: [
     { id: 'land', at: 'turret1', wake: ['turret'], lines: [['The archers on the turret whirl from the parapet, from shooting down at the crowd, and come at you.', 'warn']] },
@@ -748,7 +751,8 @@ const LEVEL_E1M7 = {
   objectives: [['ridge_down', 'Down off the ridge.'], ['tower_fired', 'The siege towers mask any sortie from Shamar: climb them, and fire them both.'], ['shemites_broken', 'Break the Shemite archers.'],
     ['spears_broken', 'The Kothian spearmen, with the Gunderman pikes beside you.'], ['press_through', 'Find the gap through the press of knights.'], ['guards_down', 'Cut through his palace troops.'], ['strabonus_dead', 'Strabonus.'], ['zz', 'The host breaks: east along the road between the camp-fires, after it to the river.']],
   exitNeeds: 'strabonus_dead',
-  allies: [{ id: 'bossonian', at: [4, 14], n: 18, cols: 3, step: 1.6, yaw: -Math.PI / 2, loose: true }, { id: 'gunderman', at: [46, 30], n: 12, cols: 4, step: 1.5, yaw: -Math.PI / 2 }],
+  // on the ridge, facing the enemy (+x): the Bossonian archers loosing over your head, the Gunderman pikes in reserve behind them
+  allies: [{ id: 'bossonian', at: [8, 13], n: 18, cols: 3, step: 1.6, yaw: Math.PI / 2, loose: true }, { id: 'gunderman', at: [4, 26], n: 12, cols: 3, step: 1.5, yaw: Math.PI / 2 }],
   areas: [
     { id: 'ridge', type: 'action', name: 'The Ridge', rooms: ['ridge'], cp: [10, 22, -Math.PI / 2] },
     { id: 'towers', type: 'puzzle', name: 'The Siege Towers', rooms: ['climb1', 'tp1', 'tp2', 'climb2', 'ttop'], cp: [33, 12, -Math.PI / 2] },

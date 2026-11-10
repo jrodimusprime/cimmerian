@@ -225,7 +225,7 @@ function newState(seed, carry) {
     items: LV.items.map(it => Object.assign({}, it, { taken: false })),
     door: { open: 0, target: 0 }, grille: { open: 0, target: 0 },
     giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0,  wp: 0, arms: 0, grabT: 0, fall: 0 },
-    satha: { start: entitySpec('scripted_satha') ? Math.round(3 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
+    satha: { start: entitySpec('scripted_satha') ? -Math.round(8 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
     proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, spears: carry && carry.spears && !LEVEL.strip ? carry.spears.slice() : [], combo: 0, lastSwing: -999, pendingHit: null,
     weapons: armed || (carry && !LEVEL.strip ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry && !LEVEL.strip ? carry.weapon : 'fists', hits: 0,
@@ -600,6 +600,11 @@ const BLACK_LINES = [
   '"I have dared much for this meeting! Look! The keys to your chains! I stole them from Shukeli. What will you give me for them?"',
   'He yells and stamps in a frenzy. "Aye, you white dog: to a black man gold can never pay for blood. The price I ask is your head!"',
 ];
+const BLACK_IDLE = [
+  'He squats on his heels just out of your reach, jingling the keys, and grins at you. The huge sword lies across his knees.',
+  'Far off down the corridor every flame bows and gutters. He does not see it; he is looking at your throat.',
+  'He rises, and tests the edge of the sword with his thumb. Behind him, beyond the arch, the dark is moving.',
+];
 function updateGiant() {
   if (S.giant.state === 'gone') return;
   const g = S.giant; g.t += DT;
@@ -610,7 +615,8 @@ function updateGiant() {
     g.x += dx / d * st; g.z += dz / d * st; g.walk += st; g.yaw = Math.atan2(dx, dz);
     return false;
   };
-  const enterAt = S.satha.start + Math.round((SATHA_PERIOD - 13) * SIM_HZ), face = () => { g.yaw = Math.atan2(S.x - g.x, S.z - g.z); };
+  // he comes in as soon as her first pass has left the vault
+  const enterAt = S.satha.start + Math.round(16 * SIM_HZ), face = () => { g.yaw = Math.atan2(S.x - g.x, S.z - g.z); };
   switch (g.state) {
     case 'wait':
       g.yaw = 0;
@@ -625,7 +631,8 @@ function updateGiant() {
       break;
     case 'gloat':
       face();
-      if (g.line < BLACK_LINES.length && g.t > 0.4 + g.line * 3.2) { log(BLACK_LINES[g.line], 'voice'); Sfx.voice(0); g.line++; }
+      if (g.line < BLACK_LINES.length && g.t > 0.4 + g.line * 4.5) { log(BLACK_LINES[g.line], 'voice'); Sfx.voice(0); g.line++; }
+      if (g.line >= BLACK_LINES.length && (g.idle || 0) < BLACK_IDLE.length && g.t > 0.4 + BLACK_LINES.length * 4.5 + (g.idle || 0) * 5) { log(BLACK_IDLE[g.idle || 0], 'warn'); g.idle = (g.idle || 0) + 1; }   // while he gloats, Satha is coming back round
       if (g.line >= BLACK_LINES.length && S.satha.pts && Math.hypot(S.satha.pts[0].x - g.x, S.satha.pts[0].z - g.z) < 9) { g.state = 'raise'; g.t = 0; Sfx.scream(); log('He swings the huge sword up for your head, and freezes, for over his shoulder something vast is rising out of the dark.', 'warn'); }
       break;
     case 'raise':

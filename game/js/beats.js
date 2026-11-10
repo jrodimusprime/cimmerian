@@ -87,11 +87,25 @@ function drawAllies() {
       const x = (a.at[0] + (k % a.cols) * a.step) * CELL, z = (a.at[1] + Math.floor(k / a.cols) * a.step) * CELL;
       if (Math.hypot(x - S.x, z - S.z) > 120) continue;
       const y = groundInfo(x, z).floor, P = poseIdle({}, gameTime * 0.8 + k);
-      if (a.loose) Object.assign(P, { uxL: -1.5, fxL: -0.1, uxR: -1.3, fxR: -1.6, headX: -0.1 });   // bows drawn
+      if (a.loose) {                                     // nock, draw, loose, and again: each man on his own rhythm
+        const cyc = 4.2 + (k % 5) * 0.31, ph = ((gameTime + k * 1.37) % cyc) / cyc, draw = ph < 0.55 ? smoothstep(0.1, 0.55, ph) : ph < 0.6 ? 1 : 1 - smoothstep(0.6, 0.8, ph);
+        Object.assign(P, { uxL: lerp(-0.4, -1.5, draw), fxL: lerp(-0.6, -0.1, draw), uxR: lerp(-0.4, -1.3, draw), fxR: lerp(-0.8, -1.6, draw), headX: -0.1 * draw, twist: -0.25 * draw });
+        allyArrow(a, k, x, y, z, cyc, (gameTime + k * 1.37) % cyc);
+      }
       else Object.assign(P, { we: 1.35 });
       drawCharacter(a.id, x, y, z, a.yaw + Math.sin(k * 3.1) * 0.12, P, sampleLight(x, y + 1.5, z));
     }
   }
+}
+// a Bossonian's shaft in flight: loosed at the top of the draw, arcing high over the field onto the enemy line (drawn only)
+function allyArrow(a, k, x, y, z, cyc, t) {
+  const fly = t - cyc * 0.58, dur = 1.7; if (fly < 0 || fly > dur) return;
+  const live = g => S.foes.some(f => f.group === g && !f.dead);
+  const tgt = live('shemites') ? [22, 20] : live('spears') ? [53, 22] : live('press') ? [65, 22] : [80, 22];
+  const tx = (tgt[0] + (hrand(k, 1, 7, 2) - 0.5) * 6) * CELL, tz = (tgt[1] + (hrand(k, 2, 7, 2) - 0.5) * 16) * CELL, ty = groundInfo(tx, tz).floor + 0.3;
+  const u = fly / dur, px = lerp(x, tx, u), pz = lerp(z, tz, u), py = lerp(y + 1.6, ty, u) + Math.sin(u * Math.PI) * 14;
+  const vy = (ty - y - 1.6) / dur + Math.cos(u * Math.PI) * Math.PI * 14 / dur, vh = Math.hypot(tx - x, tz - z) / dur;
+  drawM('arrow', m4trs(px, py, pz, Math.atan2(tx - x, tz - z), -Math.atan2(vy, vh), 0, 1.3), sampleLight(px, py, pz));
 }
 // Tsotha's fire globes: "a globe that ... burst in a sheet of flame" (ch. V)
 function globeBurst(x, y, z) {

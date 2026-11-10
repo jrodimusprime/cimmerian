@@ -1,5 +1,5 @@
 // Golden playthrough of e1m6, the Tower of Tamar, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10537, hash: '457720bd' };
+const EXPECTED = { tick: 9819, hash: '1eb2d38f' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m6"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
@@ -18,5 +18,5 @@ o = await waitFlag('stair_cleared', 10); await O('__heal()');
 // THE LOWER STAIR and the gate-tower
 o = await O('__route([[55, 28.5], [58, 25]])'); o = await O('__fight(["lower"], 9000, 30)'); await O('__heal()'); log('lower:', brief(o));
 o = await O('__route([[58, 14]])'); o = await O('__fight(["guard", "lower"], 12000, 40)'); await O('__heal()'); log('guard:', brief(o));
-o = await O('__fight(["guard", "lower", "stair"], 12000, 80)'); o = await waitFlag('guard_broken', 10); o = await O('__route([[54, 3]])'); log('end:', brief(o));
+o = await O('__fight(["guard", "lower", "stair"], 12000, 80)'); o = await waitFlag('guard_broken', 10); o = await O('__route([[54, 3], [54, 0.8]])'); log('end:', brief(o));
 await finish(EXPECTED);
