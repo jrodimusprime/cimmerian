@@ -149,9 +149,11 @@ def human(spec):
             alpha_material(a)
     helpers['assets'] = assets
     h.name = 'body'
+    if spec.get('nip_flat'):
+        flatten_nipples(h, nip_uv)
     neutral = (0.6, 0.54, 0.54) if 'afr' in (spec.get('skin') or '') else (0.88, 0.82, 0.8)   # 'black giants': keep Kush dark under the torchlight   # the palette pushes warm skin to gold: start it cooler
     tint = spec.get('skin_tint', neutral)
-    outfit.assign(h, outfit.recipe('skin', base=tint, image=unpaint_nipples(skin_image(spec['skin']), [(u, v, r * spec.get('nip_paint', 1.0)) for u, v, r in nip_uv]) if spec.get('skin') else None,
+    outfit.assign(h, outfit.recipe('skin', base=tint, image=unpaint_nipples(skin_image(spec['skin']), [(u, v, r * spec.get('nip_paint', 1.0)) for u, v, r in nip_uv] + list(spec.get('nip_at', ()))) if spec.get('skin') else None,
                                    tile_kind=spec.get('skin_tile'), scale=10, grime=spec.get('dirt', 0.25)))
     h['tex_size'] = 1024
     return h, rig, helpers
@@ -181,6 +183,24 @@ def hide_covered(h, cover):
     bmesh.ops.delete(bm, geom=kill, context='FACES')
     bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
     bm.to_mesh(h.data); bm.free()
+
+
+def flatten_nipples(h, discs):
+    """Smooth the little dents MakeHuman leaves where the nipples were: the bake's occlusion shades them as dark points."""
+    import bmesh
+    bm = bmesh.new(); bm.from_mesh(h.data)
+    uvl = bm.loops.layers.uv.active
+    vs = set()
+    for f in bm.faces:
+        for l in f.loops:
+            u, v = l[uvl].uv
+            if any(((u - cu) ** 2 + (v - cv) ** 2) ** 0.5 < r * 2.2 for cu, cv, r in discs):
+                vs.add(l.vert)
+    vs = [v for v in vs if not v.is_boundary]
+    for _ in range(25):
+        bmesh.ops.smooth_vert(bm, verts=vs, factor=0.7, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(h.data); bm.free()
+    outfit.clear_custom_normals(h)
 
 
 def smooth_torso(h):
@@ -311,7 +331,7 @@ CAST = {
                     skin_tint=(0.9, 0.85, 0.7), targets={'stomach/stomach-pregnant-incr': 0.9, 'neck/neck-double-incr': 1.0},
                     outfit=['eyes', dict(kind='robe', col='ochre', flare=1.2, belly=0.3), dict(kind='belt', col='green', at=0.12, height=0.08)]),
     # ---- e1m4 ----
-    'pelias': dict(macro=M(gender=1.0, age=0.55, muscle=0.25, weight=0.0, height=0.8), race=W, skin='cauc_old', skin_tint=(0.86, 0.84, 0.8), nip_paint=1.9,   # the old skin paints them wide
+    'pelias': dict(macro=M(gender=1.0, age=0.55, muscle=0.25, weight=0.0, height=0.8), race=W, skin='cauc_old', skin_tint=(0.86, 0.84, 0.8), nip_paint=1.9, nip_flat=True, nip_at=((0.322, 0.697, 0.013), (0.426, 0.697, 0.013)),   # where the old skin paints them
                    targets={'forehead/forehead-scale-vert-incr': 1.0, 'cheek/l-cheek-volume-decr': 0.8, 'cheek/r-cheek-volume-decr': 0.8, 'head/head-oval': 0.6},
                    hair=('short02', (0.08, 0.07, 0.06)), brows=('eyebrow001', (0.06, 0.05, 0.05)),
                    outfit=['loincloth', 'eyes', dict(kind='beard', col='beard', length=0.04, width=0.7)]),
