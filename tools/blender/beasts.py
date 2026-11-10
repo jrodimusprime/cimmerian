@@ -494,14 +494,14 @@ def satha_head():
 
 
 def satha_jaw():
-    j = _metablob('satha_jaw', [(*G(0, 0.2, 0.45), 0.85, (1.45, 1.2, 0.3)), (*G(0, 0.18, -0.2), 0.6, (1.3, 0.6, 0.4))], res=0.05)
+    j = _metablob('satha_jaw', [(*G(0, 0.3, 0.55), 0.8, (1.2, 1.2, 0.22)), (*G(0, 0.28, -0.1), 0.55, (1.1, 0.6, 0.3))], res=0.05)
     O.assign(j, O.recipe('belly', base=(0.74, 0.74, 0.68), tile_kind=None if ph('Leather008', 1) else 'scales', scale=7, grime=0.35, photo=ph('Leather008', 4, 0.6)))
-    tongue = _tube('tongue', [Vector(G(0, 0.28, 0.0)), Vector(G(0, 0.3, 0.8)), Vector(G(0.06, 0.32, 1.35)), Vector(G(0, 0.34, 1.55))], [0.08, 0.06, 0.03, 0.005], seg=8)
+    tongue = _tube('tongue', [Vector(G(0, 0.36, 0.0)), Vector(G(0, 0.38, 0.8)), Vector(G(0.06, 0.4, 1.35)), Vector(G(0, 0.42, 1.55))], [0.07, 0.05, 0.025, 0.004], seg=8)
     O.assign(tongue, O.recipe('tongue', base=(0.5, 0.06, 0.08), grime=0.2))
     return _done([j, tongue], 256)
 
 
-STATIC.update({'satha_head': satha_head, 'satha_jaw': satha_jaw})
+STATIC.update({'satha_head': lambda: cobra_head() if COBRA_BLEND and os.path.exists(COBRA_BLEND) else satha_head(), 'satha_jaw': satha_jaw})
 
 
 def presence():
@@ -738,3 +738,59 @@ def goblin(variant=0):
             m.data.materials.append(mat)
     arm.name = 'goblin_rig'
     return arm, meshes
+
+
+# ---- Satha's head from OpenGameArt's CC0 "Cobra" (cobra.blend): its head and neck, the hood flattened
+# away ("the great shimmering white form": a serpent, not a cobra), skinned with a photographed CC0 reptile hide
+COBRA_BLEND = os.environ.get('COBRA_BLEND', '')
+
+
+def cobra_head():
+    from mathutils import Vector, Matrix
+    with bpy.data.libraries.load(COBRA_BLEND, link=False) as (src, dst):
+        dst.objects = ['Cobra']
+    o = dst.objects[0]; bpy.context.collection.objects.link(o)
+    o.parent = None
+    for m in list(o.modifiers):
+        if m.type == 'MIRROR':
+            O.apply_mod(o, m)
+        else:
+            o.modifiers.remove(m)
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.y > -2.4], context='VERTS')   # the head and a short stump of neck (her body carries on behind)
+    for v in bm.verts:                                   # the hood (y -3.6..-1.5) drawn in to the neck's width
+        y = v.co.y
+        if y > -3.7:
+            t = min(1.0, (y + 3.7) / 0.6)
+            target = 0.36 if y > -3.1 else 0.36 + (0.48 - 0.36) * (-3.1 - y) / 0.6
+            if abs(v.co.x) > target:
+                v.co.x = v.co.x / abs(v.co.x) * (target + (abs(v.co.x) - target) * (1 - t))
+    bm.to_mesh(o.data); bm.free()
+    sub = o.modifiers.new('s', 'SUBSURF'); sub.levels = 2; O.apply_mod(o, sub)
+    # to Satha's size and the game's head frame: tip forward at glTF z 1.55, centred at glTF height 0.48
+    o.data.transform(Matrix.Translation((0, 0, -0.35)))
+    o.data.transform(Matrix.Diagonal((1.45, 1.25, 1.6, 1)))
+    tip = min(v.co.y for v in o.data.vertices)
+    o.data.transform(Matrix.Translation((0, -1.55 - tip, 0.48)))
+    for p in o.data.polygons:
+        p.use_smooth = True
+    while o.data.uv_layers:
+        o.data.uv_layers.remove(o.data.uv_layers[0])
+    O.assign(o, O.recipe('satha_scales', base=(0.82, 0.82, 0.78), tile_kind=None if ph('Leather008', 1) else 'scales', scale=11, grime=0.3, edge_wear=0.3, photo=ph('Leather008', 4, 0.7)))
+    o.name = 'satha_head'
+    parts = [o]
+    # eyes where the cobra's were (the widest point of the head, high on the sides), and fangs
+    vs = [v.co for v in o.data.vertices]
+    ey = min(v.y for v in vs) + 0.55
+    row = [v for v in vs if abs(v.y - ey) < 0.06]
+    ex = max(abs(v.x) for v in row) * 0.93; ez = (max(v.z for v in row) + min(v.z for v in row)) / 2 + 0.06
+    for sx in (-1, 1):
+        e = _sphere('eye', Vector((sx * ex, ey, ez)), 0.085, dims=(0.8, 1.1, 0.9), seg=12, ring=8)
+        O.assign(e, O.recipe('eye', base=(0.95, 0.62, 0.1), grime=0.2, glow=0.9))
+        pu = _sphere('pupil', Vector((sx * (ex + 0.06), ey, ez)), 0.06, dims=(0.3, 0.25, 1.3), seg=8, ring=6)
+        O.assign(pu, O.recipe('slit', base=(0.02, 0.02, 0.02), grime=0))
+        lowz = min(v.z for v in vs if abs(v.y - (ey - 0.25)) < 0.08)
+        f = _tube('fang', [Vector((sx * ex * 0.55, ey - 0.25, lowz + 0.04)), Vector((sx * ex * 0.56, ey - 0.28, lowz - 0.2)), Vector((sx * ex * 0.53, ey - 0.24, lowz - 0.3))], [0.04, 0.025, 0.002], seg=8)
+        O.assign(f, O.recipe('fang', base=(0.9, 0.88, 0.8), grime=0.2))
+        parts += [e, pu, f]
+    return _done(parts, 512)

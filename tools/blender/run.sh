@@ -4,4 +4,4 @@
 #   MH_ASSETS: unzipped CC0 MakeHuman asset packs (system assets, skins02)
 cd "$(dirname "$0")" || exit 1
 : "${MPFB_ENV:?set MPFB_ENV}"; : "${MH_ASSETS:?set MH_ASSETS}"
-BLENDER_USER_RESOURCES="$MPFB_ENV" MH_ASSETS="$MH_ASSETS" HORSE_BLEND="$HORSE_BLEND" GOBLIN_BLEND="$GOBLIN_BLEND" PHOTO_TEX="$PHOTO_TEX" /Applications/Blender.app/Contents/MacOS/Blender -b --python build.py -- "$@" 2>&1 | grep -E "^BUILT|^FAILED|Error|error:|Traceback|  File|^\w+Error" 
+BLENDER_USER_RESOURCES="$MPFB_ENV" MH_ASSETS="$MH_ASSETS" HORSE_BLEND="$HORSE_BLEND" GOBLIN_BLEND="$GOBLIN_BLEND" PHOTO_TEX="$PHOTO_TEX" COBRA_BLEND="$COBRA_BLEND" /Applications/Blender.app/Contents/MacOS/Blender -b --python build.py -- "$@" 2>&1 | grep -E "^BUILT|^FAILED|Error|error:|Traceback|  File|^\w+Error" 
