@@ -66,6 +66,23 @@ function fadeLog() {
     if (o <= 0) el.remove(); else el.style.opacity = o;
   }
 }
+// the closing scene (LEVEL.cine: e1m8's eagle): seconds since it began, or -1
+function cineT(alpha = 0) {
+  const C = LEVEL && LEVEL.cine; if (!C || !S || !S.beats || !S.beats.fired.has(C.from)) return -1;
+  return (S.tick - S.beats.when[C.from]) / SIM_HZ + alpha * DT;
+}
+// the camera swings slowly round the fallen wizard and rises, watching the eagle stoop on him and climb away into the sunset
+function cineCam(alpha) {
+  const t = cineT(alpha); if (t < 0) return null;
+  const f = S.foes.find(q => q.cls === LEVEL.cine.foe); if (!f) return null;
+  const gy = groundInfo(f.x, f.z).floor, a0 = Math.atan2(S.x - f.x, S.z - f.z), a = a0 + t * 0.16, r = 7.5 - Math.min(2, t * 0.25);
+  const eye = [f.x + Math.sin(a) * r, gy + 2.2 + t * 0.35, f.z + Math.cos(a) * r];
+  const ep = typeof eaglePos === 'function' ? eaglePos(alpha) : null, body = [f.x, gy + 0.4, f.z];
+  const sun = norm3(LEVEL.sun || [-1, 0.06, 0.2]), west = [eye[0] + sun[0] * 120, eye[1] + 14, eye[2] + sun[2] * 120];   // gone into the sunset: keep looking there
+  const w = clamp((t - 1.2) / 3, 0, 0.75), far = ep || (t > 2 ? west : body), tg = [lerp(body[0], far[0], w), lerp(body[1], far[1], w), lerp(body[2], far[2], w)];
+  const dx = tg[0] - eye[0], dy = tg[1] - eye[1], dz = tg[2] - eye[2];
+  return { eye, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(dy, Math.hypot(dx, dz)) };
+}
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 // ---------------------------------------------------------------- state
@@ -1137,6 +1154,10 @@ function humanInput() {
 }
 function tick(inp) {
   S.tick++; S.playTicks++;
+  if (cineT() >= 0) {                                     // the closing scene plays itself: hands off
+    inp = { fwd: 0, side: 0, run: false, jump: false, use: false, fire: false, kick: false };
+    if (S.flags.the_end && mode === 'play') { finishLevel(); return; }
+  }
   if (S.paralysed > 0) {                                  // the purple lotus: rigid, eyes open, falling back to the sky
     inp = { fwd: 0, side: 0, run: false, jump: false, use: false, fire: false, kick: false };
     S.pitch += (1.25 - S.pitch) * Math.min(1, DT * 1.5);
@@ -1332,10 +1353,13 @@ function updateHUD() {
 
 // ---------------------------------------------------------------- render
 function render(alpha) {
-  const px = lerp(prev.x, S.x, alpha), py = lerp(prev.y, S.y, alpha), pz = lerp(prev.z, S.z, alpha);
-  const bob = Math.sin(bobPhase * 2) * 0.05 * bobAmt, eyeY = py + EYE + bob;
+  let px = lerp(prev.x, S.x, alpha), py = lerp(prev.y, S.y, alpha), pz = lerp(prev.z, S.z, alpha);
+  const bob = Math.sin(bobPhase * 2) * 0.05 * bobAmt;
+  let eyeY = py + EYE + bob, cyaw = S.yaw + punchYaw, cpitch = S.pitch + punchPitch;
+  const cc = cineCam(alpha);                              // the closing scene: a camera of its own
+  if (cc) { px = cc.eye[0]; eyeY = cc.eye[1]; pz = cc.eye[2]; py = eyeY - EYE; cyaw = cc.yaw; cpitch = cc.pitch; }
   const proj = m4persp(72 * Math.PI / 180, R.aspect, LEVEL.open ? 0.1 : 0.05, LEVEL.open ? 2600 : 200);
-  const view = m4mul(m4rx(-S.pitch - punchPitch), m4mul(m4ry(-S.yaw - punchYaw), m4t(-px, -eyeY, -pz)));
+  const view = m4mul(m4rx(-cpitch), m4mul(m4ry(-cyaw), m4t(-px, -eyeY, -pz)));
   const vp = m4mul(proj, view), f = camFwd();
   const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3];
   let lc = [0.24, 0.215, 0.18], lampRange = 10;
@@ -1594,7 +1618,7 @@ function render(alpha) {
   for (const pd of S.puddles) drawM('puddle', m4trs(pd.x, pd.y, pd.z, 0, 0, 0, 0.6 + 0.4 * Math.min(1, (6 - pd.t) * 3)), sampleLight(pd.x, pd.y + 0.5, pd.z), 0.1, Math.min(0.6, pd.t * 0.5));
   R.blend(false);
   // view-model: the hero's manacled right hand, with whatever is in it
-  if ((mode === 'play' || mode === 'paused') && !window.NO_VIEWMODEL) {   // NO_VIEWMODEL: for the gallery's photographs
+  if ((mode === 'play' || mode === 'paused') && !window.NO_VIEWMODEL && cineT() < 0) {   // NO_VIEWMODEL: for the gallery's photographs; none in the closing scene
     R.clearDepth(); R.lightMul(1);
     R.setCamera(m4persp(60 * Math.PI / 180, R.aspect, 0.01, 10), [0, 0, 0], [0.1, 0.2, 0.3], [0, 0, 0], 1, 0);
     const am = sampleLight(px, py + 1.2, pz), vl = [am[0] + 0.05, am[1] + 0.045, am[2] + 0.04];

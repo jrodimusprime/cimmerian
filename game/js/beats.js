@@ -103,9 +103,13 @@ function globeBurst(x, y, z) {
 // Pelias's eagle (e1m8): circles high over Tsotha once he is thrown; when he falls it stoops on
 // the body, takes the head, and climbs away west into the sunset. Drawn only: nothing in S.
 function drawEagleBeat() {
-  const E = LEVEL.eagle; if (!E || !S.beats || !S.beats.fired.has(E.from)) return;
-  const ts = S.foes.find(f => f.cls === E.foe); if (!ts) return;
-  const t0 = S.beats.when[E.from], t = (S.tick - t0) / SIM_HZ + renderAlpha * DT;
+  const p = eaglePos(renderAlpha); if (!p) return;
+  drawEagle(p[0], p[1], p[2], p[3], gameTime * (p[4] ? 2 : 1), sampleLight(p[0], p[1], p[2]));
+}
+function eaglePos(alpha) {
+  const E = LEVEL.eagle; if (!E || !S.beats || !S.beats.fired.has(E.from)) return null;
+  const ts = S.foes.find(f => f.cls === E.foe); if (!ts) return null;
+  const t0 = S.beats.when[E.from], t = (S.tick - t0) / SIM_HZ + (alpha || 0) * DT;
   const gy = groundInfo(ts.x, ts.z).floor;
   let x, y, z, yaw;
   const circle = tt => { const a = tt * 0.45; return [ts.x + Math.cos(a) * 9, gy + 13 + Math.sin(tt * 0.7), ts.z + Math.sin(a) * 9, -a]; };
@@ -113,11 +117,11 @@ function drawEagleBeat() {
     const dive = clamp(t / 2.5, 0, 1);                  // it came down out of the sky at the steed's head, then rose to circle
     [x, y, z, yaw] = circle(t); y += (1 - dive) * 30;
   } else {
-    const td = (S.tick - (S.beats.when[E.dead] || S.tick)) / SIM_HZ + renderAlpha * DT;
+    const td = (S.tick - (S.beats.when[E.dead] || S.tick)) / SIM_HZ + (alpha || 0) * DT;
     const [cx, cy, cz] = circle(t), k = clamp(td / 2, 0, 1), up = clamp((td - 2.6) / 6, 0, 1);
     x = lerp(cx, ts.x, k) - up * 90; y = lerp(cy, gy + 0.6, k) + up * 40; z = lerp(cz, ts.z, k) - up * 20;
     yaw = up > 0 ? -Math.PI / 2 : Math.atan2(ts.x - cx, ts.z - cz);
-    if (up >= 1) return;
+    if (up >= 1) return null;
   }
-  drawEagle(x, y, z, yaw, gameTime * (ts.dead ? 2 : 1), sampleLight(x, y, z));
+  return [x, y, z, yaw, ts.dead];
 }

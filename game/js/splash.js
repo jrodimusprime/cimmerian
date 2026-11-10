@@ -43,8 +43,8 @@ SPLASHES.e1m8 = {
   text: 'The host breaks and runs for the river, and the men of Shamar cut the barge bridge adrift. On the far bank, Tsotha-lanti flees on a gaunt steed no natural horse could match, and the king rides after him alone.',
 };
 SPLASHES.end = {
-  title: 'THE SCARLET CITADEL', scene: 'battle', seed: 83, accent: [[0.5, 0.18, 0.09]],
-  text: 'The head of Tsotha-lanti went into the sunset in the talons of an eagle that laughed in the voice of Pelias, and the headless body stumbled away after it and was lost. Koth and Ophir are broken, and Shamar is relieved.',
+  title: 'THE END', scene: 'battle', seed: 83, accent: [[0.5, 0.18, 0.09]],
+  text: 'The head of Tsotha-lanti went into the sunset in the talons of an eagle that laughed in the voice of Pelias, and the headless body stumbled away after it and was lost. Koth and Ophir are broken, and Shamar is relieved. You have finished The Scarlet Citadel.',
 };
 SPLASHES.title = { image: 'art/title.jpg', credit: 'John Martin, <i>Pandemonium</i>, 1841' };
 new Image().src = SPLASHES.title.image;

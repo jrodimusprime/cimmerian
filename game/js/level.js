@@ -851,7 +851,8 @@ const LEVEL_E1M8 = {
   objectives: [['camp_done', 'North along the bank, through the Kothian camp.'], ['rout_done', 'On to the barge bridge, through the breaking host.'], ['crossed', 'Across the barge bridge: leap from barge to barge before it breaks up.'],
     ['bank_cleared', 'The fugitives at bay on the far bank, and in the reeds downstream.'], ['tsotha_found', 'Follow Tsotha\'s track across the meadow.'], ['tsotha_dead', 'Tsotha. Close the distance, and behead him.'], ['zz', '']],
   exitNeeds: 'the_end',
-  eagle: { from: 'meadow', dead: 'dead', foe: 'tsotha' },   // Pelias's eagle: drawn over the meadow (beats.js)
+  eagle: { from: 'meadow', dead: 'dead', foe: 'tsotha' },
+  cine: { from: 'dead', foe: 'tsotha' },   // when he falls, the closing scene plays itself, and the game ends   // Pelias's eagle: drawn over the meadow (beats.js)
   areas: [
     { id: 'camp', type: 'action', name: 'The Camp', rooms: ['bank_s'], cp: [8, 56, Math.PI] },
     { id: 'rout', type: 'action', name: 'The Rout', rooms: ['bank'], cp: [10, 34, Math.PI] },
@@ -913,7 +914,7 @@ const LEVEL_E1M8 = {
         ['Old Tsotha rises and faces you, "his eyes those of a maddened serpent, his face an inhuman mask." A globe of fire in each hand.', 'voice']] },
     { id: 'dead', killed: 'tsotha', sets: 'tsotha_dead', lines: [['The great sword takes his head before he can throw again.', 'good'],
       ['The eagle swoops, seizes the head, and is gone into the sunset, laughing in the voice of Pelias; and the headless body staggers away after it, across the meadow, and is lost to sight.', 'voice']] },
-    { id: 'end', needs: ['tsotha_dead'], after: 9, sets: 'the_end' },
+    { id: 'end', needs: ['tsotha_dead'], after: 11, sets: 'the_end' },
   ],
   puzzle: {
     flags: ['camp_done', 'rout_done', 'crossed', 'bank_cleared', 'tsotha_found', 'tsotha_dead', 'the_end'],

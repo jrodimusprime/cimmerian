@@ -1,5 +1,5 @@
 // Golden playthrough of e1m8, the Tybor, through the CIM agent API (README §11).
-const EXPECTED = { tick: 11218, hash: '1d18720f' };
+const EXPECTED = { tick: 11250, hash: '65cf2eb8' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m8"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
