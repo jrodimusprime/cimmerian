@@ -742,7 +742,7 @@ const LEVEL_E1M7 = {
   intro: [['THE RELIEF OF SHAMAR', 'title'], ['"It is King Conan!" Strabonus shrieks it, paling; Tsotha squalls that you have been in Satha\'s belly for days.', 'voice'],
     ['On the ridge behind you the stolid Bossonians nock and draw; the Gundermen level their pikes. Down onto the plain!', '']],
   objectives: [['ridge_down', 'Down off the ridge.'], ['tower_fired', 'The siege towers mask any sortie from Shamar: climb them, and fire them both.'], ['shemites_broken', 'Break the Shemite archers.'],
-    ['spears_broken', 'The Kothian spearmen, with the Gunderman pikes beside you.'], ['press_through', 'Find the gap through the press of knights.'], ['guards_down', 'Cut through his palace troops.'], ['strabonus_dead', 'Strabonus.'], ['zz', 'The host breaks: after it, to the river.']],
+    ['spears_broken', 'The Kothian spearmen, with the Gunderman pikes beside you.'], ['press_through', 'Find the gap through the press of knights.'], ['guards_down', 'Cut through his palace troops.'], ['strabonus_dead', 'Strabonus.'], ['zz', 'The host breaks: east along the road between the camp-fires, after it to the river.']],
   exitNeeds: 'strabonus_dead',
   allies: [{ id: 'bossonian', at: [4, 14], n: 18, cols: 3, step: 1.6, yaw: -Math.PI / 2, loose: true }, { id: 'gunderman', at: [46, 30], n: 12, cols: 4, step: 1.5, yaw: -Math.PI / 2 }],
   areas: [
@@ -775,11 +775,14 @@ const LEVEL_E1M7 = {
     { id: 'line2', name: 'the Kothian spearmen', at: [47, 4], size: [12, 36], sky: true, tex: MEADOW },
     { id: 'press', name: 'the press of knights', at: [59, 4], size: [14, 36], sky: true, tex: MEADOW },
     { id: 'palace', name: 'Strabonus\'s palace troops', at: [73, 4], size: [18, 36], sky: true, tex: MEADOW },
+    { id: 'road', name: 'the road east, to the river', at: [89, 19], size: [7, 6], sky: true, tex: { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' } },
   ],
-  boulders: [{ from: [2.5, 3], to: [2.5, 41], r: [1.6, 3.2] }, { from: [3, 41.2], to: [92, 41.2], r: [1.6, 3.4], jitter: 2 }, { from: [92.5, 3], to: [92.5, 41], r: [1.8, 3.6] },
+  boulders: [{ from: [2.5, 3], to: [2.5, 41], r: [1.6, 3.2] }, { from: [3, 41.2], to: [92, 41.2], r: [1.6, 3.4], jitter: 2 }, { from: [92.5, 3], to: [92.5, 17.5], r: [1.8, 3.6] }, { from: [92.5, 26.5], to: [92.5, 41], r: [1.8, 3.6] },   // a gap: the road east, to the river
     { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3], jitter: 1.5 }, { from: [48, 2.8], to: [92, 2.8], r: [1.4, 3], jitter: 1.5 }],
   scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'deadhorse', n: 14, rect: [16, 6, 72, 32] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] }],
-  shafts: [], links: [], features: [], lights: [], props: [],
+  shafts: [], links: [], features: [],
+  lights: [],
+  props: [{ prefab: 'brazier', at: [89.5, 18.2] }, { prefab: 'brazier', at: [89.5, 25.8] }, { prefab: 'standard', at: [91, 18.8] }, { prefab: 'standard', at: [91.5, 25.2] }, { prefab: 'standard', at: [93.5, 19.5] }],   // the camp-fires of Koth burning at the road's mouth
   items: [{ kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [25, 12] }, { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [26, 33] }, { kind: 'wine', name: 'a captain\'s wine-flask', heal: 40, at: [74, 30] },
     { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [19, 17] }, { kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [21, 27] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [28, 22] },
     { kind: 'bread', name: 'a Bossonian\'s bread', heal: 30, at: [32, 19] }, { kind: 'wine', name: 'a pikeman\'s wine-skin', heal: 35, at: [34, 38] },
@@ -802,7 +805,7 @@ const LEVEL_E1M7 = {
     { class: 'spearman', id: 'p3', at: [82, 15], group: 'palace' }, { class: 'spearman', id: 'p4', at: [82, 29], group: 'palace' },
     { class: 'kknight', id: 'p5', at: [77, 12], group: 'guards' }, { class: 'archer', id: 'p6', at: [86, 10], group: 'guards' }, { class: 'kknight', id: 'p7', at: [77, 32], group: 'guards' },
     { class: 'archer', id: 'p8', at: [86, 34], group: 'guards' }, { class: 'spearman', id: 'p9', at: [80, 22], group: 'guards' }, { class: 'oknight', id: 'p10', at: [75, 25], group: 'guards' },
-    { class: 'trigger_exit', rect: [88, 18, 91, 26] },
+    { class: 'trigger_exit', rect: [92, 19, 95, 25] },
   ],
   beats: [
     { id: 'down', at: 'line1', sets: 'ridge_down', wake: ['shemites'], lines: [['The Bossonians loose over your head: "the cord to the nock, shaft to the ear, the king of Koth for a mark!"', 'dim']] },
@@ -821,7 +824,7 @@ const LEVEL_E1M7 = {
     { id: 'strab', at: 'palace', needs: ['guards_down'], wake: ['palace'], lines: [['Strabonus among his palace troops, his axe up. "It clanged on Conan\'s helmet."', 'warn']] },
     { id: 'guards2', killed: 'guards', sets: 'guards_down' },
     { id: 'strab2', killed: 'palace', needs: ['tower_fired'], sets: 'strabonus_dead', lines: [['Strabonus goes down beneath the five-foot blade, his skull crushed.', 'good'],
-      ['Amalrus goes down dying beneath the trampling hoofs, "his shoulder-bone hewn in twain by Prospero\'s two-handed sword." The host breaks, and runs for the river.', 'good']] },
+      ['Amalrus goes down dying beneath the trampling hoofs, "his shoulder-bone hewn in twain by Prospero\'s two-handed sword." The host breaks, and runs for the river.', 'good'], ['East, between the camp-fires, the road to the Tybor. After them!', 'warn']] },
   ],
   puzzle: {
     flags: ['ridge_down', 'tower1_fired', 'tower2_fired', 'tower_fired', 'shemites_broken', 'spears_broken', 'press_through', 'guards_down', 'strabonus_dead'],

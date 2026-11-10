@@ -20,9 +20,9 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | `e1m4` Yothga | 3:18 (14276 ticks) | ~13.2 min |
 > | `e1m5` The Scarlet Citadel | 3:33 (15358 ticks) | ~14.2 min |
 > | `e1m6` The Tower of Tamar | 2:26 (10537 ticks) | ~9.8 min |
-> | `e1m7` The Relief of Shamar | 3:55 (16975 ticks) | ~15.7 min |
+> | `e1m7` The Relief of Shamar | 3:57 (17111 ticks) | ~15.8 min |
 > | `e1m8` The Tybor | 2:35 (11218 ticks) | ~10.4 min |
-> | **Campaign** | **23:10** (100116 ticks) | **~93 min** |
+> | **Campaign** | **23:12** (100252 ticks) | **~93 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **The telling is out of joint.** The game opens *in medias res*, in the pits, chained in the dark, the best possible first level. When the pits are behind you it flashes back to the plain of Shamu: *how did we get here?* Then it jumps forward again into the tunnels and follows the book to the end. This changes only the order in which levels are **played**, never what happens inside them; each level is still its stretch of the book, beat for beat. (Howard does the same: chapter III opens with the chained king remembering.)

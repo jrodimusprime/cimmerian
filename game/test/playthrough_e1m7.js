@@ -1,5 +1,5 @@
 // Golden playthrough of e1m7, the Relief of Shamar, through the CIM agent API (README §11).
-const EXPECTED = { tick: 16975, hash: 'ea966265' };
+const EXPECTED = { tick: 17111, hash: '70de3dbc' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m7"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
@@ -21,5 +21,5 @@ o = await O('__route([[34, 22], [44, 22], [49, 22]])'); o = await O('__fight(["s
 o = await O('__route([[60, 22]])'); o = await O('__fight(["press"], 15000, 40)'); await O('__heal()'); log('press:', brief(o));
 // STRABONUS
 o = await O('__route([[74, 22]])'); o = await O('__fight(["guards"], 15000, 50)'); await O('__heal(40)'); log('guards:', brief(o)); o = await O('__route([[76, 22]])'); o = await O('__fight(["palace", "guards"], 15000, 50)'); o = await waitFlag('strabonus_dead', 10); log('strabonus:', brief(o));
-o = await O('__route([[89, 22]])'); log('end:', brief(o));
+o = await O('__route([[89, 22], [94, 22]])'); log('end:', brief(o));
 await finish(EXPECTED);
