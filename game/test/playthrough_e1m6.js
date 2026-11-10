@@ -1,5 +1,5 @@
 // Golden playthrough of e1m6, the Tower of Tamar, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10537, hash: 'fa1fdb5a' };
+const EXPECTED = { tick: 10537, hash: '457720bd' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m6"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };

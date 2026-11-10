@@ -476,6 +476,18 @@ function takeItem(it) {
     log('You reach through the bars\' shadow and take up the ring of keys. They are warm from the jailer\'s belt.', 'good');
   }
 }
+// spears on the ground come to you as you pass: into your hand if it's empty, otherwise onto your back (4 to draw one)
+function autoSpears() {
+  if (LEVEL.links.some(l => l.name === 'portcullis')) return;        // e1m2's one spear is a puzzle piece: you take that one yourself
+  for (const it of S.items) {
+    if (it.taken || it.kind !== 'spear' || Math.hypot(it.x - S.x, it.z - S.z) > 1.3 || Math.abs((it.y || 0) - S.y) > 1.2) continue;
+    const have = S.spears.length + (S.weapon === 'spear' ? 1 : 0);
+    if (have >= SPEAR_CARRY) return;
+    it.taken = true; Sfx.pickup();
+    if (S.weapon === 'fists') { S.weapons.spear = true; S.weapon = 'spear'; S.spearUses = it.uses || 0; log('You snatch up a spear.', 'dim'); }
+    else { S.spears.push(it.uses || 0); S.weapons.spear = true; log('You sling a spear across your back (' + (have + 1) + '). Press 4 to draw one.', 'dim'); }
+  }
+}
 function parry() {
   if (S.parryCool > 0 || S.swing > 0) return;
   S.parryT = PARRY.window; S.parryCool = PARRY.cool; Sfx.swing();
@@ -1133,7 +1145,12 @@ function tick(inp) {
   if (inp.pitch !== undefined) S.pitch = inp.pitch;
   prev = { x: S.x, y: S.y, z: S.z };
   chainSndT -= DT; S.swing = Math.max(0, S.swing - DT); S.throwT = Math.max(0, S.throwT - DT); S.kickT = Math.max(0, S.kickT - DT); S.parryT = Math.max(0, S.parryT - DT); S.parryCool = Math.max(0, S.parryCool - DT);
-  if (inp.weapon && S.weapons[inp.weapon]) S.weapon = inp.weapon;
+  if (inp.weapon && S.weapons[inp.weapon] && inp.weapon !== S.weapon) {
+    if (S.weapon === 'spear') S.spears.push(S.spearUses);          // the spear in hand goes back on the bundle
+    if (inp.weapon === 'spear') S.spearUses = S.spears.pop() || 0;  // draw one from your back
+    S.weapon = inp.weapon;
+  }
+  autoSpears();
   if (inp.torch) shakeOutTorch();
   const { g, sp } = updatePlayer(inp);
   for (const d of [S.door, S.grille, S.portc]) d.open += clamp(d.target - d.open, -DT * 0.9, DT * (d === S.portc && d.target === 0 ? 4 : 0.9));
@@ -1298,6 +1315,7 @@ function updateHUD() {
   $('hpFill').style.width = Math.max(0, S.health) + '%';
   $('hpNum').textContent = Math.ceil(Math.max(0, S.health));
   const carry = [S.flags.has_bone ? 'thighbone (click to throw)' : S.weapon === 'fists' ? 'bare fists' : 'the ' + S.weapon + (S.weapon === 'spear' && S.spears.length ? ' (' + S.spears.length + ' more on your back)' : '')];
+  if (S.weapon !== 'spear' && S.spears.length) carry.push(S.spears.length + (S.spears.length > 1 ? ' spears' : ' spear') + ' on your back (4)');
   if (S.flags.has_spear) carry.push('a spear, to jam the winch');
   if (S.flags.has_keys) carry.push('keys');
   $('carry').textContent = carry.join(' · ') + (S.kills ? '  ·  ' + S.kills + ' slain' : '');

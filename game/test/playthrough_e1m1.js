@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 11707, hash: '9b1a737a' };
+const EXPECTED = { tick: 11707, hash: '33030d53' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
