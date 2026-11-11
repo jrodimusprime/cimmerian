@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10677, hash: '4a1739f0' };
+const EXPECTED = { tick: 10330, hash: '6a9142d3' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -107,11 +107,35 @@ window.__dash = (x, z) => {
   for (let i = 0; i < 800 && !(M.vt > 0.05 && M.vt < 0.6); i++) __wait(1);
   return __nav(x * C, z * C, true);
 };
-// the riders' ground: wait for lane i to stand empty, then cross it
-window.__lane = (i, x, z) => {
-  const M = CIM.state.shamu;
-  for (let k = 0; k < 1500 && M.hoof[i] >= 0; k++) __wait(1);
-  return __nav(x * C, z * C, true);
+// the riders' ground: make for (x, z), and when a charge will pass close, step out of its line
+window.__ride = (x, z, maxTicks = 3000) => {
+  x *= C; z *= C;
+  for (let i = 0; i < maxTicks; i++) {
+    const s = CIM.state, dx = x - s.x, dz = z - s.z;
+    if (CIM.obs().mode !== 'play' || Math.hypot(dx, dz) < 0.5) break;
+    const act = { forward: 1, run: true, yaw: Math.atan2(-dx, -dz), pitch: 0 };
+    for (const r of s.shamu.riders) {
+      if (r.state !== 'charge') continue;
+      const vx = Math.sin(r.yaw), vz = Math.cos(r.yaw), rx = s.x - r.x, rz = s.z - r.z, t = (rx * vx + rz * vz) / 20;
+      if (t < 0 || t > 1.4) continue;
+      let mx = rx - vx * t * 20, mz = rz - vz * t * 20; const m = Math.hypot(mx, mz);
+      if (m > 2.8) continue;
+      if (m < 0.2) { mx = vz; mz = -vx; }                     // dead in its line: either side will do
+      act.yaw = Math.atan2(-mx, -mz); break;                  // out of its line, the way you already stand from it
+    }
+    CIM.step(act, 1);
+  }
+  return CIM.obs();
+};
+// the staked ditch: run at it and leap it
+window.__ditch = (x, z) => {
+  x *= C; z *= C;
+  for (let i = 0; i < 400; i++) {
+    const s = CIM.state; if (CIM.obs().mode !== 'play' || (s.x > x - 0.3 && s.onGround)) break;
+    const g = groundInfo(s.x + 0.9, s.z);
+    CIM.step({ forward: 1, run: true, jump: s.onGround && g.idx >= 0 && !!LV.spikes[g.idx], yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch: 0 }, 1);
+  }
+  return CIM.obs();
 };
 true`);
 let o = await O('(CIM.load("e1m1"), CIM.step({}, 1))');
@@ -127,9 +151,10 @@ log('arrows:', brief(o));
 await O('__route([[60.4, 31]])');
 o = await O('__fight(["line"], 12000, 50)'); log('line:', brief(o));
 await O('__heal(69)');
-// THE RIDERLESS HORSES (puzzle): cross the three lanes between charges
-await O('__route([[70.2, 31]])');
-for (const [i, x] of [[0, 73.75], [1, 77.25], [2, 81.2]]) { o = await O(`__lane(${i}, ${x}, 31)`); log(' lane', i, brief(o)); }
+// THE RIDERS' GROUND (puzzle): sidestep the charges across it, through the gap in the crescents, and leap the staked ditch
+await O('__route([[68, 31]])');
+o = await O('__ride(73, 31)'); log(' riders', brief(o)); o = await O('__ride(79.3, 31)'); log(' ditch', brief(o));
+o = await O('__ditch(81.6, 31)'); log(' leapt', brief(o));
 // THE HEAP OF DEAD (action): two waves, then the kings and the wizard
 await O('__heal()');
 await O('__route([[88, 31]])');

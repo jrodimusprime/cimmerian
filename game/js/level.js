@@ -389,7 +389,8 @@ const LEVEL_E1M1 = {
     { pts: [[52, 12], [55, 17], [54, 23]], face: -Math.PI / 2 }, { pts: [[54, 39], [56, 44], [53, 50]], face: -Math.PI / 2 },
     // and before the heap, a crescent the knights rallied behind
     { pts: [[74, 9], [78, 14], [79, 21], [77, 25]], face: -Math.PI / 2 }, { pts: [[77, 37], [79, 42], [77, 48], [73, 52]], face: -Math.PI / 2 }],
-  lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16]],
+  // and the end of the riders' ground: a ditch sown with stakes the length of the field, to be leapt; no horse will take it
+  lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16]].concat(Array.from({ length: 49 }, (_, k) => [80, 9 + k])),
   entities: [
     { class: 'info_player_start', at: [6, 31], yaw: -Math.PI / 2 },
     { class: 'kknight', id: 'c1', at: [15, 24], group: 'charge', yaw: Math.PI / 2 },
@@ -447,8 +448,8 @@ const LEVEL_E1M1 = {
   // the arrow ground: "Strabonus' Shemitish bowmen had wrought havoc among his knights"
   volley: { rooms: ['gully', 'arrowground'], group: 'line', period: 4.2 },
   // the riders' ground: "Ophirean knights in gilded mail leaped their horses over mounds of corpses"
-  charges: [{ x: 72, period: 9.0, offset: 0.0, dir: 1 }, { x: 75.5, period: 9.0, offset: 3.0, dir: -1 }, { x: 79, period: 9.0, offset: 6.0, dir: 1 }],
-  chargeSpan: [6, 57],
+  //   six of them, no more than three in the saddle at once, at you from either edge of the field (combat speed: a galloping horse)
+  riders: { n: 6, max: 3, field: [69.2, 79.8, 9, 57], speed: 20, lead: 0.45, turn: 0.5, veer: 3.0, every: [1.4, 3.4] },
   // the kings watch from their horses in the ring of the host; Tsotha swings down and walks out to you
   // "Strabonus, with his broad dark face and crafty eyes; Amalrus, slender, fastidious" (ch. I), watching from their horses
   kings: { riders: [[108, 28, 'strabonus'], [108, 36, 'amalrus']], horse: [105.4, 32], tsotha: [104.6, 32] },
@@ -708,7 +709,7 @@ const LEVEL_E1M6 = {
     { id: 'leads', type: 'puzzle', name: 'The Leads', rooms: ['bridge1', 'roofA', 'bridge2', 'bridge3'], cp: [14, 19, -Math.PI / 2] },
     { id: 'archers', type: 'action', name: 'The Archers\' Turret', rooms: ['turret2'], cp: [35, 18, -Math.PI / 2] },
     { id: 'arpello', type: 'action', name: 'Arpello', rooms: ['crown'], cp: [43, 17, -Math.PI / 2] },
-    { id: 'stair', type: 'action', name: 'The Tower Stair', rooms: ['tstair', 'thall'], cp: [51.5, 15, Math.PI] },
+    { id: 'stair', type: 'action', name: 'The Tower Stair', rooms: ['tdoor', 'tstair', 'thall'], cp: [52.5, 15, Math.PI] },
     { id: 'guard', type: 'action', name: 'The Gate-Tower', rooms: ['lstair', 'guardroom'], cp: [58, 24, Math.PI] },
   ],
   rooms: [
@@ -721,7 +722,9 @@ const LEVEL_E1M6 = {
     { id: 'turret2', name: 'the archers\' turret', at: [34, 13], size: [7, 10], floor: 40, sky: true, style: 'hewn', tex: ROOF_TEX },
     { id: 'bridge4', name: 'the leads', at: [41, 17], size: [1, 3], floor: 40, sky: true, style: 'hewn', tex: ROOF_TEX },
     { id: 'crown', name: 'the crown of the great tower', at: [42, 12], size: [8, 11], floor: 40, sky: true, style: 'hewn', tex: ROOF_TEX },
-    { id: 'tstair', name: 'the tower stair', at: [50, 14], size: [3, 14], h: 3, floor: 40, rise: -0.9, riseAxis: 'z', style: 'hewn' },
+    // the stair runs down inside the tower's wall, a cell of masonry between it and the open crown: in by a doorway at the top
+    { id: 'tdoor', name: 'the head of the tower stair', at: [50, 14], size: [1, 2], h: 3, floor: 40, style: 'hewn' },
+    { id: 'tstair', name: 'the tower stair', at: [51, 14], size: [3, 14], h: 3, floor: 40, rise: -0.9, riseAxis: 'z', style: 'hewn' },
     { id: 'lstair', name: 'the lower stair', at: [57, 13], size: [3, 13], h: 3, floor: 17.2, rise: 0.9, riseAxis: 'z', style: 'hewn' },
     { id: 'guardroom', name: 'the guardroom of the gate-tower', at: [53, 2], size: [11, 11], h: 4, floor: 17, vault: 1, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' } },
     { id: 'postern', name: 'the postern, open on the street', at: [53, 0], size: [2, 2], floor: 17, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SUNSET' } },
@@ -729,11 +732,11 @@ const LEVEL_E1M6 = {
   ],
   shafts: [], links: [], features: [],
   planks: [{ from: [28.9, 19.5], to: [30.1, 19.5] }],
-  props: [{ prefab: 'torch', at: [53, 15], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [53, 21], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [55, 26], wall: 'N', dim: 0.8 }, { prefab: 'brazier', at: [52.6, 2.6] }, { prefab: 'brazier', at: [55.6, 2.6] },
+  props: [{ prefab: 'torch', at: [54, 15], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [54, 21], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [55, 26], wall: 'N', dim: 0.8 }, { prefab: 'brazier', at: [52.6, 2.6] }, { prefab: 'brazier', at: [55.6, 2.6] },
     { prefab: 'standard', at: [45, 14], rot: 1.2 }, { prefab: 'bones', at: [22, 20] }],
   lights: [{ at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 2.2 }, ],
   items: [{ kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [9, 16] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [24, 22] },
-    { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [40, 21] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [52, 20] },
+    { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [40, 21] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [53, 20] },
     { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [61, 28] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [58, 14] }, { kind: 'wine', name: 'a cup of Arpello\'s wine', heal: 40, at: [62, 11] },
     { kind: 'bread', name: 'an archer\'s bread', heal: 30, at: [34.8, 16] }, { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [59.2, 24.5] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [54, 32] }],
   entities: [
@@ -747,7 +750,7 @@ const LEVEL_E1M6 = {
     { class: 'pellian', id: 'b7', at: [37, 20], group: 'archers' }, { class: 'pellian_archer', id: 'b8', at: [39, 13.5], group: 'archers' },
     { class: 'arpello', id: 'ar', at: [47, 17], group: 'arpello', yaw: Math.PI / 2 }, { class: 'pellian', id: 'c1', at: [45, 14], group: 'arpello' }, { class: 'pellian', id: 'c2', at: [45, 21], group: 'arpello' },
     { class: 'pellian', id: 'c3', at: [48, 13], group: 'arpello' }, { class: 'pellian', id: 'c4', at: [48, 21.5], group: 'arpello' },
-    { class: 'pellian', id: 'd1', at: [51.5, 22], group: 'stair', yaw: Math.PI }, { class: 'pellian', id: 'd2', at: [51.5, 25], group: 'stair', yaw: Math.PI },
+    { class: 'pellian', id: 'd1', at: [52.5, 22], group: 'stair', yaw: Math.PI }, { class: 'pellian', id: 'd2', at: [52.5, 25], group: 'stair', yaw: Math.PI },
     { class: 'pellian', id: 'd3', at: [55, 28], group: 'stair' }, { class: 'pellian', id: 'd4', at: [58, 30], group: 'stair' }, { class: 'pellian_archer', id: 'd5', at: [60, 28], group: 'stair' },
     { class: 'pellian', id: 'd6', at: [57, 28], group: 'stair' }, { class: 'pellian_archer', id: 'd7', at: [61, 31], group: 'stair' },
     { class: 'pellian', id: 'e1', at: [58, 19], group: 'lower', yaw: Math.PI }, { class: 'pellian', id: 'e2', at: [58.5, 16], group: 'lower', yaw: Math.PI }, { class: 'pellian_archer', id: 'e3', at: [57.5, 13.5], group: 'lower' },

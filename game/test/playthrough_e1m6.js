@@ -1,5 +1,5 @@
 // Golden playthrough of e1m6, the Tower of Tamar, through the CIM agent API (README §11).
-const EXPECTED = { tick: 9581, hash: '90547569' };
+const EXPECTED = { tick: 9821, hash: '7caa755a' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m6"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
@@ -13,7 +13,7 @@ o = await O('__heal(12)'); o = await O('__route([[35, 18.5]])'); o = await O('__
 // ARPELLO
 o = await O('__route([[41.5, 18.5], [44, 18]])'); o = await O('__fight(["arpello"], 9000, 30)'); o = await waitFlag('arpello_hurled', 10); log('arpello:', brief(o));
 // THE TOWER STAIR
-o = await O('__route([[48, 15], [51.5, 15]])'); o = await O('__fight(["stair"], 9000, 40)'); await O('__heal()'); o = await O('__fight(["stair3"], 9000, 60)'); await O('__heal()'); log('stair:', brief(o));
+o = await O('__route([[48, 15], [50.5, 14.9], [52.5, 15]])'); o = await O('__fight(["stair"], 9000, 40)'); await O('__heal()'); o = await O('__fight(["stair3"], 9000, 60)'); await O('__heal()'); log('stair:', brief(o));
 o = await waitFlag('stair_cleared', 10); await O('__heal()');
 // THE LOWER STAIR and the gate-tower
 o = await O('__route([[55, 28.5], [58, 25]])'); o = await O('__fight(["lower"], 9000, 30)'); await O('__heal()'); log('lower:', brief(o));

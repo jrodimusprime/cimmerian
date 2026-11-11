@@ -14,15 +14,15 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 >
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
-> | `e1m1` The Plain of Shamu | 2:28 (10677 ticks) | ~9.9 min |
+> | `e1m1` The Plain of Shamu | 2:23 (10330 ticks) | ~9.6 min |
 > | `e1m2` The Pits | 2:01 (8726 ticks) | ~8.1 min |
 > | `e1m3` The Tunnels Below | 2:07 (9134 ticks) | ~8.5 min |
 > | `e1m4` Yothga | 2:44 (11798 ticks) | ~10.9 min |
 > | `e1m5` The Scarlet Citadel | 2:53 (12465 ticks) | ~11.5 min |
-> | `e1m6` The Tower of Tamar | 2:13 (9581 ticks) | ~8.9 min |
+> | `e1m6` The Tower of Tamar | 2:16 (9821 ticks) | ~9.1 min |
 > | `e1m7` The Relief of Shamar | 3:43 (16086 ticks) | ~14.9 min |
 > | `e1m8` The Tybor | 2:54 (12530 ticks) | ~11.6 min |
-> | **Campaign** | **21:04** (90997 ticks) | **~84 min** |
+> | **Campaign** | **21:02** (90890 ticks) | **~84 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -750,3 +750,7 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] general: the walking noise is way too loud
   - *Done:* footfalls about a quarter as loud, low-passed, each a little different in pitch and weight.
 - [ ] rule 3: the campaign is at ~84 min, under 90. The bot stopped wasting time (food detours, deaths), so the golden runs shortened; e1m3's dark gained an eastern loop and e1m1 two more waves at the heap. Still to lengthen, the rule-2 way: e1m2, e1m6, e1m4 (shortest runs).
+- [x] e1m6: the tower stair's walls look 1px thick from outside
+  - *Done:* the stair ran down directly against the open crown and the air, so its walls were bare planes with nothing behind them. It now runs inside the tower's wall, a full cell of masonry between it and the outdoors, entered by a doorway at its head: closed in on the way down, and a solid block with a sloping roof seen from the crown.
+- [x] e1m1: more horses, heading at you then running off; ground they can't cross; a spiked pit to jump
+  - *Done:* the three fixed lanes are gone. Six Ophirean knights ("leaped their horses over mounds of corpses"), no more than three in the saddle at once, each come out of the press at an edge of the riders' ground, ride at where you'll be, thunder past and are gone off the field, to wheel and come again (step aside at the last moment). They shy from stakes and stake-pits, so the stake crescents on the riders' ground are shelter, and a ditch sown with stakes runs the length of the field before the heap: leap it; no horse will take it.

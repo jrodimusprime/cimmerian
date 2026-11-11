@@ -323,7 +323,8 @@ function newState(seed, carry) {
     wind: 0, windNow: 0, windSnd: 0,
     checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1, playTicks: carry ? carry.playTicks : 0,
     planks: LV.planks.map(() => ({ state: 'whole', t: 0, fall: 0 })),
-    shamu: LEVEL.level === 'e1m1' ? { vt: 0, shout: false, cool: 0, woke: new Set(), phase: 'fight', t: 0, line: 0, hoof: [-1, -1, -1],
+    shamu: LEVEL.level === 'e1m1' ? { vt: 0, shout: false, cool: 0, woke: new Set(), phase: 'fight', t: 0, line: 0,
+      riders: Array.from({ length: LEVEL.riders.n }, (_, i) => ({ state: 'off', t: 0.6 + i * 1.1, x: 0, z: 0, yaw: 0, passed: false })),
       tsotha: { state: 'away', x: LEVEL.kings.tsotha[0] * CELL, z: LEVEL.kings.tsotha[1] * CELL, yaw: -Math.PI / 2, t: 0, walk: 0 } } : null,
     paralysed: 0,
     torch: LEVEL.torch ? 'lit' : 'none',               // e1m3: lit, dropped (an ember on the ground), or out (shaken out)
@@ -1144,7 +1145,7 @@ function objective() {
     if (!S.areas.has('arrows')) return 'Fight your way east across the field, toward the standards.';
     if (!S.areas.has('line')) return 'Cross the arrow ground between volleys. Use the dead for cover.';
     if (!f.line_broken) return 'Break the Shemite line.';
-    if (!f.lanes_crossed) return 'Cross the riders\' ground between charges.';
+    if (!f.lanes_crossed) return 'Cross the riders\' ground: sidestep the charges, shelter behind the stakes, leap the staked ditch.';
     return 'Make for the standards in the east: put your back to the heap of dead, and hold.';
   }
   if (LEVEL.level === 'e1m3') {
@@ -1318,18 +1319,44 @@ function updateShamu() {
       }
     }
   } else { M.vt = Math.min(M.vt, V.period - 1.5); M.shout = false; }
-  // the riders: Ophirean knights charge down three lanes on a fixed cadence
-  const [z0, z1] = L.chargeSpan.map(v => v * CELL), span = z1 - z0;
-  L.charges.forEach((c, i) => {
-    const ph = ((S.tick / SIM_HZ + c.offset) % c.period) / (c.period * 0.62);
-    if (ph > 1) { M.hoof[i] = -1; return; }
-    if (M.hoof[i] < 0 && Math.abs(S.x - c.x * CELL) < 30) Sfx.rumble();
-    const z = c.dir > 0 ? z0 + ph * span : z1 - ph * span; M.hoof[i] = z;
-    if (mode === 'play' && Math.abs(S.x - c.x * CELL) < 1.3 && Math.abs(S.z - z) < 1.7 && M.cool <= 0) {
-      M.cool = 1.0; hurt(30, 'trample'); S.vx += (S.x < c.x * CELL ? -1 : 1) * 8; punchView(0.1, 0.1);
+  // the riders: "Ophirean knights in gilded mail leaped their horses over mounds of corpses". Each picks you out, rides
+  // at where you'll be, thunders past and is gone off the field, to wheel and come again. They shy from stakes and
+  // stake-pits: the crescents are shelter, and the staked ditch before the heap is the end of their ground.
+  const RD = L.riders, [fx0, fx1, fz0, fz1] = RD.field.map(v => v * CELL);
+  const near = mode === 'play' && S.flags.line_broken && !S.flags.lanes_crossed && S.x > fx0 - 6 * CELL && S.x < fx1 + CELL;
+  const blocks = (px, pz) => { if (px < fx0 || px > fx1) return true; const g = groundInfo(px, pz); return g.idx >= 0 && !!((LV.flags[g.idx] & F_STAKE) || LV.spikes[g.idx]); };
+  const free = yaw => !blocks(M.rx + Math.sin(yaw) * 2, M.rz + Math.cos(yaw) * 2) && !blocks(M.rx + Math.sin(yaw) * 4.5, M.rz + Math.cos(yaw) * 4.5);
+  let charging = M.riders.filter(r => r.state === 'charge').length;
+  for (const r of M.riders) {
+    if (r.state === 'off') {
+      r.t -= DT;
+      if (r.t <= 0 && near && charging < RD.max) {           // out of the press at an edge of the field, at you
+        const north = S.rng.next() < 0.5;
+        r.z = north ? fz0 : fz1; r.x = clamp(S.x + (S.rng.next() - 0.5) * 18, fx0 + 1.5, fx1 - 1.5);
+        const tx = clamp(S.x + S.vx * RD.lead, fx0 + 1, fx1 - 1), tz = S.z + S.vz * RD.lead;
+        r.yaw = Math.atan2(tx - r.x, tz - r.z); r.state = 'charge'; r.t = 0; r.passed = false; charging++;
+        Sfx.rumble();
+        if (!S.hints.has('riders')) { S.hints.add('riders'); log('A knight in gilded mail wheels out of the press and puts his horse at you. Step aside at the last moment; get behind the stakes.', 'bad'); }
+      }
+      continue;
+    }
+    r.t += DT;
+    const dx = S.x - r.x, dz = S.z - r.z;
+    if (dx * Math.sin(r.yaw) + dz * Math.cos(r.yaw) < 0) r.passed = true;   // past you: no turning back for this pass
+    if (!r.passed) { let a = Math.atan2(dx, dz) - r.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); r.yaw += clamp(a, -RD.turn * DT, RD.turn * DT); }
+    M.rx = r.x; M.rz = r.z;
+    if (!free(r.yaw)) {                                      // stakes, a stake-pit or the field's edge ahead: veer off, and if there's no way, wheel about
+      let a = 0; for (const t of [0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.7, -1.7, 2.4, -2.4]) if (free(r.yaw + t)) { a = t; break; }
+      r.yaw += clamp(a || Math.PI, -RD.veer * DT, RD.veer * DT); r.passed = true;
+    }
+    r.x += Math.sin(r.yaw) * RD.speed * DT; r.z += Math.cos(r.yaw) * RD.speed * DT;
+    if (r.z < fz0 - 3 || r.z > fz1 + 3 || r.t > 10) { r.state = 'off'; r.t = RD.every[0] + S.rng.next() * (RD.every[1] - RD.every[0]); continue; }
+    if (mode === 'play' && Math.hypot(dx, dz) < 1.4 && M.cool <= 0) {
+      const sx = Math.cos(r.yaw), sz = -Math.sin(r.yaw), side = dx * sx + dz * sz >= 0 ? 1 : -1;
+      M.cool = 1.0; hurt(30, 'trample'); S.vx += sx * side * 9; S.vz += sz * side * 9; punchView(0.1, 0.1);
       if (mode === 'play') log('A gilded knight rides you down and is gone, laughing.', 'bad');
     }
-  });
+  }
   // the end of the field: the kings ride up; the wizard; the ring
   const ts = M.tsotha;
   if (M.phase === 'fight' && M.woke.has('heap' + HEAP_WAVES) && !alive('heap' + HEAP_WAVES).length) { M.phase = 'kings'; M.t = 0; M.line = 0; setFlag('heap_held'); }
@@ -1705,11 +1732,11 @@ function render(alpha) {
   drawNPC(); drawAllies(); drawEagleBeat();
   if (S.shamu) {
     const M = S.shamu;
-    LEVEL.charges.forEach((c, i) => {
-      if (M.hoof[i] < 0) return;
-      const x = c.x * CELL, z = M.hoof[i], y = groundInfo(x, z).floor, yaw = c.dir > 0 ? 0 : Math.PI, l = sampleLight(x, y + 1.5, z), gal = gameTime * 14 + i;
-      drawHorse(x, y, z, yaw, gal, l);
-      drawCharacter('oknight', x, y + seatY() + Math.abs(Math.sin(gal)) * 0.1, z - (c.dir > 0 ? 0.1 : -0.1), yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
+    M.riders.forEach((r, i) => {
+      if (r.state !== 'charge') return;
+      const y = groundInfo(r.x, r.z).floor, l = sampleLight(r.x, y + 1.5, r.z), gal = gameTime * 14 + i * 1.7;
+      drawHorse(r.x, y, r.z, r.yaw, gal, l);
+      drawCharacter('oknight', r.x - Math.sin(r.yaw) * 0.1, y + seatY() + Math.abs(Math.sin(gal)) * 0.1, r.z - Math.cos(r.yaw) * 0.1, r.yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
     });
     const hp = LV.props.find(q => q.prefab === 'heap');   // the dead piled round the heap: horses and men (drawn only; the sim never sees them)
     if (hp && Math.hypot(hp.x - S.x, hp.z - S.z) < 140) {
