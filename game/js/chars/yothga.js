@@ -53,7 +53,7 @@ function leaf(mb, at, dir, len) {
   for (const [p, q, s] of [[at, mid, l], [at, r, mid], [mid, tip, l], [mid, r, tip]]) { mb.tri(p, q, s, T.YOTHGA_LEAF, 0, 1, 0); mb.tri(p, s, q, T.YOTHGA_LEAF, 0, -1, 0); }
 }
 // Yothga at rest, or reared to strike (rear 0..1): tendrils arch out, the blooms lift and spread
-function drawYothga(x, y, z, yaw, t, rear, light) {
+function drawYothga(x, y, z, yaw, t, rear, light, open = 0) {
   // "a thick vine which seemed to grow through the solid stone of the floor": a squat knotted stem, its
   // tendrils drooping and creeping over the stone; when it rears, they lift "like the hood of a cobra"
   const root = m4trs(x, y, z, yaw, 0, 0, 1.25);
@@ -66,11 +66,12 @@ function drawYothga(x, y, z, yaw, t, rear, light) {
     const surge = Math.max(0, Math.sin(t * 2.6 - k * 0.7)) ** 3;   // "waves of changing hues surged over them": a pulse of colour running round the crown
     drawPart('yothga_tendril', 'yothga:tendril', tm, light, 0.05 + (rear > 0 ? 0.45 : 0.2) * surge);
     const tip = m4mul(crown, m4mul(m4ry(a + sw), m4mul(m4rx(lift), m4t(0, 0.05, 1.62 * len))));
-    if (k % 3 !== 2) drawPart('yothga_bloom', 'yothga:bloom', m4mul(tip, m4mul(m4rx(-lift - 0.4 + rear * 0.5 + sw), m4s3(0.85, 0.85, 0.85))), light, 0.25 + 0.5 * surge);
+    if (k % 3 !== 2) drawPart('yothga_bloom', 'yothga:bloom', m4mul(tip, m4mul(m4rx(-lift - 0.4 + rear * 0.5 + sw - 0.5 * open), m4s3(0.85 + 0.4 * open, 0.85 + 0.4 * open, 0.85 + 0.4 * open))), light, 0.25 + 0.5 * surge + 0.5 * open);
   }
   for (let k = 0; k < 7; k++) {                       // creepers over the floor, gripping the stone
     const a = k / 7 * Math.PI * 2 + 0.7, sw = Math.sin(t * 0.6 + k * 1.7) * 0.08;
     drawPart('yothga_tendril', 'yothga:tendril', m4mul(root, m4mul(m4t(0, 0.06, 0), m4mul(m4ry(a + sw), m4mul(m4rx(0.04), m4s3(1.1, 0.7, 1.15 + 0.2 * (k % 2)))))), light, 0.05);
   }
-  drawPart('yothga_bloom', 'yothga:bloom', m4mul(crown, m4mul(m4t(0, 0.14, 0.1), m4mul(m4rx(-0.4 + rear * 0.6), m4s3(1.6, 1.6, 1.6)))), light, 0.3 + 0.35 * Math.max(0, Math.sin(t * 2.6)) ** 2);   // the great blossom, throbbing
+  const bs = 1.6 + 0.7 * open;                         // open: the great blossom spreads wide and burns
+  drawPart('yothga_bloom', 'yothga:bloom', m4mul(crown, m4mul(m4t(0, 0.14 + 0.2 * open, 0.1), m4mul(m4rx(-0.4 + rear * 0.6 - 0.5 * open), m4s3(bs, bs, bs)))), light, 0.3 + 0.35 * Math.max(0, Math.sin(t * 2.6)) ** 2 + 0.6 * open);   // the great blossom, throbbing
 }

@@ -15,14 +15,14 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
-> | `e1m2` The Pits | 2:01 (8726 ticks) | ~8.1 min |
+> | `e1m2` The Pits | 2:02 (8786 ticks) | ~8.1 min |
 > | `e1m3` The Tunnels Below | 2:15 (9689 ticks) | ~9.0 min |
-> | `e1m4` Yothga | 2:44 (11844 ticks) | ~11.0 min |
+> | `e1m4` Yothga | 3:10 (13690 ticks) | ~12.7 min |
 > | `e1m5` The Scarlet Citadel | 2:53 (12465 ticks) | ~11.5 min |
 > | `e1m6` The Tower of Tamar | 2:23 (10275 ticks) | ~9.5 min |
 > | `e1m7` The Relief of Shamar | 3:54 (16858 ticks) | ~15.6 min |
 > | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
-> | **Campaign** | **21:22** (92332 ticks) | **~85 min** |
+> | **Campaign** | **21:49** (94238 ticks) | **~87 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -774,14 +774,17 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] there is so little danger of death at the moment also wth damage… may have to think that through a bit because the big combat areas are fun now as you dont die every 3 seconds but lower combat zones like tunnels etc become too easy? suggest a few solutions
 
-- [ ] the snake taking the guy in boaconstrictor way looks dumb make him take him in his mouth
+- [x] the snake taking the guy in boaconstrictor way looks dumb make him take him in his mouth
+  - *Done:* the wedge-shaped head darts over his shoulder and her jaws close on him across the middle, opened wide; she bears him off down the corridor crosswise in her mouth, bent over her jaws, his legs kicking (weaker and weaker), bones splintering, dripping a trail of blood on the stones, until her head goes down into the dark.
 
-- [ ] the walking animation for the guy who gets eaten by the snake is clunkly and weird looking, maybe make him run with a precanned animation and turn?
+- [x] the walking animation for the guy who gets eaten by the snake is clunkly and weird looking, maybe make him run with a precanned animation and turn?
+  - *Done:* the book has him pad into the vault, so not a sprint: a big man's quick, soft lope, low and forward, a long stride with the knees lifting, the free arm pumping bent, the hips rolling, the huge sword carried trailing; at a bend he turns into it instead of snapping round, and at the end he turns his whole body to you.
 
 - [x] when the AI is facing off against the end level boss dude it should always face him, it shouldn't pass a level without doing that
   - *Done:* measured: the bot had its back to Arpello a third of the time he was within reach, and to Strabonus most of the time (fighting his guards, fetching bread, walking a route while he chased it). Now once a boss is roused and near it fights him face to face whatever it was about: he's always in its fight, it faces him through the whole of it (parrying blows that come from near his side, giving ground to any from behind his shoulder), never turns its back on him for bread, and stops a walk to face him (but not on a one-cell bridge over a drop). Checked across e1m4, e1m6, e1m7 and e1m8: it never looks away from a roused boss within 8 m. Arpello's household, Tamar's guards and Strabonus's palace troops now fight as squads (no more than two blows in the air at once), and there's food on the Tybor bank and the palace approach: no deaths across the campaign.
 
-- [ ] the plant you fight should have some special particle effects and shoot things with cool effects you have to dodge so the fight takes a while - at least 30s of fighting it is fair i think?
+- [x] the plant you fight should have some special particle effects and shoot things with cool effects you have to dodge so the fight takes a while - at least 30s of fighting it is fair i think?
+  - *Done:* it had been dying in about six seconds, and not even to the sword: blows knocked it about like a man until it slid over a pit and "fell". Rooted things don't move now. The fight has a rhythm: shut, its stem is a knot of fibre a blade barely marks; every six and a half seconds the livid blossoms spread wide and burn, spit three glowing seed-heads at you in an arc (they burst where they land in a cloud of crimson dust; get out from under them), and stand open two seconds with the throat bared, pollen drifting up off it: that's the time to cut. With its rings of hate to jump between, the bot takes about 32 seconds over it.
 
 - [ ] when enemies die they dont really ragdoll with phyics do they? it currently looks like an animation still and a bit dodgy
 
@@ -802,7 +805,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] restart level actually takes you back to the start
   - *Done:* Restart level reloaded the whole page, which put you back at the start of the campaign. It now begins the level you're on again from its own start, with exactly the health, weapons and satchel you brought into it.
 
-- [ ] the snake boaconstrictor thing looks lame. make the snake carry him off in his mouth please
+- [x] the snake boaconstrictor thing looks lame. make the snake carry him off in his mouth please
+  - *Done:* (as above) she carries him off in her mouth now; no more coils.
 
 - [ ] E1M6 still has some edges of the castle that look thin like 1px with sky behind them... maybe have to round them off with a curve wall around it so tehy dont look like pixels
 
@@ -819,3 +823,10 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] - [x] e1m5: an example of a super thin wall (the night roof, by the tower stair)
   - *Done:* found by scanning every level for roofed rooms that open straight onto the sky: under an open sky the level builder drew nothing where open ground met solid rock (the world's edge), so a building's masonry had no outer face and no top, and its inner walls showed from outside as bare planes with a knife edge against the sky. On open levels a building now has a body: the masonry about a roofed room stands up to just over its ceiling with an outer face and a top, every roofed room has a roof over it, and a band of stone covers a ceiling's edge where a room opens onto the sky. The tower stair onto the battlements reads as a stone tower now, the stair turret on Tamar's crown as stepped masonry.
+
+
+- [ ] the gauardroom gate tower needs more furniture and fittings in it. it is also unclear how the level ends and there's a weird open platform you can wlk onto that doesnt look right... maybe add a drawbridge or something
+
+
+- [ ] theres a weird bug where low poly characters load then the better ones load later... just wait for the level to load
+

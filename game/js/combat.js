@@ -33,7 +33,7 @@ const FOES = {
   // the weeping thing (ch. III): Conan fled it, "doubting the power of man-made weapons to harm it"
   // ---- e1m4-e1m8 ----
   // Yothga (ch. III): rooted; "the long tendrils arched toward him"; cut through the stem
-  yothga: { hp: 240, speed: 0, reach: 4.2, dmg: 14, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
+  yothga: { hp: 560, speed: 0, reach: 4.2, dmg: 14, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
   // Tsotha's household: "a rush of slaves" (ch. III); the black guard (above)
   slave: { hp: 26, speed: 3.8, reach: 1.9, dmg: 7, windup: 0.45, strike: 0.2, recover: 0.5, sight: 14, name: 'citadel slave' },
   // Tamar (ch. IV): "the swaggering Pellian soldiery", the archers on the tower, Arpello
@@ -164,6 +164,7 @@ function updateFoes() {
       if (f.sound <= 0 && dd < 34) { f.sound = f.alert ? 1.6 : 3.2; (f.alert ? Sfx.titter : Sfx.weep)(clamp((f.x - S.x) / 15, -1, 1), clamp(1.2 - dd / 30, 0.1, 1)); }
     }
     // knockback, then fall if it carried them over a pit
+    if (st.rooted) { f.vx = 0; f.vz = 0; }              // rooted in the stone: no blow shifts it
     if (Math.abs(f.vx) + Math.abs(f.vz) > 0.01) {
       const r = collide(f.x + f.vx * DT, f.z + f.vz * DT, 0.42, f.y, f, true);
       f.x = r[0]; f.z = r[1]; f.vx *= Math.pow(0.02, DT); f.vz *= Math.pow(0.02, DT);
@@ -351,6 +352,7 @@ function resolvePlayerHit() {
 // "he felt its hate emanate from it in almost tangible waves": once roused, Yothga sends a ring of livid light rolling out over
 // the floor every few seconds. Jump it as it passes, or it sears you. (S.hate holds the rings; drawn in drawFoes.)
 const HATE_EVERY = 3.0, HATE_SPEED = 4.2, HATE_MAX = 9;
+const YOTHGA_CYCLE = 6.5, YOTHGA_OPEN = 4.5;   // its blossoms: shut for 4.5 s, then open for 2 s
 function yothgaHate(f) {
   S.hate = S.hate || [];
   for (const w of S.hate) {
@@ -359,7 +361,24 @@ function yothgaHate(f) {
     if (!w.hit && r0 < d && w.r >= d && mode === 'play' && S.y - groundInfo(S.x, S.z).floor < 0.3) { w.hit = true; hurt(9, 'hate'); punchView(0.05, 0.05); }
   }
   S.hate = S.hate.filter(w => w.r < HATE_MAX);
-  if (!f.alert || Math.hypot(S.x - f.x, S.z - f.z) > 11) return;
+  if (!f.alert || Math.hypot(S.x - f.x, S.z - f.z) > 11) { f.open = false; return; }
+  // its blossoms: shut, the stem is a knot of fibre a blade barely bites; they spread, spit seed-heads at you, and
+  // stand open a while, the throat of the thing bared: that is the time to cut
+  f.bT = (f.bT || 0) + DT;
+  const ph = f.bT % YOTHGA_CYCLE, wasOpen = f.open;
+  f.open = ph >= YOTHGA_OPEN;
+  f.opening = clamp((ph - (YOTHGA_OPEN - 0.6)) / 0.6, 0, 1);
+  if (f.open && !wasOpen) {
+    Sfx.hate(clamp((f.x - S.x) / 15, -1, 1));
+    const dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz) || 1, T = clamp(d / 7, 0.55, 1.3);
+    for (const sp of [-0.32, 0, 0.32]) {                 // three, fanned, lobbed where you'll be
+      const tx = S.x + S.vx * T * 0.6 + Math.cos(Math.atan2(dz, dx) + Math.PI / 2) * sp * d, tz = S.z + S.vz * T * 0.6 + Math.sin(Math.atan2(dz, dx) + Math.PI / 2) * sp * d;
+      const oy = f.y + 2.4, ty = groundInfo(tx, tz).floor;
+      S.proj.push({ type: 'seed', x: f.x, y: oy, z: f.z, vx: (tx - f.x) / T, vy: (ty - oy + 0.5 * 9.8 * T * T) / T, vz: (tz - f.z) / T, life: 4, spin: 0, g: 9.8, from: f.id });
+    }
+    if (!S.hints.has('bloom')) { S.hints.add('bloom'); log('The livid blossoms spread wide and spit seed-heads at you. Under them the throat of the thing is bared: cut now!', 'warn'); }
+  }
+  if (f.open) for (let k = 0; k < 2; k++) particles.push({ m: 'blood', x: f.x + (Math.random() - 0.5) * 1.5, y: f.y + 2 + Math.random() * 0.8, z: f.z + (Math.random() - 0.5) * 1.5, vx: (Math.random() - 0.5) * 0.6, vy: 0.4 + Math.random() * 0.6, vz: (Math.random() - 0.5) * 0.6, life: 1.4, max: 1.4, g: -0.2, s: 0.5 });   // pollen drifting up off it
   f.hateT = (f.hateT || 0) + DT;
   if (f.hateT >= HATE_EVERY) { f.hateT = 0; S.hate.push({ x: f.x, z: f.z, r: 0.6 }); Sfx.hate(clamp((f.x - S.x) / 15, -1, 1)); Sfx.rattle(); }
 }
@@ -402,6 +421,10 @@ function hitFoe(f, dmg, kick) {
   const st = FOES[f.cls], dx = S.x - f.x, dz = S.z - f.z, d = Math.hypot(dx, dz) || 1;
   const front = (dx * Math.sin(f.yaw) + dz * Math.cos(f.yaw)) / d > 0.3;
   alertGroup(f.group);
+  if (f.cls === 'yothga' && !f.open && !kick) {          // the shut stem: the blade barely bites the fibre
+    dmg *= 0.06;
+    if (!S.hints.has('fibre')) { S.hints.add('fibre'); log('The blade bites into the knotted fibre of the stem and barely marks it. Watch the blossoms.', 'dim'); }
+  }
   if (st.invulnerable) {                                 // man-made weapons do not harm it
     Sfx.squelch(); f.flash = 0.1;
     if (!S.hints.has('weeper')) { S.hints.add('weeper'); log('Your blade sinks into the quaking jelly and comes out clean. It titters. Nothing you carry can harm this thing. RUN.', 'bad'); }
@@ -641,7 +664,7 @@ function drawFoes() {
     if (f.dead && LEVEL.eagle && f.cls === LEVEL.eagle.foe && drawBeheaded(f)) continue;
     if (f.cls === 'yothga') { const l = sampleLight(f.x, f.y + 1.4, f.z);
       if (!f.dead) for (const w of S.hate || []) { const a = 1 - w.r / HATE_MAX; R.blend(true); drawM('hate_ring', m4mul(m4t(w.x, groundInfo(w.x, w.z).floor + 0.06, w.z), m4s3(w.r, 1, w.r)), [1, 1, 1], 1, 0.75 * a); R.blend(false); }
-      drawYothga(f.x, f.y, f.z, f.yaw, gameTime, f.dead ? -0.8 * Math.min(1, f.deathT) : f.state === 'windup' || f.state === 'strike' ? 1 : 0.4, l); continue; }
+      drawYothga(f.x, f.y, f.z, f.yaw, gameTime, f.dead ? -0.8 * Math.min(1, f.deathT) : f.state === 'windup' || f.state === 'strike' ? 1 : 0.4, l, f.dead ? 0 : f.opening || 0); continue; }
     if (f.state === 'sleep') { const l = sampleLight(f.x, f.y + 1.4, f.z); drawCharacter(f.cls, f.x, f.y, f.z, f.yaw, Object.assign(poseIdle({}, gameTime * 0.3 + f.homeX), { lean: 0.35, headX: 0.7, drop: -0.35, txL: -1.4, txR: -1.4, sxL: 2.2, sxR: 2.2, uxL: -0.4, uxR: -0.4, fxL: -1.2, fxR: -1.2, unarmed: false, we: -1.2 }), l); continue; }   // slumped asleep against the wall
     const l = sampleLight(f.x, f.y + 1.4, f.z);
     const yaw = f.dead && f.dieYaw !== undefined && (f.cls !== 'thing' || f.rag) ? f.dieYaw : f.yaw;

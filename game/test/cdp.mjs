@@ -13,6 +13,7 @@ const chrome = spawn(process.env.CHROME || '/Applications/Google Chrome.app/Cont
   '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check', `--user-data-dir=${outDir}/profile`,
   '--window-size=1280,720', '--allow-file-access-from-files', 'about:blank'], { stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { chrome.kill('SIGKILL'); } catch {} process.exit(1); });   // killed (a hung run): take the browser with us
 let ws, id = 0;
 const pending = new Map();
 try {
@@ -31,6 +32,7 @@ try {
   });
   const send = (method, params = {}) => new Promise(r => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
   await send('Runtime.enable'); await send('Page.enable');
+  await send('Network.enable'); await send('Network.setCacheDisabled', { cacheDisabled: true });   // always the code on disk, never a cached copy under the same ?v= stamp
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url });
   await sleep(2500);

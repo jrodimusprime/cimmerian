@@ -113,7 +113,7 @@ window.__fight0 = (groups, maxTicks, radius, maxSteps) => {
         act.forward = Math.abs(fw) > 0.3 ? Math.sign(fw) : 0; act.side = Math.abs(sd) > 0.3 ? Math.sign(sd) : 0; } }
     // an arrow or a thrown spear about to arrive: sidestep out of its line
     for (const p of s.proj) {
-      if (p.type !== 'arrow' && p.type !== 'jav') continue;
+      if (p.type !== 'arrow' && p.type !== 'jav' && p.type !== 'seed') continue;
       const rx = s.x - p.x, rz = s.z - p.z, v2 = p.vx * p.vx + p.vz * p.vz, t = (rx * p.vx + rz * p.vz) / (v2 || 1);
       if (t <= 0 || t > 0.6) continue;
       const mx = rx - p.vx * t, mz = rz - p.vz * t;

@@ -20,10 +20,17 @@ const STALL_S = 10, STALL_M = 2.0, HZ = 72;
 const WAITS = JSON.parse(readFileSync(join(here, 'waits.json'), 'utf8'));
 const levels = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(FILES);
 
-const run = (script, dir, env = {}) => new Promise(res => {
+// one browser run, from a fresh profile (a stale lock from a crashed run wedges Chrome), killed if it hangs; a harness
+// error (the page not ready under load) is retried once before it counts
+const RUN_TIMEOUT = 240e3;
+const run1 = (script, dir, env) => new Promise(res => {
+  rmSync(join(tmp, dir), { recursive: true, force: true });
   const p = spawn('node', [join(here, 'cdp.mjs'), url, script, join(tmp, dir)], { cwd: here, env: { ...process.env, ...env } });
-  let out = ''; p.stdout.on('data', d => out += d); p.stderr.on('data', d => out += d); p.on('close', () => res(out));
+  let out = ''; p.stdout.on('data', d => out += d); p.stderr.on('data', d => out += d);
+  const kill = setTimeout(() => { out += '\n[harness error] timed out after ' + RUN_TIMEOUT / 1000 + 's'; p.kill('SIGTERM'); }, RUN_TIMEOUT);
+  p.on('close', () => { clearTimeout(kill); res(out); });
 });
+const run = async (script, dir, env = {}) => { let out = await run1(script, dir, env); if (/\[harness error\]|\[EXCEPTION\]/.test(out) && !/PASS|FAIL|\[replay\]/.test(out)) out = await run1(script, dir, env); return out; };
 const expected = l => { const m = readFileSync(join(here, FILES[l]), 'utf8').match(/const EXPECTED = \{ tick: (\d+), hash: '([0-9a-f]+)' \};/); return { tick: +m[1], hash: m[2] }; };
 
 // stands: the bot stays within STALL_M metres of where it stopped for STALL_S seconds or more, in play, with no one at it
@@ -45,7 +52,9 @@ const known = (l, st) => (WAITS[l]?.waits || []).find(w => Math.hypot(w.cell[0] 
 { const want = execSync('sh ' + join(here, 'build_stamp.sh') + ' --print').toString().trim(), have = (readFileSync(join(here, '..', 'js', 'version.js'), 'utf8').match(/BUILD = '([0-9a-f]+)'/) || [])[1];
   if (want !== have) { console.log(`FAIL build stamp ${have} is not the code's ${want}: run test/record_autoplay.sh (it re-stamps)`); process.exit(1); } }
 const t0 = Date.now();
-const results = await Promise.all(levels.map(async l => {
+// at most four levels at once: a dozen browsers on one machine starve each other
+const pool = async (items, n, fn) => { const out = new Array(items.length); let next = 0; await Promise.all(Array.from({ length: n }, async () => { while (next < items.length) { const k = next++; out[k] = await fn(items[k]); } })); return out; };
+const results = await pool(levels, 4, async l => {
   const wf = join(tmp, 'cim-watch-' + l + '.json'); try { rmSync(wf); } catch {}
   const exp = expected(l), out = await run(FILES[l], 'cim-regress-' + l, { CIM_WATCH: wf });
   const fin = (out.match(/(PASS|FAIL) (\{[^}]*\})/) || [])[2], w = existsSync(wf) ? readFileSync(wf, 'utf8') : null;
@@ -65,7 +74,7 @@ const results = await Promise.all(levels.map(async l => {
   if (!rf) r.problems.push('autoplay replay failed: ' + rp.slice(-200));
   else { const R = JSON.parse(rf); if (R.drift || R.mode !== 'done' || R.tick !== exp.tick || R.hash !== exp.hash) r.problems.push(`autoplay recording stale: replay ${R.drift ? 'drifts at ' + R.drift + ', ' : ''}ends ${R.mode} t${R.tick} ${R.hash} (re-run test/record_autoplay.sh)`); }
   return r;
-}));
+});;
 
 let bad = 0, total = 0;
 for (const r of results) {

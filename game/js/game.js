@@ -385,7 +385,7 @@ function dynColliders(self) {
   const sh = S.shukeli; if (sh.state !== 'dead') c.push({ x: sh.x, z: sh.z, r: 0.55 });
   const g = S.giant; if (!giantTaken()) c.push({ x: g.x, z: g.z, r: 0.6 });
   for (const f of S.foes) if (!f.dead && f !== self && f.state !== 'dormant' && f.state !== 'lurk') c.push({ x: f.x, z: f.z, r: 0.42 });   // not one still clinging to the roof, or not yet come
-  const n = S.npc; if (n && n !== self) c.push({ x: n.x, z: n.z, r: 0.35 });
+  const n = S.npc; if (n && n !== self && (self || S.onGround)) c.push({ x: n.x, z: n.z, r: 0.35 });   // (not in mid-leap: a jump isn't spoilt on him)
   if (!self && S.shamu) for (const r of S.shamu.riders) c.push({ x: r.x, z: r.z, r: 0.75 });   // a horse is a wall of muscle: you don't walk through it   // Pelias is flesh: you cannot walk through him
   if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
   // Satha's body is solid: you cannot walk through her coils (only lie still while she passes)
@@ -463,6 +463,7 @@ function updatePlayer(inp) {
 // ---------------------------------------------------------------- damage & death
 const DEATHS = {
   stakes: 'You go onto the sharpened stakes, and they hold you there.',
+  pollen: 'The seed-head bursts in your face, and the livid dust of the flower burns your throat shut.',
   hate: 'The plant\'s hate rolls over you like heat from a furnace door, and something behind your eyes goes dark.',
   fire: 'The globe bursts against you in a sheet of green fire, and you burn.',
   roots: 'You set your hands to the roots, and something below the stone takes hold of them. "Yothga\'s roots are set in hell."',
@@ -754,11 +755,12 @@ function updateGiant() {
     const dx = tx - g.x, dz = tz - g.z, d = Math.hypot(dx, dz);
     if (d < 0.05) return true;
     const st = Math.min(d, speed * DT);
-    g.x += dx / d * st; g.z += dz / d * st; g.walk += st; g.yaw = Math.atan2(dx, dz);
+    g.x += dx / d * st; g.z += dz / d * st; g.walk += st;
+    let a = Math.atan2(dx, dz) - g.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); g.yaw += clamp(a, -5 * DT, 5 * DT);   // he turns into a bend, he doesn't snap round
     return false;
   };
   // he comes in as soon as her first pass has left the vault
-  const enterAt = S.satha.start + Math.round(16 * SIM_HZ), face = () => { g.yaw = Math.atan2(S.x - g.x, S.z - g.z); };
+  const enterAt = S.satha.start + Math.round(16 * SIM_HZ), face = () => { let a = Math.atan2(S.x - g.x, S.z - g.z) - g.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); g.yaw += clamp(a, -3 * DT, 3 * DT); };   // turning his whole body to you
   switch (g.state) {
     case 'wait':
       g.yaw = 0;
@@ -769,7 +771,7 @@ function updateGiant() {
       // through the middle of the grille's doorway (cell 7,7), not through the rock beside it
       g.wp = g.wp || 0;
       { const WP = [[7.5, 6.6], [7.5, 8.5], [8.7, 9.9]], w = WP[g.wp];
-        if (moveTo(w[0] * CELL, w[1] * CELL, 1.9)) { if (++g.wp >= WP.length) { g.state = 'gloat'; g.t = 0; g.line = 0; } } }
+        if (moveTo(w[0] * CELL, w[1] * CELL, 3.1)) { if (++g.wp >= WP.length) { g.state = 'gloat'; g.t = 0; g.line = 0; } } }
       break;
     case 'gloat':
       face();
@@ -785,6 +787,15 @@ function updateGiant() {
       g.x = lerp(g.from[0], g.to[0], k); g.z = lerp(g.from[1], g.to[1], k); g.fall = Math.min(1, g.fall + DT * 3);
       // he lies where he fell until the coiling stretch of her comes level with him: no sliding body
       if (g.t >= 0.45) { const ph = sathaPhase(); if (ph >= 0 && sathaS(ph) - GIANT_COIL >= g.sWait - 0.3) { g.state = 'coiled'; g.t = 0; g.attach = [g.x, g.z]; } }
+      break;
+    }
+    case 'seized': {                                     // in her jaws: she bears him off along her way, his blood on the stones under him
+      const hd = S.satha.pts && S.satha.pts[0];
+      if (!hd || hd.y < -1.5 || sathaPhase() < 0) { g.state = 'gone'; break; }
+      const ox = g.x, oz = g.z; g.x = hd.x; g.z = hd.z;
+      if ([0.25, 0.8, 1.5].some(c => g.t >= c && g.t - DT < c)) { Sfx.crush(); for (let q = 0; q < 8; q++) particles.push({ m: 'blood', x: g.x, y: hd.y, z: g.z, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 0.8, max: 0.8, g: 9, s: 1.2 }); }
+      g.drag = (g.drag || 0) + Math.hypot(g.x - ox, g.z - oz);
+      if (g.drag > 0.7) { g.drag = 0; (g.smear = g.smear || []).push([g.x, g.z]); if (g.smear.length > 60) g.smear.shift(); }   // "only a great smear of blood on the stone floor"
       break;
     }
     case 'coiled': {                                     // "whipped around it in glistening coils": she wears him on her body and carries him off
@@ -807,18 +818,18 @@ function updateGiant() {
       g.from = [g.x, g.z]; g.to = [tx, tz];
       const sh = sathaS(sathaPhase()); let best = 1e9; g.sWait = sh;            // where her path runs closest to where he will land
       for (let q = Math.max(0, sh - 16); q <= sh; q += 0.25) { const p = spineAt(q), d = Math.hypot(p[0] - tx, p[2] - tz); if (d < best) { best = d; g.sWait = q; } } }
-    g.state = 'struck'; g.t = 0; Sfx.crush(); Sfx.scream(); setFlag('keys_down');
+    g.state = 'seized'; g.t = 0; Sfx.crush(); Sfx.scream(); setFlag('keys_down');
     const ring = feature('ring');
     S.items.push({ id: 'cellkey', kind: 'cellkey', name: 'keys to your chains', x: ring.x + 2.3, z: ring.z + 1.0, y: groundInfo(ring.x + 2.3, ring.z + 1.0).floor, taken: false });
     S.items.push({ id: 'giant_sword', kind: 'sword', name: 'black\'s sword', x: g.x + 1.2, z: g.z + 1.6, y: groundInfo(g.x + 1.2, g.z + 1.6).floor, taken: false });
-    log('The gigantic sinuous shape whips round him in glistening coils that hide him from view, and the snap and splintering of bones comes plainly to your ears. The sword and the keys fly from his hands to crash and jangle on the stone, and the keys lie almost at your feet.', 'warn');
+    log('The wedge-shaped head darts over his shoulder and the jaws close on him across the middle. Bones splinter. The sword and the keys fly from his hands to crash and jangle on the stone, and she bears him off down the corridor in her mouth, his legs still kicking.', 'bad');
     for (let k = 0; k < 18; k++) particles.push({ m: 'blood', x: g.x, y: 1 + Math.random(), z: g.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 9, s: 1.4 });
   }
   g.y = groundInfo(g.x, g.z).floor;
 }
 
 // ---------------------------------------------------------------- Satha
-function giantTaken() { const st = S.giant.state; return st === 'struck' || st === 'coiled' || st === 'gone'; }
+function giantTaken() { const st = S.giant.state; return st === 'struck' || st === 'coiled' || st === 'seized' || st === 'gone'; }
 function sathaPhase() {
   const st = S.satha.start;
   if (st === null || S.tick < st) return -1;
@@ -1017,6 +1028,11 @@ function updateProjectiles() {
         } else Sfx.clatter();
       } else if (p.type === 'globe') {
         globeBurst(p.x, Math.max(p.y, groundInfo(p.x, p.z).floor), p.z);
+      } else if (p.type === 'seed') {                    // Yothga's seed-head bursts where it falls, in a cloud of livid dust
+        const by = Math.max(p.y, groundInfo(p.x, p.z).floor);
+        if (mode === 'play' && Math.hypot(S.x - p.x, S.z - p.z) < 1.8 && Math.abs(S.y + 1 - by) < 2.2) { hurt(12, 'pollen'); punchView(0.05, 0.04); }
+        for (let k = 0; k < 14; k++) particles.push({ m: 'blood', x: p.x, y: by + 0.3, z: p.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 2.5, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 2, s: 1.3 });
+        Sfx.squelch();
       } else if (p.type === 'jav') {                     // a spear comes down and lies where it fell
         const gg = groundInfo(p.x, p.z);
         if (gg.kind === 1 && !(gg.flags & F_NOPASS) && p.uses < SPEAR_USES) S.items.push({ id: 'jav' + S.tick + '_' + i, kind: 'spear', name: 'spear', uses: p.uses, x: p.x, z: p.z, y: gg.floor, taken: false });
@@ -1748,7 +1764,7 @@ function render(alpha) {
   // the black giant
   const g = S.giant, gl = sampleLight(g.x, 1.5, g.z);
   for (const [x, z] of (g.smear || [])) { const y = groundInfo(x, z).floor; drawM('blood', m4mul(m4trs(x, y + 0.02, z, x * 7 + z * 3, 0, 0, 1), m4s3(7, 0.25, 4.5)), sampleLight(x, y + 0.5, z)); }   // the smear he leaves
-  if (g.state === 'gone') { /* not here, or carried off */ } else if (g.state === 'struck') {
+  if (g.state === 'gone' || g.state === 'seized') { /* not here, or in her jaws (drawn with her head) */ } else if (g.state === 'struck') {
     const k = smoothstep(0, 1, g.fall);
     drawCharacter('giant', g.x, g.y + 0.25 * Math.sin(Math.PI * Math.min(1, g.t / 0.45)), g.z, g.yaw + 0.6 * k, { unarmed: true, pitch: -1.4 * k, roll: 0.5 * k, uzL: 1.4 * k, uzR: 1.1 * k, uxL: -1.2 * k, uxR: -0.6 * k, txL: -0.5 * k, sxL: 0.9 * k, txR: 0.3 * k, headX: -0.6 * k }, gl);
   } else if (g.state === 'coiled') {
@@ -1768,7 +1784,12 @@ function render(alpha) {
       uxL: 0.02, uzL: 0.12, fxL: -0.35 - 0.1 * Math.sin(gameTime * 2.1) });          // the keys jingling in the other fist
     if (g.arms > 0) Object.assign(P, { uxR: lerp(0.05, -2.9, g.arms), fxR: lerp(-0.2, -0.5, g.arms), uzR: lerp(0.14, 0.3, g.arms), we: lerp(-1.35, 2.5, g.arms),
       uxL: lerp(0.02, -0.6, g.arms), fxL: lerp(-0.35, -0.4, g.arms), lean: lerp(-0.06, -0.12, g.arms), headX: lerp(0.12, -0.25, g.arms), headY: P.headY * (1 - g.arms), twist: P.twist * (1 - g.arms) });
-    if (g.state === 'enter') { const ph = g.walk * 3.85; poseWalk(P, ph, 0.68, false); P.roll = Math.sin(ph) * 0.035; P.lean = 0.05; P.uxL = 0.1 + Math.sin(ph) * 0.18; P.headX = 0.05; P.twist = Math.sin(ph) * 0.06; }   // a big man's heavy, rolling pad: steps of about 0.8 m, the cadence matched to the ground he covers
+    if (g.state === 'enter') {                         // "pads into the vault": a big man's quick, soft lope, low and forward, the sword carried, the keys swinging
+      const ph = g.walk * 2.45, sn = Math.sin(ph), cs = Math.cos(ph);
+      Object.assign(P, { txL: sn * 0.72, txR: -sn * 0.72, sxL: 0.25 + Math.max(0, -Math.sin(ph - 1.1)) * 1.15, sxR: 0.25 + Math.max(0, Math.sin(ph - 1.1)) * 1.15,
+        drop: -0.05 - Math.abs(cs) * 0.07, lean: 0.2, roll: sn * 0.05, twist: -sn * 0.12, headX: -0.08, headY: sn * 0.04,
+        uxL: -sn * 0.5, uzL: 0.18, fxL: -1.05, uxR: 0.15 + sn * 0.3, uzR: 0.2, fxR: -0.55, we: -0.6 });   // the sword-arm swinging less, the blade trailing
+    }   // a big man's heavy, rolling pad: steps of about 0.8 m, the cadence matched to the ground he covers
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
   // Shukeli, the jailer
@@ -1894,7 +1915,16 @@ function render(alpha) {
       const hm = m4trs(h[0], h[1], h[2], yaw, hp, 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82);   // the built head: a viper's, broader than her neck
       const hl0 = sampleLight(h[0], h[1] + 1, h[2]), hl = [hl0[0] * SATHA_HEAD_L[0], hl0[1] * SATHA_HEAD_L[1], hl0[2] * SATHA_HEAD_L[2]]; hl.d = hl0.d;   // the head's own texture is pale: dim the light on it to match the dark hide
       if (h[1] > -10) {
-        const jaw = clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
+        const held = S.giant && S.giant.state === 'seized';
+        const jaw = held ? 1.15 : clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
+        if (held) {                                       // the strangler crosswise in her jaws, bent over them, kicking
+          const gt = S.giant.t + alpha * DT, kick = Math.sin(gt * 9), ap = (m, v) => [0, 1, 2].map(i => m[i] * v[0] + m[4 + i] * v[1] + m[8 + i] * v[2] + m[12 + i]);
+          const c = ap(hm, [0, -0.32, 0.72]), ax = [hm[0], hm[1], hm[2]], al = Math.hypot(ax[0], ax[2]) || 1, bx = ax[0] / al, bz = ax[2] / al;
+          const lim = Math.max(0, 1 - gt / 2.4);                                   // the kicking weakens
+          drawCharacter('giant', c[0] - bx * 1.05, c[1] - 0.25, c[2] - bz * 1.05, Math.atan2(bx, bz), { unarmed: true, pitch: Math.PI / 2, roll: 0.15 * kick * lim, lean: 0.9,
+            headX: 0.6 + 0.3 * kick * lim, uxL: -1.2 + 0.7 * kick * lim, uxR: -1.6 - 0.6 * kick * lim, fxL: -0.8, fxR: -0.5, uzL: 0.5, uzR: 0.4,
+            txL: -0.9 + 0.6 * kick * lim, txR: -0.4 - 0.6 * kick * lim, sxL: 1.1, sxR: 0.6 + 0.4 * kick * lim }, sampleLight(c[0], c[1], c[2]));
+        }
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
         drawPart('satha_head', 'satha_head_uv', hm, hl, SATHA_GLOW); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, SATHA_GLOW);   // only a faint sheen of her own: the torch models her
       }
@@ -1942,6 +1972,7 @@ function render(alpha) {
     const light = sampleLight(p.x, p.y, p.z);
     if (p.type === 'bone') drawM('bone', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), p.spin, 0, 1.3), light);
     else if (p.type === 'arrow') drawM('arrow', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), -Math.atan2(p.vy, Math.hypot(p.vx, p.vz)), 0, 1.2), light);
+    else if (p.type === 'seed') drawPart('yothga_bloom', 'yothga:bloom', m4mul(m4trs(p.x, p.y, p.z, p.spin, p.spin * 0.7, 0, 1), m4s3(0.55, 0.55, 0.55)), light, 0.9);   // a livid seed-head, tumbling, glowing
     else if (p.type === 'jav' && (p.foe || p.life < 2.86)) drawM('spear', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), Math.PI / 2 - Math.atan2(p.vy, Math.hypot(p.vx, p.vz)), 0, 1), light);   // a spear in flight: the shaft along its path, the head leading
     else drawM('venom', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), 0, p.spin, 1.2), light, 0.5);
   }
