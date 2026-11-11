@@ -813,7 +813,7 @@ const LEVEL_E1M7 = {
     ['On the ridge behind you the stolid Bossonians nock and draw; the Gundermen level their pikes. Down onto the plain!', '']],
   objectives: [['ridge_down', 'Down off the ridge.'], ['tower_fired', 'The siege towers mask any sortie from Shamar: climb them, and fire them both.'], ['shemites_broken', 'Break the Shemite archers.'],
     ['spears_broken', 'The Kothian spearmen, with the Gunderman pikes beside you.'], ['press_through', 'Find the gap through the press of knights.'], ['guards_down', 'Cut through his palace troops.'], ['strabonus_dead', 'Strabonus.'], ['zz', 'The host breaks: east along the road between the camp-fires, after it to the river.']],
-  exitNeeds: 'strabonus_dead',
+  exitNeeds: 'strabonus_dead', postBreak: 'strabonus_dead', routTo: [95.3, 22],
   // on the ridge, facing the enemy (+x): the Bossonian archers loosing over your head, the Gunderman pikes in reserve behind them
   allies: [{ id: 'bossonian', at: [8, 13], n: 18, cols: 3, step: 1.6, yaw: Math.PI / 2, loose: true }, { id: 'gunderman', at: [4, 26], n: 12, cols: 3, step: 1.5, yaw: Math.PI / 2, fight: ['shemites2', 'spears', 'press'] }],
   areas: [
@@ -886,6 +886,10 @@ const LEVEL_E1M7 = {
     { class: 'spearman', id: 'p3', at: [82, 15], group: 'palace' }, { class: 'spearman', id: 'p4', at: [82, 29], group: 'palace' },
     { class: 'kknight', id: 'p5', at: [77, 12], group: 'guards' }, { class: 'archer', id: 'p6', at: [86, 10], group: 'guards' }, { class: 'kknight', id: 'p7', at: [77, 32], group: 'guards' },
     { class: 'archer', id: 'p8', at: [86, 34], group: 'guards' }, { class: 'spearman', id: 'p9', at: [80, 22], group: 'guards' }, { class: 'oknight', id: 'p10', at: [75, 25], group: 'guards' },
+    // the road east is held: a rank of his household across its mouth, standing their ground; they run when he falls
+    { class: 'kknight', id: 'g1', at: [90.4, 19.6], group: 'gate', yaw: -Math.PI / 2, post: true }, { class: 'spearman', id: 'g2', at: [90.6, 20.8], group: 'gate', yaw: -Math.PI / 2, post: true },
+    { class: 'oknight', id: 'g3', at: [90.4, 22], group: 'gate', yaw: -Math.PI / 2, post: true }, { class: 'spearman', id: 'g4', at: [90.6, 23.2], group: 'gate', yaw: -Math.PI / 2, post: true },
+    { class: 'kknight', id: 'g5', at: [90.4, 24.4], group: 'gate', yaw: -Math.PI / 2, post: true },
     { class: 'trigger_exit', rect: [92, 19, 95, 25] },
   ],
   beats: [
@@ -905,7 +909,7 @@ const LEVEL_E1M7 = {
     { id: 'strab', at: 'palace', needs: ['guards_down'], wake: ['palace'], lines: [['Strabonus among his palace troops, his axe up. "It clanged on Conan\'s helmet."', 'warn']] },
     { id: 'guards2', killed: 'guards', sets: 'guards_down' },
     { id: 'strab2', killed: 'palace', needs: ['tower_fired'], sets: 'strabonus_dead', lines: [['Strabonus goes down beneath the five-foot blade, his skull crushed.', 'good'],
-      ['Amalrus goes down dying beneath the trampling hoofs, "his shoulder-bone hewn in twain by Prospero\'s two-handed sword." The host breaks, and runs for the river.', 'good'], ['East, between the camp-fires, the road to the Tybor. After them!', 'warn']] },
+      ['Amalrus goes down dying beneath the trampling hoofs, "his shoulder-bone hewn in twain by Prospero\'s two-handed sword." The host breaks, and runs for the river.', 'good'], ['The rank holding the road east throws down its spears and runs.', 'good'], ['East, between the camp-fires, the road to the Tybor. After them!', 'warn']] },
   ],
   puzzle: {
     flags: ['ridge_down', 'tower1_fired', 'tower2_fired', 'tower_fired', 'shemites_broken', 'spears_broken', 'press_through', 'guards_down', 'strabonus_dead'],

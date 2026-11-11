@@ -71,7 +71,7 @@ function newFoes() {
     const p = { x: e.at[0] * CELL, z: e.at[1] * CELL };
     return { id: e.id, cls: e.class, group: e.group, x: p.x, z: p.z, y: 0, homeX: p.x, homeZ: p.z, homeYaw: e.yaw || 0, yaw: e.yaw || 0,
       squad: !!(LEVEL.squads && LEVEL.squads.includes(e.group)), hp: FOES[e.class].hp, state: e.dormant !== undefined ? 'dormant' : e.lurk ? 'lurk' : 'idle', t: 0, walk: 0, vx: 0, vz: 0, alert: false, blockToggle: false, combo: 0, cool: 0,
-      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold, territory: e.territory || FOES[e.class].territory || null, asleep: !!e.asleep, boss: !!FOES[e.class].boss };
+      dead: false, deathT: 0, how: '', flash: 0, falling: 0, tx: 0, tz: 0, moving: false, lurk: !!e.lurk, delay: e.dormant || 0, vy: 0, sound: 0, hold: !!e.hold, post: !!e.post, territory: e.territory || FOES[e.class].territory || null, asleep: !!e.asleep, boss: !!FOES[e.class].boss };
   });
 }
 
@@ -191,6 +191,7 @@ function updateFoes() {
       else if (shut) move(GRILLE_X + 0.45, clamp(S.z, 13.2 * CELL, 14.8 * CELL), spd);          // press up against the bars nearest him
       else if (d < 20 && los(f.x, f.y + 1.2, f.z, S.x, S.y + 1.2, S.z)) move(S.x, S.z, spd);
     };
+    if (f.post && f.state !== 'rout' && LEVEL.postBreak && S.flags[LEVEL.postBreak]) { f.state = 'rout'; f.t = 0; }   // the host breaks: every post is abandoned
     switch (f.state) {
       case 'idle': f.yaw += Math.sin(S.tick * 0.01 + f.homeX) * 0.002; break;
       case 'home':                                      // back to its wallow, weeping again
@@ -211,8 +212,19 @@ function updateFoes() {
         move(f.tx, f.tz, st.speed * 0.8);
         if (Math.hypot(f.tx - f.x, f.tz - f.z) < 0.6) { f.state = 'idle'; }
         break;
+      case 'post':                                      // a man holding a post: back to it, and there he stands, facing out
+        if (LEVEL.postBreak && S.flags[LEVEL.postBreak]) { f.state = 'rout'; f.t = 0; break; }
+        if (Math.hypot(f.homeX - f.x, f.homeZ - f.z) > 0.35) move(f.homeX, f.homeZ, st.speed * 0.8);
+        else { let a = f.homeYaw - f.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); f.yaw += clamp(a, -4 * DT, 4 * DT); }
+        if (mode === 'play' && Math.hypot(S.x - f.homeX, S.z - f.homeZ) < POST_R) { f.state = 'chase'; f.t = 0; }
+        break;
+      case 'rout':                                      // the host breaks: he throws down his post and runs for the river
+        move(f.x + (LEVEL.routTo[0] * CELL - f.x), f.z + (LEVEL.routTo[1] * CELL - f.z), st.speed * 1.2);
+        if (Math.hypot(LEVEL.routTo[0] * CELL - f.x, LEVEL.routTo[1] * CELL - f.z) < 1.5) { f.dead = true; f.gone = true; f.hp = 0; }
+        break;
       case 'chase':
         if (mode !== 'play') break;
+        if (f.post && (Math.hypot(S.x - f.homeX, S.z - f.homeZ) > POST_R + 1.5 || (LEVEL.postBreak && S.flags[LEVEL.postBreak]))) { f.state = 'post'; f.t = 0; break; }   // he won't be drawn off his post
         if (f.territory && !f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'home'; f.t = 0; break; }
         if (f.cls === 'thing') {                         // things of the dark: "something whimpered in fear and slunk away in the darkness"
           if (!f.fled && f.hp < st.hp * 0.4) { f.state = 'flee'; f.t = 0; f.fled = true; Sfx.grunt(true, clamp(-dx / 15, -1, 1)); break; }   // badly hurt, it slinks off, and comes back
@@ -349,6 +361,9 @@ function yothgaHate(f) {
   f.hateT = (f.hateT || 0) + DT;
   if (f.hateT >= HATE_EVERY) { f.hateT = 0; S.hate.push({ x: f.x, z: f.z, r: 0.6 }); Sfx.hate(clamp((f.x - S.x) / 15, -1, 1)); Sfx.rattle(); }
 }
+// Posts (entity post: true): a man who holds a place. He fights whoever comes within POST_R of it and goes back to it
+// rather than be drawn away; when LEVEL.postBreak is set (the host breaks) he abandons it and runs for LEVEL.routTo.
+const POST_R = 4;
 // Squads (LEVEL.squads): five or six men who fight as one. Far off they come on as a body, a line abreast at the pace of the
 // slowest; close in they spread to ring the king, each at his own bearing, and only two strike at a time while the rest
 // hold their places, so he is always flanked and never facing them one by one.
@@ -619,7 +634,7 @@ function foePose(f) {
 }
 function drawFoes() {
   for (const f of S.foes) {
-    if (f.state === 'dormant' || (f.dead && f.falling && f.y < -12)) continue;
+    if (f.state === 'dormant' || f.gone || (f.dead && f.falling && f.y < -12)) continue;
     if (f.cls === 'weeper') { drawWeeper(f); continue; }
     if (f.dead && LEVEL.eagle && f.cls === LEVEL.eagle.foe && drawBeheaded(f)) continue;
     if (f.cls === 'yothga') { const l = sampleLight(f.x, f.y + 1.4, f.z);

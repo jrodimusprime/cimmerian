@@ -760,7 +760,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
   - *Done:* the presence no longer tears the torch from your hand. It blows it down to an ember in your fist, a red glow that lights a few paces; seven seconds later you blow it alight again (it brightens as you do). The same the second time it rises.
 
 
-- [ ] strabonus palace troops area there is a gap you can get to before the level finishes… it should be guarded by troops that then abandon it.... theres also a heap of troops that walk around weirdly… if they must guard and stand still then so they should
+- [x] strabonus palace troops area there is a gap you can get to before the level finishes… it should be guarded by troops that then abandon it.... theres also a heap of troops that walk around weirdly… if they must guard and stand still then so they should
+  - *Done:* the road east out of the palace ground (the gap) is now held by a rank of Strabonus's household across its mouth, standing at their posts facing you: they fight whoever comes within a few paces and go back to their places rather than be drawn off, and when Strabonus falls and the host breaks they throw down the post and run ("The rank holding the road east throws down its spears and runs"). The Gunderman pikes, who had trailed along ten metres behind you all the way round the palace, now halt once the press is broken and hold the field in rank, standing still, facing the palace.
 
 - [x] spear throwing animation also no good, spend some ime doing that properly
   - *Done:* a real throw now. The spear is drawn back over the right shoulder, tip up, and leaves the hand as the drive begins (not at the click); the empty hand drives on along the line of the eye and drops away; then the next spear (or the sword) comes up from below. A snap throw, about a tenth of a second back: quick enough to use in a fight. It flies from the throwing hand, off to the right, not from the middle of your face.

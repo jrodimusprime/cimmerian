@@ -51,7 +51,8 @@ const ALLY_COLS = 4, ALLY_GAP = 1.9, PIKE_REACH = 3.0, PIKE_PERIOD = 1.4;
 function updateAllyMen() {
   const M = S.allyMen; if (!M || !M.length) return;
   const A = S.allyAnchor || (S.allyAnchor = { x: M[0].x, z: M[0].z });
-  A.x = Math.max(A.x, S.x - 10); A.z += (S.z - A.z) * 0.02;
+  if (S.flags.press_through) { A.x = 70 * CELL; A.z = 22 * CELL; }   // the press broken, they halt and hold the field in rank: they don't trail you round the palace
+  else { A.x = Math.max(A.x, S.x - 10); A.z += (S.z - A.z) * 0.02; }
   if (!S.allyFlow || S.tick % 36 === 0) { const g = groundInfo(A.x, A.z); S.allyFlow = g.idx >= 0 ? bfs(g.idx) : null; }
   for (const m of M) {
     m.t += DT; m.mv = false;
