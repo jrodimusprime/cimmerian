@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
-const EXPECTED = { tick: 11463, hash: '3b74c9f7' };
+const EXPECTED = { tick: 11539, hash: '73294ec9' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };

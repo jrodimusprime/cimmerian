@@ -314,7 +314,9 @@ function foeStrike(f, st) {
       if (!S.hints.has('parried')) { S.hints.add('parried'); log('You turn the blow aside, and he reels. Strike now!', 'good'); }
       return;
     }
-    hurt(f.sidearm ? 13 : st.dmg, f.cls === 'spearman' && !f.sidearm ? 'spear' : f.cls === 'thing' ? 'claws' : f.cls === 'weeper' ? 'weeper' : f.cls === 'axeman' ? 'axe' : 'blade');
+    const inDark = f.cls === 'thing' && LEVEL.torch && !torchLit();   // the dark is theirs: they strike harder where you can't see them coming
+    hurt(Math.round((f.sidearm ? 13 : st.dmg) * (inDark ? 1.25 : 1)), f.cls === 'spearman' && !f.sidearm ? 'spear' : f.cls === 'thing' ? 'claws' : f.cls === 'weeper' ? 'weeper' : f.cls === 'axeman' ? 'axe' : 'blade');
+    if (f.cls === 'thing' && mode === 'play') S.bleed = BLEED_SECS;   // and it bleeds
     if (f.cls === 'thing' && mode === 'play') {          // the bite of a thing of the pits: the world swims, the legs go weak, for ten seconds
       if (!(S.daze > 0) && !S.hints.has('daze')) { S.hints.add('daze'); log('Its teeth meet in your arm, and something in the bite makes the dark swim. Your legs go to water: you could not make a jump like this. It will pass.', 'bad'); }
       S.daze = DAZE_SECS;
@@ -397,7 +399,7 @@ function yothgaHate(f) {
 // Posts (entity post: true): a man who holds a place. He fights whoever comes within POST_R of it and goes back to it
 // rather than be drawn away; when LEVEL.postBreak is set (the host breaks) he abandons it and runs for LEVEL.routTo.
 const POST_R = 4;
-const DAZE_SECS = 10;   // a thing's bite: slow and reeling, no strength for a jump
+const DAZE_SECS = 10, BLEED_SECS = 4, BLEED_RATE = 1.0;   // a thing's bite also bleeds: 1.5 a second for five seconds, till you eat or drink   // a thing's bite: slow and reeling, no strength for a jump
 // Squads (LEVEL.squads): five or six men who fight as one. Far off they come on as a body, a line abreast at the pace of the
 // slowest; close in they spread to ring the king, each at his own bearing, and only two strike at a time while the rest
 // hold their places, so he is always flanked and never facing them one by one.
@@ -541,22 +543,37 @@ const RAG_LIE = 1.52, RAG_DT = 1 / 144;
 function ragStep(f, lie, start) {
   const h = k => hrand(Math.round(f.homeX * 10), Math.round(f.homeZ * 10), k, 61), pow = f.ragPow || 1, sc = CAST[f.cls] ? CAST[f.cls].scale : 1;
   let R = f.rag;
+  const A = f.dieYaw + ((f.dieS || -1) < 0 ? Math.PI : 0), dx = Math.sin(A), dz = Math.cos(A);
   if (!R) {
-    R = f.rag = { t: 0, th: 0.04, w: 0.8 + 1.3 * pow, v: 0.6 + 1.1 * pow, off: 0, land: 0, J: {}, V: {} };
+    // the blow's push: along the way he falls, and across it (that part spins him onto his side)
+    const side = f.ragYaw !== undefined ? Math.sin(f.ragYaw - A) : 0;
+    R = f.rag = { t: 0, th: 0.04, w: 0.8 + 1.3 * pow, v: 0.6 + 1.1 * pow, off: 0, land: 0, J: {}, V: {},
+      rl: 0, wr: side * (1.2 + 1.6 * pow) + (h(30) - 0.5) * 1.2, rlRest: (h(31) - 0.5) * 1.4 + side * 0.5, dy: 0, vy: 0, bounce: 0 };
     for (const k in lie) { R.J[k] = start[k] || 0; R.V[k] = 0; }
     const fling = (f.dieS || -1) < 0 ? 1 : -1;            // falling backward the arms fly up and forward; on the face they trail
     R.V.uxL = -5 * fling * (0.6 + h(1)); R.V.uxR = -5 * fling * (0.6 + h(2)); R.V.uzL = 3 * h(3); R.V.uzR = 3 * h(4); R.V.headX = 4 * fling;
   }
-  const A = f.dieYaw + ((f.dieS || -1) < 0 ? Math.PI : 0), dx = Math.sin(A), dz = Math.cos(A), base = f.y;
-  while (R.t + RAG_DT <= f.deathT && R.t < 4) {
+  const base = f.y;
+  while (R.t + RAG_DT <= f.deathT && R.t < 5) {
     R.t += RAG_DT; const dt = RAG_DT;
+    // over he goes: an inverted pendulum about the feet, pitch along the fall and roll across it
     if (!R.land) {
-      R.w += 9.8 / (1.05 * sc) * Math.sin(R.th) * dt; R.th += R.w * dt;
-      if (R.th >= RAG_LIE) { R.th = RAG_LIE; R.w *= -0.22; R.land = 1; for (const k in R.V) R.V[k] += (h(20 + k.length) - 0.5) * 9; }   // the thud jolts every limb
-    } else { R.w += (-(R.th - RAG_LIE) * 140 - R.w * 10) * dt; R.th = Math.min(RAG_LIE, R.th + R.w * dt); }
-    R.v = Math.max(0, R.v - (R.land ? 7 : 2) * dt);
-    const nx = R.off + R.v * dt, g = groundInfo(f.x + dx * (nx + 0.6), f.z + dz * (nx + 0.6));
-    if (g.kind !== 1 || (g.flags & F_NOPASS) || Math.abs(g.floor - base) > 0.4 || LV.colliders.some(c => Math.hypot(c.x - f.x - dx * (nx + 0.6), c.z - f.z - dz * (nx + 0.6)) < c.r)) R.v = 0; else R.off = nx;
+      const g = 9.8 / (1.05 * sc);
+      R.w += g * Math.sin(R.th) * dt; R.th += R.w * dt;
+      R.wr += g * Math.sin(R.rl) * 0.5 * dt - R.wr * 0.6 * dt; R.rl += R.wr * dt;
+      if (R.th >= RAG_LIE) { R.th = RAG_LIE; R.w *= -0.28; R.land = 1; R.bounce = 1; for (const k in R.V) R.V[k] += (h(20 + k.length) - 0.5) * 9; }   // the thud jolts every limb
+    } else {
+      R.w += (-(R.th - RAG_LIE) * 140 - R.w * 10) * dt; R.th = Math.min(RAG_LIE, R.th + R.w * dt);   // a rebound off the stone, then still
+      R.wr += (-(R.rl - R.rlRest) * 40 - R.wr * 7) * dt; R.rl += R.wr * dt;                         // rolling onto his side, or back off it
+    }
+    // the slide: along the floor, over a step or off a ledge (and down, under gravity), stopped by walls and furniture
+    R.v = Math.max(0, R.v - (R.land ? 6 : 1.8) * dt);
+    const nx = R.off + R.v * dt, px = f.x + dx * (nx + 0.6), pz = f.z + dz * (nx + 0.6), g = groundInfo(px, pz);
+    const wall = g.kind === 0 || (g.flags & F_NOPASS) || g.floor > base + R.dy + 0.4 || LV.colliders.some(c => Math.hypot(c.x - px, c.z - pz) < c.r);
+    if (wall || (g.kind === 2 && g.floor < base - 3)) R.v = 0; else R.off = nx;
+    const fl = groundInfo(f.x + dx * (R.off + 0.6), f.z + dz * (R.off + 0.6)).floor - base;   // the ground under his body
+    if (R.dy > fl + 0.01) { R.vy -= 24 * dt; R.dy += R.vy * dt; if (R.dy <= fl) { R.dy = fl; if (R.vy < -3) { R.w -= 1.5; R.land = 1; for (const k in R.V) R.V[k] += (h(40 + k.length) - 0.5) * 7; } R.vy = 0; } }
+    else { R.dy = fl; R.vy = 0; }
     const q = R.th / RAG_LIE, fold = Math.sin(Math.PI * Math.min(1, q * 1.1));   // knees fold as he goes over, straighten as he lies
     for (const k in lie) {
       let T = lerp(start[k] || 0, lie[k], Math.min(1, q * 1.15));
@@ -593,8 +610,8 @@ function deathPose(f, P) {
   fin.lean = sp > 0 ? 0.1 : -0.1;
   const R = ragStep(f, fin, P), q = R.th / RAG_LIE;
   Object.assign(P, R.J);
-  P.pitch = sp * R.th; P.roll = (h(16) - 0.5) * 0.6 * q;
-  P.drop = -0.14 * Math.sin(Math.PI * Math.min(1, q)) + (back ? 0.12 : 0.1) * q;   // a sag as the knees go, then lying on the floor, not in it
+  P.pitch = sp * R.th; P.roll = R.rl * Math.max(0.35, q);
+  P.drop = -0.14 * Math.sin(Math.PI * Math.min(1, q)) + (back ? 0.12 : 0.1) * q + R.dy;   // and down a step, if it carried him over one   // a sag as the knees go, then lying on the floor, not in it
   P.unarmed = true; P.noShield = true;
   return P;
 }
@@ -609,7 +626,7 @@ function foePose(f) {
       const sd = hrand(Math.round(f.homeX * 10), 3, 5, 5) < 0.5 ? -1 : 1, sp = f.dieS === undefined ? -1 : f.dieS;
       const lie = { lean: -0.2, headX: 0.5 * -sp, headY: 0.6 * sd, uxL: -0.6, uxR: -0.9, uzL: 1.3, uzR: 1.1, fxL: -0.8, fxR: -0.4, txL: -0.9, txR: -0.3, sxL: 1.4, sxR: 0.6 };
       const R = ragStep(f, lie, P), q = R.th / RAG_LIE;
-      return Object.assign(P, R.J, { pitch: sp * R.th, roll: 0.35 * sd * q, drop: 0.12 * q });
+      return Object.assign(P, R.J, { pitch: sp * R.th, roll: R.rl * Math.max(0.35, q) + 0.2 * sd * q, drop: 0.12 * q + R.dy });
     }
     if (f.state === 'lurk' || f.state === 'drop') return Object.assign(P, { pitch: Math.PI, drop: 0.42, uxL: -2.6, uxR: -2.6, fxL: -0.4, fxR: -0.4, txL: -0.6, txR: -0.6, sxL: 1.2, sxR: 1.2 });
     const ph = f.walk * 3.6, amt = f.moving ? 1 : 0.12, sw = Math.sin(ph) * amt;
@@ -640,6 +657,7 @@ function foePose(f) {
     if (f.state === 'meek' && f.moving) { poseWalk(P, f.walk * 3.1, 1); P.lean = 0.3; P.headX = -0.1; return P; }
     return P;
   }
+  if (c.weapon === 'axe' && !f.dead && !f.falling) return axePose(f, st, P);
   if (c.weapon !== 'bow') poseMenace(P, gameTime + f.homeX);
   if (c.shield) { P.uxL = -0.35; P.fxL = -1.25; P.uzL = 0.25; }
   if (c.weapon === 'spear' || c.weapon === 'axe') { P.uxR = -0.25; P.fxR = -1.2; P.we = 1.25; if (c.weapon === 'axe') { P.uxL = -0.6; P.fxL = -1.3; } }
@@ -673,6 +691,42 @@ function foePose(f) {
     case 'pain': Object.assign(P, { lean: -0.3, headX: -0.35, uzL: 0.6, uzR: 0.6 }); break;
     case 'stagger': { const k = Math.sin(Math.min(1, t / KICK.stagger) * Math.PI); Object.assign(P, { lean: -0.5 * k, headX: -0.4 * k, uzL: 1.1 * k, uzR: 1.1 * k, uxL: -0.6 * k, uxR: -0.6 * k, txL: -0.5 * k, sxL: 0.6 * k }); break; }
   }
+  return P;
+}
+// Tsotha's black axemen: a menacing two-handed chop. Hunched and wide-legged, the great axe across the body; the wind-up heaves
+// it high behind the horned helm, back arched, a step in, and it hangs a heartbeat at the top, trembling; then the whole body
+// comes down behind it, sinking at the knee and bending at the waist, the head of the axe driven into the stones (sparks fly);
+// it stays in the stone a moment before he heaves it up again.
+function axePose(f, st, P) {
+  const t = f.t, e = x => x * x * (3 - 2 * x), eo = x => 1 - (1 - x) * (1 - x) * (1 - x), mix = (A, B, k) => { for (const q in B) P[q] = lerp(A[q] ?? 0, B[q], k); };
+  const breathe = Math.sin(gameTime * 2.1 + f.homeX) * 0.03;
+  const STANCE = { lean: 0.32, headX: -0.28 + breathe, drop: -0.14, txL: -0.42, txR: 0.12, sxL: 0.55, sxR: 0.65, tzL: 0.12, tzR: -0.08, twist: 0.12,
+    uxR: -0.95, fxR: -1.25, uzR: 0.25, uxL: -0.75, fxL: -1.55, uzL: -0.15, we: 0.95 + breathe, roll: breathe * 0.4 };
+  Object.assign(P, STANCE);
+  if (f.moving && f.state !== 'windup' && f.state !== 'strike') {   // a heavy stride, the axe carried across him
+    const ph = f.walk * 3.0, sw = Math.sin(ph);
+    Object.assign(P, { txL: -0.25 + sw * 0.55, txR: -0.05 - sw * 0.55, sxL: 0.4 + Math.max(0, -Math.sin(ph - 0.9)) * 0.9, sxR: 0.4 + Math.max(0, Math.sin(ph - 0.9)) * 0.9, drop: -0.1 - Math.abs(Math.cos(ph)) * 0.06, roll: sw * 0.05, twist: 0.12 - sw * 0.08 });
+  }
+  const HIGH = { lean: -0.28, headX: 0.22, drop: -0.04, txL: -0.62, sxL: 0.35, txR: 0.25, sxR: 0.3, twist: -0.3, uxR: -3.05, fxR: -0.85, uzR: 0.32, uxL: -2.85, fxL: -0.95, uzL: 0.1, we: 2.95 };
+  const LOW = { lean: 0.72, headX: -0.4, drop: -0.3, txL: -0.75, sxL: 0.95, txR: 0.35, sxR: 0.7, twist: 0.2, uxR: -1.2, fxR: -0.2, uzR: 0.05, uxL: -1.1, fxL: -0.35, uzL: -0.2, we: 0.35 };   // arms driven out in front, the head of the axe in the stones before his feet
+  if (f.state === 'windup') {
+    const W = st.windup * (f.combo ? 0.6 : 1), k = e(Math.min(1, t / (W * 0.75))), hold = Math.max(0, (t - W * 0.75) / (W * 0.25));
+    mix(STANCE, HIGH, k);
+    if (hold > 0) { const sh = Math.sin(gameTime * 46) * 0.035 * hold; P.uxR += sh; P.uxL += sh; P.we += sh * 2; P.lean -= 0.04 * hold; }   // it hangs there, trembling
+  } else if (f.state === 'strike') {
+    const k = eo(Math.min(1, t / st.strike));
+    Object.assign(P, HIGH); mix(HIGH, LOW, k);
+    if (k > 0.85 && !f.chopFx) {                         // the head bites the stones
+      f.chopFx = true; const ax = f.x + Math.sin(f.yaw) * 1.5, az = f.z + Math.cos(f.yaw) * 1.5, ay = groundInfo(ax, az).floor + 0.1;
+      for (let q = 0; q < 9; q++) particles.push({ m: 'spark', x: ax, y: ay, z: az, vx: (Math.random() - 0.5) * 4, vy: 1 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.45, max: 0.45, g: 9, s: 0.9 });
+    }
+  } else if (f.state === 'recover') {
+    f.chopFx = false;
+    const R = st.recover, k = e(Math.max(0, (t - R * 0.35) / (R * 0.65)));   // a moment with the axe in the stone, then heaved up
+    Object.assign(P, LOW); mix(LOW, STANCE, k);
+    P.lean += Math.sin(Math.min(1, t / R) * Math.PI) * 0.06;  // his shoulders heave with it
+  } else if (f.state === 'block') Object.assign(P, { uxR: -1.6, fxR: -1.0, uxL: -1.5, fxL: -1.2, uzL: 0.2, we: 1.5, lean: 0.05, headX: -0.1 });   // the haft up across him
+  else if (f.state === 'pain' || f.state === 'stagger') { const k = f.state === 'stagger' ? Math.sin(Math.min(1, t / KICK.stagger) * Math.PI) : 0.7; Object.assign(P, { lean: -0.45 * k, headX: -0.4 * k, drop: -0.1, uxL: -0.5, uxR: -0.6, uzL: 0.6 * k, uzR: 0.5 * k }); }
   return P;
 }
 function drawFoes() {

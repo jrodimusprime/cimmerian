@@ -437,6 +437,7 @@ function updatePlayer(inp) {
   const ix = fx * inp.fwd + rx * inp.side, iz = fz * inp.fwd + rz * inp.side, il = Math.hypot(ix, iz);
   if (S.plankDrop > 0) { S.plankDrop -= DT; inp = Object.assign({}, inp, { fwd: 0, side: 0, jump: false }); S.vx *= 0.8; S.vz *= 0.8; }   // falling with the plank: nothing to push off
   S.daze = Math.max(0, (S.daze || 0) - DT);
+  if (S.bleed > 0) { S.bleed = Math.max(0, S.bleed - DT); S.bleedAcc = (S.bleedAcc || 0) + BLEED_RATE * DT; if (S.bleedAcc >= 1) { S.bleedAcc -= 1; if (S.health > 5) hurt(1, 'bleed'); } }   // a bite's wound, bleeding: it weakens you, it won't finish you
   const dazeK = S.daze > 0 ? 0.6 : 1, speed = (inp.run ? 7.2 : 4.4) * dazeK;   // dazed by a thing's bite: legs like water
   const wx = il ? ix / il * speed : 0, wz = il ? iz / il * speed : 0;
   const k = Math.min(1, (S.onGround ? 14 : 2.5) * DT);
@@ -467,6 +468,7 @@ function updatePlayer(inp) {
 // ---------------------------------------------------------------- damage & death
 const DEATHS = {
   stakes: 'You go onto the sharpened stakes, and they hold you there.',
+  bleed: 'You bleed out in the dark from the bites of the things.',
   pollen: 'The seed-head bursts in your face, and the livid dust of the flower burns your throat shut.',
   hate: 'The plant\'s hate rolls over you like heat from a furnace door, and something behind your eyes goes dark.',
   fire: 'The globe bursts against you in a sheet of green fire, and you burn.',
@@ -643,7 +645,7 @@ function takeItem(it) {
 // food and drink: eaten now, or stowed in the satchel (POUCH_MAX) and taken later with H
 const POUCH_MAX = 4;
 function eat(it) {
-  S.health = Math.min(100, S.health + it.heal); Sfx.heal();
+  S.health = Math.min(100, S.health + it.heal); S.bleed = 0; Sfx.heal();   // (and it staunches a bite's bleeding)
   const nm = it.name.replace(/^(a|an|the) /, '');   // 'a camp loaf' -> 'the camp loaf'
   log(it.kind === 'bread' ? 'You wolf down the ' + nm + '. Stale, gritty, and better than any feast. (+' + it.heal + ')' : 'You drink the ' + nm + '. It burns going down. (+' + it.heal + ')', 'good');
 }

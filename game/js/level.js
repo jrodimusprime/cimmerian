@@ -266,6 +266,7 @@ const LEVEL_E1M3 = {
     { kind: 'wine', name: 'leather water-skin', at: [47, 22], heal: 25 },
     { kind: 'bread', name: 'mouldy crust', at: [31, 36.6], heal: 25 },
     { kind: 'bread', name: 'mouldy crust', at: [54, 18.6], heal: 25 },
+    { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 30, at: [50.5, 9.6] },
     { kind: 'wine', name: 'jug of water', at: [45, 34.2], heal: 25 },
   ],
   entities: [

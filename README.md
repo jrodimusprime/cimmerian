@@ -16,13 +16,13 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
 > | `e1m2` The Pits | 2:14 (9636 ticks) | ~8.9 min |
-> | `e1m3` The Tunnels Below | 2:39 (11463 ticks) | ~10.6 min |
-> | `e1m4` Yothga | 3:42 (15980 ticks) | ~14.8 min |
+> | `e1m3` The Tunnels Below | 2:40 (11539 ticks) | ~10.7 min |
+> | `e1m4` Yothga | 3:43 (16066 ticks) | ~14.9 min |
 > | `e1m5` The Scarlet Citadel | 2:50 (12256 ticks) | ~11.3 min |
 > | `e1m6` The Tower of Tamar | 2:40 (11553 ticks) | ~10.7 min |
 > | `e1m7` The Relief of Shamar | 3:47 (16350 ticks) | ~15.1 min |
 > | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
-> | **Campaign** | **23:05** (99713 ticks) | **~92 min** |
+> | **Campaign** | **23:07** (99875 ticks) | **~92 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -773,7 +773,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] the way the spears appear as you throw them and when they come towards you look a bit weird… like a pixel ball? imrpove that
   - *Done:* a thrown spear had no drawing of its own and fell through to the venom-glob mesh: the pixel ball. Spears in flight (yours and those thrown at you) are now the spear itself, the shaft laid along its path and the head leading; yours shows once it is clear of your eye, so its shaft never sweeps through the camera.
 
-- [ ] there is so little danger of death at the moment also wth damage… may have to think that through a bit because the big combat areas are fun now as you dont die every 3 seconds but lower combat zones like tunnels etc become too easy? suggest a few solutions
+- [x] there is so little danger of death at the moment also wth damage… may have to think that through a bit because the big combat areas are fun now as you dont die every 3 seconds but lower combat zones like tunnels etc become too easy? suggest a few solutions
+  - *Done (three of them):* the small fights are the pits and the tunnels, so the danger goes in there, as the things' own: (1) a thing's bite dazes you ten seconds (slow, no spring in a jump, the world reeling); (2) it bleeds a little more after (it weakens you; it won't finish you on its own; food and drink staunch it); (3) the dark is theirs: with your torch out, or down to an ember, they bite harder. Other levers if it still feels easy: things hunting in packs that circle and come at you from behind (as the squads do on the battlefields); fewer rations in the tunnels; a smaller satchel down in the pits.
 
 - [x] the snake taking the guy in boaconstrictor way looks dumb make him take him in his mouth
   - *Done:* the wedge-shaped head darts over his shoulder and her jaws close on him across the middle, opened wide; she bears him off down the corridor crosswise in her mouth, bent over her jaws, his legs kicking (weaker and weaker), bones splintering, dripping a trail of blood on the stones, until her head goes down into the dark.
@@ -787,9 +788,11 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] the plant you fight should have some special particle effects and shoot things with cool effects you have to dodge so the fight takes a while - at least 30s of fighting it is fair i think?
   - *Done:* it had been dying in about six seconds, and not even to the sword: blows knocked it about like a man until it slid over a pit and "fell". Rooted things don't move now. The fight has a rhythm: shut, its stem is a knot of fibre a blade barely marks; every six and a half seconds the livid blossoms spread wide and burn, spit three glowing seed-heads at you in an arc (they burst where they land in a cloud of crimson dust; get out from under them), and stand open two seconds with the throat bared, pollen drifting up off it: that's the time to cut. With its rings of hate to jump between, the bot takes about 32 seconds over it.
 
-- [ ] when enemies die they dont really ragdoll with phyics do they? it currently looks like an animation still and a bit dodgy
+- [x] when enemies die they dont really ragdoll with phyics do they? it currently looks like an animation still and a bit dodgy
+  - *Done:* the dead had a little physics (a topple about the feet, a slide, flopping limbs), but always straight over one way, landing at the same angle. Now the fall is a pendulum in two directions: the blow's push along his facing pitches him over, the push across it spins him onto his side (each man to his own lean), and he thuds, rebounds and settles; the body slides on along the floor with the blow, stopped by walls and furniture, and if it carries him over a step or a ledge he drops under gravity and lands with a jolt through every limb; the limbs swing with their own weight, overshoot and come to rest each in its own place.
 
-- [ ] the tall axe guy animations are weak, spend time fixing those
+- [x] the tall axe guy animations are weak, spend time fixing those
+  - *Done:* Tsotha's black axemen have their own body now. At guard: hunched and wide-legged, the great axe held two-handed across the body, head down, glaring, the axe rising and falling with their breath; walking, a heavy stride with the axe carried. The blow: the axe heaved high behind the horned helm, the back arched and a foot stepping in, and there it hangs a heartbeat, trembling; then the whole body comes down behind it, sinking at the knee and bending at the waist, and the head of the axe bites the stones before his feet (sparks fly); it stays there a moment before he heaves it up again. Blocking, the haft comes up across him; struck, he reels.
 
 - [x] you can walk through horses
   - *Done:* a horse is solid: you're stopped by it as by a wall.
@@ -818,7 +821,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] E1M4 ending area isnt clear it just looks like a room perhaps use a door
   - *Done:* the long stair now climbs from the grille room (two and a half metres over its length) and ends at a heavy door of black oak, banded with iron, in a frame of dressed stone, standing ajar with a light beyond it and a torch either side: through it, and the level ends.
 
-- [ ] the axe swing animation in the corridor of the censers the dudes with the axes should have a cooler and more menacing swing
+- [x] the axe swing animation in the corridor of the censers the dudes with the axes should have a cooler and more menacing swing
+  - *Done:* (as above) the axemen in the corridor of censers swing that menacing two-handed chop.
 
 
 - [x] killing little black slave children seems weird right?
