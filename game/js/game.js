@@ -1239,6 +1239,14 @@ const EMBER_SECS = 7;
 function blowOutTorch() {
   S.torch = 'ember'; S.emberT = EMBER_SECS; S.flags.torch_found = false; Sfx.wind(1); Sfx.sting();
 }
+// e1m6: the postern's portcullis bars the gate passage until the household guard is broken, then winds up
+function updatePostern() {
+  if (LEVEL.level !== 'e1m6') return;
+  const up = !!S.flags.guard_broken, was = S.posternGate || 0;
+  S.posternGate = clamp(was + (up ? DT / 2.2 : -DT), 0, 1);
+  if (up && was === 0) { Sfx.bars(); log('With the household guard broken, someone in the gate-tower winds the postern\'s portcullis up. The door beyond stands open on the street.', 'good'); }
+  for (const gx of [53, 54]) for (const gz of [0, 1]) { const i = cellIdx(gx, gz); if (S.posternGate < 0.8) LV.flags[i] |= F_NOPASS; else LV.flags[i] &= ~F_NOPASS; }
+}
 function updateEmber() {
   if (S.torch !== 'ember' || mode !== 'play') return;
   S.emberT -= DT;
@@ -1502,7 +1510,7 @@ function tick(inp) {
   if (mode !== 'play') return;
   updateShukeli();
   updateFoes();
-  updateEmber(); updateTunnels();
+  updateEmber(); updatePostern(); updateTunnels();
   updateShamu();
   updatePlanks();
   updateBeats();
@@ -1777,6 +1785,7 @@ function render(alpha) {
   if (has('cell_door')) drawM('bars:2.5:3.2', m4trs(7 * CELL, 0, LEVEL.links.find(l => l.name === 'cell_door').cells[0][1] * CELL + CELL, 1.45 * smoothstep(0, 1, S.door.open), 0, 0, 1), dl);   // the vault's grille, swinging out
   const gl2 = sampleLight(GRILLE_X, 2, HALL_Z);
   if (has('grille_gate')) drawM('bars:5:7.5', m4trs(GRILLE_X, S.grille.open * 6.6, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), gl2);
+  if (LEVEL.level === 'e1m6') { const pg = S.posternGate || 0; drawM('bars:5:3.4', m4trs(53 * CELL, 17 + pg * 3.1, 2 * CELL, 0, 0, 0, 1), sampleLight(54 * CELL, 18.5, 2 * CELL)); }   // the postern's portcullis
   if (has('portcullis')) drawM('bars:5:6', m4trs(45 * CELL, 0.4 + S.portc.open * 5.2, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), sampleLight(45 * CELL, 2, HALL_Z));
   // the black giant
   const g = S.giant, gl = sampleLight(g.x, 1.5, g.z);

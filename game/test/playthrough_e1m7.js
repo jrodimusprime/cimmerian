@@ -1,5 +1,5 @@
 // Golden playthrough of e1m7, the Relief of Shamar, through the CIM agent API (README §11).
-const EXPECTED = { tick: 16858, hash: '82d1e3af' };
+const EXPECTED = { tick: 16350, hash: '682eada2' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m7"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };

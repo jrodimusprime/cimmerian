@@ -404,6 +404,12 @@ function buildLevelMesh() {
     }
   }
   for (const p of LV.props) addPrefab(mb, p);
+  for (const q of LV.parapets || []) {                  // the crenellated parapet: a low wall, merlons on it, a round post at each end of a run
+    const len = Math.hypot(q.x1 - q.x0, q.z1 - q.z0), yaw = Math.atan2(q.x1 - q.x0, q.z1 - q.z0), mx = (q.x0 + q.x1) / 2, mz = (q.z0 + q.z1) / 2;
+    addBox(mb, mx, q.y + 0.5, mz, 0.22, 0.5, len / 2, T.HEWN, yaw);
+    for (let k = 0; k < 2; k++) { const u = (k + 0.5) / 2 - 0.5, x = mx + (q.x1 - q.x0) * u, z = mz + (q.z1 - q.z0) * u; addBox(mb, x, q.y + 1.22, z, 0.24, 0.24, len * 0.16, T.HEWN, yaw); }
+    for (const [x, z] of [[q.x0, q.z0], [q.x1, q.z1]]) addLathe(mb, x, q.y, z, [[0.3, 0], [0.3, 1.05], [0.36, 1.1], [0.36, 1.25], [0, 1.3]], 8, T.HEWN);   // rounded off where runs meet
+  }
   if (LEVEL.open) {                                       // the plain runs on past the boulders to the horizon, with low hills far off
     const X = W * CELL, Z = H * CELL, F = 1600, g = -0.05, ring = [[-F, -F], [X + F, -F], [X + F, Z + F], [-F, Z + F]], inner = [[0, 0], [X, 0], [X, Z], [0, Z]];
     for (let k = 0; k < 4; k++) {

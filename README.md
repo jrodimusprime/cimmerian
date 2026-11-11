@@ -19,10 +19,10 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | `e1m3` The Tunnels Below | 2:39 (11463 ticks) | ~10.6 min |
 > | `e1m4` Yothga | 3:42 (15980 ticks) | ~14.8 min |
 > | `e1m5` The Scarlet Citadel | 2:50 (12256 ticks) | ~11.3 min |
-> | `e1m6` The Tower of Tamar | 2:23 (10275 ticks) | ~9.5 min |
-> | `e1m7` The Relief of Shamar | 3:54 (16858 ticks) | ~15.6 min |
+> | `e1m6` The Tower of Tamar | 2:40 (11553 ticks) | ~10.7 min |
+> | `e1m7` The Relief of Shamar | 3:47 (16350 ticks) | ~15.1 min |
 > | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
-> | **Campaign** | **22:54** (98943 ticks) | **~92 min** |
+> | **Campaign** | **23:05** (99713 ticks) | **~92 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -809,7 +809,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] the snake boaconstrictor thing looks lame. make the snake carry him off in his mouth please
   - *Done:* (as above) she carries him off in her mouth now; no more coils.
 
-- [ ] E1M6 still has some edges of the castle that look thin like 1px with sky behind them... maybe have to round them off with a curve wall around it so tehy dont look like pixels
+- [x] E1M6 still has some edges of the castle that look thin like 1px with sky behind them... maybe have to round them off with a curve wall around it so tehy dont look like pixels
+  - *Done:* the roofs and leads ended in the bare edge of a slab against the sky. Every edge of a high masonry roof that drops away into the void now has a crenellated parapet (a low wall, merlons on it, and a round post where runs meet, rounding off the corners), solid, so you don't walk off it; the edges of gaps meant to be leapt are left open. Tamar's turrets and leads, and the citadel's battlements in e1m5, all have them.
 
 - [x] if you get bitten by the little dwarf creatures it means you slow down for 10s and get dizzy so you cant make the jumps
   - *Done:* a pit-thing's bite dazes you for ten seconds (a fresh bite starts it again): your legs go to water (six-tenths speed), there's no spring in a jump (you won't clear a gap), and the world reels (the view sways and rolls, easing off as it passes). The first time, it tells you so. The bots learn to hold their ground and fight off what's biting them until it passes before they try a leap.
@@ -826,11 +827,12 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] you dont die when you fall off the tower in teh air over tamar
   - *Done:* the air round Tamar's tower is a forty-metre drop whose bottom is the ground, and a fall only counted as deadly below the floor of the world. Now any drop of more than nine metres kills, wherever it ends.
 
-- [ ] - [x] e1m5: an example of a super thin wall (the night roof, by the tower stair)
+- [x] e1m5: an example of a super thin wall (the night roof, by the tower stair)
   - *Done:* found by scanning every level for roofed rooms that open straight onto the sky: under an open sky the level builder drew nothing where open ground met solid rock (the world's edge), so a building's masonry had no outer face and no top, and its inner walls showed from outside as bare planes with a knife edge against the sky. On open levels a building now has a body: the masonry about a roofed room stands up to just over its ceiling with an outer face and a top, every roofed room has a roof over it, and a band of stone covers a ceiling's edge where a room opens onto the sky. The tower stair onto the battlements reads as a stone tower now, the stair turret on Tamar's crown as stepped masonry.
 
 
-- [ ] the gauardroom gate tower needs more furniture and fittings in it. it is also unclear how the level ends and there's a weird open platform you can wlk onto that doesnt look right... maybe add a drawbridge or something
+- [x] the gauardroom gate tower needs more furniture and fittings in it. it is also unclear how the level ends and there's a weird open platform you can wlk onto that doesnt look right... maybe add a drawbridge or something
+  - *Done:* the guardroom of the gate-tower is the household guard's quarters now: bunks in the corners, a table with stools and candles, weapon racks and a spear rack on the walls, chains, braziers (the floor in the middle left clear for the fight). The open platform hanging in the sky was the postern: it's a vaulted gate passage in the north wall now, barred by a portcullis that is wound up once the household guard is broken ("someone in the gate-tower winds the postern's portcullis up"), with a heavy door standing ajar at its end on the street, a light beyond it and a torch either side: through the door, and the level ends.
 
 
 - [x] theres a weird bug where low poly characters load then the better ones load later... just wait for the level to load

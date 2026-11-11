@@ -62,7 +62,8 @@ window.__fight0 = (groups, maxTicks, radius, maxSteps) => {
     }
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
     // the level's boss close by: face him, always, and fight him; the rest are only parried
-    const boss = __boss(10);
+    // the boss close by: face him and fight him, once he's at you or his men about you are down; till then cut down the man at hand
+    const boss = (b => b && (Math.hypot(b.x - s.x, b.z - s.z) < 3.5 || !live.some(q => q !== b && !FOES[q.cls].ranged && Math.hypot(q.x - s.x, q.z - s.z) < 3)) ? b : null)(__boss(10));
     const f = boss || live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
     // a spear drawn back to throw: hold the aim on him until it leaves the hand
     if (s.throwKind === 'spear' && !s.throwFired) { CIM.step({ yaw, pitch: Math.atan2(f.y + 1.0 - s.y - 1.5, d) + d * 0.012 }, 1); continue; }

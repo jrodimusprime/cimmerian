@@ -738,15 +738,22 @@ const LEVEL_E1M6 = {
     { id: 'tstair', name: 'the tower stair', at: [51, 14], size: [3, 14], h: 3, floor: 40, rise: -0.9, riseAxis: 'z', style: 'hewn' },
     { id: 'lstair', name: 'the lower stair', at: [57, 13], size: [3, 13], h: 3, floor: 17.2, rise: 0.9, riseAxis: 'z', style: 'hewn' },
     { id: 'guardroom', name: 'the guardroom of the gate-tower', at: [53, 2], size: [11, 11], h: 4, floor: 17, vault: 1, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' } },
-    { id: 'postern', name: 'the postern, open on the street', at: [53, 0], size: [2, 2], floor: 17, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SUNSET' } },
+    { id: 'postern', name: 'the postern gate', at: [53, 0], size: [2, 2], h: 3.4, floor: 17, vault: 0.8, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' } },   // a vaulted gate passage in the north wall, behind a portcullis
     { id: 'thall', name: 'the hall at the stair\'s foot', at: [53, 26], size: [9, 7], h: 3.6, floor: 28, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' } },
   ],
   shafts: [], links: [], features: [],
   planks: [{ from: [28.9, 19.5], to: [30.1, 19.5] }],
   props: [{ prefab: 'torch', at: [54, 15], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [54, 21], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [55, 26], wall: 'N', dim: 0.8 }, { prefab: 'brazier', at: [52.6, 2.6] }, { prefab: 'brazier', at: [55.6, 2.6] },
+    // the postern: a heavy door at the end of the gate passage, standing ajar on the street, a torch either side
+    { prefab: 'door', at: [54, 0], wall: 'N', open: 0.6 }, { prefab: 'torch', at: [53.2, 0], wall: 'N', dim: 0.9 }, { prefab: 'torch', at: [54.8, 0], wall: 'N', dim: 0.9 },
+    // the guardroom of the gate-tower: the household guard's quarters
+    { prefab: 'bunk', at: [61.6, 2.6] }, { prefab: 'bunk', at: [61.6, 12.2] },   // in the corners, the floor left open
+    { prefab: 'table', at: [54.4, 12.2] }, { prefab: 'stool', at: [55.6, 12.4] }, { prefab: 'candles', at: [54.6, 12.3] },
+    { prefab: 'rack', at: [53, 7], wall: 'W' }, { prefab: 'spear_rack', at: [53, 10], wall: 'W' }, { prefab: 'rack', at: [64, 11.5], wall: 'E' },
+    { prefab: 'chains', at: [60.5, 2], wall: 'N' }, { prefab: 'brazier', at: [61, 12] },
     { prefab: 'standard', at: [45, 14], rot: 1.2 }, { prefab: 'bones', at: [22, 20] }],
-  lights: [{ at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 2.2 }, ],
-  items: [{ kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [9, 16] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [24, 22] },
+  lights: [{ at: [54, -0.4], y: 19, col: [1.0, 0.7, 0.4], rad: 6, i: 1.4 }, { at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 2.2 }, ],
+  items: [{ kind: 'wine', name: 'Arpello\'s wine-flask', heal: 40, at: [44, 13] }, { kind: 'bread', name: 'a guard\'s bread', heal: 30, at: [48.5, 21.5] }, { kind: 'wine', name: 'a guard\'s wine-skin', heal: 35, at: [52.5, 23.5] }, { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [9, 16] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [24, 22] },
     { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [40, 21] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [53, 20] },
     { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [61, 28] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [58, 14] }, { kind: 'wine', name: 'a cup of Arpello\'s wine', heal: 40, at: [62, 11] },
     { kind: 'bread', name: 'an archer\'s bread', heal: 30, at: [34.8, 16] }, { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [59.2, 24.5] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [54, 32] }],
@@ -1163,6 +1170,27 @@ function buildLevel(spec) {
     else if (p.prefab === 'post') LV.colliders.push({ x, z, r: 0.35 });
     else if (p.prefab === 'bunk') { LV.colliders.push({ x: x - 0.6, z, r: 0.55 }); LV.colliders.push({ x: x + 0.6, z, r: 0.55 }); }
     else if (p.prefab === 'stool') LV.colliders.push({ x, z, r: 0.35 });
+  }
+  // parapets: a crenellated wall along every edge of a high masonry roof that drops away into the void (not across a gap
+  // meant to be leapt: level ground two or three cells over), so its edge has a body and a man doesn't walk off it
+  LV.parapets = [];
+  if (spec.open) {
+    const W = LV.W, H = LV.H, at = (x, z) => x >= 0 && z >= 0 && x < W && z < H ? z * W + x : -1;
+    for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
+      const i = z * W + x, rm = LV.rooms[LV.room[i]];
+      if (LV.kind[i] !== 1 || !(LV.flags[i] & F_SKY) || !rm || rm.style !== 'hewn' || LV.floor[i] < 6) continue;
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const j = at(x + dx, z + dz); if (j < 0) continue;
+        const drop = LV.kind[j] === 2 ? LV.deep[j] || LV.void[j] || LV.floor[j] < LV.floor[i] - 6 : LV.kind[j] === 1 && LV.floor[j] < LV.floor[i] - 6;
+        if (!drop) continue;
+        let leap = false; for (const k of [2, 3]) { const q = at(x + dx * k, z + dz * k); if (q >= 0 && LV.kind[q] === 1 && Math.abs(LV.floor[q] - LV.floor[i]) < 1.5) leap = true; }
+        if (leap) continue;
+        const ex = (dx > 0 ? x + 1 : dx < 0 ? x : x + 0.5) * CELL, ez = (dz > 0 ? z + 1 : dz < 0 ? z : z + 0.5) * CELL, tx = dz !== 0 ? 1 : 0, tz = dx !== 0 ? 1 : 0, inset = 0.24;
+        const cx = ex - dx * inset, cz = ez - dz * inset;
+        LV.parapets.push({ x0: cx - tx * CELL / 2, z0: cz - tz * CELL / 2, x1: cx + tx * CELL / 2, z1: cz + tz * CELL / 2, y: LV.floor[i], nx: dx, nz: dz });
+        for (let k = 0; k <= 6; k++) LV.colliders.push({ x: cx + tx * CELL * (k / 6 - 0.5), z: cz + tz * CELL * (k / 6 - 0.5), r: 0.24 });
+      }
+    }
   }
   for (const l of spec.lights) {
     const [x, z] = W2(l.at[0], l.at[1]);
