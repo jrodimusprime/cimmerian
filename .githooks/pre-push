@@ -1,0 +1,6 @@
+#!/bin/sh
+# Before every push: the whole campaign played through, sped up (game/test/regress.mjs, about a minute and a half).
+# Skip in an emergency with: git push --no-verify
+cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "pre-push: regression playthrough of e1m1-e1m8..."
+node game/test/regress.mjs || { echo "pre-push: regression failed; not pushing."; exit 1; }

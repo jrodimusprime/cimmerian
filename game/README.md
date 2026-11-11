@@ -152,4 +152,4 @@ This shows the design working. It is not the production pipeline:
 | `js/audio.js` | Synthesised sound |
 | `js/splash.js` | Splash text and the engraving painter |
 | `js/game.js` | Sim tick, player, giant, Satha, Shukeli, puzzles, HUD, rendering and the `CIM` agent API |
-| `test/` | Headless Chrome driver and a golden playthrough of each level (`run.sh` runs all three) |
+| `test/` | Headless Chrome driver, a golden playthrough of each level, and `regress.mjs`: the regression test run before every push (`.githooks/pre-push`, enabled with `git config core.hooksPath .githooks`). It plays the whole campaign sped up, about a minute: every golden run at full sim speed in parallel, checked for its tick and hash, for deaths over the level's budget, and for the bot standing still 10 s or more anywhere but a known wait (`waits.json`); then it replays each recorded autoplay and checks it ends the same way, and reports the campaign against rule 3 |

@@ -50,9 +50,16 @@ try {
   // CIM_RECORD=file: log every agent call so the run can be replayed frame by frame (test/video.js)
   if (process.env.CIM_RECORD) await ev(`window.__rec = []; { const st = CIM.step.bind(CIM), ld = CIM.load.bind(CIM);
     CIM.step = (a = {}, n = 1) => { __rec.push([JSON.parse(JSON.stringify(a)), n]); return st(a, n); }; CIM.load = id => { __rec.push(['load', id]); return ld(id); }; } true`);
+  // CIM_WATCH=file: sample the player through the run (tick, x, z, health, mode) and note every death, for test/regress.mjs
+  if (process.env.CIM_WATCH) await ev(`window.__watch = { pts: [], deaths: [], dead: false }; { const st = CIM.step.bind(CIM), ld = CIM.load.bind(CIM);
+    const note = () => { const s = CIM.state, W = __watch, m = CIM.obs().mode, l = W.pts[W.pts.length - 1];
+      if (!l || s.tick - l[0] >= 6 || l[4] !== m) W.pts.push([s.tick, +s.x.toFixed(2), +s.z.toFixed(2), Math.round(s.health), m]);
+      if (s.health <= 0 && !W.dead) { W.dead = true; W.deaths.push([s.tick, +(s.x / 2.5).toFixed(1), +(s.z / 2.5).toFixed(1), S.room || '']); } else if (s.health > 0) W.dead = false; };
+    CIM.step = (a = {}, n = 1) => { const r = st(a, n); note(); return r; }; CIM.load = id => { const r = ld(id); __watch.pts = []; return r; }; } true`);
   const grab = async (path, quality = 82) => { const r = await send('Page.captureScreenshot', { format: 'jpeg', quality }); writeFileSync(path, Buffer.from(r.result.data, 'base64')); };
   const fn = new Function('ev', 'shot', 'sleep', 'log', 'grab', 'readFileSync', `return (async () => { ${body} })();`);
   await fn(ev, shot, sleep, (...a) => console.log(...a), grab, readFileSync);
   if (process.env.CIM_RECORD) writeFileSync(process.env.CIM_RECORD, await ev('JSON.stringify(__rec)'));
+  if (process.env.CIM_WATCH) writeFileSync(process.env.CIM_WATCH, await ev('JSON.stringify(__watch)'));   // to a file: a big report on stdout is cut short by the exit below
 } catch (e) { console.log('[harness error]', e.stack || e); }
 finally { try { ws && ws.close(); } catch {} chrome.kill('SIGKILL'); process.exit(0); }
