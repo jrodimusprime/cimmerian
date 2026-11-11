@@ -1,6 +1,6 @@
 // Golden playthrough of e1m2, The Pits, through the CIM agent API (README §11).
 // It plays the level in the book's order, using only player inputs.
-const EXPECTED = { tick: 9636, hash: 'c847a60e' };
+const EXPECTED = { tick: 16065, hash: '1195ce5a' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -106,6 +106,11 @@ true`);
 const O = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health)} wep=${o.weapon} kills=${o.kills} satha=${typeof o.satha.phase === 'number' ? o.satha.phase.toFixed(1) : o.satha.phase} flags=${Object.entries(o.flags).filter(([, v]) => v).map(([k]) => k).join(',')}`;
 let o = await O('(CIM.load("e1m2"), CIM.step({}, 1))');
+// THE CONCLAVE (ch. II): hear them out; answer them, refuse the parchment, spit in Amalrus's eyes; then go where they march you
+for (const want of ['answer', 'refuse', 'spit']) log('conclave:', want, await ev(`(() => { for (let i = 0; i < 4000; i++) { const t = interactTarget; if (t && t.type === 'act' && t.f.id === '${want}') { CIM.step({ use: true, yaw: CIM.state.yaw, pitch: CIM.state.pitch }, 1); return CIM.state.tick; } __wait(1); } return -1; })()`));
+o = await O(`(() => { for (let i = 0; i < 6000 && !CIM.state.flags.marched; i++) __wait(1);
+  for (let i = 0; i < 12000 && !CIM.state.flags.in_vault; i++) { const a = actor('tsotha'), s = CIM.state, d = Math.hypot(a.x - s.x, a.z - s.z); CIM.step({ forward: d > 2.6 ? 1 : 0, yaw: Math.atan2(-(a.x - s.x), -(a.z - s.z)), pitch: 0 }, 1); }
+  return CIM.obs(); })()`); log('vault:', brief(o));
 // THE VAULT (puzzle): lie still while Satha passes; the black; the keys at your feet
 for (let i = 0; i < 120 && !o.flags.keys_down; i++) o = await O('__wait(36)');
 log('keys down:', brief(o));
@@ -136,7 +141,7 @@ o = await O('__route([[45.5, 14], [52.5, 14], [53.4, 14]])');
 o = await O('__jumpTo(55.5, 14)');
 o = await O('__fight(["pits"], 3000, 20)'); log('pits:', brief(o));
 o = await O('(__nav(55.5 * C, 11.5 * C), __jumpTo(59.5, 11.5))'); log('stone:', brief(o));
-o = await O('(__nav(59.5 * C, 14 * C), __jumpTo(62, 14))');
+o = await O('(__nav(59.5 * C, 14 * C), __fight(["bonepit", "pits"], 2500, 5), __nav(59.5 * C, 14 * C), __jumpTo(62, 14))');   // whatever leaps the pit at you first, then over
 // THE BONE PIT (combat), then the weeping tunnel
 o = await O('__fight(["bonepit"], 9000, 20)'); log('bonepit:', brief(o));
 o = await O('__route([[66, 14], [69.5, 14]])'); log('end:', brief(o));   // no heal detour: it wandered back over pit 3

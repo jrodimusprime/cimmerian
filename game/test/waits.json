@@ -1,9 +1,10 @@
 {
   "_": "Known waits for test/regress.mjs: where a golden bot may stand still on purpose (cell within r, up to max seconds), and each level's death budget. Anything else that stands 10 s or more fails the push.",
   "e1m1": { "waits": [{ "cell": [100.9, 31.3], "r": 5, "max": 32, "why": "on the heap after the last wave: the kings ride in, Tsotha's offer" }] },
-  "e1m2": { "waits": [{ "cell": [6.9, 9.6], "max": 55, "why": "the Vault: chained, lie still while Satha passes, then the keys" }] },
-  "e1m3": { "waits": [{ "cell": [44.7, 33.5], "r": 2, "max": 25, "why": "Satha returns: in the alcove, the torch shaken out, keeping still while she passes" }] },
+  "e1m2": { "waits": [{ "cell": [61, 27.6], "r": 2.5, "max": 75, "why": "the conclave: hearing out the kings and the wizard, answering them" }, { "cell": [6.9, 9.6], "max": 55, "why": "the Vault: chained, lie still while Satha passes, then the keys" }] },
+  "e1m3": { "waits": [{ "cell": [44.7, 33.5], "r": 2, "max": 25, "why": "Satha returns: in the alcove, the torch shaken out, keeping still while she passes" }, { "cell": [38.5, 7.8], "r": 2, "max": 25, "why": "the choke: back to the fallen stones, waiting for the weeping thing to come at you" }] },
   "e1m4": { "waits": [{ "cell": [10.9, 18], "max": 14, "why": "the cage: the vine cut, Pelias gets to his feet and speaks" }] },
+  "e1m5": { "waits": [{ "cell": [54, 9], "r": 2.5, "max": 60, "why": "the gold-domed chamber: Pelias and the wine, the crystal" }, { "cell": [20, 27], "r": 3, "max": 45, "why": "the tallest tower: Pelias calls the beast, and his promise" }] },
   "e1m6": { "waits": [] },
-  "e1m8": { "waits": [{ "cell": [84.3, 14.9], "max": 18, "why": "Tsotha fallen: the ending plays out" }] }
+  "e1m8": { "waits": [{ "cell": [84.3, 14.9], "max": 40, "why": "Tsotha fallen: the ending plays out" }] }
 }

@@ -18,7 +18,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
   'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
   'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
-  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY'];
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -411,6 +411,23 @@ const TEXGEN = {
     const u = x / 64, v = y / 64, cx = u - 0.5, cy = v - 0.45, r = Math.hypot(cx, cy * 0.8);
     if (Math.abs(r - 0.22) < 0.04 || (r < 0.1 && Math.abs(cx) < 0.03)) return { v: 0.8, ramp: 'ink', lo: 0.5, hi: 0.95 };
     return { v: 0.5 + 0.3 * tfbm(u, v, 4, 3, s) + 0.15 * Math.sin(TAU * u * 3), ramp: 'scarlet', lo: 0.2, hi: 0.9, h: 0.12 };
+  } },
+  TAPESTRY: { f: (x, y, s) => {                      // a hanging: a woven border round a field of hunters, beasts and trees, faded and moth-eaten
+    const u = x / 64, v = y / 64, b = Math.min(u, 1 - u, v, 1 - v);
+    if (b < 0.06) return { v: 0.55 + 0.25 * Math.sin(TAU * (u + v) * 16), ramp: 'bronze', lo: 0.2, hi: 0.85 };
+    if (b < 0.09) return { v: 0.15, ramp: 'ink', lo: 0, hi: 0.3 };
+    const weave = 0.06 * ((x + y) % 2), fig = tfbm(u * 1.4, v * 1.4, 4, 3, s + 3), tree = Math.abs(Math.sin(TAU * u * 2.5)) < 0.12 && v > 0.25;
+    if (tfbm(u, v, 16, 2, s + 31) > 0.78) return { v: 0.12 + weave, ramp: 'ink', lo: 0, hi: 0.3 };   // moth-holes and wear
+    if (tree) return { v: 0.35 + 0.3 * fig + weave, ramp: 'jade', lo: 0.05, hi: 0.6 };
+    if (fig > 0.6) return { v: 0.45 + 0.4 * (fig - 0.6) + weave, ramp: 'bronze', lo: 0.1, hi: 0.8 };
+    return { v: 0.35 + 0.35 * tfbm(u, v, 8, 2, s) + weave, ramp: 'scarlet', lo: 0.1, hi: 0.75, h: 0.06 };
+  } },
+  MOSAIC: { f: (x, y, s) => {                         // "a floor of many-hued mosaics": little squared stones, a meander border
+    const tx = Math.floor(x / 4), ty = Math.floor(y / 4), id = hrand(tx, ty, s, 3);
+    if (x % 4 === 0 || y % 4 === 0) return { v: 0.12, ramp: 'ink', lo: 0, hi: 0.3 };
+    const ring = Math.floor(Math.hypot(tx - 15.5, ty - 15.5) / 3) % 3;
+    const ramp = ['bronze', 'scarlet', 'ink'][ring], v = 0.3 + 0.25 * id + 0.15 * tfbm(x / 64, y / 64, 4, 2, s);
+    return { v, ramp, lo: 0.06, hi: 0.55 };
   } },
   CAVE: { f: (x, y, s) => {                           // wet limestone, flowstone drips running down
     const px = x / 64, py = y / 64, drip = tfbmP(px, py, 16, 2, 4, s), lumps = tfbm(px, py, 4, 4, s + 5);

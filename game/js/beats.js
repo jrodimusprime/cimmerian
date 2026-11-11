@@ -14,6 +14,7 @@ function beatsInit() {
   S.npcTrail = [];
   S.npc = n ? { id: n.id, x: n.at[0] * CELL, z: n.at[1] * CELL, yaw: n.yaw || 0, walk: 0, mode: n.mode || 'stay', t: 0 } : null;
   for (const f of S.foes) if (f.asleep) f.state = 'sleep';
+  actorsInit();
   // allies who fight (the Gundermen): simulated men, in S, marching behind the king and closing with the enemy
   S.allyMen = []; S.allyAnchor = null;
   for (const a of LEVEL.allies || []) if (a.fight) for (let k = 0; k < a.n; k++)
@@ -29,20 +30,28 @@ function updateBeats() {
     if (b.needs && !b.needs.every(f => S.flags[f])) continue;
     if (b.at && !roomsOf(b.at).includes(S.room)) continue;
     if (b.killed && !groupDead(b.killed)) continue;
+    if (b.quiet && B.queue.length) continue;               // quiet: not while lines are still coming
     if (b.after !== undefined) { B.t[b.id] = (B.t[b.id] || 0) + DT; if (B.t[b.id] < b.after) continue; }
     B.fired.add(b.id); B.when[b.id] = S.tick;
-    (b.lines || []).forEach(([t, c], i) => B.queue.push({ at: S.tick + Math.round(i * 2.6 * SIM_HZ), t, c: c || '' }));
+    { let at = S.tick; for (const [t, c] of b.lines || []) { B.queue.push({ at, t, c: c || '' }); at += Math.round(Math.max(2.6, t.length / 24) * SIM_HZ); } }   // time to read each line before the next
     if (b.sets) setFlag(b.sets);
     for (const g of b.wake || []) { for (const f of S.foes) if (f.group === g && f.state === 'dormant' && f.delay < 0) f.state = 'idle'; alertGroup(g, false); }   // delay -1: held back, out of sight, until a beat sends them in
+    if (b.act) directActors(b.act);
     if (b.npc && S.npc) { S.npc.mode = b.npc; S.npc.castAt = S.npc.t; }
     if (b.sound) Sfx[b.sound] && Sfx[b.sound](1);
     if (b.hurl) { const f = S.foes.find(q => q.id === b.hurl); if (f) { f.y += 2.2; f.vy = 5; f.falling = 1; f.vx = 0; f.fallTo = 0; const a = f.yaw + Math.PI; f.x += Math.sin(a) * 0; f.z -= 14; } }   // over the parapet: far out, and down
+    if (b.teleport) {                                   // the scene cuts: you are somewhere else
+      const [tx, tz, ty] = b.teleport; S.x = tx * CELL; S.z = tz * CELL; S.yaw = ty || 0; S.vx = S.vz = 0; S.y = groundInfo(S.x, S.z).floor; prev = { x: S.x, y: S.y, z: S.z };
+      S.checkpoint = { x: S.x, z: S.z, yaw: S.yaw }; fade = 1; fadeTarget = 0;
+    }
+    if (b.sathaIn !== undefined) S.satha.start = S.tick + Math.round(b.sathaIn * SIM_HZ);   // the serpent's rounds begin
     if (b.cp) S.checkpoint = { x: b.cp[0] * CELL, z: b.cp[1] * CELL, yaw: b.cp[2] || 0 };
   }
   while (B.queue.length && B.queue[0].at <= S.tick) { const q = B.queue.shift(); log(q.t, q.c); if (q.c === 'voice') Sfx.voice(0); }
   updateSleepers();
   updateNPC();
   updateAllyMen();
+  updateActors();
 }
 // "they were met by the spears of the pikemen. No infantry was a match for the wild Gundermen" (ch. V):
 // the pike line follows the king in ranks ten metres behind him, and any of the enemy who come within reach of it are spitted.
@@ -181,6 +190,24 @@ function drawNPC() {
     Object.assign(P, { uxR: -1.45 * k, fxR: -0.15, uzR: 0.1, headX: -0.1 });
   }
   drawCharacter(n.id, n.x, y, n.z, n.yaw, P, l);
+  if (LEVEL.vine && n.id === 'pelias') {                  // "the tendrils of the plant ... about the man's body": Yothga's vine, from the vault down round him
+    const top = groundInfo(n.x, n.z).ceil, held = n.mode === 'bound', len = held ? top - y - 1.0 : 0.9;
+    const vx = n.x + 0.15, vz = n.z - 0.1;
+    drawM('vinestem', m4mul(m4trs(vx, top - len, vz, 0.3, 0.06, 0, 1), m4s3(1.4, len, 1.4)), l);
+    if (held) for (let k = 0; k < 3; k++) drawM('vinecoil', m4mul(m4trs(n.x, y + 0.75 + k * 0.32, n.z, k * 1.1 + Math.sin(gameTime * 0.9 + k) * 0.08, 0.18 * (k - 1), 0.12, 1), m4s3(0.3, 1, 0.24)), l);
+  }
+}
+// the vine's garden: creepers from the vault and pale growths about the cage (e1m4: LEVEL.overgrown)
+function drawOvergrowth() {
+  const O = LEVEL.overgrown; if (!O) return;
+  const r = LV.rooms.find(q => q.id === O.room); if (!r) return;
+  for (let i = 0; i < O.n; i++) {
+    const x = (r.at[0] + 0.5 + hrand(i, 3, 7, 1) * (r.size[0] - 1)) * CELL, z = (r.at[1] + 0.5 + hrand(i, 5, 9, 1) * (r.size[1] - 1)) * CELL;
+    if (O.clear && O.clear.some(([cx, cz, rr]) => Math.hypot(x - cx * CELL, z - cz * CELL) < rr * CELL)) continue;
+    const g = groundInfo(x, z), l = sampleLight(x, g.floor + 1.5, z);
+    if (i % 2) drawM('creeper', m4mul(m4trs(x, g.ceil, z, i * 1.3, 0.04 * Math.sin(gameTime * 0.7 + i), 0, 1), m4s3(1, 0.8 + hrand(i, 2, 4, 1) * 1.2, 1)), l);
+    else drawM('plant', m4trs(x, g.floor, z, hrand(i, 1, 2, 1) * 6.3, 0.05 * Math.sin(gameTime * 0.8 + i), 0, 0.5 + 0.5 * hrand(i, 2, 4, 1)), l, 0.15);
+  }
 }
 // allied ranks (the Bossonians and Gundermen on the ridge): drawn, not simulated
 function drawAllies() {

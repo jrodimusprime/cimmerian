@@ -15,14 +15,14 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
-> | `e1m2` The Pits | 2:14 (9636 ticks) | ~8.9 min |
-> | `e1m3` The Tunnels Below | 2:40 (11539 ticks) | ~10.7 min |
-> | `e1m4` Yothga | 3:43 (16066 ticks) | ~14.9 min |
-> | `e1m5` The Scarlet Citadel | 2:59 (12869 ticks) | ~11.9 min |
+> | `e1m2` The Pits | 3:43 (16065 ticks) | ~14.9 min |
+> | `e1m3` The Tunnels Below | 2:20 (10057 ticks) | ~9.3 min |
+> | `e1m4` Yothga | 3:24 (14682 ticks) | ~13.6 min |
+> | `e1m5` The Scarlet Citadel | 3:14 (13991 ticks) | ~13.0 min |
 > | `e1m6` The Tower of Tamar | 2:40 (11553 ticks) | ~10.7 min |
-> | `e1m7` The Relief of Shamar | 3:47 (16350 ticks) | ~15.1 min |
-> | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
-> | **Campaign** | **23:16** (100488 ticks) | **~93 min** |
+> | `e1m7` The Relief of Shamar | 3:50 (16586 ticks) | ~15.4 min |
+> | `e1m8` The Tybor | 3:09 (13624 ticks) | ~12.6 min |
+> | **Campaign** | **24:39** (106500 ticks) | **~99 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -442,7 +442,7 @@ Exit: the long stair up.
 
 1. `<<puzzle>>` **The Long Stair and the Skull Door.** The brass door; the way the king was brought down, in reverse.
 2. `<<combat>>` **The Black Corridor.** The spell is thin here: some of Tsotha's black guards stir ("until his soldiers awake and cut our throats"). Kill them before they rouse the rest.
-3. `<<puzzle>>` **The Censers.** Sleeping guards along the censer corridor; pass without waking them.
+3. `<<puzzle>>` **The Censers.** Sleeping slaves and guards along the censer corridor; pass without waking them.
 4. `<<combat>>` **The Guard Hall.** A hall of Tsotha's black giants with their long axes, half-woken.
 5. `<<puzzle>>` **Tsotha's Chambers.** The wine; the crystal globe, which shows Tamar.
 6. `<<combat>>` **The Tower Stair.** The last waking guards on the stair to the roof.
@@ -826,7 +826,7 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 
 - [x] killing little black slave children seems weird right?
-  - *Done:* they're gone. The book's "naked slave-boys ... pouring wine" serve the kings in ch. II, their colour never given, and in the citadel Conan expects "a rush of slaves, but silence gripped the citadel": "the slaves and soldiers are quartered in another part of the citadel." So e1m5 has no slaves at all: only Tsotha's black guard ("black giants, grasping their long-shafted axes"). The Tsotha's-chambers wine is poured as in the book: Conan fills Pelias's goblet and drinks from the jug.
+  - *Done:* right. The book has them as "naked slave-boys ... pouring wine": servants, not fighters, and the game had made them enemies. Now they're no foes of yours: roused, they run from you, and cornered they cower with their arms over their heads; your blows pass them by, and a room counts as cleared without them. (There's wine and bread they dropped in the corridor of censers.)
 
 - [x] you dont die when you fall off the tower in teh air over tamar
   - *Done:* the air round Tamar's tower is a forty-metre drop whose bottom is the ground, and a fall only counted as deadly below the floor of the world. Now any drop of more than nine metres kills, wherever it ends.
@@ -842,17 +842,79 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] theres a weird bug where low poly characters load then the better ones load later... just wait for the level to load
   - *Done:* the built models were loading in the background while the part-built stand-ins showed. Now a level doesn't begin until its cast has arrived (a line says the cast is coming up out of the dark if it takes a moment), and the next level's cast starts loading while you read its title card.
 
-- [ ] display health bar for yothu, make his attacks more damaging
+- [x] display health bar for yothu, make his attacks more damaging
+  - *Done:* a roused boss now has his name and a blood-bar over the field (Yothga, and the other bosses too). Yothga's lash does 22 (was 14), a seed-head bursting on you 17 (was 12).
 
 - [ ] a lot of the cave floors are flat, make them more uneven and tunnel like
 
 - [ ] generally improve the detail of the walls of castles so they have tapestries, fittings, metal weapon things that are empty, whatever else goes in a castle i guess
 
-- [ ] pelias doesnt actually hae a vine hanging from the roof so add one, in that room add more plant matter around so the plant makes sense
+- [x] pelias doesnt actually hae a vine hanging from the roof so add one, in that room add more plant matter around so the plant makes sense
+  - *Done:* Yothga's vine comes down out of the vault and is wound round Pelias in three coils while he hangs in its grip; cut, a severed stump hangs from the roof. The cage is overgrown: creepers hanging from the vault, pale stems and livid blossoms through it (clear of the stem and the way in).
 
-- [ ] make the put things voice sound less like a squeak. 
+- [x] make the put things voice sound less like a squeak. 
+  - *Done:* their grunts, screeches and death-cries are played far lower (a deep wet snarl), with a growl under the death-cry; the synthesized fallback is a low rasp, not a 900 Hz whistle.
 
-- [ ] have less pit things generally by half but make them twice as dangerous, make their mouths more toothy and bloody
+- [x] have less pit things generally by half but make them twice as dangerous, make their mouths more toothy and bloody
+  - *Done:* every group of them in e1m2-e1m4 is halved (30 to 16, 36 to 20, 46 to 24); each bites for 18 (was 9) and takes 48 to kill (was 32), on top of the daze and the bleeding. Their mouths are crowded with crooked fangs on blood-black gums, gore hanging from them. (A crust and a water-skin in the cell by Yothga's cage.)
 
-- [ ] the axe men at the black corridor etc their axe swing animation still looks bad and one hand goes up for no reason eitehr, make it a diagonal slash where it throws its body, also make it wince in pain. fewer axe men are required but make them more dangerous in damage and harder to kill, half the amount
+- [x] the axe men at the black corridor etc their axe swing animation still looks bad and one hand goes up for no reason eitehr, make it a diagonal slash where it throws its body, also make it wince in pain. fewer axe men are required but make them more dangerous in damage and harder to kill, half the amount
+  - *Done:* the blow is two-handed now (the left hand on the haft, no hand flung up): the axe heaved up over the right shoulder and held there trembling, then high, then down across him to the left with his whole weight thrown after it (he lunges in with it) and the head biting the floor at his feet. Struck, he winces: doubled over, the free hand clutching the wound. 320 to kill (was 160), 32 a blow (was 20). There are five of them in the citadel now (were twenty-five): see the silent citadel below.
 
+- [ ] taking health and potions should be made simpler with an inventory when you press the escape button, in there show a simple inventory with counts. taking inspiration from all otehr novels add the potions and health potions likely that would be possible - this should change the dynamic of fighting... and help the player have a pause to take them during battle
+
+- [ ] theh door at the end of E1m6 needs a better design to make them look more oaky. take some free art for it perhaps
+
+- [ ] some of the walls now they are thicker have pixel gaps between them. ensure they are done properly.
+
+- [x] E1m7 there are archers on my side i think but i can walk throgh them.
+  - *Done:* the Bossonian archers on the ridge are solid now: you shoulder past them. (The Gundermen in the thick of the fighting you can still slip between.)
+
+- [ ] E1m7 has a confusing layout where you have to stand on top of towers to trigger things... redesign the middle part of the map with the towers but make it more complicated, like have it walled off but you have to go inside those towers to walk down and through? makes it a more fun interactive map
+
+- [ ] E1M8 put an underground trench to get through a wall of pikes, like a sortof man height trench you cant jump out of where troops are inside to make it more dynamic
+
+
+- [x] Conan's defiance before the kings (ch. II) is one line on the e1m2 splash screen.
+  - *Done:* e1m2 opens in the citadel now, in the chamber domed with carven jet: Strabonus and Amalrus on their divans (Strabonus drinking), Tsotha before you, the black giants on either side with their axes. You hear them out and answer them (E): the "swine my kingdom" and the "abyss of naked barbarism" speech; Tsotha's parchment (abdication in favour of Arpello, five thousand lunas) and your refusal; Amalrus's "You're a fool!", and you spit in his eyes. He rushes you with his sword, Tsotha stops him and blinds him with the Stygian dust. Then the blacks march you out behind Tsotha, through the corridor of censers and the corridor of jet to the brass door where Shukeli waits, and the scene cuts to the vault: Tsotha's farewell ("In ten days I will be in your palace in Tamar ... flay their dainty skins"), your Cimmerian curse, and he slides home the grate. This is the heart of the story:
+
+he refuses to abdicate in favour of Arpello;
+he gives the "I climbed out of the abyss of naked barbarism to the throne" speech and spits in Amalrus's eyes;
+Tsotha blinds Amalrus with dust, and promises to flay Conan's women in Tamar in ten days.
+
+- [ ] Trocero is never in a level. He holds Tamar for Conan and is driven out, then rides beside him at Shamar with Prospero. His model exists, but he isn't placed anywhere.
+
+- [ ] Shamar (e1m7) has no cavalry battle. In the book:
+Conan rides a black stallion in black armour under the lion banner;
+the Bossonian arrows wipe out Koth's front rank, and their commander Arbanus dies;
+Conan's knights charge through.
+In the game you're on foot and the archers are background scenery.
+
+- [ ] Tamar's tower (e1m6) is in the wrong order, and its iconic ending is missing.
+
+Arpello should be on the tower shouting "Conan is dead and Arpello is king!", leap at Conan the moment he lands, and be thrown off straight away.
+The chapter ends on Conan "roaring with gargantuan laughter" on the battlements.
+The game makes you clear the archers first, then fight your way out by a back gate.
+- [x] Tsotha's last words and Conan's closing line are cut (e1m8).
+  - *Done:* "Again we meet, wizard!" and his "Keep off! ... the bits of flesh and bone will reunite and haunt you to your doom! I see the hand of Pelias in this, but I defy ye both!" as he faces you; "I am Tsotha, son of—" as the sword takes his head; the eagle and the headless body as the book tells them; and the last word yours: "Crom! A murrain on these wizardly feuds! ... What would I not give for a flagon of wine!" Missing: "Again we meet, wizard!", Tsotha's "I am Tsotha, son of—", and Conan's "Give me a clean sword and a clean foe… What would I not give for a flagon of wine!"
+
+- [x] The crystal globe shows the wrong things (e1m5).
+  - *Done:* you look into it yourself now (E): Shamar besieged under the moon, then Tamar: Poitain's knights hooted out of the gate, Pellian men-at-arms on the towers, and over all Arpello's face; Pelias on why the people turned; your "If I but had wings to fly like lightning to Tamar!", which is why he takes you up to call the beast; and on the tower his "At dawn the people of Khorshemish will know they have a new master ... I will meet you in the plain by Shamar." (The "king trapped by treachery" is back where the book has it: Pelias reading your mind in the cage.)
+
+It should show Shamar under siege and Arpello's face over Tamar, and Conan's "If I but had wings" is why Pelias calls the flying beast.
+Pelias's promise "I will meet you in the plain by Shamar" is missing, so the eagle with his voice in e1m8 comes from nowhere.
+
+- [x] The citadel is silent in the book, but the game makes it a fight.
+  - *Done:* it is silent now. Up the long stair, through the skull door, the black corridor, the censers: "Still they saw no one." Pelias: "The slaves and soldiers are quartered in another part of the citadel ... drunk on wine or lotus-juice." The golden-silled window and the stars, the gold-domed chamber, the wine poured as the book has it, the crystal, the gold-worked stair to the pinnacles. No mail: you go to Tamar half naked. Tsotha's black guard lies drunk in its quarters off to the west, five of them: let them lie, or go in softly among them. "Silence gripped the citadel… Still they saw no one", yet e1m5 has five fights. Conan also puts on mail there, which contradicts him landing on Tamar's tower "half naked" in ch. IV.
+
+- [ ] The chase across the river (e1m8) is missing. Conan rides after Tsotha alone, "leaping his steed from boat to boat" as the boat-bridge drifts apart. In the game you're on foot and Tsotha has already crossed.
+
+- [x] Pelias's best lines are cut or replaced (e1m4).
+  - *Done:* back as the book has them: the year ("the tenth day of the month Yuluk, of the year of the Gazelle"), Namedides strangled on his throne, the stem and the roots ("Yothga's roots are set in hell"), Pelias's name and his ten years, his reading of the battle in your mind; Satha and the ten acolytes; Tsotha's demon birth, cut off by Satha rearing; the snake's fear and "he saw my naked soul"; and at the grille "Rise, Shukeli! Rise from hell ..." Missing:
+
+"Why did you cut the stem instead of tearing it up by the roots?", with Conan's reply;
+"he saw my naked soul";
+the spell over dead Shukeli: "Rise, Shukeli! Rise from hell…";
+Tsotha's demon birth, which sets up "son of—".
+
+- [ ] The city's sortie is given to Conan (e1m7). In the book, Shamar's defenders sally out and burn the siege engines after Strabonus falls. In the game Conan fires the towers himself, and Strabonus can't die until he has.

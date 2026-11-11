@@ -1,10 +1,11 @@
 // Golden playthrough of e1m4, Yothga, through the CIM agent API (README §11).
-const EXPECTED = { tick: 16066, hash: 'f2808e7f' };
+const EXPECTED = { tick: 14682, hash: '67f6a1e5' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m4"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
 // THE CAGE: cut through the stem
-o = await O('__route([[7, 18]])'); o = await O('__fight(["yothga"], 4000, 20)'); log('yothga:', brief(o));
+// a ration and a skin from the cell into the satchel first: the flower's seed-heads burn
+o = await O('(__take("bread"), __take("wine"), __route([[7, 18]]), CIM.obs())'); o = await O('__fight(["yothga"], 4000, 20)'); log('yothga:', brief(o));
 o = await waitFlag('pelias_up'); log('pelias:', brief(o));
 // THE OLD WORKS: leap the breaks (south of the plank), then the gallery
 o = await O('__route([[16, 19]])'); o = await O('__jumpTo(20, 19)'); o = await O('__jumpTo(26, 19)'); log('works:', brief(o));

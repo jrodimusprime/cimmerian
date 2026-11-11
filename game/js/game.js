@@ -315,7 +315,7 @@ function sathaPoints(sHead) {
 }
 
 function newState(seed, carry) {
-  const start = entitySpec('info_player_start'), sp = W(start.at[0], start.at[1]);
+  const P0 = LEVEL.prologue, start = P0 ? { at: P0.start, yaw: P0.start[2] } : entitySpec('info_player_start'), sp = W(start.at[0], start.at[1]);   // a prologue: the level opens on a scene somewhere else first
   const g = entitySpec('black_giant'), gp = g ? W(g.at[0], g.at[1]) : { x: -1e4, z: -1e4 };
   const sh = entitySpec('monster_shukeli'), shp = sh ? W(sh.at[0], sh.at[1]) : { x: -1e4, z: -1e4 };
   const fixed = ['cell_door', 'grille_gate', 'portcullis'];
@@ -329,7 +329,7 @@ function newState(seed, carry) {
     items: LV.items.map(it => Object.assign({}, it, { taken: false })),
     door: { open: 0, target: 0 }, grille: { open: 0, target: 0 },
     giant: { state: g ? 'wait' : 'gone', x: gp.x, z: gp.z, y: 0, yaw: Math.PI, t: 0, walk: 0,  wp: 0, arms: 0, grabT: 0, fall: 0 },
-    satha: { start: entitySpec('scripted_satha') ? -Math.round(8 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
+    satha: { start: entitySpec('scripted_satha') && !P0 ? -Math.round(8 * SIM_HZ) : null, active: false, cool: 0, spitCool: 0, pts: null, warned: 0, lastPhase: -1, dripCycle: -1 },
     shukeli: { state: sh ? 'away' : 'gone', x: shp.x, z: shp.z, homeX: shp.x, homeZ: shp.z, yaw: -Math.PI / 2, t: 0, walk: 0, tx: 0, tz: 0, sawT: 0, tauntT: 6, ignoreT: 0, fall: 0, seenOnce: false },
     proj: [], puddles: [], swing: 0, swingLen: 0.4, throwT: 0, kickT: 0, parryT: 0, parryCool: 0, spearUses: 0, spears: carry && carry.spears && !LEVEL.strip ? carry.spears.slice() : [], pouch: carry && carry.pouch && !LEVEL.strip ? carry.pouch.map(p => Object.assign({}, p)) : [], combo: 0, lastSwing: -999, pendingHit: null,
     weapons: armed || (carry && !LEVEL.strip ? Object.assign({}, carry.weapons) : { fists: true, dagger: false, sword: false }), weapon: armed ? 'sword' : carry && !LEVEL.strip ? carry.weapon : 'fists', hits: 0,
@@ -388,6 +388,13 @@ function dynColliders(self) {
   for (const f of S.foes) if (!f.dead && f !== self && f.state !== 'dormant' && f.state !== 'lurk') c.push({ x: f.x, z: f.z, r: 0.42 });   // not one still clinging to the roof, or not yet come
   const n = S.npc; if (n && n !== self && (self || S.onGround)) c.push({ x: n.x, z: n.z, r: 0.35 });   // (not in mid-leap: a jump isn't spoilt on him)
   if (!self && S.shamu) for (const r of S.shamu.riders) c.push({ x: r.x, z: r.z, r: 0.75 });   // a horse is a wall of muscle: you don't walk through it   // Pelias is flesh: you cannot walk through him
+  actorColliders(c, self);
+  if (!self) {                                            // your own men are flesh too: you shoulder past the Bossonians and Gundermen, you don't walk through them
+    for (const a of LEVEL.allies || []) if (!a.fight) for (let k = 0; k < a.n; k++) {
+      const x = (a.at[0] + (k % a.cols) * a.step) * CELL, z = (a.at[1] + Math.floor(k / a.cols) * a.step) * CELL;
+      if (Math.abs(x - S.x) < 6 && Math.abs(z - S.z) < 6) c.push({ x, z, r: 0.38 });
+    }
+  }
   if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
   // Satha's body is solid: you cannot walk through her coils (only lie still while she passes)
   else if (S.satha.pts && (!entitySpec('scripted_satha') || S.flags.free)) {
@@ -438,14 +445,14 @@ function updatePlayer(inp) {
   if (S.plankDrop > 0) { S.plankDrop -= DT; inp = Object.assign({}, inp, { fwd: 0, side: 0, jump: false }); S.vx *= 0.8; S.vz *= 0.8; }   // falling with the plank: nothing to push off
   S.daze = Math.max(0, (S.daze || 0) - DT);
   if (S.bleed > 0) { S.bleed = Math.max(0, S.bleed - DT); S.bleedAcc = (S.bleedAcc || 0) + BLEED_RATE * DT; if (S.bleedAcc >= 1) { S.bleedAcc -= 1; if (S.health > 5) hurt(1, 'bleed'); } }   // a bite's wound, bleeding: it weakens you, it won't finish you
-  const dazeK = S.daze > 0 ? 0.6 : 1, speed = (inp.run ? 7.2 : 4.4) * dazeK;   // dazed by a thing's bite: legs like water
+  const dazeK = (S.daze > 0 ? 0.6 : 1) * (inPrologue() ? 0.5 : 1), speed = (inp.run ? 7.2 : 4.4) * dazeK;   // dazed by a thing's bite: legs like water; in shackles, a shuffle   // dazed by a thing's bite: legs like water
   const wx = il ? ix / il * speed : 0, wz = il ? iz / il * speed : 0;
   const k = Math.min(1, (S.onGround ? 14 : 2.5) * DT);
   S.vx += (wx - S.vx) * k; S.vz += (wz - S.vz) * k;
   const sp = Math.hypot(S.vx, S.vz), ox = S.x, oz = S.z;
   const steps = Math.max(1, Math.ceil(sp * DT / 0.3));
   for (let i = 0; i < steps; i++) { const r = collide(S.x + S.vx * DT / steps, S.z + S.vz * DT / steps, RADIUS, S.y); S.x = r[0]; S.z = r[1]; }
-  if (feature('ring') && !S.flags.free) {                  // the chain: README e1m2 "chain-length radius"
+  if (feature('ring') && !S.flags.free && !inPrologue()) {                  // the chain: README e1m2 "chain-length radius"
     const ring = feature('ring'), dx = S.x - ring.x, dz = S.z - ring.z, d = Math.hypot(dx, dz);
     if (d > TETHER) { S.x = ring.x + dx / d * TETHER; S.z = ring.z + dz / d * TETHER; if (chainSndT <= 0 && sp > 1) { Sfx.chain(); chainSndT = 0.8; } }
   }
@@ -529,6 +536,7 @@ function respawn() {
 }
 
 // ---------------------------------------------------------------- the puzzle chain
+function inPrologue() { return !!(LEVEL.prologue && !S.flags[LEVEL.prologue.done]); }
 function setFlag(f) { if (!S.flags[f]) { S.flags[f] = true; Sfx.blip(); } }
 function freeFromChain() {
   setFlag('free');
@@ -556,6 +564,10 @@ function interact() {
       return;
     case 'clue':
       log(f.text, 'clue'); S.read.add(f.id); Sfx.blip(); return;
+    case 'act':                                         // a scene's moment that is yours to play: answer them, spit
+      setFlag(f.sets); if (f.sound && Sfx[f.sound]) Sfx[f.sound](1);
+      (f.lines || []).forEach(([t, c], i) => S.beats.queue.push({ at: S.tick + Math.round(i * 2.6 * SIM_HZ), t, c: c || '' }));
+      return;
     case 'bones':
       if (S.flags.has_bone) { log('You already have a bone in hand.', 'dim'); return; }
       setFlag('has_bone'); Sfx.clatter();
@@ -1037,7 +1049,7 @@ function updateProjectiles() {
         globeBurst(p.x, Math.max(p.y, groundInfo(p.x, p.z).floor), p.z);
       } else if (p.type === 'seed') {                    // Yothga's seed-head bursts where it falls, in a cloud of livid dust
         const by = Math.max(p.y, groundInfo(p.x, p.z).floor);
-        if (mode === 'play' && Math.hypot(S.x - p.x, S.z - p.z) < 1.8 && Math.abs(S.y + 1 - by) < 2.2) { hurt(12, 'pollen'); punchView(0.05, 0.04); }
+        if (mode === 'play' && Math.hypot(S.x - p.x, S.z - p.z) < 1.8 && Math.abs(S.y + 1 - by) < 2.2) { hurt(17, 'pollen'); punchView(0.05, 0.04); }
         for (let k = 0; k < 14; k++) particles.push({ m: 'blood', x: p.x, y: by + 0.3, z: p.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 2.5, vz: (Math.random() - 0.5) * 4, life: 0.9, max: 0.9, g: 2, s: 1.3 });
         Sfx.squelch();
       } else if (p.type === 'jav') {                     // a spear comes down and lies where it fell
@@ -1109,6 +1121,7 @@ function findTarget() {
     if (f.type === 'bones' && S.flags.has_bone) continue;
     if (f.type === 'spear_rack' && (S.flags.has_spear || S.flags.portcullis_open)) continue;
     if (f.type === 'winch' && S.flags.portcullis_open) continue;
+    if (f.type === 'act') { if (S.flags[f.sets] || (f.needs || []).some(n => !S.flags[n])) continue; const a = f.actor && actor(f.actor); consider({ type: 'act', f }, a ? a.x : f.x, a ? groundInfo(a.x, a.z).floor : f.y - f.baseY, a ? a.z : f.z, f.range || 3); continue; }
     consider({ type: f.type, f }, f.x, f.y - f.baseY, f.z, f.type === 'clue' ? 2.6 : f.type === 'ring' ? 3.7 : 3.0);
   }
   return best;
@@ -1126,6 +1139,7 @@ function promptText(t) {
   if (t.type === 'item' && t.it.kind === 'ember') return '[E] take up the torch and blow on the ember';
   if (t.type === 'item') return t.it.heal ? '[E] ' + (S.health < 100 ? (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name.replace(/^(a|an|the) /, '') : 'stow the ' + t.it.name.replace(/^(a|an|the) /, '') + ' in your satchel') : '[E] take the ' + t.it.name.replace(/^(a|an|the) /, '');
   switch (t.type) {
+    case 'act': return '[E] ' + t.f.prompt;
     case 'ring': return '[E] strain at the chain';
     case 'niche_torch': return '[E] take the torch';
     case 'clue': return t.f.id.startsWith('mark') ? '[E] look at the marks' : '[E] read the scratches';
@@ -1153,7 +1167,7 @@ const ROOM_DESC = {
   garden: 'A cage of bars, and behind the bars, a garden.',
   cell: 'A vault cut from the living rock, far under the hill. Straw rots on the floor. A torch burns in a niche above the ring you are chained to, and the darkness presses in on it like a living thing.',
   hall: 'The main corridor of the pits, vaulted high and narrow like the nave of a drowned temple. Its floor is worn into a smooth trough down the middle, as if something enormous passes along it often.',
-  charge: 'The field of the last charge. Five thousand knights rode into Koth behind you, and here they lie, slashed and trampled, their horses with them.',
+  charge: 'The field of the last charge. Five thousand knights rode into Ophir behind you, and here they lie, slashed and trampled, their horses with them.',
   gully: 'A sunken gully choked with the dead of the charge. Its banks fall away waist-deep, and down here the arrows cannot find you.',
   arrowground: 'Open ground under the Shemite rise, feathered with spent shafts. The dead horses are the only cover.',
   rise: 'The rise where the Shemitish bowmen stood to shoot your knights down.',
@@ -1176,6 +1190,7 @@ const ROOM_DESC = {
 };
 function objective() {
   const f = S.flags, live = g => S.foes.some(x => x.group === g && !x.dead && x.alert);
+  if (inPrologue()) { const o = LEVEL.prologue.objectives.find(o => !f[o[0]]); return o ? o[1] : ''; }
   if (LEVEL.objectives) {                                  // the later levels: the first objective whose flag isn't set yet
     if (S.foes.some(x => !x.dead && x.alert && x.state !== 'sleep' && Math.hypot(x.x - S.x, x.z - S.z) < 14 && FOES[x.cls].hp < 1e8)) return 'Fight!';
     const o = LEVEL.objectives.find(o => !f[o[0]]); return o ? o[1] : '';
@@ -1216,7 +1231,7 @@ function objective() {
 function enterArea(a) {
   if (S.areas.has(a.id)) return;
   S.areas.add(a.id);
-  log(a.name + (a.type === 'action' ? ' · a fight' : ''), 'title');
+  { const rm = LV.rooms.find(r => r.id === S.room); if (!(rm && ROOM_DESC[rm.id] && cap(rm.name) === a.name)) log(a.name + (a.type === 'action' ? ' · a fight' : ''), 'title'); }   // (not twice, when the room names itself)
   if (a.cp && S.flags.free !== false) S.checkpoint = { x: a.cp[0] * CELL, z: a.cp[1] * CELL, yaw: a.cp[2] };
 }
 function enterRoom(id) {
@@ -1507,10 +1522,10 @@ function tick(inp) {
   const { g, sp } = updatePlayer(inp);
   for (const d of [S.door, S.grille, S.portc]) d.open += clamp(d.target - d.open, -DT * 0.9, DT * (d === S.portc && d.target === 0 ? 4 : 0.9));
   if (S.portc.dropT > 0) { S.portc.dropT -= DT; if (S.portc.dropT <= 0 && !S.flags.portcullis_open) { S.portc.target = 0; Sfx.clank(); Sfx.crush(); log('The pawl slips. The portcullis crashes down.', 'dim'); } }
-  updateGiant();
-  updateSatha();
+  const pro = inPrologue();
+  if (!pro) { updateGiant(); updateSatha(); }
   if (mode !== 'play') return;
-  updateShukeli();
+  if (!pro) updateShukeli();
   updateFoes();
   updateEmber(); updatePostern(); updateTunnels();
   updateShamu();
@@ -1522,8 +1537,8 @@ function tick(inp) {
   if (mode !== 'play') return;
   interactTarget = findTarget();
   if (inp.use) interact();
-  if (inp.fire) onFire(false);
-  if (inp.kick) { if (S.weapon === 'spear') throwSpear(); else parry(); }   // right-click: with a spear in hand it's thrown; no parrying with a spear
+  if (inp.fire && !pro) onFire(false);
+  if (inp.kick && !pro) { if (S.weapon === 'spear') throwSpear(); else parry(); }   // right-click: with a spear in hand it's thrown; no parrying with a spear
   if (inp.throwSpear) throwSpear();
   if (inp.drink) useSatchel();
   if ((g.flags & F_WATER) && S.y < (LEVEL.waterY || -1) - 0.6) { die('drown'); return; }
@@ -1548,7 +1563,7 @@ function stateHash() {
   const sh = S.shukeli, g = S.giant;
   const parts = [S.tick, q(S.x), q(S.y), q(S.z), Math.round(S.health), Object.values(S.flags).map(Number).join(''), q(S.door.open), q(S.grille.open),
     S.satha.start, g.state, q(g.x), q(g.z), sh.state, q(sh.x), q(sh.z), S.proj.length, S.items.filter(i => i.taken).length, S.pouch.length,
-    S.foes.map(f => f.state + q(f.x) + q(f.z) + f.hp).join(','), q(S.portc.open), S.weapon].concat(S.tun ? [S.torch, S.tun.pres, S.passes] : []);
+    S.foes.map(f => f.state + q(f.x) + q(f.z) + f.hp).join(','), q(S.portc.open), S.weapon].concat(S.tun ? [S.torch, S.tun.pres, S.passes] : []).concat(S.actors && S.actors.length ? [S.actors.map(a => q(a.x) + q(a.z) + a.pose).join(',')] : []);
   const s = parts.join('|');
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
   return (h >>> 0).toString(16).padStart(8, '0');
@@ -1587,9 +1602,9 @@ async function showIntro() {
   if (mode === 'splash') { await whenModelsReady(); if (mode === 'splash') startPlay(false); }
 }
 const LEVEL_INTRO = {
-  e1m2: [['THE PITS', 'title'], ['Chained to a ring in a vault far beneath the hill. A torch burns in a niche above your head; the darkness presses in on it like a living thing.', ''],
-    ['Out in the black beyond the arch, something vast is moving.', 'warn'], ['(E to use things. Read whatever the dead have left you.)', 'dim']],
-  e1m1: [['THE PLAIN OF SHAMU', 'title'], ['Five thousand knights followed you over the border into Koth, to aid Amalrus of Ophir. Amalrus has betrayed you to Strabonus, and not one of the five thousand will leave the field alive.', ''],
+  e1m2: [['THE PITS', 'title'], ['In the Scarlet Citadel of Khorshemish, in a chamber domed with carven jet: blood caking your wounds, naked but for a loin-cloth, shackles on your limbs, you face your captors.', ''],
+    ['Before you stands Tsotha. On divans lounge Strabonus and Amalrus in their silks and gold. On either side of you, black giants grasp their long-shafted axes.', '']],
+  e1m1: [['THE PLAIN OF SHAMU', 'title'], ['Five thousand knights followed you over the border into the grassy meadowlands of Ophir, to aid Amalrus of Ophir. Amalrus has betrayed you to Strabonus, and not one of the five thousand will leave the field alive.', ''],
     ['The sun is going down red on the last of them.', 'warn']],
   e1m3: [['THE TUNNELS BELOW', 'title'], ['Down the dank tunnel beyond the bone pit the made stone ends. You have the black\'s sword, the torch from the niche, and nothing else.', ''],
     ['Somewhere ahead, a woman is weeping.', 'warn']],
@@ -1689,6 +1704,8 @@ function updateHUD() {
   if (S.pouch.length) carry.push('satchel ' + S.pouch.length + '/' + POUCH_MAX + ' (H)');
   $('carry').textContent = carry.join(' · ') + (S.kills ? '  ·  ' + S.kills + ' slain' : '');
   $('objective').textContent = objective();
+  { const b = S.foes.find(f => FOES[f.cls].boss && !f.dead && !['dormant', 'sleep', 'lurk'].includes(f.state) && (f.alert || f.state !== 'idle') && Math.hypot(f.x - S.x, f.z - S.z) < 30), el = $('boss');   // a roused boss: his name and his blood, over the field
+    el.style.display = b ? 'block' : 'none'; if (b) { $('bossName').textContent = FOES[b.cls].name; $('bossFill').style.width = Math.max(0, 100 * b.hp / FOES[b.cls].hp) + '%'; } }
   promptEl.textContent = mode === 'play' ? (promptText(interactTarget) || npcLabel()) : '';
   const dbg = $('debug');
   dbg.style.display = debugOn ? 'block' : 'none';
@@ -1839,7 +1856,7 @@ function render(alpha) {
     }
   }
   drawFoes();
-  drawNPC(); drawAllies(); drawEagleBeat();
+  drawNPC(); drawAllies(); drawActors(); drawOvergrowth(); drawEagleBeat();
   if (S.shamu) {
     const M = S.shamu;
     M.riders.forEach((r, i) => {
@@ -2207,6 +2224,7 @@ function levelCast(L) {
   if (L.host) ids.add('pikeman');
   for (const a of L.allies || []) ids.add(a.id);                      // the Bossonians and Gundermen: their built models, not the old part-built rig
   if (L.npc) ids.add(L.npc.id);
+  for (const a of L.actors || []) { ids.add(a.cast || a.id); if (a.pose === 'ride') ids.add('horse'); }
   return [...ids];
 }
 

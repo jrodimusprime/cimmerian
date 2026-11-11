@@ -10,7 +10,7 @@ const SPLASHES = {
   e1m2: {
     title: 'THE PITS', scene: 'serpent', seed: 7,
     accent: [[0.6, 0.05, 0.13]],                                  // (u, v, radius): the citadel's glow; the painter adds her eye
-    text: 'Beaten on the plain of Shamu and struck down by the wizard\'s poisoned ring, the king was carried in chains to Khorshemish. Before the kings who betrayed him he spat his defiance. Now Tsotha-lanti has given him to the dark beneath the Scarlet Citadel, where something vast moves in the tunnels.',
+    text: 'Beaten on the plain of Shamu and struck down by the wizard\'s poisoned ring, the king was carried in chains to Khorshemish, to the Scarlet Citadel of Tsotha-lanti, to stand before the kings who betrayed him. They want his crown for a puppet of theirs. Beneath the citadel, in the dark, something vast moves in the tunnels.',
   },
   e1m3: {
     title: 'THE TUNNELS BELOW', scene: 'descent', seed: 19,
@@ -24,7 +24,7 @@ SPLASHES.e1m4 = {
 };
 SPLASHES.e1m1 = {
   title: 'THE PLAIN OF SHAMU', scene: 'battle', seed: 11, accent: [[0.5, 0.18, 0.09]],
-  text: 'Conan, King of Aquilonia, rode into Koth with five thousand knights to aid Amalrus of Ophir. Amalrus has betrayed him to Strabonus. On the plain of Shamu the trap has closed, and the sun is going down red on the last of the five thousand.',
+  text: 'Conan, King of Aquilonia, crossed his border into the meadowlands of Ophir with five thousand knights, to aid his ally Amalrus. Amalrus has betrayed him to Strabonus. On the plain of Shamu the trap has closed, and the sun is going down red on the last of the five thousand.',
 };
 SPLASHES.e1m5 = {
   title: 'THE SCARLET CITADEL', scene: 'descent', seed: 43, accent: [],

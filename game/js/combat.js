@@ -27,13 +27,13 @@ const FOES = {
   kknight: { hp: 80, speed: 3.4, reach: 2.5, dmg: 14, windup: 0.5, strike: 0.22, recover: 0.55, block: 'alternate', sight: 20, name: 'Kothian knight' },
   oknight: { hp: 75, speed: 3.6, reach: 2.5, dmg: 13, windup: 0.45, strike: 0.2, recover: 0.5, block: 'alternate', sight: 20, name: 'Ophirean knight' },
   // "the black giants who guarded him ... grasping their long-shafted axes" (ch. II): Tsotha's own guard
-  axeman: { hp: 160, speed: 3.3, reach: 2.7, dmg: 20, windup: 0.7, strike: 0.26, recover: 0.85, block: 'front', sight: 20, name: 'black axeman' },
+  axeman: { hp: 320, speed: 3.3, reach: 2.8, dmg: 32, windup: 0.75, strike: 0.3, recover: 0.9, pain: 0.5, lunge: 0.8, block: 'front', sight: 20, name: 'black axeman' },   // few, and each one a killer: twice the blood in him, and his blow takes a third of yours
   // "monsters with dripping jaws agape"; "something whimpered in fear and slunk away in the darkness" (ch. III-IV)
-  thing: { hp: 32, speed: 4.6, reach: 1.9, dmg: 9, windup: 0.42, strike: 0.25, recover: 0.55, sight: 15, leap: 6, name: 'pit-thing' },
+  thing: { hp: 48, speed: 4.6, reach: 1.9, dmg: 18, windup: 0.42, strike: 0.25, recover: 0.55, sight: 15, leap: 6, name: 'pit-thing' },
   // the weeping thing (ch. III): Conan fled it, "doubting the power of man-made weapons to harm it"
   // ---- e1m4-e1m8 ----
   // Yothga (ch. III): rooted; "the long tendrils arched toward him"; cut through the stem
-  yothga: { hp: 560, speed: 0, reach: 4.2, dmg: 14, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
+  yothga: { hp: 560, speed: 0, reach: 4.2, dmg: 22, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
   // Tamar (ch. IV): "the swaggering Pellian soldiery", the archers on the tower, Arpello
   pellian: { hp: 60, speed: 3.3, reach: 3.2, dmg: 14, windup: 0.6, strike: 0.22, recover: 0.7, block: 'alternate', sight: 18, name: 'Pellian man-at-arms', spears: 3, throwAt: [6, 14] },
   pellian_archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 16], sight: 26, name: 'Pellian archer' },
@@ -261,6 +261,10 @@ function updateFoes() {
         if (f.t >= st.windup * (f.combo ? 0.6 : 1)) { f.state = 'strike'; f.t = 0; foeStrike(f, st); }
         break;
       case 'strike':
+        if (st.lunge && f.t < st.strike) {                // he throws his whole body after the axe
+          const d = st.lunge * DT / st.strike, r = collide(f.x + Math.sin(f.yaw) * d, f.z + Math.cos(f.yaw) * d, 0.42, f.y, f, false);
+          if (Math.hypot(r[0] - S.x, r[1] - S.z) > 0.9) { f.x = r[0]; f.z = r[1]; }
+        }
         if (f.t >= st.strike) {
           if (st.combo && f.combo < st.combo - 1) { f.combo++; f.state = 'windup'; f.t = 0; }
           else { f.combo = 0; f.state = 'recover'; f.t = 0; }
@@ -268,7 +272,7 @@ function updateFoes() {
         break;
       case 'recover': if (f.t >= st.recover) { f.state = 'chase'; f.t = 0; f.cool = 0.25 + S.rng.next() * 0.5; } break;
       case 'block': if (f.t >= 0.32) { f.state = 'chase'; f.t = 0; } break;
-      case 'pain': if (f.t >= 0.34) { f.state = 'chase'; f.t = 0; f.cool = 0.2; } break;
+      case 'pain': if (f.t >= (st.pain || 0.34)) { f.state = 'chase'; f.t = 0; f.cool = 0.2; } break;
       case 'stagger': if (f.t >= KICK.stagger) { f.state = 'chase'; f.t = 0; f.cool = 0.3; } break;
     }
   }
@@ -460,6 +464,7 @@ function hitFoe(f, dmg, kick) {
   else {
     f.vx -= dx / d * 2.2; f.vz -= dz / d * 2.2;
     if (f.cls !== 'axeman' && dmg >= 40) { f.state = 'pain'; f.t = 0; f.combo = 0; Sfx.grunt(f.cls === 'thing', panOf(f)); }   // only a heavy blow breaks a wind-up
+    else if (f.cls === 'axeman' && !['windup', 'strike', 'pain'].includes(f.state) && f.hp > 0) { f.state = 'pain'; f.t = 0; Sfx.grunt(false, panOf(f)); }   // the black giant winces at the bite of a blade, and comes on again; a blow in his wind-up he does not feel
   }
   if (f.hp <= 0) killFoe(f, kick ? 'kick' : 'blade');
 }
@@ -705,26 +710,32 @@ function axePose(f, st, P) {
     const ph = f.walk * 3.0, sw = Math.sin(ph);
     Object.assign(P, { txL: -0.25 + sw * 0.55, txR: -0.05 - sw * 0.55, sxL: 0.4 + Math.max(0, -Math.sin(ph - 0.9)) * 0.9, sxR: 0.4 + Math.max(0, Math.sin(ph - 0.9)) * 0.9, drop: -0.1 - Math.abs(Math.cos(ph)) * 0.06, roll: sw * 0.05, twist: 0.12 - sw * 0.08 });
   }
-  const HIGH = { lean: -0.28, headX: 0.22, drop: -0.04, txL: -0.62, sxL: 0.35, txR: 0.25, sxR: 0.3, twist: -0.3, uxR: -3.05, fxR: -0.85, uzR: 0.32, uxL: -2.85, fxL: -0.95, uzL: 0.1, we: 2.95 };
-  const LOW = { lean: 0.72, headX: -0.4, drop: -0.3, txL: -0.75, sxL: 0.95, txR: 0.35, sxR: 0.7, twist: 0.2, uxR: -1.2, fxR: -0.2, uzR: 0.05, uxL: -1.1, fxL: -0.35, uzL: -0.2, we: 0.35 };   // arms driven out in front, the head of the axe in the stones before his feet
+  // the blow, two-handed and from the shoulder: heaved up over the right shoulder, held there trembling; then high,
+  // and down across him to the left with his whole weight thrown after it, the head of the axe biting the floor at his feet
+  const WIND = { lean: -0.15, headX: 0.1, drop: -0.1, txL: -0.5, sxL: 0.4, txR: 0.2, sxR: 0.35, twist: -0.3, roll: -0.12, uxR: -2.6, fxR: -1.4, uzR: 0.9, uxL: -1.5, fxL: -1.9, uzL: -0.5, we: 2.4 };
+  const MID = { lean: 0.25, headX: -0.1, drop: -0.18, txL: -0.65, sxL: 0.7, txR: 0.28, sxR: 0.5, twist: 0.2, roll: 0, uxR: -1.9, fxR: -0.8, uzR: 0.1, uxL: -1.4, fxL: -1.1, uzL: -0.7, we: 1.5 };
+  const CUT = { lean: 0.7, headX: -0.35, drop: -0.32, txL: -0.85, sxL: 1.0, txR: 0.35, sxR: 0.7, twist: 0.45, roll: 0.18, uxR: -0.8, fxR: -0.25, uzR: -0.55, uxL: -0.7, fxL: -0.45, uzL: -0.85, we: 0.4 };
   if (f.state === 'windup') {
     const W = st.windup * (f.combo ? 0.6 : 1), k = e(Math.min(1, t / (W * 0.75))), hold = Math.max(0, (t - W * 0.75) / (W * 0.25));
-    mix(STANCE, HIGH, k);
-    if (hold > 0) { const sh = Math.sin(gameTime * 46) * 0.035 * hold; P.uxR += sh; P.uxL += sh; P.we += sh * 2; P.lean -= 0.04 * hold; }   // it hangs there, trembling
+    mix(STANCE, WIND, k);
+    if (hold > 0) { const sh = Math.sin(gameTime * 46) * 0.035 * hold; P.uxR += sh; P.uxL += sh; P.we += sh * 2; P.lean -= 0.05 * hold; }   // it hangs there, trembling
   } else if (f.state === 'strike') {
     const k = eo(Math.min(1, t / st.strike));
-    Object.assign(P, HIGH); mix(HIGH, LOW, k);
-    if (k > 0.85 && !f.chopFx) {                         // the head bites the stones
-      f.chopFx = true; const ax = f.x + Math.sin(f.yaw) * 1.5, az = f.z + Math.cos(f.yaw) * 1.5, ay = groundInfo(ax, az).floor + 0.1;
+    if (k < 0.35) { Object.assign(P, WIND); mix(WIND, MID, k / 0.35); } else { Object.assign(P, MID); mix(MID, CUT, (k - 0.35) / 0.65); }
+    if (k > 0.85 && !f.chopFx) {                         // the head bites the stones, down at his left
+      f.chopFx = true; const a = f.yaw + 0.45, ax = f.x + Math.sin(a) * 1.6, az = f.z + Math.cos(a) * 1.6, ay = groundInfo(ax, az).floor + 0.1;
       for (let q = 0; q < 9; q++) particles.push({ m: 'spark', x: ax, y: ay, z: az, vx: (Math.random() - 0.5) * 4, vy: 1 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0.45, max: 0.45, g: 9, s: 0.9 });
     }
   } else if (f.state === 'recover') {
     f.chopFx = false;
     const R = st.recover, k = e(Math.max(0, (t - R * 0.35) / (R * 0.65)));   // a moment with the axe in the stone, then heaved up
-    Object.assign(P, LOW); mix(LOW, STANCE, k);
+    Object.assign(P, CUT); mix(CUT, STANCE, k);
     P.lean += Math.sin(Math.min(1, t / R) * Math.PI) * 0.06;  // his shoulders heave with it
   } else if (f.state === 'block') Object.assign(P, { uxR: -1.6, fxR: -1.0, uxL: -1.5, fxL: -1.2, uzL: 0.2, we: 1.5, lean: 0.05, headX: -0.1 });   // the haft up across him
-  else if (f.state === 'pain' || f.state === 'stagger') { const k = f.state === 'stagger' ? Math.sin(Math.min(1, t / KICK.stagger) * Math.PI) : 0.7; Object.assign(P, { lean: -0.45 * k, headX: -0.4 * k, drop: -0.1, uxL: -0.5, uxR: -0.6, uzL: 0.6 * k, uzR: 0.5 * k }); }
+  else if (f.state === 'pain' || f.state === 'stagger') {   // he winces: doubled over the wound, the free hand clutching at it, the axe hanging
+    const k = f.state === 'stagger' ? Math.sin(Math.min(1, t / KICK.stagger) * Math.PI) : Math.sin(Math.min(1, t / (st.pain || 0.34)) * Math.PI);
+    mix(STANCE, { lean: 0.45, headX: 0.5, drop: -0.22, roll: 0.15, twist: 0.1, uxL: -0.5, fxL: -2.2, uzL: -0.6, uxR: -0.5, fxR: -1.0, uzR: 0.2, we: 1.0, txL: -0.5, sxL: 0.9, txR: 0.1, sxR: 0.7 }, k);
+  }
   return P;
 }
 function drawFoes() {

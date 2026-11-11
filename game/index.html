@@ -36,6 +36,8 @@
   #status { position: absolute; left: 16px; bottom: 14px; font-size: 14px; letter-spacing: 2px; font-variant: small-caps; opacity: 0.75; }
   .bar { width: 200px; height: 10px; border: 1px solid var(--edge); background: #120c08; margin: 3px 0 0; }
   .bar > div { height: 100%; background: linear-gradient(var(--scarlet), var(--scarlet-dk)); }
+  #boss { position: absolute; top: 74px; left: 50%; transform: translateX(-50%); text-align: center; display: none; font-variant: small-caps; letter-spacing: 2px; color: #d8c8a8; text-shadow: 0 1px 2px #000; }
+  #boss .bar { width: 360px; height: 8px; margin: 4px auto 0; }
   #carry { position: absolute; right: 16px; bottom: 14px; font-size: 14px; font-style: italic; color: rgba(163, 154, 133, 0.65); text-align: right; }
   #debug { position: absolute; left: 16px; bottom: 60px; font: 12px ui-monospace, Menlo, monospace; color: var(--jade); white-space: pre; display: none; }
 
@@ -99,31 +101,33 @@
   <div id="debug"></div>
   <div id="status"><div>health <span id="hpNum">100</span></div><div class="bar"><div id="hpFill"></div></div></div>
   <div id="carry"></div>
+  <div id="boss"><div id="bossName"></div><div class="bar"><div id="bossFill"></div></div></div>
 </div>
 <div id="overlay"><div class="panel"><h2>Loading the pits...</h2></div></div>
 
-<script src="js/version.js?v=4c58d197a1"></script>
-<script src="js/util.js?v=4c58d197a1"></script>
-<script src="js/textures.js?v=4c58d197a1"></script>
-<script src="js/level.js?v=4c58d197a1"></script>
-<script src="js/mesh.js?v=4c58d197a1"></script>
-<script src="js/renderer.js?v=4c58d197a1"></script>
-<script src="js/audio.js?v=4c58d197a1"></script>
-<script src="js/splash.js?v=4c58d197a1"></script>
-<script src="js/chars/cast.js?v=4c58d197a1"></script>
-<script src="js/chars/rig.js?v=4c58d197a1"></script>
-<script src="js/chars/humanoid.js?v=4c58d197a1"></script>
-<script src="js/chars/pitthing.js?v=4c58d197a1"></script>
-<script src="js/chars/weeper.js?v=4c58d197a1"></script>
-<script src="js/chars/horse.js?v=4c58d197a1"></script>
-<script src="js/chars/broken.js?v=4c58d197a1"></script>
-<script src="js/chars/demon.js?v=4c58d197a1"></script>
-<script src="js/chars/yothga.js?v=4c58d197a1"></script>
-<script src="js/chars/eagle.js?v=4c58d197a1"></script>
-<script src="js/combat.js?v=4c58d197a1"></script>
-<script src="js/beats.js?v=4c58d197a1"></script>
-<script src="js/skinned.js?v=4c58d197a1"></script>
-<script src="js/game.js?v=4c58d197a1"></script>
-<script src="js/gallery.js?v=4c58d197a1"></script>
+<script src="js/version.js?v=ccdac02b54"></script>
+<script src="js/util.js?v=ccdac02b54"></script>
+<script src="js/textures.js?v=ccdac02b54"></script>
+<script src="js/level.js?v=ccdac02b54"></script>
+<script src="js/mesh.js?v=ccdac02b54"></script>
+<script src="js/renderer.js?v=ccdac02b54"></script>
+<script src="js/audio.js?v=ccdac02b54"></script>
+<script src="js/splash.js?v=ccdac02b54"></script>
+<script src="js/chars/cast.js?v=ccdac02b54"></script>
+<script src="js/chars/rig.js?v=ccdac02b54"></script>
+<script src="js/chars/humanoid.js?v=ccdac02b54"></script>
+<script src="js/chars/pitthing.js?v=ccdac02b54"></script>
+<script src="js/chars/weeper.js?v=ccdac02b54"></script>
+<script src="js/chars/horse.js?v=ccdac02b54"></script>
+<script src="js/chars/broken.js?v=ccdac02b54"></script>
+<script src="js/chars/demon.js?v=ccdac02b54"></script>
+<script src="js/chars/yothga.js?v=ccdac02b54"></script>
+<script src="js/chars/eagle.js?v=ccdac02b54"></script>
+<script src="js/combat.js?v=ccdac02b54"></script>
+<script src="js/beats.js?v=ccdac02b54"></script>
+<script src="js/actors.js?v=ccdac02b54"></script>
+<script src="js/skinned.js?v=ccdac02b54"></script>
+<script src="js/game.js?v=ccdac02b54"></script>
+<script src="js/gallery.js?v=ccdac02b54"></script>
 </body>
 </html>

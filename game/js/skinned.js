@@ -279,6 +279,7 @@ function skinSolve(M, root, P) {
   return { W, S };
 }
 // the old rig's weapon and shield mounts, from the skinned skeleton
+const MAW_AT = { 0: [-0.06, 0.19, 0.85], 1: [-0.06, 0.19, 0.85], 2: [-0.06, 0.19, 0.85] };   // per pit-thing variant: [up, forward, scale] of the mouth from the head joint
 function skinMounts(M, W) {
   const h = n => M.byName[n] !== undefined ? W[M.byName[n]] : null;
   return { handR: h('hand_r'), farmL: h('lowerarm_l'), handL: h('hand_l') };
@@ -337,6 +338,10 @@ function drawSkinned(id, x, y, z, yaw, P, light, glow = 0, alpha = 1) {
     const Mn = (part, m) => drawPart('w_' + part, (CAST[id].weapon === part ? 'char:' + id : 'char:warden') + ':' + part, m, light, glow);   // the built weapon, else the old one
     if (wpn === 'bow') { if (mt.handL) Mn('bow', m4mul(m4mul(root, m4mul(mt.handL, m4t(0, -0.07, 0.025))), m4rx(Math.PI / 2 - 0.1))); }
     else Mn(wpn, wpn === 'spear' ? m4mul(wm, m4t(0, -0.35, 0)) : wpn === 'pike' ? m4mul(wm, m4t(0, -0.9, 0)) : wpn === 'axe' ? m4mul(wm, m4t(0, -0.45, 0)) : wpn === 'greatsword' ? m4mul(wm, m4t(0, -0.05, 0)) : wm);
+  }
+  if (c2 && c2.pit !== undefined && M.byName.head !== undefined && P.cut !== 'head') {   // the pit-things' teeth: "monsters with dripping jaws agape"
+    const hb = M.bones[M.byName.head].rest, k = MAW_AT[c2.pit] || MAW_AT[0];
+    drawM('maw', m4mul(root, m4mul(W[M.byName.head], m4mul(m4t(0, k[0], k[1]), m4s3(k[2], k[2], k[2])))), light, glow);
   }
   if (c2 && c2.shield && !P.noShield && mt.farmL && !M.hasShield)
     drawM('char:' + id + ':shield', m4mul(root, m4mul(mt.farmL, m4mul(m4t(0.06, -0.17, 0.04), m4mul(m4ry(Math.PI / 2 - 0.25), m4rx(0.1))))), light, glow);

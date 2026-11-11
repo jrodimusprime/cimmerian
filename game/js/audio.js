@@ -181,11 +181,11 @@ const Sfx = (() => {
     clang() { play('clash', 0.55) || (tone(1650, 0.35, 'square', 0.05, 1500), tone(2470, 0.3, 'triangle', 0.05, 2300, 0.01), noise(0.08, 0.15, 4000, 'highpass')); },
     hit(beast, pan) { if (play('flesh', 0.75, pan)) { play('hit', 0.35, pan, 0.9); return; } noise(0.14, 0.2, 900, 'lowpass', 200); tone(90, 0.16, 'sine', 0.12, 50); },
     thud() { play('flesh', 0.7, undefined, 0.6) || (noise(0.2, 0.25, 300, 'lowpass', 80), tone(60, 0.25, 'sine', 0.15, 35)); },
-    death(beast, pan) { if (beast ? play('beast_hurt', 0.6, pan, 0.75) : play('voice', 0.5, pan, 0.72, 0.06)) { play('die', 0.35, pan, beast ? 0.7 : 0.9, 0.05, 0.15); return; } this.grunt(); },
-    grunt(beast, pan) { if (beast ? play('beast_grunt', 0.55, pan, 0.8) : play('voice', 0.45, pan, 0.8, 0.08)) return; const b = 110 + Math.random() * 40; tone(b, 0.28, 'sawtooth', 0.06, b * 0.7); noise(0.2, 0.05, 600, 'bandpass'); },
+    death(beast, pan) { if (beast ? (play('beast_hurt', 0.6, pan, 0.5), play('beast_growl', 0.3, pan, 0.45, 0.05)) : play('voice', 0.5, pan, 0.72, 0.06)) { play('die', 0.35, pan, beast ? 0.7 : 0.9, 0.05, 0.15); return; } this.grunt(); },
+    grunt(beast, pan) { if (beast ? play('beast_grunt', 0.6, pan, 0.55, 0.06) : play('voice', 0.45, pan, 0.8, 0.08)) return; const b = 110 + Math.random() * 40; tone(b, 0.28, 'sawtooth', 0.06, b * 0.7); noise(0.2, 0.05, 600, 'bandpass'); },
     kick() { play('flesh', 0.8, undefined, 0.65) || (noise(0.18, 0.28, 300, 'lowpass', 80), tone(65, 0.22, 'sine', 0.18, 40)); },
     // e1m3
-    screech(pan) { play(Math.random() < 0.5 ? 'beast_growl' : 'beast_roar', 0.5, pan, 0.85, 0.12) || (tone(900, 0.35, 'sawtooth', 0.05, 2400, 0, pan), noise(0.3, 0.12, 3200, 'bandpass', 1200, 0, 3, pan)); },
+    screech(pan) { play(Math.random() < 0.5 ? 'beast_growl' : 'beast_roar', 0.55, pan, 0.58, 0.08) || (tone(130, 0.4, 'sawtooth', 0.07, 75, 0, pan), noise(0.35, 0.12, 700, 'bandpass', 300, 0, 3, pan)); },
     weep(pan, vol = 1) {                              // a woman weeping piteously, somewhere in the dark
       const b = 420 + Math.random() * 40;
       for (let i = 0; i < 4; i++) tone(b * (1.08 - i * 0.05), 0.45, 'triangle', 0.035 * vol, b * (0.92 - i * 0.05), i * 0.38, pan, 0.08);

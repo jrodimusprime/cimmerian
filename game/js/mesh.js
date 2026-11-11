@@ -206,6 +206,63 @@ function addPrefab(mb, p) {
       addBox(mb, bx, p.y + 2.9, bz, 0.8, 1.25, 0.02, T.BANNER, yaw);
       break;
     }
+    case 'tapestry': {                                   // a woven hanging on a pole, its foot weighted and hanging a hand off the wall
+      const bx = p.x + n[0] * 0.1, bz = p.z + n[1] * 0.1, yaw = Math.atan2(n[0], n[1]), w = p.w || 1.1, h = p.h || 1.6, top = p.y + (p.top || 3.3);
+      addBox(mb, bx, top + 0.05, bz, 0.04, 0.04, w + 0.15, T.WOOD, yaw + Math.PI / 2);
+      for (const e of [-1, 1]) { const t = [n[1], -n[0]]; addLathe(mb, bx + t[0] * e * (w + 0.18), top - 0.03, bz + t[1] * e * (w + 0.18), [[0, 0], [0.06, 0.04], [0.06, 0.1], [0, 0.14]], 6, T.GILT); }
+      addBox(mb, bx + n[0] * 0.02, top - h / 2, bz + n[1] * 0.02, w, h / 2, 0.015, T.TAPESTRY, yaw);
+      addBox(mb, bx + n[0] * 0.03, top - h - 0.02, bz + n[1] * 0.03, w + 0.02, 0.03, 0.03, T.WOOD, yaw);
+      break;
+    }
+    case 'trophy': {                                     // arms hung on the wall: a round shield over two crossed blades (or crossed spears, or empty pegs)
+      const bx = p.x + n[0] * 0.08, bz = p.z + n[1] * 0.08, yaw = Math.atan2(n[0], n[1]), t = [n[1], -n[0]], y0 = p.y + (p.at || 2.0);
+      for (const e of [-1, 1]) {                          // the blades, crossed behind
+        const a = e * 0.75, c = Math.cos(a), sa = Math.sin(a);
+        for (let k = -6; k <= 6; k++) { const u = k * 0.09; addBox(mb, bx + t[0] * (sa * u) - n[0] * 0.02, y0 + c * u, bz + t[1] * (sa * u) - n[1] * 0.02, 0.022, 0.05, 0.006, k > 3 ? T.GRIP : T.STEEL, yaw); }
+        addBox(mb, bx + t[0] * sa * 0.36 - n[0] * 0.01, y0 + c * 0.36, bz + t[1] * sa * 0.36 - n[1] * 0.01, 0.09, 0.015, 0.012, T.IRON, yaw);
+      }
+      if (!p.bare) smoothLathe(mb, bx + n[0] * 0.04, y0, bz + n[1] * 0.04, [[0.0, 0], [0.42, 0.0], [0.4, 0.05], [0.12, 0.09], [0.0, 0.1]], 12, T.SHIELD, ONE3, [n[0], 0, n[1]]);
+      addBox(mb, bx, y0 + 0.55, bz, 0.04, 0.04, 0.05, T.IRON, yaw);   // the peg
+      break;
+    }
+    case 'pegs': {                                       // an empty weapon rack: pegs and the pale ghosts of what hung there
+      const bx = p.x + n[0] * 0.05, bz = p.z + n[1] * 0.05, yaw = Math.atan2(n[0], n[1]), t = [n[1], -n[0]];
+      addBox(mb, bx, p.y + 1.7, bz, 0.9, 0.06, 0.05, T.WOOD, yaw);
+      for (let k = -2; k <= 2; k++) addBox(mb, bx + t[0] * k * 0.38 + n[0] * 0.07, p.y + 1.76, bz + t[1] * k * 0.38 + n[1] * 0.07, 0.025, 0.025, 0.08, T.IRON, yaw);
+      break;
+    }
+    case 'sconce': {                                     // an iron candle-sconce on the wall, two stubs burning
+      const bx = p.x + n[0] * 0.1, bz = p.z + n[1] * 0.1, yaw = Math.atan2(n[0], n[1]);
+      addBox(mb, bx, p.y + 1.9, bz, 0.06, 0.14, 0.03, T.IRON, yaw);
+      addLathe(mb, bx + n[0] * 0.12, p.y + 1.78, bz + n[1] * 0.12, [[0, 0], [0.11, 0.02], [0.12, 0.05], [0, 0.04]], 7, T.IRON);
+      addLathe(mb, bx + n[0] * 0.12, p.y + 1.82, bz + n[1] * 0.12, [[0, 0], [0.035, 0], [0.035, 0.14], [0, 0.14]], 6, T.BONE);
+      break;
+    }
+    case 'divan': {                                      // a low couch heaped with silk cushions: "on divans lounged Strabonus and Amalrus in their silks and gold"
+      const yaw = p.yaw || 0, c = Math.cos(yaw), s2 = Math.sin(yaw), at = (u, v) => [p.x + c * u + s2 * v, p.z - s2 * u + c * v];
+      { const q = at(0, 0); addBox(mb, q[0], p.y + 0.2, q[1], 1.05, 0.2, 0.5, T.WOOD, yaw); addBox(mb, q[0], p.y + 0.45, q[1], 1.0, 0.07, 0.46, T.VELVET, yaw); }
+      { const q = at(0, -0.45); addBox(mb, q[0], p.y + 0.72, q[1], 1.05, 0.3, 0.08, T.VELVET, yaw); }
+      for (const e of [-1, 1]) { const q = at(e * 1.0, 0); addBox(mb, q[0], p.y + 0.62, q[1], 0.08, 0.2, 0.5, T.GILT, yaw); }
+      for (const [u, v] of [[-0.6, -0.25], [0.55, -0.28], [0.05, -0.3]]) { const q = at(u, v); addRock(mb, q[0], p.y + 0.62, q[1], 0.26, 0.13, 0.18, Math.floor(u * 9 + 20), T.TABARD, 0.1); }
+      break;
+    }
+    case 'censer': {                                     // "golden censers, filling the corridor with dreamy perfumed clouds": hung from the vault on a chain
+      const top = groundInfo(p.x, p.z).ceil, y1 = p.y + (p.at || 2.4);
+      for (let k = 0; y1 + 0.3 + k * 0.2 < top; k++) addBox(mb, p.x, y1 + 0.35 + k * 0.2, p.z, k % 2 ? 0.015 : 0.04, 0.09, k % 2 ? 0.04 : 0.015, T.GILT);
+      addLathe(mb, p.x, y1 - 0.2, p.z, [[0, 0], [0.12, 0.04], [0.2, 0.18], [0.21, 0.26], [0.14, 0.3], [0.17, 0.38], [0.05, 0.5], [0, 0.55]], 10, T.GILT);
+      break;
+    }
+    case 'carpet':                                       // a runner of dyed wool along the floor
+      addBox(mb, p.x, p.y + 0.012, p.z, p.w || 0.9, 0.012, p.l || 3, T.TAPESTRY, p.yaw || 0);
+      break;
+    case 'chest':                                        // an iron-bound chest
+      addBox(mb, p.x, p.y + 0.32, p.z, 0.6, 0.32, 0.38, T.WOOD, p.yaw || 0);
+      addBox(mb, p.x, p.y + 0.66, p.z, 0.62, 0.05, 0.4, T.WOOD, p.yaw || 0);
+      for (const u of [-0.4, 0.4]) addBox(mb, p.x + Math.cos(p.yaw || 0) * u, p.y + 0.36, p.z - Math.sin(p.yaw || 0) * u, 0.035, 0.36, 0.4, T.IRON, p.yaw || 0);
+      break;
+    case 'cask':
+      smoothLathe(mb, p.x, p.y + 0.5, p.z, [[0.34, -0.5], [0.42, -0.25], [0.44, 0], [0.42, 0.25], [0.34, 0.5]], 10, T.WOOD, ONE3, p.lie ? [1, 0, 0] : [0, 1, 0]);
+      break;
     case 'planks':                                       // rotten planks laid over a drop: they will not hold
       for (let k = -2; k <= 2; k++) addBox(mb, p.x + k * 0.52, p.y - 0.06, p.z + Math.sin(k * 7) * 0.15, 0.24, 0.05, 3.3, T.PLANK, Math.sin(k * 3) * 0.05);
       break;
@@ -485,6 +542,34 @@ function buildModel(name) {
     const [, len, h] = name.split(':').map(Number);
     for (let x = 0.15; x < len; x += 0.3) addBox(mb, x, h / 2, 0, 0.035, h / 2, 0.035, T.IRON);
     for (const y of [0.15, h * 0.42, h - 0.12]) addBox(mb, len / 2, y, 0, len / 2, 0.05, 0.06, T.IRON);
+    return mb.finish();
+  }
+  if (name === 'vinestem') {                            // a length of Yothga's vine, 1 m along +y: pale, knotted, sprouting thorns and small jade leaves
+    smoothLathe(mb, 0, 0, 0, [[0.06, 0], [0.05, 0.25], [0.065, 0.5], [0.05, 0.75], [0.06, 1.0]], 7, T.SICK, ONE3, [0, 1, 0]);
+    for (let k = 0; k < 4; k++) { const a = k * 2.3, h = 0.15 + k * 0.23; addSpike(mb, Math.cos(a) * 0.04, h, Math.sin(a) * 0.04, [Math.cos(a), 0.4, Math.sin(a)], k % 2 ? 0.08 : 0.2, k % 2 ? 0.012 : 0.05, 3, k % 2 ? T.BONE : T.SLIME); }
+    return mb.finish();
+  }
+  if (name === 'vinecoil') {                            // a loop of the vine, round a man's body: radius 1 in xz
+    for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2; addBox(mb, Math.cos(a), Math.sin(k * 1.7) * 0.03, Math.sin(a), 0.06, 0.055, 0.25, T.SICK, -a); }
+    return mb.finish();
+  }
+  if (name === 'creeper') {                             // creepers hanging from the vault, 1 m long down -y, leaves along them
+    for (let s = 0; s < 3; s++) { const ox = (s - 1) * 0.12, oz = Math.sin(s * 2.1) * 0.08;
+      smoothLathe(mb, ox, -1, oz, [[0.008, 0], [0.018, 0.5], [0.025, 1]], 5, T.SICK, ONE3, [0, 1, 0]);
+      for (let k = 0; k < 5; k++) addSpike(mb, ox, -0.15 - k * 0.18 - s * 0.05, oz, [Math.cos(k * 2 + s), -0.4, Math.sin(k * 2 + s)], 0.14, 0.05, 3, T.SLIME); }
+    return mb.finish();
+  }
+  if (name === 'maw') {                                 // a pit-thing's mouthful: crowded, crooked fangs on blood-black gums, and gore hanging from them; origin at the mouth, +z out of it, mouth ~0.1 wide
+    const r = new RNG(77);
+    for (const [row, n, y, dir] of [[0, 9, 0.012, -1], [1, 7, -0.03, 1]]) {
+      for (let k = 0; k < n; k++) {
+        const a = (k / (n - 1) - 0.5) * 2.4, w = row ? 0.042 : 0.05, x = Math.sin(a) * w, z = Math.cos(a) * w * 0.9 - w * 0.6;
+        addBox(mb, x, y, z, 0.008, 0.006, 0.008, T.BLOOD);                                                                  // the gum
+        const len = (0.022 + r.next() * 0.03) * (Math.abs(a) > 0.9 ? 1.4 : 1);
+        addSpike(mb, x, y, z, [Math.sin(a) * 0.25 + (r.next() - 0.5) * 0.3, dir, 0.2 + (r.next() - 0.5) * 0.3], len, 0.0075, 4, r.next() > 0.6 ? T.BLOOD : T.BONE);
+      }
+    }
+    for (let k = 0; k < 4; k++) addBox(mb, (k - 1.5) * 0.022, -0.035 - r.next() * 0.03, 0.01 - r.next() * 0.02, 0.003, 0.02 + r.next() * 0.02, 0.003, T.BLOOD);   // gore and slaver hanging
     return mb.finish();
   }
   if (name === 'plank') {                               // a rotten plank: two boards side by side, cleats, nails; length 1 along z
