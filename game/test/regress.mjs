@@ -26,14 +26,15 @@ const run = (script, dir, env = {}) => new Promise(res => {
 });
 const expected = l => { const m = readFileSync(join(here, FILES[l]), 'utf8').match(/const EXPECTED = \{ tick: (\d+), hash: '([0-9a-f]+)' \};/); return { tick: +m[1], hash: m[2] }; };
 
-// stands: the bot stays within STALL_M metres of where it stopped for STALL_S seconds or more, in play
+// stands: the bot stays within STALL_M metres of where it stopped for STALL_S seconds or more, in play, with no one at it
 function stalls(pts) {
   const out = [];
   for (let i = 0; i < pts.length;) {
     let j = i;
     while (j + 1 < pts.length && pts[j + 1][4] === 'play' && Math.hypot(pts[j + 1][1] - pts[i][1], pts[j + 1][2] - pts[i][2]) < STALL_M) j++;
     const secs = (pts[j][0] - pts[i][0]) / HZ;
-    if (pts[i][4] === 'play' && secs >= STALL_S) { out.push({ tick: pts[i][0], secs: +secs.toFixed(1), cell: [+(pts[i][1] / 2.5).toFixed(1), +(pts[i][2] / 2.5).toFixed(1)], hp: [pts[i][3], pts[j][3]] }); i = j + 1; }
+    const fighting = pts.slice(i, j + 1).filter(p => p[5]).length / (j - i + 1);   // standing your ground in a melee isn't standing still
+    if (pts[i][4] === 'play' && secs >= STALL_S && fighting < 0.5) { out.push({ tick: pts[i][0], secs: +secs.toFixed(1), cell: [+(pts[i][1] / 2.5).toFixed(1), +(pts[i][2] / 2.5).toFixed(1)], hp: [pts[i][3], pts[j][3]] }); i = j + 1; }
     else i++;
   }
   return out;

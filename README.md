@@ -14,15 +14,15 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 >
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
-> | `e1m1` The Plain of Shamu | 2:12 (9489 ticks) | ~8.8 min |
+> | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
 > | `e1m2` The Pits | 2:01 (8726 ticks) | ~8.1 min |
 > | `e1m3` The Tunnels Below | 2:03 (8878 ticks) | ~8.2 min |
-> | `e1m4` Yothga | 2:44 (11798 ticks) | ~10.9 min |
+> | `e1m4` Yothga | 2:44 (11844 ticks) | ~11.0 min |
 > | `e1m5` The Scarlet Citadel | 2:53 (12465 ticks) | ~11.5 min |
-> | `e1m6` The Tower of Tamar | 2:16 (9821 ticks) | ~9.1 min |
-> | `e1m7` The Relief of Shamar | 3:43 (16086 ticks) | ~14.9 min |
-> | `e1m8` The Tybor | 2:54 (12530 ticks) | ~11.6 min |
-> | **Campaign** | **20:47** (89793 ticks) | **~83 min** |
+> | `e1m6` The Tower of Tamar | 2:23 (10275 ticks) | ~9.5 min |
+> | `e1m7` The Relief of Shamar | 3:54 (16858 ticks) | ~15.6 min |
+> | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
+> | **Campaign** | **21:11** (91521 ticks) | **~85 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -762,11 +762,13 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] strabonus palace troops area there is a gap you can get to before the level finishes… it should be guarded by troops that then abandon it.... theres also a heap of troops that walk around weirdly… if they must guard and stand still then so they should
 
-- [ ] spear throwing animation also no good, spend some ime doing that properly
+- [x] spear throwing animation also no good, spend some ime doing that properly
+  - *Done:* a real throw now. The spear is drawn back over the right shoulder, tip up, and leaves the hand as the drive begins (not at the click); the empty hand drives on along the line of the eye and drops away; then the next spear (or the sword) comes up from below. A snap throw, about a tenth of a second back: quick enough to use in a fight. It flies from the throwing hand, off to the right, not from the middle of your face.
 
 - [ ] the toad guy should block an area at least so it has to be part of the game… make him accidetanlly remove an obstacle that blocks the corridor or something? I dunno get creative but realistic
 
-- [ ] the way the spears appear as you throw them and when they come towards you look a bit weird… like a pixel ball? imrpove that
+- [x] the way the spears appear as you throw them and when they come towards you look a bit weird… like a pixel ball? imrpove that
+  - *Done:* a thrown spear had no drawing of its own and fell through to the venom-glob mesh: the pixel ball. Spears in flight (yours and those thrown at you) are now the spear itself, the shaft laid along its path and the head leading; yours shows once it is clear of your eye, so its shaft never sweeps through the camera.
 
 - [ ] there is so little danger of death at the moment also wth damage… may have to think that through a bit because the big combat areas are fun now as you dont die every 3 seconds but lower combat zones like tunnels etc become too easy? suggest a few solutions
 
@@ -774,7 +776,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] the walking animation for the guy who gets eaten by the snake is clunkly and weird looking, maybe make him run with a precanned animation and turn?
 
-- [ ] when the AI is facing off against the end level boss dude it should always face him, it shouldn't pass a level without doing that
+- [x] when the AI is facing off against the end level boss dude it should always face him, it shouldn't pass a level without doing that
+  - *Done:* measured: the bot had its back to Arpello a third of the time he was within reach, and to Strabonus most of the time (fighting his guards, fetching bread, walking a route while he chased it). Now once a boss is roused and near it fights him face to face whatever it was about: he's always in its fight, it faces him through the whole of it (parrying blows that come from near his side, giving ground to any from behind his shoulder), never turns its back on him for bread, and stops a walk to face him (but not on a one-cell bridge over a drop). Checked across e1m4, e1m6, e1m7 and e1m8: it never looks away from a roused boss within 8 m. Arpello's household, Tamar's guards and Strabonus's palace troops now fight as squads (no more than two blows in the air at once), and there's food on the Tybor bank and the palace approach: no deaths across the campaign.
 
 - [ ] the plant you fight should have some special particle effects and shoot things with cool effects you have to dodge so the fight takes a while - at least 30s of fighting it is fair i think?
 
@@ -782,18 +785,23 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] the tall axe guy animations are weak, spend time fixing those
 
-- [ ]
+- [x] you can walk through horses
+  - *Done:* a horse is solid: you're stopped by it as by a wall.
 
-- [ ]
+- [x] horses get stuck in spike traps, make them only patrol areas without spikes.
+  - *Done:* the horses ride only ground a clear cell from every stake and stake-pit, so they can't be caught in a pocket of them; the stakes are gathered into islands (two crescents, two stake-hedges, two pairs of pits) with clear lanes round them for the horses, and shelter in their lee for you.
 
-- [ ]
+- [x] make the horses try follow closely to conan when tehy pass - like changing their overall direction to the point where conan as to dodge then.
+  - *Done:* a charging knight keeps hauling his horse round after you as he passes, for three seconds, before he wheels away: sidestep late, and keep moving, or get behind the stakes.
 
-- [ ]
+- [x] a horse hitting you is instant kill
+  - *Done:* ridden down is dead.
 
-- [ ]
+- [x] restart level actually takes you back to the start
+  - *Done:* Restart level reloaded the whole page, which put you back at the start of the campaign. It now begins the level you're on again from its own start, with exactly the health, weapons and satchel you brought into it.
 
-- [ ]
+- [ ] the snake boaconstrictor thing looks lame. make the snake carry him off in his mouth please
 
-- [ ]
+- [ ] E1M6 still has some edges of the castle that look thin like 1px with sky behind them... maybe have to round them off with a curve wall around it so tehy dont look like pixels
 
 - [ ]

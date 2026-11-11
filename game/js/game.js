@@ -45,12 +45,12 @@ const SWORD_CUTS = [
   [[[-0.8, 0.5, 0.25], [-0.08, 0.02, -0.32], [0.6, -0.7, 0.4]], [[0.25, 0.6, -0.75], [0.1, -0.06, -0.48], [0.75, -0.5, 0.45]], [[0.85, -0.2, 0.2], [0.32, -0.16, -0.4], [0.2, -0.6, 0.8]]],
   [[[0.05, 0.6, 0.8], [0.12, 0.1, -0.26], [0.3, -0.8, 0.5]], [[-0.1, 0.6, -0.8], [0.08, 0.02, -0.45], [0.55, -0.75, 0.35]], [[-0.35, -0.6, -0.7], [0.02, -0.08, -0.48], [0.45, -0.25, 0.85]]]];
 // the view-model's pose: where the fist is, which way its grip runs, and which way the forearm runs back to the elbow (view space)
-function viewPose(wep, prog, sw, th, sb, cb, combo, parryT) {
+function viewPose(wep, prog, sw, th, sb, cb, combo, parryT, tp = 0, raise = 0) {
   // the swing: dagger and fists thrust; the sword cuts right-to-left, left-to-right, then overhead
   let fwd, pos, arm = [0.62, -0.5, 0.6], blade = null;   // arm: which way the forearm runs back from the fist to the elbow
   // strokes in three beats: draw back (anticipation), the cut (fast, eased out), follow-through and recovery
   const beat = (p, a0, a1) => clamp((p - a0) / (a1 - a0), 0, 1), eOut = t => 1 - (1 - t) * (1 - t) * (1 - t), eIo = t => t * t * (3 - 2 * t);
-  const idleF = [-0.1, wep === 'sword' ? 0.75 : wep === 'spear' ? 0.05 : 0.5, -1], idleP = [0.17 - sb, -0.19 + cb, -0.33];
+  const idleF = [-0.1, wep === 'sword' ? 0.75 : wep === 'spear' || wep === 'throw' ? 0.05 : 0.5, -1], idleP = [0.17 - sb, -0.19 + cb, -0.33];
   if (parryT > 0 && (wep === 'sword' || wep === 'spear' || wep === 'dagger')) {          // parry: the blade across the body, high
     const k = Math.sin(Math.min(1, (PARRY.window - parryT) / 0.08) * Math.PI / 2);
     fwd = norm3([lerp(idleF[0], -1, k), lerp(idleF[1], 0.25, k), lerp(idleF[2], -0.35, k)]);
@@ -83,6 +83,14 @@ function viewPose(wep, prog, sw, th, sb, cb, combo, parryT) {
     pos[1] -= 0.08 * Math.sin(Math.PI * turn) * (1 - drive);   // and dips as it turns
     pos[1] -= 0.2 * Math.sin(Math.PI * ret); pos[0] += 0.06 * Math.sin(Math.PI * ret);   // pulled back low and out to the side: the fist turns back over below the frame
     arm = arm.map((v, i) => lerp(v, aO[i], turn));
+  } else if (wep === 'throw') {
+    // the spear throw: drawn back high by the ear, tip up; driven out along the line of the eye; the empty hand drops away
+    const rel = THROW_REL / THROW_LEN, cock = eIo(beat(tp, 0, rel * 0.9)), drive = eOut(beat(tp, rel * 0.95, rel * 1.7)), drop = eIo(beat(tp, rel * 1.85, 1));   // the spear leaves as the drive begins
+    const pC = [0.25 - sb, -0.13 + cb, -0.34], fC = [-0.1, 0.24, -1], aC = [0.3, -0.95, 0.35];
+    const pO = [0.05, -0.05, -0.6], fO = [-0.03, 0.02, -1], aO = [0.35, -0.45, 1], pD = [0.14, -0.62, -0.42];
+    pos = idleP.map((v, i) => lerp(lerp(lerp(v, pC[i], cock), pO[i], drive), pD[i], drop));
+    fwd = idleF.map((v, i) => lerp(lerp(v, fC[i], cock), fO[i], drive));
+    arm = [0.62, -0.5, 0.6].map((v, i) => lerp(lerp(v, aC[i], cock), aO[i], drive));
   } else if ((wep === 'dagger' || wep === 'spear') && prog > 0) {
     // a jab or thrust: cock back, drive straight out, snap back
     const reach = wep === 'spear' ? 0.42 : wep === 'dagger' ? 0.3 : 0.26;
@@ -96,6 +104,7 @@ function viewPose(wep, prog, sw, th, sb, cb, combo, parryT) {
     pos = [idleP[0] + fwd[0] * sw * 0.16, idleP[1] + fwd[1] * sw * 0.16 + th * 0.06, idleP[2] + fwd[2] * sw * 0.16];
   }
   fwd = norm3(fwd);
+  if (raise > 0) pos = [pos[0], pos[1] - 0.45 * eIo(raise / RAISE_LEN), pos[2]];   // the next weapon coming up from below
   // the hand's frame: X back along the grip, Z up the forearm toward the elbow
   const frame = (f, p) => {
     const X = [-f[0], -f[1], -f[2]], ad = arm[0] * X[0] + arm[1] * X[1] + arm[2] * X[2];
@@ -376,7 +385,8 @@ function dynColliders(self) {
   const sh = S.shukeli; if (sh.state !== 'dead') c.push({ x: sh.x, z: sh.z, r: 0.55 });
   const g = S.giant; if (!giantTaken()) c.push({ x: g.x, z: g.z, r: 0.6 });
   for (const f of S.foes) if (!f.dead && f !== self && f.state !== 'dormant' && f.state !== 'lurk') c.push({ x: f.x, z: f.z, r: 0.42 });   // not one still clinging to the roof, or not yet come
-  const n = S.npc; if (n && n !== self) c.push({ x: n.x, z: n.z, r: 0.35 });   // Pelias is flesh: you cannot walk through him
+  const n = S.npc; if (n && n !== self) c.push({ x: n.x, z: n.z, r: 0.35 });
+  if (!self && S.shamu) for (const r of S.shamu.riders) c.push({ x: r.x, z: r.z, r: 0.75 });   // a horse is a wall of muscle: you don't walk through it   // Pelias is flesh: you cannot walk through him
   if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
   // Satha's body is solid: you cannot walk through her coils (only lie still while she passes)
   else if (S.satha.pts && (!entitySpec('scripted_satha') || S.flags.free)) {
@@ -693,13 +703,18 @@ function parry() {
   S.parryT = PARRY.window; S.parryCool = PARRY.cool; Sfx.swing();
 }
 // throw the spear in your hand: it flies true, and lies where it lands to be picked up again
+// the throw: drawn back by the ear, driven forward and let go partway through the drive, the empty hand following through,
+// then the next weapon comes up from below. The spear leaves at the release, not at the click.
+const THROW_LEN = 0.5, THROW_REL = 0.1, RAISE_LEN = 0.28;   // a snap throw: a quick draw back, and it's gone
 function throwSpear() {
   if (S.weapon !== 'spear' || S.throwT > 0 || S.swing > 0) return;
+  S.throwT = THROW_LEN; S.throwKind = 'spear'; S.throwFired = false; Sfx.swing();
+}
+function releaseSpear() {
   const f = camFwd();
-  S.throwT = 0.4;
-  S.proj.push({ type: 'jav', x: S.x + f[0] * 0.6, y: S.y + 1.5 + f[1] * 0.6, z: S.z + f[2] * 0.6, vx: f[0] * 24, vy: f[1] * 24 + 1.0, vz: f[2] * 24, life: 3, spin: 0, uses: S.spearUses });
-  nextSpear();
-  Sfx.whoosh();
+  const rx = Math.cos(S.yaw) * 0.22, rz = -Math.sin(S.yaw) * 0.22;   // from the throwing hand, off to the right of the eye
+  S.proj.push({ type: 'jav', x: S.x + rx + f[0] * 1.1, y: S.y + 1.38 + f[1] * 1.1, z: S.z + rz + f[2] * 1.1, vx: f[0] * 24, vy: f[1] * 24 + 1.0, vz: f[2] * 24, life: 3, spin: 0, uses: S.spearUses });
+  S.throwFired = true; nextSpear(); Sfx.whoosh();
 }
 // the spear in hand is gone (thrown or broken): draw the next from your back, or fall back to the sword
 function nextSpear() {
@@ -713,7 +728,7 @@ function onFire(kick) {
 }
 function throwBone() {
   const f = camFwd();
-  S.flags.has_bone = false; S.throwT = 0.35;
+  S.flags.has_bone = false; S.throwT = 0.35; S.throwKind = 'bone';
   S.proj.push({ type: 'bone', x: S.x + f[0] * 0.5, y: S.y + 1.4 + f[1] * 0.5, z: S.z + f[2] * 0.5, vx: f[0] * 15, vy: f[1] * 15 + 1.6, vz: f[2] * 15, life: 4, spin: 0, bounced: false });
   Sfx.whoosh();
 }
@@ -1335,7 +1350,15 @@ function updateShamu() {
   const RD = L.riders, [fx0, fx1, fz0, fz1] = RD.field.map(v => v * CELL);
   const near = mode === 'play' && !S.flags.lanes_crossed && S.x > fx0 - 1.5 * CELL && S.x < fx1 + CELL;
   if (near && !S.hints.has('riders')) { S.hints.add('riders'); log('The riders\' ground. Ophirean knights wheel over it, and they have seen you. Get across alive: the stakes will turn a horse, and beyond the staked ditch at the far side they cannot follow.', 'bad'); }
-  const blocks = (px, pz) => { if (px < fx0 || px > fx1 || pz < fz0 || pz > fz1) return true; const g = groundInfo(px, pz); return g.idx >= 0 && !!((LV.flags[g.idx] & F_STAKE) || LV.spikes[g.idx]); };
+  if (!LV.ride) {                                          // the ground a horse will ride: in the field, a clear cell from every stake and stake-pit
+    LV.ride = new Uint8Array(LV.W * LV.H);
+    for (let z = Math.ceil(RD.field[2]); z < RD.field[3]; z++) for (let x = Math.ceil(RD.field[0]); x < RD.field[1]; x++) {
+      let ok = LV.kind[z * LV.W + x] === 1;
+      for (let dz = -1; dz <= 1 && ok; dz++) for (let dx = -1; dx <= 1 && ok; dx++) { const i = (z + dz) * LV.W + x + dx; if ((LV.flags[i] & F_STAKE) || LV.spikes[i]) ok = false; }
+      LV.ride[z * LV.W + x] = ok ? 1 : 0;
+    }
+  }
+  const blocks = (px, pz) => { const gx = Math.floor(px / CELL), gz = Math.floor(pz / CELL); return gx < 0 || gz < 0 || gx >= LV.W || gz >= LV.H || !LV.ride[gz * LV.W + gx]; };
   const free = (r, yaw) => [0.6, 2, 4.5].every(k => !blocks(r.x + Math.sin(yaw) * k, r.z + Math.cos(yaw) * k));   // near and far: a pit's corner can hide between
   const cx = (fx0 + fx1) / 2, cz = (fz0 + fz1) / 2;
   let charging = M.riders.filter(r => r.state === 'charge').length;
@@ -1352,11 +1375,10 @@ function updateShamu() {
     }
     if (r.state === 'charge') {
       r.sp += (RD.speed - r.sp) * Math.min(1, DT * 3);
-      if (dx * Math.sin(r.yaw) + dz * Math.cos(r.yaw) < 0) r.passed = true;   // past you: no turning back on this pass
-      if (!r.passed) {
-        const tx = S.x + S.vx * RD.lead - r.x, tz = S.z + S.vz * RD.lead - r.z;
-        let a = Math.atan2(tx, tz) - r.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); r.yaw += clamp(a, -RD.turn * DT, RD.turn * DT);
-      } else if ((r.pt = (r.pt || 0) + DT) > RD.ride || !near) { r.state = 'roam'; r.pt = 0; r.cool = RD.every[0] + S.rng.next() * (RD.every[1] - RD.every[0]); }
+      // he rides at where you'll be and keeps hauling his horse round after you as he passes, until the charge is spent
+      const tx = S.x + S.vx * RD.lead - r.x, tz = S.z + S.vz * RD.lead - r.z;
+      let a = Math.atan2(tx, tz) - r.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); r.yaw += clamp(a, -RD.turn * DT, RD.turn * DT);
+      if (r.t > RD.chase || !near) { r.state = 'roam'; r.cool = RD.every[0] + S.rng.next() * (RD.every[1] - RD.every[0]); }
     }
     // stakes, a stake-pit or the edge of the ground ahead: of sixteen headings, take the open one nearest the one he
     // wants; hemmed in on every side, he wheels right about, the way he came
@@ -1364,7 +1386,6 @@ function updateShamu() {
     if (!free(r, r.yaw)) {
       let bd = 9; want = r.yaw + Math.PI;
       for (let k = 1; k <= 8; k++) for (const sg of [1, -1]) { const h = r.yaw + sg * k * Math.PI / 8; if (k * Math.PI / 8 < bd && free(r, h)) { bd = k * Math.PI / 8; want = h; } }
-      r.passed = true;
     }
     const nx = r.x + Math.sin(r.yaw) * r.sp * DT, nz = r.z + Math.cos(r.yaw) * r.sp * DT, stopped = blocks(nx, nz);
     if (!stopped) { r.x = nx; r.z = nz; } else r.sp = Math.max(2, r.sp * 0.7);   // pulled up short
@@ -1376,7 +1397,7 @@ function updateShamu() {
     if (want !== r.yaw) { let a = want - r.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); r.yaw += clamp(a, -RD.veer * DT * (stopped ? 3 : 1), RD.veer * DT * (stopped ? 3 : 1)); }
     if (mode === 'play' && d < 1.4 && M.cool <= 0 && r.sp > 4) {
       const sx = Math.cos(r.yaw), sz = -Math.sin(r.yaw), side = dx * sx + dz * sz >= 0 ? 1 : -1;
-      M.cool = 1.0; hurt(r.state === 'charge' ? 30 : 18, 'trample'); S.vx += sx * side * 9; S.vz += sz * side * 9; punchView(0.1, 0.1);
+      M.cool = 1.0; hurt(RD.kill ? 999 : 30, 'trample'); S.vx += sx * side * 9; S.vz += sz * side * 9; punchView(0.1, 0.1);
       if (mode === 'play') log('A gilded knight rides you down and is gone, laughing.', 'bad');
     }
   }
@@ -1429,7 +1450,9 @@ function tick(inp) {
   if (inp.yaw !== undefined) S.yaw = inp.yaw;
   if (inp.pitch !== undefined) S.pitch = inp.pitch;
   prev = { x: S.x, y: S.y, z: S.z };
-  chainSndT -= DT; S.swing = Math.max(0, S.swing - DT); S.throwT = Math.max(0, S.throwT - DT); S.kickT = Math.max(0, S.kickT - DT); S.parryT = Math.max(0, S.parryT - DT); S.parryCool = Math.max(0, S.parryCool - DT);
+  chainSndT -= DT; S.swing = Math.max(0, S.swing - DT); S.throwT = Math.max(0, S.throwT - DT); S.raiseT = Math.max(0, (S.raiseT || 0) - DT);
+  if (S.throwKind === 'spear' && !S.throwFired && THROW_LEN - S.throwT >= THROW_REL) releaseSpear();
+  if (S.throwKind === 'spear' && S.throwT <= 0) { S.throwKind = null; S.raiseT = RAISE_LEN; }   S.kickT = Math.max(0, S.kickT - DT); S.parryT = Math.max(0, S.parryT - DT); S.parryCool = Math.max(0, S.parryCool - DT);
   if (inp.weapon && S.weapons[inp.weapon] && inp.weapon !== S.weapon) {
     if (S.weapon === 'spear') S.spears.push(S.spearUses);          // the spear in hand goes back on the bundle
     if (inp.weapon === 'spear') S.spearUses = S.spears.pop() || 0;  // draw one from your back
@@ -1536,8 +1559,9 @@ function startPlay(agent) {
   if (!agent) lockPointer();
 }
 // load a level; `carry` brings the hero's state across (health, weapons, tally)
+let LEVEL_CARRY = null;   // what the hero brought into this level: Restart level begins it again with exactly that
 function loadLevel(id, carry) {
-  LEVEL = LEVELS[id];
+  LEVEL = LEVELS[id]; LEVEL_CARRY = carry ? JSON.parse(JSON.stringify(carry)) : null;
   Sfx.ambience(LEVEL.open ? 'field' : LEVEL.torch ? 'tunnels' : 'pits');
   if (R && typeof loadCastModels === 'function') loadCastModels(levelCast(LEVEL));   // in the background: the old rig stands in until they arrive
   buildLevel(LEVEL);
@@ -1575,7 +1599,7 @@ function showPause() {
   $('ambIn').oninput = e => { ambience = parseFloat(e.target.value); Sfx.setAmbience(ambience); $('ambVal').textContent = Math.round(ambience * 100) + '%'; try { localStorage.setItem(AMB_KEY, String(ambience)); } catch (err) { /* ignore */ } };
   $('bRes').onclick = () => { hideOverlay(); mode = 'play'; lockPointer(); };
   if (CHEAT) { $('bAuto').onclick = () => startAutoplay(1); $('bAuto3').onclick = () => startAutoplay(3); }
-  $('bRestart').onclick = () => location.reload();
+  $('bRestart').onclick = () => { AUTO = null; agentInput = null; loadLevel(LEVEL.level, LEVEL_CARRY && JSON.parse(JSON.stringify(LEVEL_CARRY))); startPlay(false); };   // this level, from its start, as you came into it
 }
 async function finishLevel() {
   if (mode !== 'play') return;
@@ -1903,6 +1927,7 @@ function render(alpha) {
     const light = sampleLight(p.x, p.y, p.z);
     if (p.type === 'bone') drawM('bone', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), p.spin, 0, 1.3), light);
     else if (p.type === 'arrow') drawM('arrow', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), -Math.atan2(p.vy, Math.hypot(p.vx, p.vz)), 0, 1.2), light);
+    else if (p.type === 'jav' && (p.foe || p.life < 2.86)) drawM('spear', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), Math.PI / 2 - Math.atan2(p.vy, Math.hypot(p.vx, p.vz)), 0, 1), light);   // a spear in flight: the shaft along its path, the head leading
     else drawM('venom', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), 0, p.spin, 1.2), light, 0.5);
   }
   for (const p of particles) {
@@ -1921,8 +1946,8 @@ function render(alpha) {
     vl.d = rotDir(m4mul(m4rx(-S.pitch), m4ry(-S.yaw)), am.d);
     const sb = Math.sin(bobPhase) * 0.012 * bobAmt, cb = Math.abs(Math.cos(bobPhase)) * 0.012 * bobAmt;
     const prog = S.swing > 0 ? 1 - S.swing / S.swingLen : 0, sw = S.swing > 0 ? Math.sin(prog * Math.PI) : 0, th = S.throwT > 0 ? Math.sin((1 - S.throwT / 0.35) * Math.PI) : 0;
-    const wep = S.flags.has_bone ? 'bone' : S.weapon;
-    const { hand, swordAt, blade, upper } = viewPose(wep, prog, sw, th, sb, cb, S.combo, S.parryT);
+    const throwing = S.throwKind === 'spear' && S.throwT > 0, wep = throwing ? (S.throwFired ? 'none' : 'spear') : S.flags.has_bone ? 'bone' : S.weapon;
+    const { hand, swordAt, blade, upper } = viewPose(throwing ? 'throw' : wep, prog, sw, th, sb, cb, S.combo, S.parryT, throwing ? 1 - S.throwT / THROW_LEN : 0, S.raiseT || 0);
     drawM('vm_upper', upper, vl);
     // his own forearm and fist (the CC0 body, his baked skin), else the old modelled ones
     if (typeof SKINNED !== 'undefined' && SKINNED.vm_arm) { drawStatic('vm_arm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); }

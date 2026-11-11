@@ -389,11 +389,11 @@ const LEVEL_E1M1 = {
     { pts: [[52, 12], [55, 17], [54, 23]], face: -Math.PI / 2 }, { pts: [[54, 39], [56, 44], [53, 50]], face: -Math.PI / 2 },
     // and before the heap, a crescent the knights rallied behind
     { pts: [[74, 9], [78, 14], [79, 21], [77, 25]], face: -Math.PI / 2 }, { pts: [[77, 37], [79, 42], [77, 48], [73, 52]], face: -Math.PI / 2 },
-    // stakes planted over the riders' ground itself, clumps a man can shelter by and a horse must go round
-    { from: [71, 18], to: [71, 20], face: -Math.PI / 2 }, { from: [72, 26], to: [73, 26], face: Math.PI }, { from: [74, 35], to: [75, 35], face: 0 },
-    { from: [71, 43], to: [71, 45], face: -Math.PI / 2 }, { from: [76, 27], to: [76, 28], face: -Math.PI / 2 }],
+    // islands of stakes on the riders' ground itself, a man can shelter in their lee; the horses ride the clear lanes round them
+    { from: [72, 19], to: [73, 19], face: 0 }, { from: [72, 20], to: [73, 20], face: Math.PI },
+    { from: [72, 42], to: [73, 42], face: 0 }, { from: [72, 43], to: [73, 43], face: Math.PI }],
   // and the end of the riders' ground: a ditch sown with stakes the length of the field, to be leapt; no horse will take it
-  lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16], [74, 22], [70, 28], [73, 38], [70, 50], [75, 13], [72, 33]].concat(Array.from({ length: 49 }, (_, k) => [80, 9 + k])),
+  lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16], [72, 30], [73, 31], [72, 53]].concat(Array.from({ length: 49 }, (_, k) => [80, 9 + k])),
   entities: [
     { class: 'info_player_start', at: [6, 31], yaw: -Math.PI / 2 },
     { class: 'kknight', id: 'c1', at: [15, 24], group: 'charge', yaw: Math.PI / 2 },
@@ -452,8 +452,9 @@ const LEVEL_E1M1 = {
   volley: { rooms: ['gully', 'arrowground'], group: 'line', period: 4.2 },
   // the riders' ground: "Ophirean knights in gilded mail leaped their horses over mounds of corpses"
   //   seven of them riding their ground; no more than three charge at once (a gallop), the rest canter round
-  riders: { n: 7, max: 3, field: [69.2, 77.2, 9, 57], speed: 20, canter: 10, lead: 0.5, turn: 0.85, veer: 3.0, ride: 1.6, every: [1.0, 2.6],
-    at: [[71, 12], [75.5, 21], [70.5, 30], [74.5, 31.5], [72, 40.5], [70.5, 47], [75, 55]] },
+  //   they ride only ground a clear cell from any stake or stake-pit (no pocket to be caught in); a horse at speed kills
+  riders: { n: 7, max: 2, field: [69, 77, 9, 57], speed: 19, canter: 10, lead: 0.3, turn: 1.0, veer: 3.0, chase: 3.2, every: [1.4, 3.0], kill: true,
+    at: [[70, 12], [75.5, 27], [70, 30], [75.5, 34], [70, 38], [70, 48], [75, 55]] },
   // the kings watch from their horses in the ring of the host; Tsotha swings down and walks out to you
   // "Strabonus, with his broad dark face and crafty eyes; Amalrus, slender, fastidious" (ch. I), watching from their horses
   kings: { riders: [[108, 28, 'strabonus'], [108, 36, 'amalrus']], horse: [105.4, 32], tsotha: [104.6, 32] },
@@ -702,6 +703,7 @@ const LEVEL_E1M5 = {
 const ROOF_TEX = { floor: 'FLAG', wall: 'HEWN', ceil: 'SUNSET' };
 const LEVEL_E1M6 = {
   level: 'e1m6', next: 'e1m7', title: 'The Tower of Tamar', ramps: ['ink', 'scarlet', 'bronze'], grid: [64, 36], ambient: [0.16, 0.1, 0.09], arms: 'sword',
+  squads: ['turret', 'roof', 'arpello', 'stair', 'stair3', 'lower', 'guard', 'guard3'],   // men who fight as one: they ring you, and never more than two blows in the air at once (combat.js squadChase)
   open: true, sun: [1, 0.06, 0.15], fog: 0.006, haze: [0.35, 0.12, 0.08],
   intro: [['THE TOWER OF TAMAR', 'title'], ['"Out of the crimson dawn came a flying speck that grew to a bat, then to an eagle." It roars over the great tower, and you spring from between its titan-wings onto the turret.', ''],
     ['Below, the mob in the square: "The king! It is the king!"', 'warn']],
@@ -805,6 +807,7 @@ const LEVEL_E1M6 = {
 const MEADOW = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M7 = {
   level: 'e1m7', next: 'e1m8', title: 'The Relief of Shamar', ramps: ['earth', 'night', 'scarlet'], grid: [96, 44], arms: 'sword',
+  squads: ['palace', 'guards', 'press', 'spears'],   // men who fight as one: they ring you, and never more than two blows in the air at once (combat.js squadChase)
   ambient: [0.34, 0.24, 0.16], haze: [0.5, 0.32, 0.2], open: true, fog: 0.008, sun: [0.6, 0.35, -0.4],
   intro: [['THE RELIEF OF SHAMAR', 'title'], ['"It is King Conan!" Strabonus shrieks it, paling; Tsotha squalls that you have been in Satha\'s belly for days.', 'voice'],
     ['On the ridge behind you the stolid Bossonians nock and draw; the Gundermen level their pikes. Down onto the plain!', '']],
@@ -851,7 +854,7 @@ const LEVEL_E1M7 = {
   shafts: [], links: [], features: [],
   lights: [],
   props: [{ prefab: 'brazier', at: [89.5, 18.2] }, { prefab: 'brazier', at: [89.5, 25.8] }, { prefab: 'standard', at: [91, 18.8] }, { prefab: 'standard', at: [91.5, 25.2] }, { prefab: 'standard', at: [93.5, 19.5] }],   // the camp-fires of Koth burning at the road's mouth
-  items: [{ kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [25, 12] }, { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [26, 33] }, { kind: 'wine', name: 'a captain\'s wine-flask', heal: 40, at: [75.2, 30] },
+  items: [{ kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [25, 12] }, { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [26, 33] }, { kind: 'wine', name: 'a captain\'s wine-flask', heal: 40, at: [75.2, 30] }, { kind: 'wine', name: 'a palace-guard\'s wine-skin', heal: 35, at: [74.5, 21] }, { kind: 'bread', name: 'a palace-guard\'s bread', heal: 30, at: [77, 26] },
     { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [19, 17] }, { kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [21, 27] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [28, 22] },
     { kind: 'bread', name: 'a Bossonian\'s bread', heal: 30, at: [32, 19] }, { kind: 'wine', name: 'a pikeman\'s wine-skin', heal: 35, at: [34, 38] },
     { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [57, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [71.6, 28.5] }, { kind: 'wine', name: 'a wine-skin', heal: 35, at: [75, 12] },
@@ -958,7 +961,8 @@ const LEVEL_E1M8 = {
     { from: [92.5, 3], to: [92.5, 37], r: [1.8, 3.6] }, { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3] }, { from: [54, 2.8], to: [92, 2.8], r: [1.4, 3] }],
   scatter: [{ prefab: 'fallen', n: 40, rect: [4, 5, 25, 30] }, { prefab: 'standard', n: 9, rect: [5, 38, 22, 20] }, { prefab: 'fallen', n: 30, rect: [4, 37, 25, 22] }, { prefab: 'deadhorse', n: 6, rect: [5, 38, 22, 20] }, { prefab: 'deadhorse', n: 8, rect: [5, 6, 22, 28] }, { prefab: 'fallen', n: 14, rect: [55, 5, 10, 30] }],
   shafts: [], links: [], features: [], lights: [], props: [],
-  items: [{ kind: 'wine', name: 'a knight\'s wine-skin', heal: 35, at: [62, 40] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [72, 50] },
+  items: [{ kind: 'bread', name: 'a dead man\'s ration', heal: 30, at: [16, 31] }, { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 35, at: [20.5, 27.5] }, { kind: 'bread', name: 'a dead man\'s ration', heal: 30, at: [13, 26] },   // the rear-guard's ground
+    { kind: 'wine', name: 'a knight\'s wine-skin', heal: 35, at: [62, 40] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [72, 50] },
     { kind: 'wine', name: 'a Kothian captain\'s wine', heal: 40, at: [14, 50] }, { kind: 'bread', name: 'camp bread', heal: 30, at: [24, 42] },
     { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 35, at: [18, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [26, 28] },
     { kind: 'wine', name: 'a fugitive\'s wine-skin', heal: 35, at: [60, 12] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [64, 30] }],
@@ -1051,7 +1055,7 @@ function buildLevel(spec) {
   const [W, H] = spec.grid, N = W * H;
   Object.assign(LV, {
     spec, W, H, kind: new Uint8Array(N), floor: new Float32Array(N), ceil: new Float32Array(N), flags: new Uint8Array(N),
-    room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), spikes: new Uint8Array(N), planks: [],
+    room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), spikes: new Uint8Array(N), ride: null, planks: [],
     rooms: spec.rooms, features: [], props: [], lights: [], flames: [], colliders: [], items: [], blockers: new Set(), corners: null,
   });
   spec.rooms.forEach((r, ri) => {

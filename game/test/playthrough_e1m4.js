@@ -1,5 +1,5 @@
 // Golden playthrough of e1m4, Yothga, through the CIM agent API (README §11).
-const EXPECTED = { tick: 11798, hash: 'f2a83e85' };
+const EXPECTED = { tick: 11844, hash: '6fe0f02a' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m4"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };

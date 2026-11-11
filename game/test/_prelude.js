@@ -17,12 +17,17 @@ window.__go = (x, z, run = true, maxTicks = 3000) => {
   }
   return CIM.obs();
 };
+// the level's boss, roused (on his feet and coming), within r metres
+window.__boss = (r) => CIM.state.foes.find(q => FOES[q.cls].boss && !q.dead && !['dormant', 'sleep', 'idle', 'home', 'lurk'].includes(q.state) && Math.hypot(q.x - CIM.state.x, q.z - CIM.state.z) < r);
+// firm ground all round (not a one-cell bridge over the drop): somewhere to stand and fight
+window.__firm = (s) => { const gx = Math.floor(s.x / C), gz = Math.floor(s.z / C); for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i = cellIdx(gx + dx, gz + dz); if (i < 0 || LV.kind[i] !== 1 || Math.abs(LV.floor[i] - s.y) > 1.3) return false; } return __boss(8); };
 // navigate with the game's own flow-field pathfinder (combat.js bfs)
 window.__nav = (x, z, run = true, maxTicks = 4000) => {
   const tgt = cellIdx(Math.floor(x / C), Math.floor(z / C)), field = bfs(tgt);
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
     if (Math.hypot(x - s.x, z - s.z) < 0.4 || CIM.obs().mode !== 'play') break;
+    { const b = !window.__inFight && window.__fight && __boss(8) && __firm(s); if (b) { __fight([b.group], 9000, 14); continue; } }   // he comes at you: turn and face him, whatever you were about
     const here = cellIdx(Math.floor(s.x / C), Math.floor(s.z / C));
     const step = here === tgt ? null : flowStep({ x: s.x, z: s.z }, field);
     const [dx, dz] = step ? [step[0] - s.x, step[1] - s.z] : [x - s.x, z - s.z];
@@ -39,20 +44,28 @@ window.__use = (x, z, pitch = 0) => { __face(x * C, z * C, pitch); return CIM.st
 // fight: close with the nearest foe that knows we're here; parry a shield-man's blow then strike, step back from other wound-up blows
 // maxSteps: ignore a foe whose path round is longer than this many cells (close as the crow flies, a long way on foot)
 window.__fight = (groups, maxTicks = 6000, radius = 30, maxSteps = 1e9) => {
+  window.__inFight = true; try { return __fight0(groups, maxTicks, radius, maxSteps); } finally { window.__inFight = false; }
+};
+window.__fight0 = (groups, maxTicks, radius, maxSteps) => {
   let blocked = 0, lastHits = -1, reachable = null, grace = 72;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
     if (s.health <= 0 || CIM.obs().mode === 'dead') { CIM.step({ respawn: true }, 1); reachable = null; continue; }
-    if (s.health < 55 && s.pouch.length) { CIM.step({ drink: true, yaw: s.yaw, pitch: s.pitch }, 1); continue; }   // low: eat or drink from the satchel
+    if (s.health < 60 && s.pouch.length) { CIM.step({ drink: true, yaw: s.yaw, pitch: s.pitch }, 1); continue; }   // low: eat or drink from the satchel
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
     if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
     const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && f.state !== "lurk" && groups.includes(f.group) && ((reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 && reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] <= maxSteps) || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    { const b = __boss(10); if (b && !live.includes(b)) live.push(b); }   // the boss is always in the fight once he's roused and near
     if (!live.length) {   // a group held back (dormant) may be about to come in: give the beat a moment before calling it done
       if (grace-- > 0 && s.foes.some(q => !q.dead && groups.includes(q.group) && q.state === 'dormant')) { CIM.step({ yaw: s.yaw, pitch: s.pitch }, 1); continue; }
       break;
     }
     live.sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z));
-    const f = live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
+    // the level's boss close by: face him, always, and fight him; the rest are only parried
+    const boss = __boss(10);
+    const f = boss || live[0], d = Math.hypot(f.x - s.x, f.z - s.z), yaw = Math.atan2(-(f.x - s.x), -(f.z - s.z));
+    // a spear drawn back to throw: hold the aim on him until it leaves the hand
+    if (s.throwKind === 'spear' && !s.throwFired) { CIM.step({ yaw, pitch: Math.atan2(f.y + 1.0 - s.y - 1.5, d) + d * 0.012 }, 1); continue; }
     const shielded = !!FOES[f.cls].block;
     const reach = s.weapon === 'sword' ? 2.6 : 2.0;
     let act = { yaw, pitch: Math.max(-0.4, Math.min(0.3, Math.atan2(f.y - s.y, d))) };
@@ -61,8 +74,12 @@ window.__fight = (groups, maxTicks = 6000, radius = 30, maxSteps = 1e9) => {
       Math.hypot(q.x - s.x, q.z - s.z) < foeReach(q) + 0.7 && FOES[q.cls].windup * (q.combo ? 0.6 : 1) - q.t < 0.28 && FOES[q.cls].windup * (q.combo ? 0.6 : 1) - q.t > 0.04);
     const archer = FOES[f.cls].ranged && !FOES[f.cls].boss, armed = s.weapon === 'spear' || (s.spears && s.spears.length);
     // low, and food or drink lying close by (a fallen man's ration): go and take it, fighting can wait a moment
-    const food = s.health < 55 && s.items.filter(it => !it.taken && it.heal && Math.abs((it.y || 0) - s.y) < 1.2 && Math.hypot(it.x - s.x, it.z - s.z) < 7 && los(s.x, s.y + 1, s.z, it.x, (it.y || 0) + 0.5, it.z)).sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z))[0];
-    if (blow) { act.yaw = Math.atan2(-(blow.x - s.x), -(blow.z - s.z)); act.parry = true; }
+    const food = !boss && s.health < 55 && s.items.filter(it => !it.taken && it.heal && Math.abs((it.y || 0) - s.y) < 1.2 && Math.hypot(it.x - s.x, it.z - s.z) < 7 && los(s.x, s.y + 1, s.z, it.x, (it.y || 0) + 0.5, it.z)).sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z))[0];
+    if (blow) {
+      const by = Math.atan2(-(blow.x - s.x), -(blow.z - s.z)), off = Math.abs(Math.atan2(Math.sin(by - yaw), Math.cos(by - yaw)));
+      if (!boss || off < 1.3) { act.yaw = by; act.parry = true; }   // facing him still, near enough, to turn the blow
+      else { act.forward = -1; act.side = Math.sin(by - yaw) > 0 ? -1 : 1; act.run = true; }   // from behind his shoulder: give ground, keep him and them in front
+    }
     else if (food) { act.yaw = Math.atan2(-(food.x - s.x), -(food.z - s.z)); act.forward = 1; act.run = true; }
     else if (archer && armed && d > 5 && d < 22 && s.throwT <= 0 && s.swing <= 0 && los(s.x, s.y + 1.5, s.z, f.x, f.y + 1.2, f.z)) {   // an archer who keeps his distance: throw a spear at him
       if (s.weapon !== 'spear') act.weapon = 'spear'; else { act.throwSpear = true; act.pitch = Math.atan2(f.y + 1.0 - s.y - 1.5, d) + d * 0.012; }
@@ -128,4 +145,5 @@ const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health
 await ev(`window.__clear = (radius = 18, maxTicks = 6000) => __fight([...new Set(CIM.state.foes.filter(f => !f.dead && Math.hypot(f.x - CIM.state.x, f.z - CIM.state.z) < radius).map(f => f.group))], maxTicks, radius); true`);
 const finish = async EXPECTED => { const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
   log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED)); };
-await ev(`window.__heal = (r = 26, steps = 16) => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);
+await ev(`window.__heal = (r = 26, steps = 16) => { if (__boss(14)) return CIM.obs();   // never turn your back on him for bread
+  const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);

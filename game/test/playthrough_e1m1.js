@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 9489, hash: 'f4f99008' };
+const EXPECTED = { tick: 9942, hash: '3ffc2246' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -153,8 +153,8 @@ o = await O('__fight(["line"], 12000, 50)'); log('line:', brief(o));
 await O('__heal(69)');
 // THE RIDERS' GROUND (puzzle): sidestep the charges across it, through the gap in the crescents, and leap the staked ditch
 await O('__route([[68, 31]])');
-o = await O('__ride(73, 31)'); log(' riders', brief(o)); o = await O('__ride(79.3, 31)'); log(' ditch', brief(o));
-o = await O('__ditch(81.6, 31)'); log(' leapt', brief(o));
+o = await O('__ride(71.3, 29.2)'); o = await O('__ride(74.6, 28.6)'); log(' riders', brief(o)); o = await O('__ride(79.3, 28.6)'); log(' ditch', brief(o));
+o = await O('__ditch(81.6, 28.6)'); log(' leapt', brief(o)); o = await O('__route([[84, 31]])');
 // THE HEAP OF DEAD (action): two waves, then the kings and the wizard
 await O('__heal()');
 await O('__route([[88, 31]])');

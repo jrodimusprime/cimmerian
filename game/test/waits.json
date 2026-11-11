@@ -3,6 +3,6 @@
   "e1m1": { "waits": [{ "cell": [100.9, 31.3], "r": 5, "max": 32, "why": "on the heap after the last wave: the kings ride in, Tsotha's offer" }] },
   "e1m2": { "waits": [{ "cell": [6.9, 9.6], "max": 55, "why": "the Vault: chained, lie still while Satha passes, then the keys" }] },
   "e1m4": { "waits": [{ "cell": [10.9, 18], "max": 14, "why": "the cage: the vine cut, Pelias gets to his feet and speaks" }] },
-  "e1m6": { "deaths": 1, "waits": [] },
+  "e1m6": { "waits": [] },
   "e1m8": { "waits": [{ "cell": [84.3, 14.9], "max": 18, "why": "Tsotha fallen: the ending plays out" }] }
 }

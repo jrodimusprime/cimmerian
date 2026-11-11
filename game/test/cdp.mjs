@@ -55,7 +55,7 @@ try {
   // CIM_WATCH=file: sample the player through the run (tick, x, z, health, mode) and note every death, for test/regress.mjs
   if (process.env.CIM_WATCH) await ev(`window.__watch = { pts: [], deaths: [], dead: false }; { const st = CIM.step.bind(CIM), ld = CIM.load.bind(CIM);
     const note = () => { const s = CIM.state, W = __watch, m = CIM.obs().mode, l = W.pts[W.pts.length - 1];
-      if (!l || s.tick - l[0] >= 6 || l[4] !== m) W.pts.push([s.tick, +s.x.toFixed(2), +s.z.toFixed(2), Math.round(s.health), m]);
+      if (!l || s.tick - l[0] >= 6 || l[4] !== m) W.pts.push([s.tick, +s.x.toFixed(2), +s.z.toFixed(2), Math.round(s.health), m, s.foes.some(q => !q.dead && !['dormant', 'lurk', 'sleep', 'idle', 'home'].includes(q.state) && Math.hypot(q.x - s.x, q.z - s.z) < 3.2) ? 1 : 0]);
       if (s.health <= 0 && !W.dead) { W.dead = true; W.deaths.push([s.tick, +(s.x / 2.5).toFixed(1), +(s.z / 2.5).toFixed(1), S.room || '']); } else if (s.health > 0) W.dead = false; };
     CIM.step = (a = {}, n = 1) => { const r = st(a, n); note(); return r; }; CIM.load = id => { const r = ld(id); __watch.pts = []; return r; }; } true`);
   const grab = async (path, quality = 82) => { const r = await send('Page.captureScreenshot', { format: 'jpeg', quality }); writeFileSync(path, Buffer.from(r.result.data, 'base64')); };
