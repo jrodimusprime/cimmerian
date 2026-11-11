@@ -119,14 +119,24 @@ function addPrefab(mb, p) {
       addLathe(mb, bx + n[0] * 0.1, by - 0.1, bz + n[1] * 0.1, [[0.03, 0], [0.05, 0], [0.07, 0.55], [0.0, 0.58]], 5, T.WOOD, 0, ONE3, norm3([n[0] * 0.5, 1, n[1] * 0.5]));
       break;                                              // its flame is a sprite (LV.flames, drawn each frame)
     }
-    case 'door': {                                        // a heavy door of black oak, banded with iron, in a frame of dressed stone; p.open: how far it stands ajar
+    case 'door': {                                        // a heavy door of black oak boards, braced and banded with iron, strap hinges and a ring, in a frame of dressed stone; p.open: how far it stands ajar
       const t = [n[1], -n[0]], yaw = Math.atan2(n[0], n[1]), W = 1.0, H = 2.7, at = (u, y, v) => [p.x + t[0] * u + n[0] * v, p.y + y, p.z + t[1] * u + n[1] * v];
       for (const u of [-W - 0.14, W + 0.14]) { const q = at(u, H / 2, 0.08); addBox(mb, q[0], q[1], q[2], 0.16, H / 2, 0.2, T.HEWN, yaw); }
       { const q = at(0, H + 0.14, 0.08); addBox(mb, q[0], q[1], q[2], W + 0.3, 0.16, 0.22, T.HEWN, yaw); }
-      const a = p.open || 0, hx = -W, lw = 2 * W - 0.06;   // hinged on one post, swung into the room
-      const lc = (u, v) => at(hx + Math.cos(a) * u, 0, v * 0 + Math.sin(a) * u + 0.05);
-      { const c = lc(lw / 2, 0); addBox(mb, c[0], p.y + H / 2 - 0.02, c[2], lw / 2, H / 2 - 0.04, 0.05, T.WOOD, yaw - a); }
-      for (const y of [0.45, 1.35, 2.25]) { const c = lc(lw / 2, 0); addBox(mb, c[0] + n[0] * 0.06 * Math.cos(a), p.y + y, c[2] + n[1] * 0.06 * Math.cos(a), lw / 2, 0.05, 0.02, T.IRON, yaw - a); }
+      { const q = at(0, 0.02, 0.08); addBox(mb, q[0], q[1], q[2], W + 0.3, 0.03, 0.24, T.HEWN, yaw); }   // the sill
+      const a = p.open || 0, hx = -W, lw = 2 * W - 0.06, ca = Math.cos(a), sa = Math.sin(a);   // hinged on one post, swung into the room
+      const lc = (u, v) => at(hx + ca * u - sa * v, 0, sa * u + ca * v + 0.05);
+      const leaf = (u, y, v, hu, hy, hv, tex) => { const c = lc(u, v); addBox(mb, c[0], p.y + y, c[2], hu, hy, hv, tex, yaw - a); };
+      for (let k = 0; k < 5; k++) leaf(lw / 10 + k * lw / 5, H / 2 - 0.02, 0, lw / 10 - 0.008, H / 2 - 0.04 - (k % 2) * 0.01, 0.055, T.OAK);   // five boards
+      for (const y of [0.5, 2.2]) leaf(lw / 2, y, -0.075, lw / 2 - 0.08, 0.07, 0.025, T.OAK);                                        // ledges behind
+      for (let k = 0; k < 7; k++) { const f = k / 6; leaf(0.12 + f * (lw - 0.24), 0.55 + f * 1.6, -0.075, 0.07, 0.07, 0.024, T.OAK); }   // the brace
+      for (const y of [0.45, 1.35, 2.25]) {                                                                                         // strap hinges, studded, curling at the ends
+        leaf(lw * 0.36, y, 0.062, lw * 0.36, 0.045, 0.012, T.IRON);
+        for (let k = 0; k < 6; k++) leaf(0.1 + k * lw * 0.13, y, 0.076, 0.018, 0.018, 0.01, T.IRON);
+        leaf(lw * 0.72, y + 0.05, 0.062, 0.04, 0.09, 0.012, T.IRON);
+      }
+      for (let k = 0; k < 5; k++) for (const y of [0.9, 1.8]) leaf(lw / 10 + k * lw / 5, y, 0.07, 0.016, 0.016, 0.01, T.IRON);       // nail-heads down every board
+      { const c = lc(lw - 0.25, 0.1); smoothLathe(mb, c[0], p.y + 1.15, c[2], [[0.07, -0.012], [0.07, 0.012]], 10, T.IRON, ONE3, [t[0] * ca - n[0] * sa, 0, t[1] * ca - n[1] * sa]); leaf(lw - 0.25, 1.25, 0.065, 0.05, 0.05, 0.012, T.IRON); }   // the ring and its plate
       break;
     }
     case 'brazier':
@@ -409,9 +419,10 @@ function buildLevelMesh() {
     if (LV.kind[idx] === 0) {                             // masonry about a roofed room: its flat top
       const t = roofTop(i, j); if (t === -Infinity) continue;
       mb.quad([x0, t, z0], [x0, t, z1], [x1, t, z1], [x1, t, z0], T.HEWN, 0, 1, 0);
-      for (const d of DIRS) {                             // and its sides, where its neighbour masonry stands lower
-        const nx = i + d[0], nz = j + d[1]; if (nx < 0 || nz < 0 || nx >= W || nz >= H || LV.kind[nz * W + nx] !== 0) continue;
-        const tn = roofTop(nx, nz); if (tn >= t - 0.05) continue;
+      for (const d of DIRS) {                             // and its sides, where its neighbour (masonry, or a room's roof) stands lower: no step left open, however small
+        const nx = i + d[0], nz = j + d[1]; if (nx < 0 || nz < 0 || nx >= W || nz >= H) continue;
+        const nI = nz * W + nx, tn = LV.kind[nI] === 0 ? roofTop(nx, nz) : !(LV.flags[nI] & F_SKY) ? LV.ceil[nI] + ROOF : null;
+        if (tn === null || tn >= t - 0.001) continue;
         const b = tn === -Infinity ? t - 6 : tn, ax = (i + d[2]) * CELL, az = (j + d[3]) * CELL, bx = (i + d[4]) * CELL, bz = (j + d[5]) * CELL;
         mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], T.HEWN, d[0], 0, d[1]);
       }

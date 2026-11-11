@@ -19,10 +19,10 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | `e1m3` The Tunnels Below | 2:20 (10057 ticks) | ~9.3 min |
 > | `e1m4` Yothga | 3:24 (14682 ticks) | ~13.6 min |
 > | `e1m5` The Scarlet Citadel | 3:14 (13991 ticks) | ~13.0 min |
-> | `e1m6` The Tower of Tamar | 2:40 (11553 ticks) | ~10.7 min |
-> | `e1m7` The Relief of Shamar | 3:50 (16586 ticks) | ~15.4 min |
+> | `e1m6` The Tower of Tamar | 2:06 (9065 ticks) | ~8.4 min |
+> | `e1m7` The Relief of Shamar | 3:18 (14247 ticks) | ~13.2 min |
 > | `e1m8` The Tybor | 3:09 (13624 ticks) | ~12.6 min |
-> | **Campaign** | **24:39** (106500 ticks) | **~99 min** |
+> | **Campaign** | **23:32** (101673 ticks) | **~94 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -847,7 +847,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] a lot of the cave floors are flat, make them more uneven and tunnel like
 
-- [ ] generally improve the detail of the walls of castles so they have tapestries, fittings, metal weapon things that are empty, whatever else goes in a castle i guess
+- [x] generally improve the detail of the walls of castles so they have tapestries, fittings, metal weapon things that are empty, whatever else goes in a castle i guess
+  - *Done:* new furnishings: woven tapestries on poles, iron candle-sconces (lit), arms on the walls (a shield over crossed blades, or the bare blades), empty weapon pegs, golden censers hung from the vault, carpets, divans heaped with cushions, iron-bound chests, casks. The conclave and corridors of e1m2, and all through the citadel in e1m5 (halls, the censer corridor, the soldiers' quarters, the gold-domed chamber, the stair), along with e1m6's furnished guardroom.
 
 - [x] pelias doesnt actually hae a vine hanging from the roof so add one, in that room add more plant matter around so the plant makes sense
   - *Done:* Yothga's vine comes down out of the vault and is wound round Pelias in three coils while he hangs in its grip; cut, a severed stump hangs from the roof. The cage is overgrown: creepers hanging from the vault, pale stems and livid blossoms through it (clear of the stem and the way in).
@@ -863,14 +864,17 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] taking health and potions should be made simpler with an inventory when you press the escape button, in there show a simple inventory with counts. taking inspiration from all otehr novels add the potions and health potions likely that would be possible - this should change the dynamic of fighting... and help the player have a pause to take them during battle
 
-- [ ] theh door at the end of E1m6 needs a better design to make them look more oaky. take some free art for it perhaps
+- [x] theh door at the end of E1m6 needs a better design to make them look more oaky. take some free art for it perhaps
+  - *Done:* the door is rebuilt: five boards of old black oak (a new grain texture, knots and all, darker at the foot), ledges and a brace behind, three studded strap hinges with curled ends, nail-heads down every board, a ring on its plate, a stone sill. Every heavy door in the game uses it (e1m2's brass door, e1m4's stairhead, e1m6's postern).
 
-- [ ] some of the walls now they are thicker have pixel gaps between them. ensure they are done properly.
+- [x] some of the walls now they are thicker have pixel gaps between them. ensure they are done properly.
+  - *Done:* two places a sliver of sky could show through: where neighbouring masonry tops differed by less than 5 cm no side was built (now any step gets its face), and masonry standing above a neighbouring room's roof had no face down to that roof (now it has). If you still see one, tell me where.
 
 - [x] E1m7 there are archers on my side i think but i can walk throgh them.
   - *Done:* the Bossonian archers on the ridge are solid now: you shoulder past them. (The Gundermen in the thick of the fighting you can still slip between.)
 
 - [ ] E1m7 has a confusing layout where you have to stand on top of towers to trigger things... redesign the middle part of the map with the towers but make it more complicated, like have it walled off but you have to go inside those towers to walk down and through? makes it a more fun interactive map
+  - *Partly:* the confusing part is gone: nothing is triggered by standing on the towers any more (Shamar's sortie burns them, as in the book). The walled-off middle you go down through the towers to cross is not built yet.
 
 - [ ] E1M8 put an underground trench to get through a wall of pikes, like a sortof man height trench you cant jump out of where troops are inside to make it more dynamic
 
@@ -882,7 +886,8 @@ he refuses to abdicate in favour of Arpello;
 he gives the "I climbed out of the abyss of naked barbarism to the throne" speech and spits in Amalrus's eyes;
 Tsotha blinds Amalrus with dust, and promises to flay Conan's women in Tamar in ten days.
 
-- [ ] Trocero is never in a level. He holds Tamar for Conan and is driven out, then rides beside him at Shamar with Prospero. His model exists, but he isn't placed anywhere.
+- [x] Trocero is never in a level.
+  - *Done:* the globe shows the knights of Poitain hooted out of Tamar; in e1m6 a rider goes after him; at Shamar (e1m7) Count Trocero and his captain Prospero ride at your side, mounted, from the ridge down across the plain; when you reach Strabonus, "Trocero and his house troops, hewing desperately, cut their way to your side" and cut down the spearmen on his flanks (his palace troops now hold their posts round their king); Prospero's two-handed sword for Amalrus as before. He holds Tamar for Conan and is driven out, then rides beside him at Shamar with Prospero. His model exists, but he isn't placed anywhere.
 
 - [ ] Shamar (e1m7) has no cavalry battle. In the book:
 Conan rides a black stallion in black armour under the lion banner;
@@ -890,7 +895,8 @@ the Bossonian arrows wipe out Koth's front rank, and their commander Arbanus die
 Conan's knights charge through.
 In the game you're on foot and the archers are background scenery.
 
-- [ ] Tamar's tower (e1m6) is in the wrong order, and its iconic ending is missing.
+- [x] Tamar's tower (e1m6) is in the wrong order, and its iconic ending is missing.
+  - *Done:* the beast sets you down on the turret of the great tower itself, where Arpello is laughing down at the mob ("Fools! Howl as you will! Conan is dead and Arpello is king!"); "The king! It is the king!"; Arpello stands transfixed, then leaps at you, alone; you parry, grip him by crotch and neck and hurl him far out. His archers' nerve breaks and they flee across the leads, the councilmen sally from the palace, and you rock and sway on the battlements roaring with gargantuan laughter. Then down through the tower, where his household guard still hold the stair and the gate-tower (four fewer of them), and out by the postern; and a rider is sent after Trocero.
 
 Arpello should be on the tower shouting "Conan is dead and Arpello is king!", leap at Conan the moment he lands, and be thrown off straight away.
 The chapter ends on Conan "roaring with gargantuan laughter" on the battlements.
@@ -917,4 +923,5 @@ Pelias's promise "I will meet you in the plain by Shamar" is missing, so the eag
 the spell over dead Shukeli: "Rise, Shukeli! Rise from hell…";
 Tsotha's demon birth, which sets up "son of—".
 
-- [ ] The city's sortie is given to Conan (e1m7). In the book, Shamar's defenders sally out and burn the siege engines after Strabonus falls. In the game Conan fires the towers himself, and Strabonus can't die until he has.
+- [x] The city's sortie is given to Conan (e1m7).
+  - *Done:* you no longer climb and fire the siege towers, and Strabonus no longer waits on them: their guards come down off them at you, and when Strabonus falls, "behind the dazed and stricken invaders goes up a mighty clamour and the blaze of a huge conflagration": Shamar's defenders sally, cut down the men in the towers and burn the pavilions and the engines, as the book has it. In the book, Shamar's defenders sally out and burn the siege engines after Strabonus falls. In the game Conan fires the towers himself, and Strabonus can't die until he has.

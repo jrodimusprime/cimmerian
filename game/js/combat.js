@@ -228,8 +228,9 @@ function updateFoes() {
         if (mode === 'play' && Math.hypot(S.x - f.homeX, S.z - f.homeZ) < POST_R) { f.state = 'chase'; f.t = 0; }
         break;
       case 'rout':                                      // the host breaks: he throws down his post and runs for the river
-        move(f.x + (LEVEL.routTo[0] * CELL - f.x), f.z + (LEVEL.routTo[1] * CELL - f.z), st.speed * 1.2);
-        if (Math.hypot(LEVEL.routTo[0] * CELL - f.x, LEVEL.routTo[1] * CELL - f.z) < 1.5) { f.dead = true; f.gone = true; f.hp = 0; }
+      { const to = f.routTo || LEVEL.routTo;
+        move(f.x + (to[0] * CELL - f.x), f.z + (to[1] * CELL - f.z), st.speed * 1.2);
+        if (Math.hypot(to[0] * CELL - f.x, to[1] * CELL - f.z) < 1.5) { f.dead = true; f.gone = true; f.hp = 0; } }
         break;
       case 'chase':
         if (mode !== 'play') break;

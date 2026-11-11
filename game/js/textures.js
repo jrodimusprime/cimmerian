@@ -18,7 +18,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
   'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
   'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
-  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC'];
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC', 'OAK'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -421,6 +421,16 @@ const TEXGEN = {
     if (tree) return { v: 0.35 + 0.3 * fig + weave, ramp: 'jade', lo: 0.05, hi: 0.6 };
     if (fig > 0.6) return { v: 0.45 + 0.4 * (fig - 0.6) + weave, ramp: 'bronze', lo: 0.1, hi: 0.8 };
     return { v: 0.35 + 0.35 * tfbm(u, v, 8, 2, s) + weave, ramp: 'scarlet', lo: 0.1, hi: 0.75, h: 0.06 };
+  } },
+  OAK: { f: (x, y, s) => {                            // old black oak in vertical boards: the grain running long and wavering round knots, dark seams between
+    const u = x / 64, v = y / 64, board = Math.floor(u * 4), lu = u * 4 - board, id = hrand(board, 1, s, 3);
+    if (lu < 0.05 || lu > 0.96) return { v: 0.05, ramp: 'ink', lo: 0, hi: 0.2 };
+    const kx = 0.5 + 0.25 * Math.sin(board * 3.7 + s), ky = 0.3 + 0.5 * hrand(board, 2, s, 3), kd = Math.hypot((lu - kx) * 3, (v - ky) * 1.2);
+    const grain = Math.sin(TAU * (lu * 9 + id * 3 + 0.6 * tfbm(u, v * 0.3, 4, 3, s + board) + 0.25 / (kd + 0.25)));
+    let val = 0.34 + 0.12 * grain + 0.12 * id + 0.1 * tfbm(u * 2, v * 8, 8, 2, s);
+    if (kd < 0.12) val = 0.12 + kd;                                              // a knot
+    val -= 0.12 * smoothstep(0.85, 1, v);                                         // darker at the foot, where hands and boots have been
+    return { v: val, ramp: 'earth', lo: 0.04, hi: 0.5, h: 0.05 };
   } },
   MOSAIC: { f: (x, y, s) => {                         // "a floor of many-hued mosaics": little squared stones, a meander border
     const tx = Math.floor(x / 4), ty = Math.floor(y / 4), id = hrand(tx, ty, s, 3);
