@@ -119,6 +119,16 @@ function addPrefab(mb, p) {
       addLathe(mb, bx + n[0] * 0.1, by - 0.1, bz + n[1] * 0.1, [[0.03, 0], [0.05, 0], [0.07, 0.55], [0.0, 0.58]], 5, T.WOOD, 0, ONE3, norm3([n[0] * 0.5, 1, n[1] * 0.5]));
       break;                                              // its flame is a sprite (LV.flames, drawn each frame)
     }
+    case 'door': {                                        // a heavy door of black oak, banded with iron, in a frame of dressed stone; p.open: how far it stands ajar
+      const t = [n[1], -n[0]], yaw = Math.atan2(n[0], n[1]), W = 1.0, H = 2.7, at = (u, y, v) => [p.x + t[0] * u + n[0] * v, p.y + y, p.z + t[1] * u + n[1] * v];
+      for (const u of [-W - 0.14, W + 0.14]) { const q = at(u, H / 2, 0.08); addBox(mb, q[0], q[1], q[2], 0.16, H / 2, 0.2, T.HEWN, yaw); }
+      { const q = at(0, H + 0.14, 0.08); addBox(mb, q[0], q[1], q[2], W + 0.3, 0.16, 0.22, T.HEWN, yaw); }
+      const a = p.open || 0, hx = -W, lw = 2 * W - 0.06;   // hinged on one post, swung into the room
+      const lc = (u, v) => at(hx + Math.cos(a) * u, 0, v * 0 + Math.sin(a) * u + 0.05);
+      { const c = lc(lw / 2, 0); addBox(mb, c[0], p.y + H / 2 - 0.02, c[2], lw / 2, H / 2 - 0.04, 0.05, T.WOOD, yaw - a); }
+      for (const y of [0.45, 1.35, 2.25]) { const c = lc(lw / 2, 0); addBox(mb, c[0] + n[0] * 0.06 * Math.cos(a), p.y + y, c[2] + n[1] * 0.06 * Math.cos(a), lw / 2, 0.05, 0.02, T.IRON, yaw - a); }
+      break;
+    }
     case 'brazier':
       for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2; addBox(mb, p.x + Math.cos(a) * 0.38, p.y + 0.4, p.z + Math.sin(a) * 0.38, 0.04, 0.42, 0.04, T.IRON, -a, ONE3, 0.2); }
       addLathe(mb, p.x, p.y + 0.75, p.z, [[0.1, 0], [0.55, 0.2], [0.62, 0.42], [0.5, 0.42], [0.0, 0.3]], 8, T.IRON);

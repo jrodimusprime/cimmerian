@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
-const EXPECTED = { tick: 9689, hash: '3aa650b7' };
+const EXPECTED = { tick: 11463, hash: '3b74c9f7' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -103,6 +103,10 @@ window.__lure = (maxTicks = 5000) => {
 window.__heal = (steps = 12) => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5 && !it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
+  for (let i = 0; i < 2400 && CIM.state.daze > 0 && CIM.obs().mode === 'play'; i++) {   // dazed by a bite: no jump until it passes; fight off whatever's biting meanwhile
+    const s = CIM.state, near = s.foes.filter(q => !q.dead && !FOES[q.cls].meek && !['dormant', 'lurk', 'sleep', 'idle', 'home'].includes(q.state) && Math.hypot(q.x - s.x, q.z - s.z) < 3);
+    if (near.length && window.__fight) __fight([...new Set(near.map(q => q.group))], 900, 3); else CIM.step({ yaw: s.yaw, pitch: 0 }, 1);   // hold your ground: only what's on you
+  }
   x *= C; z *= C;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state, dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
@@ -119,6 +123,10 @@ const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health
 await ev(`
 // the well: wait for it to be still, then run at the rim and leap
 window.__leap = (x, zFrom, dir) => {
+  for (let i = 0; i < 2400 && CIM.state.daze > 0 && CIM.obs().mode === 'play'; i++) {   // dazed by a bite: no jump until it passes; fight off whatever's biting meanwhile
+    const s = CIM.state, near = s.foes.filter(q => !q.dead && !FOES[q.cls].meek && !['dormant', 'lurk', 'sleep', 'idle', 'home'].includes(q.state) && Math.hypot(q.x - s.x, q.z - s.z) < 3);
+    if (near.length && window.__fight) __fight([...new Set(near.map(q => q.group))], 900, 3); else CIM.step({ yaw: s.yaw, pitch: 0 }, 1);   // hold your ground: only what's on you
+  }
   const T = CIM.state.tun;
   __nav(x * C, zFrom * C, true);
   for (let i = 0; i < 900 && !(T.gt > 1.5 && T.gt < 3.2 && T.pres === 'calm'); i++) __wait(1);

@@ -35,7 +35,7 @@ const FOES = {
   // Yothga (ch. III): rooted; "the long tendrils arched toward him"; cut through the stem
   yothga: { hp: 560, speed: 0, reach: 4.2, dmg: 14, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
   // Tsotha's household: "a rush of slaves" (ch. III); the black guard (above)
-  slave: { hp: 26, speed: 3.8, reach: 1.9, dmg: 7, windup: 0.45, strike: 0.2, recover: 0.5, sight: 14, name: 'citadel slave' },
+  slave: { hp: 26, speed: 3.8, reach: 1.9, dmg: 7, windup: 0.45, strike: 0.2, recover: 0.5, sight: 14, name: 'citadel slave', meek: true },   // "naked slave-boys ... pouring wine": they run, they don't fight
   // Tamar (ch. IV): "the swaggering Pellian soldiery", the archers on the tower, Arpello
   pellian: { hp: 60, speed: 3.3, reach: 3.2, dmg: 14, windup: 0.6, strike: 0.22, recover: 0.7, block: 'alternate', sight: 18, name: 'Pellian man-at-arms', spears: 3, throwAt: [6, 14] },
   pellian_archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 16], sight: 26, name: 'Pellian archer' },
@@ -193,6 +193,7 @@ function updateFoes() {
       else if (d < 20 && los(f.x, f.y + 1.2, f.z, S.x, S.y + 1.2, S.z)) move(S.x, S.z, spd);
     };
     if (f.post && f.state !== 'rout' && LEVEL.postBreak && S.flags[LEVEL.postBreak]) { f.state = 'rout'; f.t = 0; }   // the host breaks: every post is abandoned
+    if (st.meek && ['chase', 'windup', 'strike', 'recover', 'block', 'investigate', 'home'].includes(f.state)) { f.state = 'meek'; f.t = 0; }   // roused, a slave-boy runs
     switch (f.state) {
       case 'idle': f.yaw += Math.sin(S.tick * 0.01 + f.homeX) * 0.002;
         if (st.invulnerable && !f.hold && S.flags.found_it && f.territory && f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }   // the weeping thing hunts you down its tunnels by ear
@@ -207,6 +208,13 @@ function updateFoes() {
         move(f.x - dx / (d || 1) * 3, f.z - dz / (d || 1) * 3, st.speed * 0.75); turn(10);
         if (f.t >= 0.9) { f.state = 'chase'; f.t = 0; f.cool = 0.5; }
         break;
+      case 'meek': {                                    // away from you; cornered, he cowers with his arms over his head
+        const ox = f.x, oz = f.z;
+        if (d < 9) move(f.x - dx / (d || 1) * 4, f.z - dz / (d || 1) * 4, st.speed * 1.1);
+        f.cower = d < 9 && Math.hypot(f.x - ox, f.z - oz) < st.speed * DT * 0.25;
+        if (f.cower) f.yaw = Math.atan2(dx, dz);
+        break;
+      }
       case 'flee':                                      // slinks away into the dark, then the hunger brings it back
         move(f.x - dx / (d || 1) * 4, f.z - dz / (d || 1) * 4, st.speed * 1.05);
         if (f.t >= 2.6) { f.state = 'chase'; f.t = 0; f.cool = 0.4; }
@@ -307,6 +315,10 @@ function foeStrike(f, st) {
       return;
     }
     hurt(f.sidearm ? 13 : st.dmg, f.cls === 'spearman' && !f.sidearm ? 'spear' : f.cls === 'thing' ? 'claws' : f.cls === 'weeper' ? 'weeper' : f.cls === 'axeman' ? 'axe' : 'blade');
+    if (f.cls === 'thing' && mode === 'play') {          // the bite of a thing of the pits: the world swims, the legs go weak, for ten seconds
+      if (!(S.daze > 0) && !S.hints.has('daze')) { S.hints.add('daze'); log('Its teeth meet in your arm, and something in the bite makes the dark swim. Your legs go to water: you could not make a jump like this. It will pass.', 'bad'); }
+      S.daze = DAZE_SECS;
+    }
     punchView(0.06, (S.rng.next() - 0.5) * 0.06);
     S.vx += dx / (d || 1) * 3; S.vz += dz / (d || 1) * 3;
   }
@@ -335,7 +347,7 @@ function resolvePlayerHit() {
     return d < spec.reach && (d < 0.8 || (dx * fx + dz * fz) / d > spec.arc) && Math.abs(y - S.y) < 2 && los(S.x, S.y + 1.3, S.z, x, y + 1.2, z) ? d : -1;
   };
   let hit = false;
-  const targets = S.foes.filter(f => !f.dead && f.state !== 'dormant' && f.state !== 'lurk' && inArc(f.x, f.z, f.y) >= 0).sort((a, b) => Math.hypot(a.x - S.x, a.z - S.z) - Math.hypot(b.x - S.x, b.z - S.z));
+  const targets = S.foes.filter(f => !f.dead && !FOES[f.cls].meek && f.state !== 'dormant' && f.state !== 'lurk' && inArc(f.x, f.z, f.y) >= 0).sort((a, b) => Math.hypot(a.x - S.x, a.z - S.z) - Math.hypot(b.x - S.x, b.z - S.z));
   for (const f of (spec.cleave || h.kick ? targets : targets.slice(0, 1))) { hitFoe(f, h.kick ? KICK.dmg : spec.dmg[h.n], h.kick); hit = true; }
   // the jailer through the bars, the serpent, the giant: the old interactions still hold
   const sh = S.shukeli;
@@ -385,6 +397,7 @@ function yothgaHate(f) {
 // Posts (entity post: true): a man who holds a place. He fights whoever comes within POST_R of it and goes back to it
 // rather than be drawn away; when LEVEL.postBreak is set (the host breaks) he abandons it and runs for LEVEL.routTo.
 const POST_R = 4;
+const DAZE_SECS = 10;   // a thing's bite: slow and reeling, no strength for a jump
 // Squads (LEVEL.squads): five or six men who fight as one. Far off they come on as a body, a line abreast at the pace of the
 // slowest; close in they spread to ring the king, each at his own bearing, and only two strike at a time while the rest
 // hold their places, so he is always flanked and never facing them one by one.
@@ -620,6 +633,11 @@ function foePose(f) {
     if (f.state === 'windup') Object.assign(P, { lean: 0.55, headX: -0.4, uxL: -1.6, uxR: -1.6, fxL: -0.9, fxR: -0.9, drop: -0.2 });   // rears up
     if (f.state === 'strike') Object.assign(P, { lean: 1.0, uxL: -1.2, uxR: -1.2, fxL: -0.1, fxR: -0.1 });
     if (f.state === 'stagger' || f.state === 'pain') Object.assign(P, { roll: 0.5, headX: -0.4 });
+    return P;
+  }
+  if (FOES[f.cls].meek && !f.dead) {                     // a slave-boy: running from you, or cowering, arms over his head
+    if (f.state === 'meek' && f.cower) return Object.assign(P, { lean: 0.5, headX: 0.6, drop: -0.35, uxL: -2.2, uxR: -2.3, fxL: -1.6, fxR: -1.5, uzL: 0.3, uzR: 0.3, txL: -0.9, txR: -0.9, sxL: 1.4, sxR: 1.4 });
+    if (f.state === 'meek' && f.moving) { poseWalk(P, f.walk * 3.1, 1); P.lean = 0.3; P.headX = -0.1; return P; }
     return P;
   }
   if (c.weapon !== 'bow') poseMenace(P, gameTime + f.homeX);

@@ -296,6 +296,7 @@ function onFloor(p, r) {
   if (g.kind === 1 && p[1] < g.floor + 2.5) p[1] = g.floor + r * 0.8 + 0.02;
   return p;
 }
+const FALL_KILL = 9;   // a drop of more than this many metres kills
 const GIANT_COIL = 4.5;   // how far behind her head the strangler hangs in her coils (back of the neck, in the body proper)
 const SATHA_CHUNKS = 1;   // one tube: each ring carries its own light (buildSathaTube shade), so no seams
 let sathaMeshes = null;
@@ -435,7 +436,8 @@ function updatePlayer(inp) {
   const fx = -Math.sin(S.yaw), fz = -Math.cos(S.yaw), rx = Math.cos(S.yaw), rz = -Math.sin(S.yaw);
   const ix = fx * inp.fwd + rx * inp.side, iz = fz * inp.fwd + rz * inp.side, il = Math.hypot(ix, iz);
   if (S.plankDrop > 0) { S.plankDrop -= DT; inp = Object.assign({}, inp, { fwd: 0, side: 0, jump: false }); S.vx *= 0.8; S.vz *= 0.8; }   // falling with the plank: nothing to push off
-  const speed = inp.run ? 7.2 : 4.4;
+  S.daze = Math.max(0, (S.daze || 0) - DT);
+  const dazeK = S.daze > 0 ? 0.6 : 1, speed = (inp.run ? 7.2 : 4.4) * dazeK;   // dazed by a thing's bite: legs like water
   const wx = il ? ix / il * speed : 0, wz = il ? iz / il * speed : 0;
   const k = Math.min(1, (S.onGround ? 14 : 2.5) * DT);
   S.vx += (wx - S.vx) * k; S.vz += (wz - S.vz) * k;
@@ -448,10 +450,12 @@ function updatePlayer(inp) {
   }
   let g = groundInfo(S.x, S.z);
   if (g.kind === 0) { S.x = ox; S.z = oz; g = groundInfo(S.x, S.z); }
-  if (inp.jump && S.onGround) { S.vy = 6.8; S.onGround = false; }
+  if (inp.jump && S.onGround) { S.vy = S.daze > 0 ? 4.6 : 6.8; S.onGround = false; }   // dazed, no spring in you: you won't clear a gap
   if (S.onGround && S.vy <= 0 && S.y - g.floor < 0.8) { S.y = g.floor; S.vy = 0; }
   else { S.vy -= 24 * DT; S.y += S.vy * DT; }
+  if (!S.onGround) S.airTop = Math.max(S.airTop ?? S.y, S.y); else S.airTop = S.y;
   if (S.y <= g.floor) {
+    if (S.airTop - g.floor > FALL_KILL) { S.y = g.floor; S.vy = 0; die('fall'); return { g, sp }; }   // off a tower, down a shaft: no man walks away from that
     if (S.vy < -15) { Sfx.thud(); const dmg = Math.round((-S.vy - 15) * 6); if (dmg > 2) hurt(dmg, 'fall'); }
     S.y = g.floor; S.vy = 0;
   }
@@ -509,6 +513,7 @@ function die(why) {
 function respawn() {
   if (mode !== 'dead') return;
   overlay.className = 'hidden'; overlay.innerHTML = '';
+  S.daze = 0;
   const c = S.checkpoint;
   S.x = c.x; S.z = c.z; S.yaw = c.yaw; S.y = groundInfo(c.x, c.z).floor; S.vx = S.vy = S.vz = 0; S.health = 100;
   prev = { x: S.x, y: S.y, z: S.z };
@@ -1569,7 +1574,7 @@ async function showIntro() {
   mode = 'splash'; hud.classList.add('hidden');
   await showTitleCard();
   await showSplash(LEVEL.level, '<div class="keys"><b>W A S D</b> move &nbsp; <b>mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>E</b> use &nbsp; <b>Click</b> strike / throw &nbsp; <b>Right-click / F</b> parry (with a spear: throw) &nbsp; <b>G</b> throw spear &nbsp; <b>1 2 3 4</b> weapons &nbsp; <b>Esc</b> pause</div>');
-  if (mode === 'splash') startPlay(false);
+  if (mode === 'splash') { await whenModelsReady(); if (mode === 'splash') startPlay(false); }
 }
 const LEVEL_INTRO = {
   e1m2: [['THE PITS', 'title'], ['Chained to a ring in a vault far beneath the hill. A torch burns in a niche above your head; the darkness presses in on it like a living thing.', ''],
@@ -1588,11 +1593,20 @@ function startPlay(agent) {
   if (!agent) lockPointer();
 }
 // load a level; `carry` brings the hero's state across (health, weapons, tally)
+let LEVEL_MODELS = Promise.resolve();   // the level's built models, loading
+// before play starts: wait for the level's models, saying so if it takes a moment (the agent harness never waits: it doesn't draw)
+async function whenModelsReady() {
+  let done = false; LEVEL_MODELS.then(() => { done = true; });
+  await new Promise(r => setTimeout(r, 30));
+  if (done) return;
+  overlay.className = ''; overlay.innerHTML = '<div class="panel"><p class="sub">The cast is coming up out of the dark…</p></div>';
+  await LEVEL_MODELS; hideOverlay();
+}
 let LEVEL_CARRY = null;   // what the hero brought into this level: Restart level begins it again with exactly that
 function loadLevel(id, carry) {
   LEVEL = LEVELS[id]; LEVEL_CARRY = carry ? JSON.parse(JSON.stringify(carry)) : null;
   Sfx.ambience(LEVEL.open ? 'field' : LEVEL.torch ? 'tunnels' : 'pits');
-  if (R && typeof loadCastModels === 'function') loadCastModels(levelCast(LEVEL));   // in the background: the old rig stands in until they arrive
+  LEVEL_MODELS = R && typeof loadCastModels === 'function' ? loadCastModels(levelCast(LEVEL)) : Promise.resolve();   // play waits for them (whenModelsReady): no part-built stand-ins flashing up first
   buildLevel(LEVEL);
   if (entitySpec('scripted_satha') || LEVEL.satha) buildSathaPath();
   if (levelMesh) R.deleteMesh(levelMesh);
@@ -1643,8 +1657,10 @@ async function finishLevel() {
   hud.classList.add('hidden');
   const next = LEVEL.next;
   if (next) {
+    if (typeof loadCastModels === 'function') loadCastModels(levelCast(LEVELS[next]));   // start bringing the next cast up while its card is read
     await showSplash(next, stats);
     loadLevel(next, { health: S.health, weapons: S.weapons, weapon: S.weapon, spears: S.spears, pouch: S.pouch, kills: S.kills, deaths: S.deaths, hints: [...S.hints], playTicks: S.playTicks });
+    await whenModelsReady();
     startPlay(false);
   } else {
     await showSplash('end', stats + '<p class="sub">' + Math.round(S.playTicks / SIM_HZ / 60) + ' minutes in the saddle, the pits and the tower.</p>', 'Click to begin again');
@@ -1681,7 +1697,8 @@ function render(alpha) {
   const cc = cineCam(alpha);                              // the closing scene: a camera of its own
   if (cc) { px = cc.eye[0]; eyeY = cc.eye[1]; pz = cc.eye[2]; py = eyeY - EYE; cyaw = cc.yaw; cpitch = cc.pitch; }
   const proj = m4persp(72 * Math.PI / 180, R.aspect, LEVEL.open ? 0.1 : 0.05, LEVEL.open ? 2600 : 200);
-  const view = m4mul(m4rx(-cpitch), m4mul(m4ry(-cyaw), m4t(-px, -eyeY, -pz)));
+  const dzk = Math.min(1, (S.daze || 0) / 3), dzRoll = dzk * 0.07 * Math.sin(gameTime * 1.7), dzYaw = dzk * 0.04 * Math.sin(gameTime * 1.1 + 1), dzPitch = dzk * 0.03 * Math.sin(gameTime * 2.3);   // the world reels
+  const view = m4mul(m4rz(-dzRoll), m4mul(m4rx(-cpitch - dzPitch), m4mul(m4ry(-cyaw - dzYaw), m4t(-px, -eyeY, -pz))));
   const vp = m4mul(proj, view), f = camFwd();
   const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3];
   let lc = [0.24, 0.215, 0.18], lampRange = 10;

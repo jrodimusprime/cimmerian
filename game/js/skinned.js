@@ -343,13 +343,14 @@ function drawSkinned(id, x, y, z, yaw, P, light, glow = 0, alpha = 1) {
 }
 // load whichever cast models exist (models/cast/<id>.glb), quietly keeping the old rig for the rest
 const SKIN_LOADING = new Set();
+const SKIN_PROMISE = {};   // id -> the promise of its model arriving (one fetch each, however often it's asked for)
 async function loadCastModels(ids) {
   if (!skinProg) skinInit();
-  ids = ids.filter(id => !SKINNED[id] && !SKIN_LOADING.has(id)); ids.forEach(id => SKIN_LOADING.add(id));
-  await Promise.all(ids.map(async id => {
-    try { SKINNED[id] = await loadGLB('models/cast/' + id + '.glb', SKIN_TINT[id]); }
-    catch (e) { /* not built yet: the part-built rig stands in */ }
-  }));
+  for (const id of ids) if (!SKIN_PROMISE[id]) {
+    SKIN_LOADING.add(id);
+    SKIN_PROMISE[id] = (async () => { try { SKINNED[id] = await loadGLB('models/cast/' + id + '.glb', SKIN_TINT[id]); } catch (e) { /* not built yet: the part-built rig stands in */ } })();
+  }
+  await Promise.all(ids.map(id => SKIN_PROMISE[id]));
 }
 
 // a static part (no skeleton), placed by one matrix

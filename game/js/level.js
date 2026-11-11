@@ -514,21 +514,23 @@ const LEVEL_E1M4 = {
     { id: 'climb', name: 'a slimed climb', at: [2, 24], size: [3, 7], h: 2.6, floor: 0.7, rise: -0.1, riseAxis: 'z', style: 'rough', tex: CAVE_TEX },
     { id: 'backway', name: 'the way the things do not use', at: [5, 28], size: [31, 2], h: 2.2, style: 'hewn' },
     { id: 'grille_room', name: 'the foot of the stair, behind the grille', at: [36, 22], size: [8, 7], h: 3.4, style: 'hewn' },
-    { id: 'stair', name: 'the long stair', at: [32, 24], size: [4, 3], h: 3.4, floor: 0.6, style: 'hewn' },
+    { id: 'stair', name: 'the long stair', at: [32, 24], size: [4, 3], h: 3.4, floor: 3.3, rise: -0.9, riseAxis: 'x', style: 'hewn' },   // up from the grille, toward the citadel
+    { id: 'stairhead', name: 'the head of the stair', at: [31, 25], size: [1, 1], h: 3.0, floor: 3.3, style: 'hewn' },
   ],
   shafts: [], links: [],
   props: [
+    { prefab: 'door', at: [32, 25.5], wall: 'W', open: 0.55 }, { prefab: 'torch', at: [32, 24.5], wall: 'W', dim: 0.9 }, { prefab: 'torch', at: [32, 26.6], wall: 'W', dim: 0.9 },   // the stair ends at a door: the way out, standing ajar
     { prefab: 'torch', at: [6.5, 14], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [13.5, 22], wall: 'S', dim: 0.6 }, { prefab: 'torch', at: [31, 10], wall: 'N', dim: 0.6 },
     { prefab: 'torch', at: [48, 4], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [56, 4], wall: 'N', dim: 0.6 }, { prefab: 'torch', at: [40, 22], wall: 'N', dim: 0.8 },
     { prefab: 'fungus', at: [52.5, 33.5] }, { prefab: 'fungus', at: [44.5, 31.5] }, { prefab: 'fungus', at: [36.5, 33.5] }, { prefab: 'fungus', at: [27.5, 31.5] }, { prefab: 'fungus', at: [19.5, 33.5] }, { prefab: 'fungus', at: [11.5, 31.5] }, { prefab: 'fungus', at: [4.5, 33.5] }, { prefab: 'fungus', at: [3.5, 25.5] },
     { prefab: 'torch', at: [10, 23], wall: 'N', dim: 0.6 }, { prefab: 'torch', at: [20, 28], wall: 'N', dim: 0.6 },
     { prefab: 'bones', at: [16, 17] }, { prefab: 'bones', at: [52, 12], big: true }, { prefab: 'skull', at: [55, 9] }, { prefab: 'bones', at: [50, 32] }, { prefab: 'bones', at: [24, 32.5], big: true }, { prefab: 'skull', at: [19, 31.5] }, { prefab: 'bones', at: [3, 26] }, { prefab: 'bones', at: [8, 24], big: true }, { prefab: 'skull', at: [12, 24] }, { prefab: 'bones', at: [10, 27], big: true }, { prefab: 'skull', at: [7, 32] }, { prefab: 'column', at: [30, 13] }, { prefab: 'column', at: [30, 19] },
   ],
-  lights: [{ at: [10, 18], y: 1.5, col: [0.7, 0.15, 0.2], rad: 9, i: 1.1 },   // and the warren's pale fungus
+  lights: [{ at: [31.5, 25.5], y: 5, col: [1.0, 0.75, 0.45], rad: 7, i: 1.6 }, { at: [10, 18], y: 1.5, col: [0.7, 0.15, 0.2], rad: 9, i: 1.1 },   // and the warren's pale fungus
     { at: [52.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [44.5, 31.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [36.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [27.5, 31.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [19.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [11.5, 31.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [4.5, 33.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }, { at: [3.5, 25.5], y: 0.4, col: [0.35, 0.6, 0.4], rad: 6, i: 0.7 }],
   features: [],
   // what the dead left: Tsotha's prisoners had bread and wine smuggled to them, once
-  items: [{ kind: 'bread', name: 'heel of black bread', heal: 30, at: [27, 18.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [43, 13.5] },
+  items: [{ kind: 'bread', name: 'heel of black bread', heal: 30, at: [12.5, 24.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [6.5, 27] }, { kind: 'bread', name: 'heel of black bread', heal: 30, at: [27, 18.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [43, 13.5] },
     { kind: 'bread', name: 'heel of black bread', heal: 30, at: [57, 14] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [60, 23] }, { kind: 'bread', name: 'heel of black bread', heal: 30, at: [43, 26] },
     { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [40, 32.5] }, { kind: 'bread', name: 'heel of black bread', heal: 30, at: [3, 30] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [9, 25.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [33, 28.8] }],
   entities: [
@@ -549,7 +551,7 @@ const LEVEL_E1M4 = {
     { class: 'thing', id: 'b1', at: [3, 26], group: 'backway' }, { class: 'thing', id: 'b2', at: [21, 28.5], group: 'backway' }, { class: 'thing', id: 'b3', at: [27, 29], group: 'backway', lurk: true },
     { class: 'thing', id: 'b4', at: [32, 28.5], group: 'backway' },
     { class: 'thing', id: 'r1', at: [38, 24], group: 'stair' }, { class: 'thing', id: 'r2', at: [41, 27], group: 'stair' }, { class: 'thing', id: 'r3', at: [38, 27.5], group: 'stair', lurk: true },
-    { class: 'trigger_exit', rect: [32, 24, 33, 27] },
+    { class: 'trigger_exit', rect: [31, 25, 32, 26] },
   ],
   beats: [
     { id: 'cut', killed: 'yothga', sets: 'stem_cut', lines: [['You cut through the stem with a single stroke. The great vine lashes and knots like a beheaded serpent, then straightens out limply; a reeking white liquid oozes from the severed stump.', 'good'],
@@ -642,7 +644,7 @@ const LEVEL_E1M5 = {
     { prefab: 'torch', at: [63, 12], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [63, 18], wall: 'E', dim: 0.6 },
   ],
   lights: [{ at: [56, 9], y: 7.5, col: [0.4, 0.6, 1.0], rad: 10, i: 1.2 }],
-  items: [{ kind: 'wine', name: 'the watch\'s wine-skin', heal: 35, at: [30, 27.5] },
+  items: [{ kind: 'wine', name: 'the watch\'s wine-skin', heal: 35, at: [30, 27.5] }, { kind: 'wine', name: 'a cup of the sleepers\' wine', heal: 35, at: [38.5, 21.6] }, { kind: 'bread', name: 'a slave-boy\'s dropped loaf', heal: 30, at: [38.5, 15.5] }, { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [37.6, 10.6] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [40.6, 13.4] },   // wine the boys were pouring
     { kind: 'bread', name: 'a guard\'s black bread', heal: 30, at: [30, 4.5] }, { kind: 'wine', name: 'a guard\'s wine-skin', heal: 35, at: [19, 2] },
     { kind: 'wine', name: 'cup of Tsotha\'s wine', heal: 40, at: [55, 8] }, { kind: 'bread', name: 'honey-cake from a slave\'s tray', heal: 25, at: [39, 9] },
     { kind: 'wine', name: 'flask of wine', heal: 30, at: [61, 22] }, { kind: 'bread', name: 'loaf from a sleeping slave', heal: 25, at: [30, 20] }],

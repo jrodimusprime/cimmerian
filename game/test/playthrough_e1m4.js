@@ -1,5 +1,5 @@
 // Golden playthrough of e1m4, Yothga, through the CIM agent API (README §11).
-const EXPECTED = { tick: 13690, hash: 'fcea18ad' };
+const EXPECTED = { tick: 15980, hash: 'b34d04e7' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m4"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
@@ -26,5 +26,5 @@ o = await O('__route([[9, 28.5], [30, 28.5]])'); o = await O('__fight(["warren",
 o = await O('__route([[34, 28.5], [38, 27]])'); o = await O('__fight(["warren", "warren2", "backway", "ossuary", "stair"], 12000, 60)'); await O('__heal()'); log('stair:', brief(o));
 // THE GRILLE: the dead jailer works the bolt
 o = await waitFlag('grille_open', 40); log('grille:', brief(o));
-o = await O('__route([[34, 25.5], [32.5, 25.5]])'); log('end:', brief(o));
+o = await O('__route([[34, 25.5], [32.4, 25.5], [31.5, 25.5]])'); log('end:', brief(o));
 await finish(EXPECTED);

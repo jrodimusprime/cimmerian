@@ -20,7 +20,7 @@ function beatsInit() {
     S.allyMen.push({ id: a.id, k, x: (a.at[0] + (k % a.cols) * a.step) * CELL, z: (a.at[1] + Math.floor(k / a.cols) * a.step) * CELL, yaw: a.yaw, walk: 0, t: hrand(k, 3, 5, 1) * 1.4, tgt: null, mv: false, groups: a.fight });
 }
 function roomsOf(at) { return Array.isArray(at) ? at : [at]; }
-function groupDead(g) { const m = S.foes.filter(f => f.group === g); return m.length > 0 && m.every(f => f.dead); }
+function groupDead(g) { const m = S.foes.filter(f => f.group === g && !FOES[f.cls].meek); return m.length > 0 && m.every(f => f.dead); }   // the slave-boys don't count: they ran
 function updateBeats() {
   if (!LEVEL.beats || !S.beats) return;
   const B = S.beats;

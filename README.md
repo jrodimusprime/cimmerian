@@ -15,14 +15,14 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
-> | `e1m2` The Pits | 2:02 (8786 ticks) | ~8.1 min |
-> | `e1m3` The Tunnels Below | 2:15 (9689 ticks) | ~9.0 min |
-> | `e1m4` Yothga | 3:10 (13690 ticks) | ~12.7 min |
-> | `e1m5` The Scarlet Citadel | 2:53 (12465 ticks) | ~11.5 min |
+> | `e1m2` The Pits | 2:14 (9636 ticks) | ~8.9 min |
+> | `e1m3` The Tunnels Below | 2:39 (11463 ticks) | ~10.6 min |
+> | `e1m4` Yothga | 3:42 (15980 ticks) | ~14.8 min |
+> | `e1m5` The Scarlet Citadel | 2:50 (12256 ticks) | ~11.3 min |
 > | `e1m6` The Tower of Tamar | 2:23 (10275 ticks) | ~9.5 min |
 > | `e1m7` The Relief of Shamar | 3:54 (16858 ticks) | ~15.6 min |
 > | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
-> | **Campaign** | **21:49** (94238 ticks) | **~87 min** |
+> | **Campaign** | **22:54** (98943 ticks) | **~92 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -749,7 +749,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
   - *Done:* that's Pelias, the man freed from the vine, who leads Conan out (ch. III). He stood nine seconds with both arms thrust out after the cut; now he stands head bowed, chafing his wrists, and at the grille puts one hand out to the dead jailer. He is solid, gives way when you back into him, keeps out of the fighting (backs off from any roused thing near him, an arm up), catches up by the way you came instead of popping in behind you, and his name shows when you look at him. Pit-things still clinging to the roof no longer block the floor beneath them.
 - [x] general: the walking noise is way too loud
   - *Done:* footfalls about a quarter as loud, low-passed, each a little different in pitch and weight.
-- [ ] rule 3: the campaign is at ~84 min, under 90. The bot stopped wasting time (food detours, deaths), so the golden runs shortened; e1m3's dark gained an eastern loop and e1m1 two more waves at the heap. Still to lengthen, the rule-2 way: e1m2, e1m6, e1m4 (shortest runs).
+- [x] rule 3: the campaign was at ~84 min, under 90. The bot stopped wasting time (food detours, deaths), so the golden runs shortened; e1m3's dark gained an eastern loop and e1m1 two more waves at the heap. Still to lengthen, the rule-2 way: e1m2, e1m6, e1m4 (shortest runs).
+  - *Done:* back over 90 (~92 min), all of it play: the fall of stones the weeping thing must bring down, the eastern loop of the dark, Yothga's thirty-second fight, the daze of a thing's bite in the pits, the heap's last waves.
 - [x] e1m6: the tower stair's walls look 1px thick from outside
   - *Done:* the stair ran down directly against the open crown and the air, so its walls were bare planes with nothing behind them. It now runs inside the tower's wall, a full cell of masonry between it and the outdoors, entered by a doorway at its head: closed in on the way down, and a solid block with a sloping roof seen from the crown.
 - [x] e1m1: more horses, heading at you then running off; ground they can't cross; a spiked pit to jump; (then) they were gone: put them back, riding one area and chasing you, the area full of spikes, and Conan's job to get out without being hit
@@ -810,16 +811,20 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] E1M6 still has some edges of the castle that look thin like 1px with sky behind them... maybe have to round them off with a curve wall around it so tehy dont look like pixels
 
-- [ ] if you get bitten by the little dwarf creatures it means you slow down for 10s and get dizzy so you cant make the jumps
+- [x] if you get bitten by the little dwarf creatures it means you slow down for 10s and get dizzy so you cant make the jumps
+  - *Done:* a pit-thing's bite dazes you for ten seconds (a fresh bite starts it again): your legs go to water (six-tenths speed), there's no spring in a jump (you won't clear a gap), and the world reels (the view sways and rolls, easing off as it passes). The first time, it tells you so. The bots learn to hold their ground and fight off what's biting them until it passes before they try a leap.
 
-- [ ] E1M4 ending area isnt clear it just looks like a room perhaps use a door
+- [x] E1M4 ending area isnt clear it just looks like a room perhaps use a door
+  - *Done:* the long stair now climbs from the grille room (two and a half metres over its length) and ends at a heavy door of black oak, banded with iron, in a frame of dressed stone, standing ajar with a light beyond it and a torch either side: through it, and the level ends.
 
 - [ ] the axe swing animation in the corridor of the censers the dudes with the axes should have a cooler and more menacing swing
 
 
-- [ ] killing little black slave children seems weird right?
+- [x] killing little black slave children seems weird right?
+  - *Done:* right. The book has them as "naked slave-boys ... pouring wine": servants, not fighters, and the game had made them enemies. Now they're no foes of yours: roused, they run from you, and cornered they cower with their arms over their heads; your blows pass them by, and a room counts as cleared without them. (There's wine and bread they dropped in the corridor of censers.)
 
-- [ ] you dont die when you fall off the tower in teh air over tamar
+- [x] you dont die when you fall off the tower in teh air over tamar
+  - *Done:* the air round Tamar's tower is a forty-metre drop whose bottom is the ground, and a fall only counted as deadly below the floor of the world. Now any drop of more than nine metres kills, wherever it ends.
 
 - [ ] - [x] e1m5: an example of a super thin wall (the night roof, by the tower stair)
   - *Done:* found by scanning every level for roofed rooms that open straight onto the sky: under an open sky the level builder drew nothing where open ground met solid rock (the world's edge), so a building's masonry had no outer face and no top, and its inner walls showed from outside as bare planes with a knife edge against the sky. On open levels a building now has a body: the masonry about a roofed room stands up to just over its ceiling with an outer face and a top, every roofed room has a roof over it, and a band of stone covers a ceiling's edge where a room opens onto the sky. The tower stair onto the battlements reads as a stone tower now, the stair turret on Tamar's crown as stepped masonry.
@@ -828,5 +833,6 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [ ] the gauardroom gate tower needs more furniture and fittings in it. it is also unclear how the level ends and there's a weird open platform you can wlk onto that doesnt look right... maybe add a drawbridge or something
 
 
-- [ ] theres a weird bug where low poly characters load then the better ones load later... just wait for the level to load
+- [x] theres a weird bug where low poly characters load then the better ones load later... just wait for the level to load
+  - *Done:* the built models were loading in the background while the part-built stand-ins showed. Now a level doesn't begin until its cast has arrived (a line says the cast is coming up out of the dark if it takes a moment), and the next level's cast starts loading while you read its title card.
 

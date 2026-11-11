@@ -54,7 +54,7 @@ window.__fight0 = (groups, maxTicks, radius, maxSteps) => {
     if (s.health < 60 && s.pouch.length) { CIM.step({ drink: true, yaw: s.yaw, pitch: s.pitch }, 1); continue; }   // low: eat or drink from the satchel
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
     if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
-    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && f.state !== "lurk" && groups.includes(f.group) && ((reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 && reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] <= maxSteps) || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    const live = s.foes.filter(f => !f.dead && !FOES[f.cls].meek && f.state !== "dormant" && f.state !== "lurk" && groups.includes(f.group) && ((reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 && reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] <= maxSteps) || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     { const b = __boss(10); if (b && !live.includes(b)) live.push(b); }   // the boss is always in the fight once he's roused and near
     if (!live.length) {   // a group held back (dormant) may be about to come in: give the beat a moment before calling it done
       if (grace-- > 0 && s.foes.some(q => !q.dead && groups.includes(q.group) && q.state === 'dormant')) { CIM.step({ yaw: s.yaw, pitch: s.pitch }, 1); continue; }
@@ -128,6 +128,10 @@ window.__fight0 = (groups, maxTicks, radius, maxSteps) => {
 window.__heal = () => { for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
+  for (let i = 0; i < 2400 && CIM.state.daze > 0 && CIM.obs().mode === 'play'; i++) {   // dazed by a bite: no jump until it passes; fight off whatever's biting meanwhile
+    const s = CIM.state, near = s.foes.filter(q => !q.dead && !FOES[q.cls].meek && !['dormant', 'lurk', 'sleep', 'idle', 'home'].includes(q.state) && Math.hypot(q.x - s.x, q.z - s.z) < 3);
+    if (near.length && window.__fight) __fight([...new Set(near.map(q => q.group))], 900, 3); else CIM.step({ yaw: s.yaw, pitch: 0 }, 1);   // hold your ground: only what's on you
+  }
   x *= C; z *= C;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state, dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
