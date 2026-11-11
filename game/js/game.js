@@ -173,7 +173,7 @@ let AUTO = null;
 const AUTO_FRESH = () => ({ health: 100, weapons: { fists: true, dagger: false, sword: false }, weapon: 'fists', kills: 0, deaths: 0, hints: [], playTicks: 0 });
 function startAutoplay(speed) {
   const id = LEVEL.level, x = new XMLHttpRequest();
-  x.open('GET', 'autoplay/' + id + '.json'); x.responseType = 'text';
+  x.open('GET', 'autoplay/' + id + '.json?v=' + BUILD); x.responseType = 'text';
   x.onload = () => {
     let R; try { R = JSON.parse(x.responseText); } catch (e) { log('[No recorded run for ' + id + '.]', 'bad'); return; }
     hideOverlay();
@@ -191,6 +191,11 @@ function autoplayFrame(dt) {
     if (A.i >= A.R.length) { AUTO = null; agentInput = null; return; }
     const [a, k] = A.R[A.i];
     if (a === 'load') { loadLevel(k, AUTO_FRESH()); mode = 'splash'; A.i++; continue; }
+    if (a === 'chk') {                                   // a checkpoint: still where the recorded run was? if not, stop rather than walk it into a pit
+      A.i++;
+      if (S.tick !== k || CIM.hash() !== A.R[A.i - 1][2]) { AUTO = null; agentInput = null; log('[The AI has lost its place: this page\'s code and its recorded run are from different versions (an old copy in the browser\'s cache). Reload the page and try again.]', 'bad'); return; }
+      continue;
+    }
     let act = a;
     if (A.done > 0) act = Object.assign({}, a, { use: false, torch: false, attack: false, parry: false, kick: false, throwSpear: false, drink: false, weapon: undefined });
     if (A.done + 1 < k) act = Object.assign({}, act, { respawn: false });
@@ -324,7 +329,7 @@ function newState(seed, carry) {
     checkpoint: { x: sp.x, z: sp.z, yaw: start.yaw }, timeFree: -1, doneT: -1, playTicks: carry ? carry.playTicks : 0,
     planks: LV.planks.map(() => ({ state: 'whole', t: 0, fall: 0 })),
     shamu: LEVEL.level === 'e1m1' ? { vt: 0, shout: false, cool: 0, woke: new Set(), phase: 'fight', t: 0, line: 0,
-      riders: Array.from({ length: LEVEL.riders.n }, (_, i) => ({ state: 'off', t: 0.6 + i * 1.1, x: 0, z: 0, yaw: 0, passed: false })),
+      riders: LEVEL.riders.at.map(([x, z], i) => ({ state: 'roam', t: 0, still: 0, sx: x * CELL, sz: z * CELL, cool: 1.2 + i * 1.3, x: x * CELL, z: z * CELL, yaw: i % 2 ? 0 : Math.PI, sp: LEVEL.riders.canter, passed: false })),   // spread over their ground, cantering
       tsotha: { state: 'away', x: LEVEL.kings.tsotha[0] * CELL, z: LEVEL.kings.tsotha[1] * CELL, yaw: -Math.PI / 2, t: 0, walk: 0 } } : null,
     paralysed: 0,
     torch: LEVEL.torch ? 'lit' : 'none',               // e1m3: lit, dropped (an ember on the ground), or out (shaken out)
@@ -1145,7 +1150,7 @@ function objective() {
     if (!S.areas.has('arrows')) return 'Fight your way east across the field, toward the standards.';
     if (!S.areas.has('line')) return 'Cross the arrow ground between volleys. Use the dead for cover.';
     if (!f.line_broken) return 'Break the Shemite line.';
-    if (!f.lanes_crossed) return 'Cross the riders\' ground: sidestep the charges, shelter behind the stakes, leap the staked ditch.';
+    if (!f.lanes_crossed) return 'Cross the riders\' ground without being ridden down: sidestep the charges, shelter by the stakes, leap the staked ditch.';
     return 'Make for the standards in the east: put your back to the heap of dead, and hold.';
   }
   if (LEVEL.level === 'e1m3') {
@@ -1323,41 +1328,55 @@ function updateShamu() {
       }
     }
   } else { M.vt = Math.min(M.vt, V.period - 1.5); M.shout = false; }
-  // the riders: "Ophirean knights in gilded mail leaped their horses over mounds of corpses". Each picks you out, rides
-  // at where you'll be, thunders past and is gone off the field, to wheel and come again. They shy from stakes and
-  // stake-pits: the crescents are shelter, and the staked ditch before the heap is the end of their ground.
+  // the riders: "Ophirean knights in gilded mail leaped their horses over mounds of corpses". They ride their ground
+  // all the while; come onto it and they break off one by one, up to three at once, put their horses at where you'll
+  // be, gallop past and wheel back into the circuit. They shy from stakes and stake-pits, so the stakes scattered over
+  // the ground are your shelter, and the staked ditch at its far side is the way out: no horse will take it.
   const RD = L.riders, [fx0, fx1, fz0, fz1] = RD.field.map(v => v * CELL);
-  const near = mode === 'play' && S.flags.line_broken && !S.flags.lanes_crossed && S.x > fx0 - 6 * CELL && S.x < fx1 + CELL;
-  const blocks = (px, pz) => { if (px < fx0 || px > fx1) return true; const g = groundInfo(px, pz); return g.idx >= 0 && !!((LV.flags[g.idx] & F_STAKE) || LV.spikes[g.idx]); };
-  const free = yaw => !blocks(M.rx + Math.sin(yaw) * 2, M.rz + Math.cos(yaw) * 2) && !blocks(M.rx + Math.sin(yaw) * 4.5, M.rz + Math.cos(yaw) * 4.5);
+  const near = mode === 'play' && !S.flags.lanes_crossed && S.x > fx0 - 1.5 * CELL && S.x < fx1 + CELL;
+  if (near && !S.hints.has('riders')) { S.hints.add('riders'); log('The riders\' ground. Ophirean knights wheel over it, and they have seen you. Get across alive: the stakes will turn a horse, and beyond the staked ditch at the far side they cannot follow.', 'bad'); }
+  const blocks = (px, pz) => { if (px < fx0 || px > fx1 || pz < fz0 || pz > fz1) return true; const g = groundInfo(px, pz); return g.idx >= 0 && !!((LV.flags[g.idx] & F_STAKE) || LV.spikes[g.idx]); };
+  const free = (r, yaw) => [0.6, 2, 4.5].every(k => !blocks(r.x + Math.sin(yaw) * k, r.z + Math.cos(yaw) * k));   // near and far: a pit's corner can hide between
+  const cx = (fx0 + fx1) / 2, cz = (fz0 + fz1) / 2;
   let charging = M.riders.filter(r => r.state === 'charge').length;
   for (const r of M.riders) {
-    if (r.state === 'off') {
-      r.t -= DT;
-      if (r.t <= 0 && near && charging < RD.max) {           // out of the press at an edge of the field, at you
-        const north = S.rng.next() < 0.5;
-        r.z = north ? fz0 : fz1; r.x = clamp(S.x + (S.rng.next() - 0.5) * 18, fx0 + 1.5, fx1 - 1.5);
-        const tx = clamp(S.x + S.vx * RD.lead, fx0 + 1, fx1 - 1), tz = S.z + S.vz * RD.lead;
-        r.yaw = Math.atan2(tx - r.x, tz - r.z); r.state = 'charge'; r.t = 0; r.passed = false; charging++;
-        Sfx.rumble();
-        if (!S.hints.has('riders')) { S.hints.add('riders'); log('A knight in gilded mail wheels out of the press and puts his horse at you. Step aside at the last moment; get behind the stakes.', 'bad'); }
+    for (let k = 0; k < 40 && blocks(r.x, r.z); k++) { const l = Math.hypot(cx - r.x, cz - r.z) || 1; r.x += (cx - r.x) / l; r.z += (cz - r.z) / l; }   // never stood in the stakes
+    const dx = S.x - r.x, dz = S.z - r.z, d = Math.hypot(dx, dz);
+    r.t += DT; r.cool -= DT;
+    if (r.state === 'roam') {                                // a canter round the ground, wandering, turning at its edges
+      r.sp += (RD.canter - r.sp) * Math.min(1, DT * 1.5);
+      r.yaw += Math.sin(r.t * 0.7 + r.x * 0.01) * 0.35 * DT;
+      if (near && r.cool <= 0 && charging < RD.max && d > 10) {   // he picks you out
+        r.state = 'charge'; r.t = 0; r.passed = false; charging++; Sfx.rumble();
       }
-      continue;
     }
-    r.t += DT;
-    const dx = S.x - r.x, dz = S.z - r.z;
-    if (dx * Math.sin(r.yaw) + dz * Math.cos(r.yaw) < 0) r.passed = true;   // past you: no turning back for this pass
-    if (!r.passed) { let a = Math.atan2(dx, dz) - r.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); r.yaw += clamp(a, -RD.turn * DT, RD.turn * DT); }
-    M.rx = r.x; M.rz = r.z;
-    if (!free(r.yaw)) {                                      // stakes, a stake-pit or the field's edge ahead: veer off, and if there's no way, wheel about
-      let a = 0; for (const t of [0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.7, -1.7, 2.4, -2.4]) if (free(r.yaw + t)) { a = t; break; }
-      r.yaw += clamp(a || Math.PI, -RD.veer * DT, RD.veer * DT); r.passed = true;
+    if (r.state === 'charge') {
+      r.sp += (RD.speed - r.sp) * Math.min(1, DT * 3);
+      if (dx * Math.sin(r.yaw) + dz * Math.cos(r.yaw) < 0) r.passed = true;   // past you: no turning back on this pass
+      if (!r.passed) {
+        const tx = S.x + S.vx * RD.lead - r.x, tz = S.z + S.vz * RD.lead - r.z;
+        let a = Math.atan2(tx, tz) - r.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); r.yaw += clamp(a, -RD.turn * DT, RD.turn * DT);
+      } else if ((r.pt = (r.pt || 0) + DT) > RD.ride || !near) { r.state = 'roam'; r.pt = 0; r.cool = RD.every[0] + S.rng.next() * (RD.every[1] - RD.every[0]); }
     }
-    r.x += Math.sin(r.yaw) * RD.speed * DT; r.z += Math.cos(r.yaw) * RD.speed * DT;
-    if (r.z < fz0 - 3 || r.z > fz1 + 3 || r.t > 10) { r.state = 'off'; r.t = RD.every[0] + S.rng.next() * (RD.every[1] - RD.every[0]); continue; }
-    if (mode === 'play' && Math.hypot(dx, dz) < 1.4 && M.cool <= 0) {
+    // stakes, a stake-pit or the edge of the ground ahead: of sixteen headings, take the open one nearest the one he
+    // wants; hemmed in on every side, he wheels right about, the way he came
+    let want = r.yaw;
+    if (!free(r, r.yaw)) {
+      let bd = 9; want = r.yaw + Math.PI;
+      for (let k = 1; k <= 8; k++) for (const sg of [1, -1]) { const h = r.yaw + sg * k * Math.PI / 8; if (k * Math.PI / 8 < bd && free(r, h)) { bd = k * Math.PI / 8; want = h; } }
+      r.passed = true;
+    }
+    const nx = r.x + Math.sin(r.yaw) * r.sp * DT, nz = r.z + Math.cos(r.yaw) * r.sp * DT, stopped = blocks(nx, nz);
+    if (!stopped) { r.x = nx; r.z = nz; } else r.sp = Math.max(2, r.sp * 0.7);   // pulled up short
+    r.still = stopped ? r.still + DT : 0;
+    if (r.still > 2) {                                     // caught in a pocket of the stakes: back to his own ground, out of your sight
+      const vx = r.sx - S.x, vz = r.sz - S.z, seen = (-Math.sin(S.yaw) * (r.x - S.x) - Math.cos(S.yaw) * (r.z - S.z)) / (d || 1) > 0.3;
+      if (!seen && (-Math.sin(S.yaw) * vx - Math.cos(S.yaw) * vz) / (Math.hypot(vx, vz) || 1) < 0.3) { r.x = r.sx; r.z = r.sz; r.still = 0; r.state = 'roam'; r.cool = RD.every[0]; }
+    }
+    if (want !== r.yaw) { let a = want - r.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); r.yaw += clamp(a, -RD.veer * DT * (stopped ? 3 : 1), RD.veer * DT * (stopped ? 3 : 1)); }
+    if (mode === 'play' && d < 1.4 && M.cool <= 0 && r.sp > 4) {
       const sx = Math.cos(r.yaw), sz = -Math.sin(r.yaw), side = dx * sx + dz * sz >= 0 ? 1 : -1;
-      M.cool = 1.0; hurt(30, 'trample'); S.vx += sx * side * 9; S.vz += sz * side * 9; punchView(0.1, 0.1);
+      M.cool = 1.0; hurt(r.state === 'charge' ? 30 : 18, 'trample'); S.vx += sx * side * 9; S.vz += sz * side * 9; punchView(0.1, 0.1);
       if (mode === 'play') log('A gilded knight rides you down and is gone, laughing.', 'bad');
     }
   }
@@ -1738,8 +1757,7 @@ function render(alpha) {
   if (S.shamu) {
     const M = S.shamu;
     M.riders.forEach((r, i) => {
-      if (r.state !== 'charge') return;
-      const y = groundInfo(r.x, r.z).floor, l = sampleLight(r.x, y + 1.5, r.z), gal = gameTime * 14 + i * 1.7;
+      const y = groundInfo(r.x, r.z).floor, l = sampleLight(r.x, y + 1.5, r.z), gal = gameTime * (6 + r.sp * 0.4) + i * 1.7;
       drawHorse(r.x, y, r.z, r.yaw, gal, l);
       drawCharacter('oknight', r.x - Math.sin(r.yaw) * 0.1, y + seatY() + Math.abs(Math.sin(gal)) * 0.1, r.z - Math.cos(r.yaw) * 0.1, r.yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
     });

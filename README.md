@@ -14,7 +14,7 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 >
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
-> | `e1m1` The Plain of Shamu | 2:23 (10330 ticks) | ~9.6 min |
+> | `e1m1` The Plain of Shamu | 2:12 (9489 ticks) | ~8.8 min |
 > | `e1m2` The Pits | 2:01 (8726 ticks) | ~8.1 min |
 > | `e1m3` The Tunnels Below | 2:03 (8878 ticks) | ~8.2 min |
 > | `e1m4` Yothga | 2:44 (11798 ticks) | ~10.9 min |
@@ -22,7 +22,7 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | `e1m6` The Tower of Tamar | 2:16 (9821 ticks) | ~9.1 min |
 > | `e1m7` The Relief of Shamar | 3:43 (16086 ticks) | ~14.9 min |
 > | `e1m8` The Tybor | 2:54 (12530 ticks) | ~11.6 min |
-> | **Campaign** | **20:59** (90634 ticks) | **~84 min** |
+> | **Campaign** | **20:47** (89793 ticks) | **~83 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -752,7 +752,48 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [ ] rule 3: the campaign is at ~84 min, under 90. The bot stopped wasting time (food detours, deaths), so the golden runs shortened; e1m3's dark gained an eastern loop and e1m1 two more waves at the heap. Still to lengthen, the rule-2 way: e1m2, e1m6, e1m4 (shortest runs).
 - [x] e1m6: the tower stair's walls look 1px thick from outside
   - *Done:* the stair ran down directly against the open crown and the air, so its walls were bare planes with nothing behind them. It now runs inside the tower's wall, a full cell of masonry between it and the outdoors, entered by a doorway at its head: closed in on the way down, and a solid block with a sloping roof seen from the crown.
-- [x] e1m1: more horses, heading at you then running off; ground they can't cross; a spiked pit to jump
-  - *Done:* the three fixed lanes are gone. Six Ophirean knights ("leaped their horses over mounds of corpses"), no more than three in the saddle at once, each come out of the press at an edge of the riders' ground, ride at where you'll be, thunder past and are gone off the field, to wheel and come again (step aside at the last moment). They shy from stakes and stake-pits, so the stake crescents on the riders' ground are shelter, and a ditch sown with stakes runs the length of the field before the heap: leap it; no horse will take it.
+- [x] e1m1: more horses, heading at you then running off; ground they can't cross; a spiked pit to jump; (then) they were gone: put them back, riding one area and chasing you, the area full of spikes, and Conan's job to get out without being hit
+  - *Done:* seven Ophirean knights ("leaped their horses over mounds of corpses") ride the riders' ground all the while, cantering their circuit, in sight from the Shemite rise (before, they only came out once you were on the ground, so you could miss them). Come onto it and they break off one by one, no more than three at once, put their horses at where you'll be, gallop past and wheel back into the circuit; standing in the open you are ridden down every few seconds. The ground is sown with stakes: two crescents, clumps of stakes and stake-pits a man can shelter by and a horse must go round, and along its far side a ditch sown with stakes the length of the field. The way out is across it without being ridden down, and over the ditch: no horse will take it.
+- [x] the AI dies in the black tunnel (cheat mode)
+  - *Done:* the AI replays the golden run's recorded inputs; the run itself doesn't die there, but a browser holding an older copy of the game's code (GitHub Pages lets it cache files for ten minutes) replayed a newer recording against it, drifted, and walked into the pit in the dark. Every script and recording is now fetched with a build stamp (a hash of the code, `test/build_stamp.sh`), so a new version never mixes with an old one; and each recording carries checkpoints every five seconds of play: if the replay ever drifts from them the AI stops and says to reload, instead of walking you into a pit. The pre-push regression checks the stamp and the checkpoints.
 - [x] e1m3: the black tunnels are too dark when the wind blows out the torch; let it go to an ember and come back in 7 seconds
   - *Done:* the presence no longer tears the torch from your hand. It blows it down to an ember in your fist, a red glow that lights a few paces; seven seconds later you blow it alight again (it brightens as you do). The same the second time it rises.
+
+
+- [ ] strabonus palace troops area there is a gap you can get to before the level finishes… it should be guarded by troops that then abandon it.... theres also a heap of troops that walk around weirdly… if they must guard and stand still then so they should
+
+- [ ] spear throwing animation also no good, spend some ime doing that properly
+
+- [ ] the toad guy should block an area at least so it has to be part of the game… make him accidetanlly remove an obstacle that blocks the corridor or something? I dunno get creative but realistic
+
+- [ ] the way the spears appear as you throw them and when they come towards you look a bit weird… like a pixel ball? imrpove that
+
+- [ ] there is so little danger of death at the moment also wth damage… may have to think that through a bit because the big combat areas are fun now as you dont die every 3 seconds but lower combat zones like tunnels etc become too easy? suggest a few solutions
+
+- [ ] the snake taking the guy in boaconstrictor way looks dumb make him take him in his mouth
+
+- [ ] the walking animation for the guy who gets eaten by the snake is clunkly and weird looking, maybe make him run with a precanned animation and turn?
+
+- [ ] when the AI is facing off against the end level boss dude it should always face him, it shouldn't pass a level without doing that
+
+- [ ] the plant you fight should have some special particle effects and shoot things with cool effects you have to dodge so the fight takes a while - at least 30s of fighting it is fair i think?
+
+- [ ] when enemies die they dont really ragdoll with phyics do they? it currently looks like an animation still and a bit dodgy
+
+- [ ] the tall axe guy animations are weak, spend time fixing those
+
+- [ ]
+
+- [ ]
+
+- [ ]
+
+- [ ]
+
+- [ ]
+
+- [ ]
+
+- [ ]
+
+- [ ]

@@ -7,6 +7,7 @@ await ev(`window.__chunk = (T) => {
   while (P.i < R.length && got < T) {
     const [a, n] = R[P.i];
     if (a === 'load') { CIM.load(n); P.i++; P.done = 0; return 'load ' + n; }
+    if (a === 'chk') { P.i++; continue; }
     const k = Math.min(n - P.done, T - got), last = P.done + k >= n;
     let act = a;
     if (P.done > 0) act = Object.assign({}, a, { use: false, torch: false, attack: false, parry: false, kick: false, throwSpear: false, weapon: undefined });

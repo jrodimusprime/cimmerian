@@ -7,7 +7,7 @@
 //    the puzzles that are waiting by design, like lying still while Satha passes).
 // 3. The recorded autoplay (cheat mode's "let the AI play this level") is replayed and must end the same way.
 // Then the campaign's length against README rule 3 (4x the golden runs, at least 90 min).
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +40,9 @@ function stalls(pts) {
 }
 const known = (l, st) => (WAITS[l]?.waits || []).find(w => Math.hypot(w.cell[0] - st.cell[0], w.cell[1] - st.cell[1]) <= (w.r || 2) && st.secs <= w.max);
 
+// the build stamp (js/version.js, index.html's ?v=) must be the hash of the code as it is: else browsers mix versions
+{ const want = execSync('sh ' + join(here, 'build_stamp.sh') + ' --print').toString().trim(), have = (readFileSync(join(here, '..', 'js', 'version.js'), 'utf8').match(/BUILD = '([0-9a-f]+)'/) || [])[1];
+  if (want !== have) { console.log(`FAIL build stamp ${have} is not the code's ${want}: run test/record_autoplay.sh (it re-stamps)`); process.exit(1); } }
 const t0 = Date.now();
 const results = await Promise.all(levels.map(async l => {
   const wf = join(tmp, 'cim-watch-' + l + '.json'); try { rmSync(wf); } catch {}
@@ -59,7 +62,7 @@ const results = await Promise.all(levels.map(async l => {
   const rp = await run('replay.js', 'cim-replay-' + l, { CIM_REC: join(here, '..', 'autoplay', l + '.json') });
   const rf = (rp.match(/\[replay\] (\{.*\})/) || [])[1];
   if (!rf) r.problems.push('autoplay replay failed: ' + rp.slice(-200));
-  else { const R = JSON.parse(rf); if (R.mode !== 'done' || R.tick !== exp.tick || R.hash !== exp.hash) r.problems.push(`autoplay recording stale: replay ends ${R.mode} t${R.tick} ${R.hash} (re-run test/record_autoplay.sh)`); }
+  else { const R = JSON.parse(rf); if (R.drift || R.mode !== 'done' || R.tick !== exp.tick || R.hash !== exp.hash) r.problems.push(`autoplay recording stale: replay ${R.drift ? 'drifts at ' + R.drift + ', ' : ''}ends ${R.mode} t${R.tick} ${R.hash} (re-run test/record_autoplay.sh)`); }
   return r;
 }));
 

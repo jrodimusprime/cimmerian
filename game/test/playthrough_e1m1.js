@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10330, hash: '6a9142d3' };
+const EXPECTED = { tick: 9489, hash: 'f4f99008' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -115,10 +115,10 @@ window.__ride = (x, z, maxTicks = 3000) => {
     if (CIM.obs().mode !== 'play' || Math.hypot(dx, dz) < 0.5) break;
     const act = { forward: 1, run: true, yaw: Math.atan2(-dx, -dz), pitch: 0 };
     for (const r of s.shamu.riders) {
-      if (r.state !== 'charge') continue;
-      const vx = Math.sin(r.yaw), vz = Math.cos(r.yaw), rx = s.x - r.x, rz = s.z - r.z, t = (rx * vx + rz * vz) / 20;
+      if (r.sp < 3) continue;
+      const vx = Math.sin(r.yaw), vz = Math.cos(r.yaw), rx = s.x - r.x, rz = s.z - r.z, t = (rx * vx + rz * vz) / r.sp;
       if (t < 0 || t > 1.4) continue;
-      let mx = rx - vx * t * 20, mz = rz - vz * t * 20; const m = Math.hypot(mx, mz);
+      let mx = rx - vx * t * r.sp, mz = rz - vz * t * r.sp; const m = Math.hypot(mx, mz);
       if (m > 2.8) continue;
       if (m < 0.2) { mx = vz; mz = -vx; }                     // dead in its line: either side will do
       act.yaw = Math.atan2(-mx, -mz); break;                  // out of its line, the way you already stand from it

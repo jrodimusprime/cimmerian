@@ -49,7 +49,9 @@ try {
   const body = readFileSync(scriptPath, 'utf8').replace(/^\/\/@include (\S+)$/m, (m, f) => readFileSync(join(dirname(resolve(scriptPath)), f), 'utf8'));
   // CIM_RECORD=file: log every agent call so the run can be replayed frame by frame (test/video.js)
   if (process.env.CIM_RECORD) await ev(`window.__rec = []; { const st = CIM.step.bind(CIM), ld = CIM.load.bind(CIM);
-    CIM.step = (a = {}, n = 1) => { __rec.push([JSON.parse(JSON.stringify(a)), n]); return st(a, n); }; CIM.load = id => { __rec.push(['load', id]); return ld(id); }; } true`);
+    let chk = -1;   // every 5 s of play a checkpoint: [ 'chk', tick, state hash ], so a replay knows if it has drifted
+    CIM.step = (a = {}, n = 1) => { __rec.push([JSON.parse(JSON.stringify(a)), n]); const r = st(a, n); const c = Math.floor(CIM.state.tick / 360); if (c !== chk) { chk = c; __rec.push(['chk', CIM.state.tick, CIM.hash()]); } return r; };
+    CIM.load = id => { __rec.push(['load', id]); chk = -1; return ld(id); }; } true`);
   // CIM_WATCH=file: sample the player through the run (tick, x, z, health, mode) and note every death, for test/regress.mjs
   if (process.env.CIM_WATCH) await ev(`window.__watch = { pts: [], deaths: [], dead: false }; { const st = CIM.step.bind(CIM), ld = CIM.load.bind(CIM);
     const note = () => { const s = CIM.state, W = __watch, m = CIM.obs().mode, l = W.pts[W.pts.length - 1];

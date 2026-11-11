@@ -388,9 +388,12 @@ const LEVEL_E1M1 = {
     { pts: [[40, 8], [44, 12], [46, 18], [45, 24]], face: -Math.PI / 2 }, { pts: [[45, 38], [47, 43], [45, 49], [41, 53]], face: -Math.PI / 2 },
     { pts: [[52, 12], [55, 17], [54, 23]], face: -Math.PI / 2 }, { pts: [[54, 39], [56, 44], [53, 50]], face: -Math.PI / 2 },
     // and before the heap, a crescent the knights rallied behind
-    { pts: [[74, 9], [78, 14], [79, 21], [77, 25]], face: -Math.PI / 2 }, { pts: [[77, 37], [79, 42], [77, 48], [73, 52]], face: -Math.PI / 2 }],
+    { pts: [[74, 9], [78, 14], [79, 21], [77, 25]], face: -Math.PI / 2 }, { pts: [[77, 37], [79, 42], [77, 48], [73, 52]], face: -Math.PI / 2 },
+    // stakes planted over the riders' ground itself, clumps a man can shelter by and a horse must go round
+    { from: [71, 18], to: [71, 20], face: -Math.PI / 2 }, { from: [72, 26], to: [73, 26], face: Math.PI }, { from: [74, 35], to: [75, 35], face: 0 },
+    { from: [71, 43], to: [71, 45], face: -Math.PI / 2 }, { from: [76, 27], to: [76, 28], face: -Math.PI / 2 }],
   // and the end of the riders' ground: a ditch sown with stakes the length of the field, to be leapt; no horse will take it
-  lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16]].concat(Array.from({ length: 49 }, (_, k) => [80, 9 + k])),
+  lilia: [[41, 40], [47, 22], [52, 40], [56, 19], [48, 45], [43, 16], [74, 22], [70, 28], [73, 38], [70, 50], [75, 13], [72, 33]].concat(Array.from({ length: 49 }, (_, k) => [80, 9 + k])),
   entities: [
     { class: 'info_player_start', at: [6, 31], yaw: -Math.PI / 2 },
     { class: 'kknight', id: 'c1', at: [15, 24], group: 'charge', yaw: Math.PI / 2 },
@@ -448,8 +451,9 @@ const LEVEL_E1M1 = {
   // the arrow ground: "Strabonus' Shemitish bowmen had wrought havoc among his knights"
   volley: { rooms: ['gully', 'arrowground'], group: 'line', period: 4.2 },
   // the riders' ground: "Ophirean knights in gilded mail leaped their horses over mounds of corpses"
-  //   six of them, no more than three in the saddle at once, at you from either edge of the field (combat speed: a galloping horse)
-  riders: { n: 6, max: 3, field: [69.2, 79.8, 9, 57], speed: 20, lead: 0.45, turn: 0.5, veer: 3.0, every: [1.4, 3.4] },
+  //   seven of them riding their ground; no more than three charge at once (a gallop), the rest canter round
+  riders: { n: 7, max: 3, field: [69.2, 77.2, 9, 57], speed: 20, canter: 10, lead: 0.5, turn: 0.85, veer: 3.0, ride: 1.6, every: [1.0, 2.6],
+    at: [[71, 12], [75.5, 21], [70.5, 30], [74.5, 31.5], [72, 40.5], [70.5, 47], [75, 55]] },
   // the kings watch from their horses in the ring of the host; Tsotha swings down and walks out to you
   // "Strabonus, with his broad dark face and crafty eyes; Amalrus, slender, fastidious" (ch. I), watching from their horses
   kings: { riders: [[108, 28, 'strabonus'], [108, 36, 'amalrus']], horse: [105.4, 32], tsotha: [104.6, 32] },
