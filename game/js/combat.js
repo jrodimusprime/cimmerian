@@ -44,7 +44,7 @@ const FOES = {
   strabonus: { hp: 320, speed: 3.6, reach: 2.9, dmg: 22, windup: 0.62, strike: 0.26, recover: 0.6, block: 'front', sight: 24, name: 'Strabonus of Koth', boss: true },
   // the Tybor (ch. V): Tsotha at bay, throwing the globes of fire
   tsotha: { hp: 280, speed: 3.4, reach: 0, dmg: 0, windup: 0.9, strike: 0.2, recover: 1.1, ranged: true, globe: true, keep: [5, 13], sight: 30, name: 'Tsotha-lanti', boss: true },
-  weeper: { hp: 1e9, speed: 2.7, reach: 1.7, dmg: 30, windup: 0.3, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: null },
+  weeper: { hp: 1e9, speed: 2.7, reach: 1.9, dmg: 30, windup: 0.65, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: null, leap: 9 },   // it rears, then its whole bulk lurches forward with the blow
 };
 const ALERT_LINES = {
   scout: '"Who screamed? Who\'s there?" A Kothian guard comes up the south passage with his sword out.',
@@ -78,7 +78,7 @@ function newFoes() {
 // ---- pathing: a flow field over the grid from the player's cell ------------
 let FLOW = null, FLOW_BARS = null;
 function walkableFor(idx) {
-  return idx >= 0 && LV.kind[idx] === 1 && !(LV.flags[idx] & F_NOPASS) && !(LV.blockers.has(idx) && linkClosed(idx));
+  return idx >= 0 && (LV.kind[idx] === 1 || (LV.kind[idx] === 2 && !LV.deep[idx])) && !(LV.flags[idx] & F_NOPASS) && !(LV.blockers.has(idx) && linkClosed(idx));   // a shallow dip is ground; a deep pit or a stake-pit is not
 }
 function bfs(startIdx) {
   const N = LV.W * LV.H, dist = new Int16Array(N).fill(-1);
@@ -193,12 +193,14 @@ function updateFoes() {
     };
     if (f.post && f.state !== 'rout' && LEVEL.postBreak && S.flags[LEVEL.postBreak]) { f.state = 'rout'; f.t = 0; }   // the host breaks: every post is abandoned
     switch (f.state) {
-      case 'idle': f.yaw += Math.sin(S.tick * 0.01 + f.homeX) * 0.002; break;
+      case 'idle': f.yaw += Math.sin(S.tick * 0.01 + f.homeX) * 0.002;
+        if (st.invulnerable && !f.hold && S.flags.found_it && f.territory && f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }   // the weeping thing hunts you down its tunnels by ear
+        break;
       case 'home':                                      // back to its wallow, weeping again
         f.alert = false; S.alerted.delete(f.group);
         move(f.homeX, f.homeZ, st.speed * 0.6);
         if (Math.hypot(f.homeX - f.x, f.homeZ - f.z) < 0.8) f.state = 'idle';
-        else if (f.t > 1.5 && foeSees(f) && f.territory && f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }
+        else if (f.t > 1.5 && (foeSees(f) || (st.invulnerable && S.flags.found_it)) && f.territory && f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }
         break;
       case 'cower':                                     // backs off from the flame, hissing, then comes again
         move(f.x - dx / (d || 1) * 3, f.z - dz / (d || 1) * 3, st.speed * 0.75); turn(10);
@@ -248,7 +250,7 @@ function updateFoes() {
         for (const o of S.foes) if (o !== f && !o.dead) { const ox = f.x - o.x, oz = f.z - o.z, od = Math.hypot(ox, oz); if (od < 0.9 && od > 1e-4) { f.x += ox / od * (0.9 - od) * 0.5; f.z += oz / od * (0.9 - od) * 0.5; } }
         break;
       case 'windup':
-        turn(f.cls === 'axeman' ? 4.5 : f.cls === 'thing' ? 6 : 3.2);       // slow to track: strafing out of a telegraphed blow is fair
+        turn(f.cls === 'axeman' ? 4.5 : f.cls === 'thing' ? 6 : f.cls === 'weeper' ? 0.8 : 3.2);       // slow to track: strafing out of a telegraphed blow is fair
         if (f.t >= st.windup * (f.combo ? 0.6 : 1)) { f.state = 'strike'; f.t = 0; foeStrike(f, st); }
         break;
       case 'strike':

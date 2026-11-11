@@ -245,6 +245,8 @@ const LEVEL_E1M3 = {
   ],
   // the weeping, "piteously, like a woman": where it seems to come from, until the thing shows itself
   weeping: { from: [22, 2.5], wake: { room: 'weep_den', z: 4.6 } },
+  // a fall of stones chokes the tunnel north: nothing a man can shift. The weeping thing's bulk can, floundering into it
+  choke: { rect: [38, 9, 40, 10] },
   // the well's breath: gusts between which you leap; the presence; the draft from the main corridor
   well: { row: 17, x: [34, 44], ember: [39, 15.9], mouth: [33.6, 21], period: 5.5 },
   // Satha's road: up out of her hole by the cage, west down the main corridor, and down into her well
@@ -270,10 +272,10 @@ const LEVEL_E1M3 = {
     { class: 'info_player_start', at: [3.5, 17], yaw: -Math.PI / 2 },
     { class: 'thing', id: 'n1', at: [10, 10], group: 'dead_n', lurk: true },
     { class: 'thing', id: 'n2', at: [22, 23.5], group: 'dead_s', lurk: true },
-    { class: 'weeper', id: 'wp', at: [25, 9.2], group: 'weeper', yaw: 0, hold: true, territory: ['weep_den', 'hollow', 'flight', 'flight2'] },
+    { class: 'weeper', id: 'wp', at: [25, 9.2], group: 'weeper', yaw: 0, hold: true, territory: ['weep_den', 'hollow', 'flight', 'flight_break', 'flight2'] },
     { class: 'thing', id: 'd1', at: [32, 4], group: 'driven', yaw: Math.PI / 2, hold: true },
     { class: 'thing', id: 'd2', at: [36, 3.6], group: 'driven', yaw: Math.PI / 2, hold: true },
-    { class: 'thing', id: 'd3', at: [39, 8], group: 'driven', yaw: 0, hold: true },
+    { class: 'thing', id: 'd3', at: [39, 6.3], group: 'driven', yaw: 0, hold: true },
     { class: 'thing', id: 'k1', at: [41, 25.5], group: 'dark', lurk: true },
     { class: 'thing', id: 'k2', at: [46.3, 28], group: 'dark', yaw: Math.PI / 2 },
     { class: 'thing', id: 'k3', at: [47, 25], group: 'dark', lurk: true },
@@ -299,10 +301,11 @@ const LEVEL_E1M3 = {
     { class: 'trigger_exit', rect: [56, 29, 58, 33] },
   ],
   puzzle: {
-    flags: ['found_it', 'crossed_well', 'torch_found', 'got_out', 'satha_passed'],
+    flags: ['found_it', 'choke_down', 'crossed_well', 'torch_found', 'got_out', 'satha_passed'],
     actions: [
       { id: 'follow_the_weeping', needs: [], sets: 'found_it', at: 'weep_den' },
-      { id: 'leap_the_well', needs: ['found_it'], sets: 'crossed_well', at: 'cross_s' },
+      { id: 'let_it_bring_down_the_stones', needs: ['found_it'], sets: 'choke_down', at: 'flight2' },
+      { id: 'leap_the_well', needs: ['found_it', 'choke_down'], sets: 'crossed_well', at: 'cross_s' },
       { id: 'blow_the_ember_alight', needs: ['crossed_well'], sets: 'torch_found', at: 'loop1' },
       { id: 'go_where_the_air_comes_from', needs: ['torch_found'], sets: 'got_out', at: 'out1', clue: 'insc_well' },
       { id: 'hide_and_shake_out_the_torch', needs: ['got_out'], sets: 'satha_passed', at: 'alcove1' },
@@ -1129,6 +1132,7 @@ function buildLevel(spec) {
       fort.push({ prefab: 'stakes', at: [gx + 0.5, gz + 0.5], rot: st.face || 0 });
     }
   }
+  if (spec.choke) { const [x0, z0, x1, z1] = spec.choke.rect; for (let gz = z0; gz < z1; gz++) for (let gx = x0; gx < x1; gx++) LV.flags[cellIdx(gx, gz)] |= F_NOPASS; }   // the fall of stones: solid until something heavy enough comes
   for (const [gx, gz] of spec.lilia || []) {
     const idx = cellIdx(gx, gz); if (idx < 0 || LV.kind[idx] !== 1) continue;
     LV.kind[idx] = 2; LV.floor[idx] -= 0.9; LV.deep[idx] = 1; LV.spikes[idx] = 1;   // monsters keep out of them

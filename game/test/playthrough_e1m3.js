@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
-const EXPECTED = { tick: 8878, hash: '0bccb5c1' };
+const EXPECTED = { tick: 9689, hash: '3aa650b7' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -85,6 +85,21 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   return CIM.obs();
 };
 // food close by the path (not the far end of the map: a wine-skin 40 cells round means a march through the side tunnels)
+// the fall of stones: stand with your back to it facing the weeping thing; as its blow comes, sidestep across the tunnel
+window.__lure = (maxTicks = 5000) => {
+  for (let i = 0; i < maxTicks && !CIM.state.flags.choke_down; i++) {
+    const s = CIM.state, w = s.foes.find(f => f.cls === 'weeper');
+    if (CIM.obs().mode !== 'play' || !w) break;
+    const d = Math.hypot(w.x - s.x, w.z - s.z), yaw = Math.atan2(-(w.x - s.x), -(w.z - s.z));
+    const side = s.x < 39 * C ? 1 : -1;   // to the other side of the tunnel from where it is aiming
+    const act = { yaw, pitch: 0 };
+    if (w.state === 'windup' && d < 3.2) { const tx = 39.7 * C - s.x, tz = 8.4 * C - s.z; act.yaw = Math.atan2(-tx, -tz); act.forward = 1; act.run = true; }   // as it rears, run across to the far wall: its lurch goes on past into the stones
+    else if (w.state !== 'strike' && w.state !== 'windup' && d > 4 && Math.hypot(38.35 * C - s.x, 8.55 * C - s.z) > 0.4) { const tx = 38.35 * C - s.x, tz = 8.55 * C - s.z; act.yaw = Math.atan2(-tx, -tz); act.forward = 1; }   // back to the stones, at the near wall
+    CIM.step(act, 1);
+  }
+  for (let i = 0; i < 40; i++) CIM.step({ yaw: CIM.state.yaw, pitch: 0 }, 1);
+  return CIM.obs();
+};
 window.__heal = (steps = 12) => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5 && !it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
@@ -124,7 +139,9 @@ o = await O('__route([[10, 17], [16, 17], [22, 17], [22, 10], [22, 4.2]])'); log
 o = await O('__route([[27, 4], [30, 4]])');
 o = await O('__fight(["driven"], 6000, 25)'); log('flight:', brief(o));
 o = await O('__jumpTo(35, 4)'); o = await O('__fight(["driven"], 6000, 25)'); log('break:', brief(o));
-o = await O('__route([[39, 4], [39, 12], [39, 15.4]])'); log('well:', brief(o));
+// THE FALL OF STONES (puzzle): back to the stones, let the thing come; step aside from its blow and its lurch brings them down
+o = await O('__route([[39, 4], [38.35, 8.55]])'); o = await O('__lure()'); log('stones:', brief(o));
+o = await O('__route([[39, 12], [39, 15.4]])'); log('well:', brief(o));
 // THE WELL (puzzle): leap it between its breaths; the presence takes the torch
 o = await O('__leap(39, 15.4, 1)'); log('leapt:', brief(o), await ev('CIM.state.torch'));
 // THE DARK (combat): driven south into the black tunnels; round to the crossing again

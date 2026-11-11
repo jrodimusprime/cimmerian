@@ -333,6 +333,32 @@ const DIRS = [[0, -1, 0, 0, 1, 0], [1, 0, 1, 0, 1, 1], [0, 1, 1, 1, 0, 1], [-1, 
 function buildLevelMesh() {
   const mb = new MeshBuilder(40000), W = LV.W, H = LV.H;
   const P = (q, y) => [q.x, y, q.z];
+  // under the open sky a building has a body: the masonry about a roofed room stands up to just over its ceiling, with a
+  // top, an outer face toward the sky and a roof over the room, not the bare inner planes of the room seen from behind
+  const ROOF = 0.35, roofed = (x, z) => x >= 0 && z >= 0 && x < W && z < H && LV.kind[z * W + x] !== 0 && !(LV.flags[z * W + x] & F_SKY);
+  const roofTop = (x, z) => { let t = -Infinity; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (roofed(x + dx, z + dz)) t = Math.max(t, LV.ceil[(z + dz) * W + x + dx]); return t + ROOF; };
+  if (LEVEL.open) for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const idx = j * W + i, x0 = i * CELL, x1 = x0 + CELL, z0 = j * CELL, z1 = z0 + CELL;
+    if (LV.kind[idx] === 0) {                             // masonry about a roofed room: its flat top
+      const t = roofTop(i, j); if (t === -Infinity) continue;
+      mb.quad([x0, t, z0], [x0, t, z1], [x1, t, z1], [x1, t, z0], T.HEWN, 0, 1, 0);
+      for (const d of DIRS) {                             // and its sides, where its neighbour masonry stands lower
+        const nx = i + d[0], nz = j + d[1]; if (nx < 0 || nz < 0 || nx >= W || nz >= H || LV.kind[nz * W + nx] !== 0) continue;
+        const tn = roofTop(nx, nz); if (tn >= t - 0.05) continue;
+        const b = tn === -Infinity ? t - 6 : tn, ax = (i + d[2]) * CELL, az = (j + d[3]) * CELL, bx = (i + d[4]) * CELL, bz = (j + d[5]) * CELL;
+        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], T.HEWN, d[0], 0, d[1]);
+      }
+    } else if (!(LV.flags[idx] & F_SKY)) {                 // a roofed room: a roof over it
+      const t = LV.ceil[idx] + ROOF;
+      mb.quad([x0, t, z0], [x0, t, z1], [x1, t, z1], [x1, t, z0], T.HEWN, 0, 1, 0);
+      for (const d of DIRS) {                             // and a band of stone over its ceiling's edge where it opens onto the sky
+        const nx = i + d[0], nz = j + d[1]; if (nx < 0 || nz < 0 || nx >= W || nz >= H) continue;
+        const nI = nz * W + nx; if (LV.kind[nI] === 0 || !(LV.flags[nI] & F_SKY)) continue;
+        const ax = (i + d[2]) * CELL, az = (j + d[3]) * CELL, bx = (i + d[4]) * CELL, bz = (j + d[5]) * CELL, b = LV.ceil[idx] - 0.05;
+        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], T.HEWN, d[0], 0, d[1]);
+      }
+    }
+  }
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const idx = j * W + i, k = LV.kind[idx];
     if (!k) continue;
@@ -358,7 +384,11 @@ function buildLevelMesh() {
     for (const d of DIRS) {
       const nk = kindAt(i + d[0], j + d[1]);
       const ca = corner(i + d[2], j + d[3]), cb = corner(i + d[4], j + d[5]);
-      if (nk === 0 && open) continue;
+      if (nk === 0 && open) {                               // the edge of the world: nothing; the masonry of a building: its outer face
+        const t = roofTop(i + d[0], j + d[1]);
+        if (t !== -Infinity) wallStrip(mb, ca, cb, fy(ca), fy(cb), t, t, T.HEWN, -d[0], -d[1]);
+        continue;
+      }
       if (nk === 0) wallStrip(mb, ca, cb, fy(ca), fy(cb), ca.c, cb.c, T[tex.wall], -d[0], -d[1]);
       else if (k === 2 && nk === 1) mb.quad(P(ca, ca.fp), P(cb, cb.fp), P(cb, cb.fo), P(ca, ca.fo), T[tex.wall], -d[0], 0, -d[1]);
     }
@@ -481,6 +511,16 @@ function buildModel(name) {
       addBox(mb, 0, 0.15, 0, 0.07, 0.015, 0.025, T.IRON);
       addLathe(mb, 0, 0.16, 0, [[0.04, 0], [0.035, 0.18], [0, 0.32]], 4, T.BONE, Math.PI / 4);
       break;
+    case 'choke': {                                       // a fall of stones from the roof, filling the tunnel floor to roof, 5 m by 2.5 m
+      for (let k = 0; k < 26; k++) { const a = k * 2.399, u = hrand(k, 1, 7, 3), v = hrand(k, 2, 7, 3), h = hrand(k, 3, 7, 3);
+        addRock(mb, (u - 0.5) * 4.4, 0.3 + h * 1.9 - Math.abs(u - 0.5) * 0.8, (v - 0.5) * 2.0, 0.45 + 0.35 * hrand(k, 4, 7, 3), 0.35 + 0.3 * hrand(k, 5, 7, 3), 0.45 + 0.3 * hrand(k, 6, 7, 3), 40 + k, T.ROCK, 0.4); }
+      break;
+    }
+    case 'choke_down': {                                  // the same stones, brought down and spread across the floor
+      for (let k = 0; k < 22; k++) { const u = hrand(k, 1, 9, 3), v = hrand(k, 2, 9, 3);
+        addRock(mb, (u - 0.5) * 4.6, 0.12, (v - 0.5) * 5.5, 0.35 + 0.3 * hrand(k, 4, 9, 3), 0.14 + 0.12 * hrand(k, 5, 9, 3), 0.35 + 0.3 * hrand(k, 6, 9, 3), 70 + k, T.ROCK, 0.4); }
+      break;
+    }
     case 'bone':
       addLathe(mb, 0, 0, 0, [[0, -0.3], [0.05, -0.29], [0.03, -0.22], [0.025, 0.22], [0.05, 0.28], [0, 0.3]], 5, T.BONE, 0, ONE3, [0, 0, 1]);
       addRock(mb, 0.03, 0, 0.29, 0.05, 0.04, 0.04, 2, T.BONE); addRock(mb, -0.03, 0, -0.29, 0.05, 0.04, 0.04, 3, T.BONE);

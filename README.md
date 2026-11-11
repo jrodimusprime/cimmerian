@@ -16,13 +16,13 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
 > | `e1m2` The Pits | 2:01 (8726 ticks) | ~8.1 min |
-> | `e1m3` The Tunnels Below | 2:03 (8878 ticks) | ~8.2 min |
+> | `e1m3` The Tunnels Below | 2:15 (9689 ticks) | ~9.0 min |
 > | `e1m4` Yothga | 2:44 (11844 ticks) | ~11.0 min |
 > | `e1m5` The Scarlet Citadel | 2:53 (12465 ticks) | ~11.5 min |
 > | `e1m6` The Tower of Tamar | 2:23 (10275 ticks) | ~9.5 min |
 > | `e1m7` The Relief of Shamar | 3:54 (16858 ticks) | ~15.6 min |
 > | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
-> | **Campaign** | **21:11** (91521 ticks) | **~85 min** |
+> | **Campaign** | **21:22** (92332 ticks) | **~85 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -766,7 +766,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] spear throwing animation also no good, spend some ime doing that properly
   - *Done:* a real throw now. The spear is drawn back over the right shoulder, tip up, and leaves the hand as the drive begins (not at the click); the empty hand drives on along the line of the eye and drops away; then the next spear (or the sword) comes up from below. A snap throw, about a tenth of a second back: quick enough to use in a fight. It flies from the throwing hand, off to the right, not from the middle of your face.
 
-- [ ] the toad guy should block an area at least so it has to be part of the game… make him accidetanlly remove an obstacle that blocks the corridor or something? I dunno get creative but realistic
+- [x] the toad guy should block an area at least so it has to be part of the game… make him accidetanlly remove an obstacle that blocks the corridor or something? I dunno get creative but realistic
+  - *Done:* a fall of stones chokes the tunnel you flee down, floor to roof, nothing a man could shift; behind you the weeping thing comes on. It now hunts you down its tunnels by ear (it used to give up at the break in the floor and go home), it rears before it strikes (you can see it coming, and it turns slowly while it rears), and its whole bulk lurches forward with the blow. Stand with your back to the stones, let it come, and as it rears get across to the far wall: its lurch carries it into the fall, and the stones go over under its weight with a roar. Run on while it heaves itself out of the rubble. (It can flounder through the shallow break now too.)
 
 - [x] the way the spears appear as you throw them and when they come towards you look a bit weird… like a pixel ball? imrpove that
   - *Done:* a thrown spear had no drawing of its own and fell through to the venom-glob mesh: the pixel ball. Spears in flight (yours and those thrown at you) are now the spear itself, the shaft laid along its path and the head leading; yours shows once it is clear of your eye, so its shaft never sweeps through the camera.
@@ -805,4 +806,16 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [ ] E1M6 still has some edges of the castle that look thin like 1px with sky behind them... maybe have to round them off with a curve wall around it so tehy dont look like pixels
 
-- [ ]
+- [ ] if you get bitten by the little dwarf creatures it means you slow down for 10s and get dizzy so you cant make the jumps
+
+- [ ] E1M4 ending area isnt clear it just looks like a room perhaps use a door
+
+- [ ] the axe swing animation in the corridor of the censers the dudes with the axes should have a cooler and more menacing swing
+
+
+- [ ] killing little black slave children seems weird right?
+
+- [ ] you dont die when you fall off the tower in teh air over tamar
+
+- [ ] - [x] e1m5: an example of a super thin wall (the night roof, by the tower stair)
+  - *Done:* found by scanning every level for roofed rooms that open straight onto the sky: under an open sky the level builder drew nothing where open ground met solid rock (the world's edge), so a building's masonry had no outer face and no top, and its inner walls showed from outside as bare planes with a knife edge against the sky. On open levels a building now has a body: the masonry about a roofed room stands up to just over its ceiling with an outer face and a top, every roofed room has a roof over it, and a band of stone covers a ceiling's edge where a room opens onto the sky. The tower stair onto the battlements reads as a stone tower now, the stair turret on Tamar's crown as stepped masonry.

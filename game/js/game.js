@@ -1288,6 +1288,19 @@ function updateTunnels() {
   T.draft = [dx * 0.7, dz * 0.7 - gust * T.side * 0.6];
   S.windNow = Math.max(gust * 1.8, Math.hypot(dx, dz) * 0.5);
   if (S.room === 'out1' && S.torch === 'lit') setFlag('got_out');
+  // the fall of stones in the tunnel north: you can't shift it; the weeping thing, floundering after you, brings it down
+  const CH = L.choke;
+  if (CH && !S.flags.choke_down) {
+    const [x0, z0, x1, z1] = CH.rect.map(v => v * CELL), wpk = S.foes.find(f => f.cls === 'weeper');
+    if (!S.hints.has('choke') && Math.hypot(clamp(S.x, x0, x1) - S.x, clamp(S.z, z0, z1) - S.z) < 3) { S.hints.add('choke'); log('A fall of stones chokes the tunnel, floor to roof: nothing you could shift. Behind you the weeping comes on, and the floor shudders under the weight of the thing.', 'warn'); }
+    if (wpk && Math.hypot(clamp(wpk.x, x0, x1) - wpk.x, clamp(wpk.z, z0, z1) - wpk.z) < 1.9) {
+      for (let gz = CH.rect[1]; gz < CH.rect[3]; gz++) for (let gx = CH.rect[0]; gx < CH.rect[2]; gx++) LV.flags[cellIdx(gx, gz)] &= ~F_NOPASS;
+      setFlag('choke_down'); FLOW = null; wpk.state = 'recover'; wpk.t = -1.4;   // it reels, half buried
+      Sfx.rumble(); punchView(0.12, 0.06);
+      for (let k = 0; k < 30; k++) particles.push({ m: 'drop', x: (x0 + x1) / 2 + (Math.random() - 0.5) * 4, y: 0.5 + Math.random() * 1.8, z: (z0 + z1) / 2 + (Math.random() - 0.5) * 2, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 1.2, max: 1.2, g: 9, s: 1.6 });
+      log('The thing flounders into the fall of stones, and the whole heap goes over under its weight with a roar. The way north is open: go, while it heaves itself out of the rubble!', 'good');
+    }
+  }
   // Satha returns: up out of her hole between you and the light, and down the main corridor toward you
   if (L.satha && S.satha.start === null && S.areas.has(L.satha.area)) {
     S.satha.start = S.tick + 3 * SIM_HZ;
@@ -1823,6 +1836,8 @@ function render(alpha) {
       }
     }
   }
+  if (LEVEL.choke) { const [x0, z0, x1, z1] = LEVEL.choke.rect.map(v => v * CELL), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, fy = groundInfo(cx, cz).floor;
+    drawM(S.flags.choke_down ? 'choke_down' : 'choke', m4t(cx, fy, cz), sampleLight(cx, fy + 1, cz)); }
   // the planks: whole, shaking as they crack, and the halves tumbling into the dark when they go
   if (S.planks) LV.planks.forEach((p, i) => {
     const st = S.planks[i], dx = p.x1 - p.x0, dz = p.z1 - p.z0, L = Math.hypot(dx, dz), yaw = Math.atan2(dx, dz);
