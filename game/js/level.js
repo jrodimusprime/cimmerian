@@ -607,6 +607,11 @@ const LEVEL_E1M4 = {
   ],
   shafts: [], links: [],
   props: [
+    // the ossuary of the old works: the bones of the builders heaped along its walls, skulls set in rows
+    { prefab: 'bones', at: [7, 23.6], big: true }, { prefab: 'bones', at: [9.5, 23.6], big: true }, { prefab: 'bones', at: [12.5, 23.7], big: true }, { prefab: 'bones', at: [13.4, 26.5], big: true },
+    { prefab: 'skull', at: [8, 23.4] }, { prefab: 'skull', at: [8.6, 23.4] }, { prefab: 'skull', at: [11, 23.4] }, { prefab: 'skull', at: [11.6, 23.4] }, { prefab: 'skull', at: [13.6, 25] },
+    { prefab: 'chains', at: [10, 23], wall: 'N' }, { prefab: 'candles', at: [6.6, 27.3] },
+    
     { prefab: 'door', at: [32, 25.5], wall: 'W', open: 0.55, free: true }, { prefab: 'torch', at: [32, 24.5], wall: 'W', dim: 0.9 }, { prefab: 'torch', at: [32, 26.6], wall: 'W', dim: 0.9 },   // the stair ends at a door: the way out, standing ajar
     { prefab: 'torch', at: [6.5, 14], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [13.5, 22], wall: 'S', dim: 0.6 }, { prefab: 'torch', at: [31, 10], wall: 'N', dim: 0.6 },
     { prefab: 'torch', at: [48, 4], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [56, 4], wall: 'N', dim: 0.6 }, { prefab: 'torch', at: [40, 22], wall: 'N', dim: 0.8 },
