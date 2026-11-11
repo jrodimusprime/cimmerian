@@ -37,7 +37,8 @@ window.__item = k => CIM.state.items.find(i => i.kind === k && !i.taken);
 window.__take = (k) => { const it = __item(k); if (!it) return false; __nav(it.x, it.z, true); __go(it.x - 0.9, it.z, true); __face(it.x, it.z, -0.7); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.7 }, 1); return true; };
 window.__use = (x, z, pitch = 0) => { __face(x * C, z * C, pitch); return CIM.step({ use: true, yaw: CIM.state.yaw, pitch }, 1); };
 // fight: close with the nearest foe that knows we're here; parry a shield-man's blow then strike, step back from other wound-up blows
-window.__fight = (groups, maxTicks = 6000, radius = 30) => {
+// maxSteps: ignore a foe whose path round is longer than this many cells (close as the crow flies, a long way on foot)
+window.__fight = (groups, maxTicks = 6000, radius = 30, maxSteps = 1e9) => {
   let blocked = 0, lastHits = -1, reachable = null, grace = 72;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
@@ -45,7 +46,7 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
     if (s.health < 55 && s.pouch.length) { CIM.step({ drink: true, yaw: s.yaw, pitch: s.pitch }, 1); continue; }   // low: eat or drink from the satchel
     const shut = s.grille.open < 0.8 && s.x < GRILLE_X;
     if (!reachable || i % 36 === 0) reachable = bfs(cellIdx(Math.floor(s.x / C), Math.floor(s.z / C)));
-    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && f.state !== "lurk" && groups.includes(f.group) && (reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
+    const live = s.foes.filter(f => !f.dead && f.state !== "dormant" && f.state !== "lurk" && groups.includes(f.group) && ((reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] >= 0 && reachable[cellIdx(Math.floor(f.x / C), Math.floor(f.z / C))] <= maxSteps) || Math.hypot(f.x - s.x, f.z - s.z) < 2.5) && Math.hypot(f.x - s.x, f.z - s.z) < radius && !(shut && f.cls === 'archer' && f.x > GRILLE_X));
     if (!live.length) {   // a group held back (dormant) may be about to come in: give the beat a moment before calling it done
       if (grace-- > 0 && s.foes.some(q => !q.dead && groups.includes(q.group) && q.state === 'dormant')) { CIM.step({ yaw: s.yaw, pitch: s.pitch }, 1); continue; }
       break;
@@ -127,4 +128,4 @@ const brief = o => `t${o.tick} ${o.mode} room=${o.room} hp=${Math.round(o.health
 await ev(`window.__clear = (radius = 18, maxTicks = 6000) => __fight([...new Set(CIM.state.foes.filter(f => !f.dead && Math.hypot(f.x - CIM.state.x, f.z - CIM.state.z) < radius).map(f => f.group))], maxTicks, radius); true`);
 const finish = async EXPECTED => { const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
   log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED)); };
-await ev(`window.__heal = (r = 26) => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);
+await ev(`window.__heal = (r = 26, steps = 16) => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);

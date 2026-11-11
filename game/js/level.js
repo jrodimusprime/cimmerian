@@ -177,7 +177,7 @@ const LEVEL_E1M3 = {
     { id: 'weeping', type: 'puzzle', name: 'The Weeping', rooms: ['dank', 'fork1', 'dead_n', 'weep1', 'fork2', 'dead_s', 'weep2'] },
     { id: 'weeper', type: 'action', name: 'The Weeping Thing', rooms: ['weep_den', 'hollow', 'flight', 'flight_break', 'flight2'], cp: [22, 10, 0] },
     { id: 'well', type: 'puzzle', name: 'The Well', rooms: ['cross_n'], cp: [39, 14, Math.PI] },
-    { id: 'dark', type: 'action', name: 'The Dark', rooms: ['cross_s', 'blind', 'loop1', 'loop2', 'loop_gap', 'loop3'], cp: [41, 25, Math.PI] },
+    { id: 'dark', type: 'action', name: 'The Dark', rooms: ['cross_s', 'blind', 'loop1', 'loop2', 'loop_gap', 'loop3', 'loop5', 'loop6', 'loop6_gap', 'loop7', 'loop8'], cp: [41, 25, Math.PI] },
     { id: 'crossing', type: 'puzzle', name: 'The Crossing', rooms: ['loop4'], cp: [44.5, 15, Math.PI / 2] },
     { id: 'side', type: 'action', name: 'The Side Tunnels', rooms: ['out1', 'out2', 'corridor_w', 'side1', 'side2', 'side3'], cp: [28, 24, Math.PI] },
     { id: 'satha', type: 'puzzle', name: 'Satha Returns', rooms: ['corridor_e', 'alcove1', 'alcove2'], cp: [40.5, 31.5, -Math.PI / 2] },
@@ -206,7 +206,12 @@ const LEVEL_E1M3 = {
     { id: 'loop1', name: 'a black tunnel', at: [40, 23], size: [2, 4], h: 2.2, style: 'rough', tex: CAVE_TEX },
     { id: 'loop2', name: 'a black tunnel', at: [40, 27], size: [8, 2], h: 2.2, style: 'rough', tex: CAVE_TEX },
     { id: 'loop_gap', name: 'a black tunnel', at: [44, 27], size: [1, 2], h: 2.2, pit: 40, void: true, style: 'rough', tex: CAVE_TEX },   // leapt in the dark
-    { id: 'loop3', name: 'a black tunnel', at: [46, 14], size: [2, 13], h: 2.4, style: 'rough', tex: CAVE_TEX },
+    { id: 'loop3', name: 'a black tunnel', at: [46, 20], size: [2, 7], h: 2.4, style: 'rough', tex: CAVE_TEX },   // choked to the north with fallen rock: round by the east
+    { id: 'loop5', name: 'a black tunnel', at: [48, 20], size: [7, 2], h: 2.2, style: 'rough', tex: CAVE_TEX },
+    { id: 'loop6', name: 'a black tunnel', at: [53, 9], size: [2, 11], h: 2.4, style: 'rough', tex: CAVE_TEX },
+    { id: 'loop6_gap', name: 'a black tunnel', at: [53, 13], size: [2, 1], h: 2.4, pit: 40, void: true, style: 'rough', tex: CAVE_TEX },   // leapt in the dark again
+    { id: 'loop7', name: 'a black tunnel', at: [48, 9], size: [5, 2], h: 2.2, style: 'rough', tex: CAVE_TEX },
+    { id: 'loop8', name: 'a black tunnel', at: [46, 9], size: [2, 8], h: 2.4, style: 'rough', tex: CAVE_TEX },
     { id: 'loop4', name: 'a black tunnel', at: [44, 14], size: [2, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
     // the way back to the main corridor, and the things in its side tunnels
     { id: 'out1', name: 'a tunnel with a draft in it', at: [27, 20], size: [7, 2], h: 2.4, style: 'rough', tex: CAVE_TEX },
@@ -228,7 +233,7 @@ const LEVEL_E1M3 = {
     { prefab: 'bones', at: [10, 9] }, { prefab: 'skull', at: [9.4, 8.6] }, { prefab: 'bones', at: [22, 24.2], big: true },
     { prefab: 'stal', at: [18.5, 2.5] }, { prefab: 'stal', at: [26.5, 2.2] }, { prefab: 'bones', at: [20, 5.5] }, { prefab: 'bones', at: [25, 8.2], big: true },
     { prefab: 'bones', at: [34.5, 4.2] }, { prefab: 'stal', at: [35.2, 21.8] }, { prefab: 'stal', at: [42.8, 13.8] },
-    { prefab: 'bones', at: [36, 26.2], big: true }, { prefab: 'bones', at: [47, 20] }, { prefab: 'skull', at: [44, 28.3] },
+    { prefab: 'bones', at: [36, 26.2], big: true }, { prefab: 'bones', at: [47, 20.3] }, { prefab: 'bones', at: [47, 17.6], big: true }, { prefab: 'bones', at: [51, 20.5] }, { prefab: 'skull', at: [54.2, 15.8] }, { prefab: 'bones', at: [49.5, 9.6], big: true }, { prefab: 'skull', at: [44, 28.3] },
     { prefab: 'bones', at: [31, 37.2] }, { prefab: 'bones', at: [37, 37.2], big: true }, { prefab: 'bones', at: [21, 36.2] },
     { prefab: 'torch', at: [12, 30], wall: 'N' }, { prefab: 'torch', at: [21, 30], wall: 'N' }, { prefab: 'torch', at: [34, 30], wall: 'N' },
     { prefab: 'torch', at: [42, 30], wall: 'N' }, { prefab: 'torch', at: [49, 30], wall: 'N' }, { prefab: 'torch', at: [48, 33], wall: 'S' },
@@ -258,6 +263,7 @@ const LEVEL_E1M3 = {
     { kind: 'wine', name: 'leather water-skin', at: [17.2, 5.6], heal: 25 },
     { kind: 'wine', name: 'leather water-skin', at: [47, 22], heal: 25 },
     { kind: 'bread', name: 'mouldy crust', at: [31, 36.6], heal: 25 },
+    { kind: 'bread', name: 'mouldy crust', at: [54, 18.6], heal: 25 },
     { kind: 'wine', name: 'jug of water', at: [45, 34.2], heal: 25 },
   ],
   entities: [
@@ -273,6 +279,13 @@ const LEVEL_E1M3 = {
     { class: 'thing', id: 'k3', at: [47, 25], group: 'dark', lurk: true },
     { class: 'thing', id: 'k4', at: [47, 19], group: 'dark', yaw: Math.PI },
     { class: 'thing', id: 'k5', at: [36, 25.5], group: 'dark', lurk: true },
+    { class: 'thing', id: 'k6', at: [42.5, 28.2], group: 'dark', lurk: true }, { class: 'thing', id: 'k7', at: [47, 22], group: 'dark', lurk: true },
+    { class: 'thing', id: 'k8', at: [46.6, 16], group: 'dark', yaw: Math.PI }, { class: 'thing', id: 'k9', at: [36, 24.2], group: 'dark', yaw: 0 },
+    { class: 'thing', id: 'k10', at: [47.4, 23.5], group: 'dark', yaw: Math.PI }, { class: 'thing', id: 'k11', at: [39, 21.5], group: 'dark', lurk: true },
+    { class: 'thing', id: 'k12', at: [50.5, 20.9], group: 'dark', yaw: -Math.PI / 2 }, { class: 'thing', id: 'k13', at: [53.6, 17], group: 'dark', lurk: true },
+    { class: 'thing', id: 'k14', at: [54.2, 15.2], group: 'dark', yaw: 0 }, { class: 'thing', id: 'k15', at: [53.5, 11], group: 'dark', yaw: Math.PI },
+    { class: 'thing', id: 'k16', at: [50, 9.6], group: 'dark', lurk: true }, { class: 'thing', id: 'k17', at: [48.4, 10.2], group: 'dark', yaw: -Math.PI / 2 },
+    { class: 'thing', id: 'k18', at: [46.8, 12.5], group: 'dark', yaw: 0 },
     { class: 'thing', id: 's1', at: [31, 35.5], group: 'side', yaw: Math.PI },
     { class: 'thing', id: 's2', at: [37, 36], group: 'side', lurk: true },
     { class: 'thing', id: 's3', at: [21, 35], group: 'side', yaw: Math.PI },
@@ -282,6 +295,7 @@ const LEVEL_E1M3 = {
     { class: 'thing', id: 's7', at: [20.5, 36], group: 'side', yaw: Math.PI },
     { class: 'thing', id: 's8', at: [36.5, 34], group: 'side', yaw: Math.PI },
     { class: 'thing', id: 's9', at: [31, 34.5], group: 'side', yaw: Math.PI }, { class: 'thing', id: 's10', at: [21, 34], group: 'side', yaw: Math.PI },
+    { class: 'thing', id: 's11', at: [37, 37.3], group: 'side', yaw: Math.PI }, { class: 'thing', id: 's12', at: [24, 32.2], group: 'side', lurk: true }, { class: 'thing', id: 's13', at: [19.5, 31], group: 'side', yaw: -Math.PI / 2 },
     { class: 'trigger_exit', rect: [56, 29, 58, 33] },
   ],
   puzzle: {
@@ -306,7 +320,7 @@ const FIELD = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' };   // open ground u
 const STREAM = { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M1 = {
   level: 'e1m1', next: 'e1m2', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
-  squads: ['charge', 'heap1', 'heap2', 'heap3', 'heap4', 'heap5'],                // five or six men who fight as one (combat.js squadChase)
+  squads: ['charge', 'heap1', 'heap2', 'heap3', 'heap4', 'heap5', 'heap6', 'heap7'],                // five or six men who fight as one (combat.js squadChase)
   ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
   // no walls: the plain goes on to the horizon under the sky; a stream and lines of boulders close the field in
   open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -0.5,
@@ -418,6 +432,17 @@ const LEVEL_E1M1 = {
     { class: 'spearman', id: 'h25', at: [102.4, 32.5], group: 'heap5', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h26', at: [101.6, 35], group: 'heap5', yaw: Math.PI / 2, hold: true },
     { class: 'kknight', id: 'h27', at: [102.4, 37.5], group: 'heap5', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h28', at: [102.4, 26], group: 'heap6', yaw: Math.PI / 2, hold: true },     // a sixth, Ophir's knights on foot
+    { class: 'oknight', id: 'h29', at: [101.6, 28.5], group: 'heap6', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h30', at: [102.4, 31], group: 'heap6', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h31', at: [101.6, 33.5], group: 'heap6', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h32', at: [102.4, 36], group: 'heap6', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h33', at: [101.6, 38.5], group: 'heap6', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h34', at: [101.6, 26.5], group: 'heap7', yaw: Math.PI / 2, hold: true },     // and a seventh, the last of them before the kings
+    { class: 'kknight', id: 'h35', at: [102.4, 29], group: 'heap7', yaw: Math.PI / 2, hold: true },
+    { class: 'oknight', id: 'h36', at: [101.6, 31.5], group: 'heap7', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h37', at: [102.4, 34], group: 'heap7', yaw: Math.PI / 2, hold: true },
+    { class: 'spearman', id: 'h38', at: [101.6, 36.5], group: 'heap7', yaw: Math.PI / 2, hold: true },
   ],
   // the arrow ground: "Strabonus' Shemitish bowmen had wrought havoc among his knights"
   volley: { rooms: ['gully', 'arrowground'], group: 'line', period: 4.2 },
@@ -520,8 +545,8 @@ const LEVEL_E1M4 = {
   beats: [
     { id: 'cut', killed: 'yothga', sets: 'stem_cut', lines: [['You cut through the stem with a single stroke. The great vine lashes and knots like a beheaded serpent, then straightens out limply; a reeking white liquid oozes from the severed stump.', 'good'],
       ['The freed man is on his feet. His eyes are dark and meditative, alive with intelligence. "What year is this?"', 'voice'], ['"Men called me Pelias."', 'voice'],
-      ['"Tsotha preferred to keep me alive, in shackles more grim than rusted iron. Come: there is a way back that the things do not use. Keep close behind me."', 'voice']], npc: 'cast' },
-    { id: 'up', needs: ['stem_cut'], after: 9, sets: 'pelias_up', npc: 'follow', lines: [['Pelias leads you east, through the old works.', 'dim']] },
+      ['"Tsotha preferred to keep me alive, in shackles more grim than rusted iron. Come: there is a way back that the things do not use. Keep close behind me."', 'voice']], npc: 'stand' },
+    { id: 'up', needs: ['stem_cut'], after: 9, sets: 'pelias_up', npc: 'follow', lines: [['Pelias follows a few paces behind you: east, he says, through the old works, and keep them off him.', 'dim']] },
     { id: 'works', at: ['gallery'], needs: ['pelias_up'], sets: 'works_crossed', wake: ['gallery'], lines: [['"They are coming. Keep them off me: I am weak yet, from ten years in that thing\'s arms."', 'voice']] },
     { id: 'ledgeb', at: ['ledge'], wake: ['ledge'] },
     { id: 'satha', at: ['main'], needs: ['works_crossed'], sets: 'satha_fled', sound: 'rumble', lines: [['The torches bow. Up the corridor comes Satha, rearing high, the great head swaying toward you.', 'warn'],

@@ -369,7 +369,8 @@ function dynColliders(self) {
   const c = [];
   const sh = S.shukeli; if (sh.state !== 'dead') c.push({ x: sh.x, z: sh.z, r: 0.55 });
   const g = S.giant; if (!giantTaken()) c.push({ x: g.x, z: g.z, r: 0.6 });
-  for (const f of S.foes) if (!f.dead && f !== self) c.push({ x: f.x, z: f.z, r: 0.42 });
+  for (const f of S.foes) if (!f.dead && f !== self && f.state !== 'dormant' && f.state !== 'lurk') c.push({ x: f.x, z: f.z, r: 0.42 });   // not one still clinging to the roof, or not yet come
+  const n = S.npc; if (n && n !== self) c.push({ x: n.x, z: n.z, r: 0.35 });   // Pelias is flesh: you cannot walk through him
   if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
   // Satha's body is solid: you cannot walk through her coils (only lie still while she passes)
   else if (S.satha.pts && (!entitySpec('scripted_satha') || S.flags.free)) {
@@ -1068,6 +1069,13 @@ function findTarget() {
   }
   return best;
 }
+// the companion's name when you look at him, so the man at your back is never a stranger
+const NPC_NAMES = { pelias: 'Pelias, freed from the vine: he keeps behind you, out of the fighting' };
+function npcLabel() {
+  const n = S.npc; if (!n || n.mode === 'bound' || !NPC_NAMES[n.id]) return '';
+  const dx = n.x - S.x, dz = n.z - S.z, d = Math.hypot(dx, dz); if (d > 6 || d < 0.3) return '';
+  return (-Math.sin(S.yaw) * dx - Math.cos(S.yaw) * dz) / d > 0.96 ? NPC_NAMES[n.id] : '';
+}
 function promptText(t) {
   if (!t) return '';
   if (t.type === 'item' && t.it.kind === 'cellkey') return S.hints.has('stoop') ? '[E] slip your foot from its sandal and grip the keys with your toes' : '[E] bend to the keys';
@@ -1283,6 +1291,7 @@ function updatePlanks() {
     if (p.state === 'cracking' && (p.t > 0.4 || (on !== i && p.t > 0.3))) { p.state = 'gone'; p.fall = 0; Sfx.snapWood(); if (on === i) { S.plankDrop = 0.45; S.vy = -3; S.onGround = false; log('The rotten plank snaps under you!', 'bad'); } }
   });
 }
+const HEAP_WAVES = 7;   // the waves at the heap of dead (e1m1: heap1..heap7), and then the kings ride in
 function updateShamu() {
   const M = S.shamu, L = LEVEL, room = S.room;
   if (!M) return;
@@ -1291,10 +1300,7 @@ function updateShamu() {
   const wake = (g) => { if (M.woke.has(g)) return; M.woke.add(g); for (const f of S.foes) if (f.group === g) f.hold = false; alertGroup(g); };
   if (S.areas.has('line')) wake('line');
   if (S.areas.has('heap')) wake('heap1');
-  if (M.woke.has('heap1') && !alive('heap1').length) wake('heap2');
-  if (M.woke.has('heap2') && !alive('heap2').length) wake('heap3');
-  if (M.woke.has('heap3') && !alive('heap3').length && LEVEL.entities.some(e => e.group === 'heap4')) wake('heap4');
-  if (M.woke.has('heap4') && !alive('heap4').length && LEVEL.entities.some(e => e.group === 'heap5')) wake('heap5');
+  for (let k = 1; k < HEAP_WAVES; k++) if (M.woke.has('heap' + k) && !alive('heap' + k).length) wake('heap' + (k + 1));   // "again and again they came": each wave steps out as the last falls
   for (const g of M.woke) if (S.foes.some(f => f.group === g && !f.dead && !f.alert)) alertGroup(g, true);   // the battle is on: after a fall they come again
   if (S.areas.has('line') && !alive('line').length) setFlag('line_broken');
   if (S.room === 'heap') setFlag('lanes_crossed');
@@ -1326,7 +1332,7 @@ function updateShamu() {
   });
   // the end of the field: the kings ride up; the wizard; the ring
   const ts = M.tsotha;
-  if (M.phase === 'fight' && M.woke.has('heap3') && !alive('heap3').length && (!LEVEL.entities.some(e => e.group === 'heap5') || (M.woke.has('heap5') && !alive('heap5').length))) { M.phase = 'kings'; M.t = 0; M.line = 0; setFlag('heap_held'); }
+  if (M.phase === 'fight' && M.woke.has('heap' + HEAP_WAVES) && !alive('heap' + HEAP_WAVES).length) { M.phase = 'kings'; M.t = 0; M.line = 0; setFlag('heap_held'); }
   M.t += DT;
   if (M.phase === 'kings') {
     if (M.line < SHAMU_KINGS.length && M.t > 1 + M.line * 4) { log(SHAMU_KINGS[M.line][0], SHAMU_KINGS[M.line][1]); Sfx.voice(0.5); M.line++; }
@@ -1554,7 +1560,7 @@ function updateHUD() {
   if (S.pouch.length) carry.push('satchel ' + S.pouch.length + '/' + POUCH_MAX + ' (H)');
   $('carry').textContent = carry.join(' · ') + (S.kills ? '  ·  ' + S.kills + ' slain' : '');
   $('objective').textContent = objective();
-  promptEl.textContent = mode === 'play' ? promptText(interactTarget) : '';
+  promptEl.textContent = mode === 'play' ? (promptText(interactTarget) || npcLabel()) : '';
   const dbg = $('debug');
   dbg.style.display = debugOn ? 'block' : 'none';
   if (debugOn) {

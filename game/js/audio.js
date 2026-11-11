@@ -134,7 +134,16 @@ const Sfx = (() => {
     toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.62 * vol; return muted; },
     setVolume(v) { vol = v; if (master && !muted) master.gain.value = 0.62 * vol; },
     setAmbience(v) { ambVol = v; if (ambBus) ambBus.gain.value = ambVol; },
-    step(soft, surf = 'stone') { play('step_' + surf, soft ? 0.18 : 0.32, undefined, 1, 0.1) || noise(0.07, soft ? 0.05 : 0.08, 300 + Math.random() * 200, 'lowpass'); },
+    // footfalls sit low under everything else: quiet, dulled, each a little different
+    step(soft, surf = 'stone') {
+      if (!ac || muted) return;
+      const fam = FAMILY['step_' + surf], buf = fam ? fam[Math.floor(Math.random() * fam.length)] : BANK['step_' + surf];
+      if (!buf) { noise(0.06, soft ? 0.012 : 0.02, 260 + Math.random() * 160, 'lowpass'); return; }
+      const s = ac.createBufferSource(); s.buffer = buf; s.playbackRate.value = 0.92 + Math.random() * 0.14;
+      const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400 + Math.random() * 400;
+      const g = ac.createGain(); g.gain.value = (soft ? 0.04 : 0.075) * (0.8 + Math.random() * 0.3);
+      s.connect(lp); lp.connect(g); g.connect(out()); s.start();
+    },
     pickup() { play('keys', 0.3, undefined, 1.2) || (tone(520, 0.1, 'triangle', 0.05), tone(780, 0.14, 'triangle', 0.05, null, 0.06)); },
     heal() { tone(330, 0.3, 'sine', 0.06, 440); tone(495, 0.4, 'sine', 0.04, null, 0.12); },
     chain() { play('keys', 0.45, undefined, 0.7, 0.1) || (() => { for (let i = 0; i < 6; i++) tone(1800 + Math.random() * 1600, 0.05, 'square', 0.025, null, i * 0.05 + Math.random() * 0.03); })(); },

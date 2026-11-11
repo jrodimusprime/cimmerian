@@ -14,15 +14,15 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 >
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
-> | `e1m1` The Plain of Shamu | 2:21 (10155 ticks) | ~9.4 min |
+> | `e1m1` The Plain of Shamu | 2:28 (10677 ticks) | ~9.9 min |
 > | `e1m2` The Pits | 2:01 (8726 ticks) | ~8.1 min |
-> | `e1m3` The Tunnels Below | 2:38 (11399 ticks) | ~10.6 min |
-> | `e1m4` Yothga | 3:50 (16541 ticks) | ~15.3 min |
-> | `e1m5` The Scarlet Citadel | 2:56 (12672 ticks) | ~11.7 min |
-> | `e1m6` The Tower of Tamar | 2:25 (10439 ticks) | ~9.7 min |
+> | `e1m3` The Tunnels Below | 2:07 (9134 ticks) | ~8.5 min |
+> | `e1m4` Yothga | 2:44 (11798 ticks) | ~10.9 min |
+> | `e1m5` The Scarlet Citadel | 2:53 (12465 ticks) | ~11.5 min |
+> | `e1m6` The Tower of Tamar | 2:13 (9581 ticks) | ~8.9 min |
 > | `e1m7` The Relief of Shamar | 3:43 (16086 ticks) | ~14.9 min |
-> | `e1m8` The Tybor | 3:01 (13057 ticks) | ~12.1 min |
-> | **Campaign** | **22:56** (99075 ticks) | **~92 min** |
+> | `e1m8` The Tybor | 2:54 (12530 ticks) | ~11.6 min |
+> | **Campaign** | **21:04** (90997 ticks) | **~84 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -742,3 +742,11 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [x] general: level 8 and level 1 - make sure there are squads of lets say 5 and 6 guys that move together that are tactically ard to kill
   - *Done:* squads (`squads: [groups]`, combat.js `squadChase`). Far off they come on as a body, abreast and at the pace of the slowest; close in they spread to ring you, each at his own bearing, and the blows come from whoever is furthest round your flank, never more than two at once. On the plain: the last charge and four waves at the heap (a fourth added). On the Tybor: the camp, a new rear-guard on the bank, the rout, the far bank and the reed-beds.
+
+- [x] e1m3: you still get stuck at one bit for some time
+  - *Done:* after the fight in the dark the bot stood 36 s at the crossing and then marched round through the side tunnels for a wine-skin 40 cells away by the path (its food run measured only straight-line distance); the same bug sent the e1m4 bot from the warren round the backway into the grille room. Food runs and targets are now limited by path length. It also cleared a pit-thing off the corridor roof before hiding from Satha, instead of being bitten in the alcove.
+- [x] e1m4: a weird dude with arms in the air, walking through him, NPC behaviour dodgy
+  - *Done:* that's Pelias, the man freed from the vine, who leads Conan out (ch. III). He stood nine seconds with both arms thrust out after the cut; now he stands head bowed, chafing his wrists, and at the grille puts one hand out to the dead jailer. He is solid, gives way when you back into him, keeps out of the fighting (backs off from any roused thing near him, an arm up), catches up by the way you came instead of popping in behind you, and his name shows when you look at him. Pit-things still clinging to the roof no longer block the floor beneath them.
+- [x] general: the walking noise is way too loud
+  - *Done:* footfalls about a quarter as loud, low-passed, each a little different in pitch and weight.
+- [ ] rule 3: the campaign is at ~84 min, under 90. The bot stopped wasting time (food detours, deaths), so the golden runs shortened; e1m3's dark gained an eastern loop and e1m1 two more waves at the heap. Still to lengthen, the rule-2 way: e1m2, e1m6, e1m4 (shortest runs).

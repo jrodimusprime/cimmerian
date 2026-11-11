@@ -11,6 +11,7 @@
 function beatsInit() {
   S.beats = { fired: new Set(), queue: [], t: {}, when: {} };
   const n = LEVEL.npc;
+  S.npcTrail = [];
   S.npc = n ? { id: n.id, x: n.at[0] * CELL, z: n.at[1] * CELL, yaw: n.yaw || 0, walk: 0, mode: n.mode || 'stay', t: 0 } : null;
   for (const f of S.foes) if (f.asleep) f.state = 'sleep';
   // allies who fight (the Gundermen): simulated men, in S, marching behind the king and closing with the enemy
@@ -33,7 +34,7 @@ function updateBeats() {
     (b.lines || []).forEach(([t, c], i) => B.queue.push({ at: S.tick + Math.round(i * 2.6 * SIM_HZ), t, c: c || '' }));
     if (b.sets) setFlag(b.sets);
     for (const g of b.wake || []) { for (const f of S.foes) if (f.group === g && f.state === 'dormant' && f.delay < 0) f.state = 'idle'; alertGroup(g, false); }   // delay -1: held back, out of sight, until a beat sends them in
-    if (b.npc && S.npc) S.npc.mode = b.npc;
+    if (b.npc && S.npc) { S.npc.mode = b.npc; S.npc.castAt = S.npc.t; }
     if (b.sound) Sfx[b.sound] && Sfx[b.sound](1);
     if (b.hurl) { const f = S.foes.find(q => q.id === b.hurl); if (f) { f.y += 2.2; f.vy = 5; f.falling = 1; f.vx = 0; f.fallTo = 0; const a = f.yaw + Math.PI; f.x += Math.sin(a) * 0; f.z -= 14; } }   // over the parapet: far out, and down
     if (b.cp) S.checkpoint = { x: b.cp[0] * CELL, z: b.cp[1] * CELL, yaw: b.cp[2] || 0 };
@@ -106,18 +107,59 @@ function updateSleepers() {
     }
   }
 }
-// Pelias: once freed he follows a few paces behind, and never into a pit
+// Pelias: once freed he follows a few paces behind, never into a pit, and keeps out of the fighting
+// ("Keep them off me: I am weak yet"): any roused thing near him and he backs away from it, and comes on again once it's down.
+const NPC_SHY = 7, NPC_GIVE = 1.25;
+function npcThreat(n) {
+  let best = null, bd = NPC_SHY;
+  for (const f of S.foes) {
+    if (f.dead || !f.alert || f.state === 'dormant' || f.state === 'lurk' || f.state === 'sleep' || FOES[f.cls].invulnerable) continue;
+    const d = Math.hypot(f.x - n.x, f.z - n.z); if (d < bd) { bd = d; best = f; }
+  }
+  return best;
+}
+function npcMove(n, dx, dz, sp) {                         // a step along (dx, dz), stopped by walls, pits and bodies
+  const l = Math.hypot(dx, dz) || 1, fl = groundInfo(n.x, n.z).floor;
+  const r = collide(n.x + dx / l * sp, n.z + dz / l * sp, 0.35, fl, n, false);
+  const moved = Math.hypot(r[0] - n.x, r[1] - n.z);
+  n.walk += moved; n.x = r[0]; n.z = r[1]; n.moving = moved > sp * 0.3;
+}
 function updateNPC() {
   const n = S.npc; if (!n) return;
-  n.t += DT;
+  n.t += DT; n.moving = false; n.shy = false;
+  if (S.tick % 36 === 0) { (S.npcTrail ||= []).push([S.x, S.z]); if (S.npcTrail.length > 40) S.npcTrail.shift(); }   // the way you came, for him to follow
   if (n.mode !== 'follow') return;
   const dx = S.x - n.x, dz = S.z - n.z, d = Math.hypot(dx, dz);
-  if (d > 30) { n.x = S.x - Math.sin(S.yaw) * -2; n.z = S.z - Math.cos(S.yaw) * -2; return; }   // left far behind: he finds his own way
+  const foe = npcThreat(n);
+  if (foe) {                                              // back off from it: of a ring of steps, the one that puts most ground between him and it, not straying far from you
+    n.shy = true;
+    const fl = groundInfo(n.x, n.z).floor;
+    let bx = 0, bz = 0, bs = -1e9;
+    for (let k = 0; k < 12; k++) {
+      const a = k / 12 * Math.PI * 2, px = n.x + Math.sin(a) * 1.2, pz = n.z + Math.cos(a) * 1.2;
+      if (blockedCell(Math.floor(px / CELL), Math.floor(pz / CELL), fl, true)) continue;
+      const sc = Math.hypot(px - foe.x, pz - foe.z) - 0.4 * Math.max(0, Math.hypot(px - S.x, pz - S.z) - 12);
+      if (sc > bs) { bs = sc; bx = Math.sin(a); bz = Math.cos(a); }
+    }
+    if (bs > Math.hypot(n.x - foe.x, n.z - foe.z) + 0.05) npcMove(n, bx, bz, 3.6 * DT);
+    n.yaw = Math.atan2(foe.x - n.x, foe.z - n.z);       // backing away, eyes on it
+    return;
+  }
+  if (d > 30 && S.npcTrail) {                             // left far behind: he comes up the way you came, out of your sight
+    const fx = -Math.sin(S.yaw), fz = -Math.cos(S.yaw);
+    for (let i = S.npcTrail.length - 1; i >= 0; i--) {
+      const [tx, tz] = S.npcTrail[i], td = Math.hypot(tx - S.x, tz - S.z);
+      if (td < 6) continue;
+      if (((tx - S.x) * fx + (tz - S.z) * fz) / td > 0.2 && los(S.x, S.y + 1.5, S.z, tx, groundInfo(tx, tz).floor + 1.5, tz)) continue;
+      n.x = tx; n.z = tz; break;
+    }
+    return;
+  }
+  if (d < NPC_GIVE) { npcMove(n, -dx, -dz, 3 * DT); n.yaw = Math.atan2(dx, dz); return; }   // you've backed into him: he gives way
   if (d > 2.6) {
     const sp = Math.min(d - 2.4, (d > 8 ? 6.5 : 4.2) * DT), st = flowToward(n.x, n.z, S.x, S.z);
-    const tx = st ? st[0] - n.x : dx, tz = st ? st[1] - n.z : dz, tl = Math.hypot(tx, tz) || 1;
-    const r = collide(n.x + tx / tl * sp, n.z + tz / tl * sp, 0.35, groundInfo(n.x, n.z).floor, n, false);
-    n.walk += Math.hypot(r[0] - n.x, r[1] - n.z); n.x = r[0]; n.z = r[1]; n.yaw = Math.atan2(tx, tz);
+    const tx = st ? st[0] - n.x : dx, tz = st ? st[1] - n.z : dz;
+    npcMove(n, tx, tz, sp); n.yaw = Math.atan2(tx, tz);
   } else n.yaw = Math.atan2(dx, dz);
 }
 function flowToward(x, z, tx, tz) {
@@ -129,9 +171,14 @@ function drawNPC() {
   const n = S.npc; if (!n) return;
   const y = groundInfo(n.x, n.z).floor, l = sampleLight(n.x, y + 1.4, n.z);
   const P = poseIdle({}, gameTime);
-  if (n.mode === 'follow' && n.walk > 0) { const moving = Math.hypot(S.x - n.x, S.z - n.z) > 2.7; if (moving) poseWalk(P, n.walk * 3.4, 0.8); }
+  if (n.moving) poseWalk(P, n.walk * 3.4, 0.8);
+  if (n.shy) Object.assign(P, { lean: -0.12, headX: 0.15, uxL: -0.7, fxL: -1.7, uzL: 0.15 });   // an arm up across him, wary
   if (n.mode === 'bound') Object.assign(P, { uxL: -2.4, uxR: -2.4, uzL: 0.5, uzR: 0.5, headX: 0.5, drop: -0.1, lean: 0.15 });   // held up in the vine's grip
-  if (n.mode === 'cast') Object.assign(P, { uxL: -2.0, uxR: -1.6, fxL: -0.3, fxR: -0.3, headX: -0.2 });
+  if (n.mode === 'stand') Object.assign(P, { headX: 0.35, lean: 0.12, uxL: -0.35, uxR: -0.4, fxL: -1.3, fxR: -1.2, uzL: -0.25, uzR: -0.25 });   // head bowed, chafing the wrists the vine held
+  if (n.mode === 'cast') {                                // one hand out to what he speaks to, the other low
+    const k = smoothstep(0, 0.8, n.t - (n.castAt || 0));
+    Object.assign(P, { uxR: -1.45 * k, fxR: -0.15, uzR: 0.1, headX: -0.1 });
+  }
   drawCharacter(n.id, n.x, y, n.z, n.yaw, P, l);
 }
 // allied ranks (the Bossonians and Gundermen on the ridge): drawn, not simulated

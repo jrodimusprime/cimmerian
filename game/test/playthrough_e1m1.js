@@ -1,5 +1,5 @@
 // Golden playthrough of e1m1, the Plain of Shamu, through the CIM agent API (README §11).
-const EXPECTED = { tick: 10155, hash: 'ac341a50' };
+const EXPECTED = { tick: 10677, hash: '4a1739f0' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -134,7 +134,7 @@ for (const [i, x] of [[0, 73.75], [1, 77.25], [2, 81.2]]) { o = await O(`__lane(
 await O('__heal()');
 await O('__route([[88, 31]])');
 o = await O('__fight(["heap1", "heap2", "heap3", "heap4"], 15000, 60)'); log('heap:', brief(o));
-o = await O('__fight(["heap1", "heap2", "heap3", "heap4"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap4", "heap5"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap5"], 15000, 60)');
+o = await O('__fight(["heap1", "heap2", "heap3", "heap4"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap4", "heap5"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap5"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap5", "heap6"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap6", "heap7"], 15000, 60)'); o = await O('__wait(36)'); o = await O('__fight(["heap7"], 15000, 60)');
 for (let i = 0; i < 60 && await ev('CIM.state.shamu.tsotha.state') !== 'offer'; i++) await O('__wait(72)');
 const ts = await O('[CIM.state.shamu.tsotha.x, CIM.state.shamu.tsotha.z]');
 await O(`__face(${ts[0]}, ${ts[1]}, 0.1)`);

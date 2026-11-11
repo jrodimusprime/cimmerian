@@ -1,5 +1,5 @@
 // Golden playthrough of e1m3, the Tunnels Below, through the CIM agent API (README §11).
-const EXPECTED = { tick: 11399, hash: '9f47a204' };
+const EXPECTED = { tick: 9134, hash: 'ec734236' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -84,7 +84,8 @@ window.__fight = (groups, maxTicks = 6000, radius = 30) => {
   }
   return CIM.obs();
 };
-window.__heal = () => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && Math.abs((it.y || 0) - CIM.state.y) < 2.5 && !it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+// food close by the path (not the far end of the map: a wine-skin 40 cells round means a march through the side tunnels)
+window.__heal = (steps = 12) => { const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5 && !it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
   x *= C; z *= C;
@@ -132,7 +133,9 @@ o = await O('__fight(["dark"], 9000, 14)'); log('dark:', brief(o));
 await O('__heal()');
 o = await O('__route([[41, 27.8], [43.3, 27.8]])'); o = await O('__jumpTo(46, 27.8)'); log('gap:', brief(o));
 o = await O('__fight(["dark"], 9000, 14)');
-o = await O('__route([[47, 27.8], [47, 15], [44.5, 15], [41, 15.2]])');
+o = await O('__route([[47, 27.8], [47, 21], [53.8, 21], [53.8, 14.6]])'); o = await O('__fight(["dark"], 9000, 12)');   // choked: round by the east, and over the second break
+o = await O('__route([[53.8, 14.6]])'); o = await O('__jumpTo(53.8, 12)'); o = await O('__fight(["dark"], 9000, 12)'); log('east:', brief(o));
+o = await O('__route([[53.8, 10], [47, 10], [47, 15], [44.5, 15], [41, 15.2]])');
 // THE CROSSING (puzzle): the ember; go where the air comes from
 o = await O('(__take("ember"), CIM.obs())'); log('ember:', brief(o), await ev('CIM.state.torch'));
 o = await O('__leap(35, 15.4, 1)');
@@ -141,6 +144,8 @@ o = await O('__route([[33, 21], [28, 21], [28, 26]])'); log('out:', brief(o), aw
 o = await O('__route([[28, 31]])');
 o = await O('__fight(["side"], 9000, 30)'); log('side:', brief(o));
 await O('__heal()');
+o = await O('__fight(["side"], 9000, 80)');   // and any that slunk off hurt: they come back while you lie in the alcove
+o = await O('__route([[36, 31.5]])'); o = await O('__fight(["side"], 9000, 30)'); await O('__heal()');   // the one on the corridor roof drops as you pass under it: finish it here, not in hiding
 // SATHA RETURNS (puzzle): into a side tunnel, shake out the torch, keep still
 for (let i = 0; i < 80; i++) { const ph = await ev('sathaPhase()'); if (ph < 0 || (ph >= 18 && ph <= 30)) break; o = await O('__wait(12)'); }   // into the corridor just after her tail has gone by
 o = await O('__route([[38, 31.5], [41, 31.5], [45, 31.5], [45, 34]])');

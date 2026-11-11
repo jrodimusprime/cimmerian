@@ -1,5 +1,5 @@
 // Golden playthrough of e1m4, Yothga, through the CIM agent API (README §11).
-const EXPECTED = { tick: 16541, hash: 'd3a0b088' };
+const EXPECTED = { tick: 11798, hash: 'f2a83e85' };
 //@include _prelude.js
 let o = await O('(CIM.load("e1m4"), CIM.step({}, 1))');
 const waitFlag = async (f, max = 60) => { for (let i = 0; i < max && !(await ev(`CIM.state.flags.${f}`)); i++) o = await O('__wait(72)'); return o; };
@@ -18,8 +18,8 @@ o = await O('__route([[53, 7]])'); o = await O('__fight(["den"], 6000, 25)'); aw
 o = await O('__route([[59.5, 12], [59.5, 20]])'); o = await O('__fight(["tunnel"], 6000, 30)'); await O('__heal()'); log('tunnel:', brief(o));
 o = await O('__route([[59.5, 30], [52, 32]])'); o = await O('__fight(["tunnel"], 6000, 30)'); await O('__heal()'); log('deep:', brief(o));
 // THE WARREN, and the way the things do not use
-o = await O('__route([[40, 32]])'); o = await O('__fight(["warren"], 9000, 30)'); await O('__heal()'); log('warren:', brief(o));
-o = await O('__route([[18, 32]])'); o = await O('__fight(["warren", "warren2"], 12000, 40)'); await O('__heal()'); log('warren2:', brief(o));
+o = await O('__route([[40, 32]])'); o = await O('__fight(["warren"], 9000, 30, 14)'); await O('__heal()'); log('warren:', brief(o));
+o = await O('__route([[18, 32]])'); o = await O('__fight(["warren", "warren2"], 12000, 40, 14)'); await O('__heal()'); log('warren2:', brief(o));
 o = await O('__route([[6, 32], [3.5, 27]])'); o = await O('__fight(["warren", "warren2", "backway"], 12000, 40)'); await O('__heal()'); log('climb:', brief(o));
 o = await O('__route([[5.5, 28.5], [9, 26]])'); o = await O('__fight(["ossuary", "backway"], 12000, 40)'); await O('__heal()'); log('ossuary:', brief(o));
 o = await O('__route([[9, 28.5], [30, 28.5]])'); o = await O('__fight(["warren", "warren2", "backway", "ossuary"], 12000, 40)'); await O('__heal()'); log('backway:', brief(o));
