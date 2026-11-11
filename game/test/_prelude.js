@@ -22,11 +22,13 @@ window.__boss = (r) => CIM.state.foes.find(q => FOES[q.cls].boss && !q.dead && !
 // firm ground all round (not a one-cell bridge over the drop): somewhere to stand and fight
 window.__firm = (s) => { const gx = Math.floor(s.x / C), gz = Math.floor(s.z / C); for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i = cellIdx(gx + dx, gz + dz); if (i < 0 || LV.kind[i] !== 1 || Math.abs(LV.floor[i] - s.y) > 1.3) return false; } return __boss(8); };
 // navigate with the game's own flow-field pathfinder (combat.js bfs)
-window.__nav = (x, z, run = true, maxTicks = 4000) => {
+window.__nav = (x, z, run = true, maxTicks = 4000, giveUp = false) => {   // giveUp: stop when pressed against something for 4 s (a ration dropped hard against a wall)
   const tgt = cellIdx(Math.floor(x / C), Math.floor(z / C)), field = bfs(tgt);
+  let px = CIM.state.x, pz = CIM.state.z;
   for (let i = 0; i < maxTicks; i++) {
     const s = CIM.state;
     if (Math.hypot(x - s.x, z - s.z) < 0.4 || CIM.obs().mode !== 'play') break;
+    if (giveUp && i % 288 === 287) { if (Math.hypot(s.x - px, s.z - pz) < 0.3) break; px = s.x; pz = s.z; }
     { const b = !window.__inFight && window.__fight && __boss(8) && __firm(s); if (b) { __fight([b.group], 9000, 14); continue; } }   // he comes at you: turn and face him, whatever you were about
     const here = cellIdx(Math.floor(s.x / C), Math.floor(s.z / C));
     const step = here === tgt ? null : flowStep({ x: s.x, z: s.z }, field);
@@ -151,4 +153,4 @@ await ev(`window.__clear = (radius = 18, maxTicks = 6000) => __fight([...new Set
 const finish = async EXPECTED => { const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
   log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED)); };
 await ev(`window.__heal = (r = 26, steps = 16) => { if (__boss(14)) return CIM.obs();   // never turn your back on him for bread
-  const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);
+  const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z, true, 4000, true); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);

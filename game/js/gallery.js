@@ -35,7 +35,6 @@ const GALLERY_LIST = [
   ['@yothga', 'Yothga', 'e1m4', 'a livid, unnatural crimson, like a perversity of flower-life'],
   ['pelias', 'Pelias', 'e1m4, e1m5', 'a high splendid forehead'],
   ['axeman', 'Black guard', 'e1m5', 'black giants, grasping their long-shafted axes'],
-  ['slave', 'Citadel slave', 'e1m5', 'naked slave-boys ... pouring wine'],
   ['arpello', 'Arpello of Pellia', 'e1m6', 'that butcher of Pellia'],
   ['pellian', 'Pellian man-at-arms', 'e1m6', 'the swaggering Pellian soldiery'],
   ['pellian_archer', 'Pellian archer', 'e1m6', 'plumed helmets and steel caps'],

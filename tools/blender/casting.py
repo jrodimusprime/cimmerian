@@ -339,8 +339,6 @@ CAST = {
     'axeman': dict(macro=M(gender=1.0, age=0.45, muscle=1.0, weight=0.7, height=1.0), race=B, skin='afr_young', targets=BIG,
                    outfit=['eyes', dict(kind='helm', mask=True, horns=True, metal='dark_steel'), dict(kind='skirt'), dict(kind='belt'), dict(kind='boots'),
                            dict(kind='pauldrons', metal='dark_steel', spikes=True), dict(kind='cloak', col='scarlet'), dict(kind='bracers', kind_='steel')]),
-    'slave': dict(macro=M(gender=1.0, age=0.25, muscle=0.5, weight=0.35, height=0.45), race=B, skin='afr_young', brows=('eyebrow001', (0.02, 0.02, 0.02)),
-                  outfit=['loincloth', 'eyes', 'collar']),
     # ---- e1m6 ----
     'arpello': dict(macro=M(gender=1.0, age=0.5, muscle=0.7, weight=0.8, height=0.75), race=W, skin='cauc_mid', targets=BIG,
                     outfit=armoured(dict(kind='helm', mask=True, plume='bronze'), dict(kind='pauldrons'), dict(kind='tabard', col='bronze', col2='black', pattern='halves'),

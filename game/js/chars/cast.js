@@ -68,8 +68,6 @@ const CAST = {
   // ---- e1m5 The Scarlet Citadel (ch. II-III) -----------------------------------------------------------------------
   // Tsotha's guard: "a dozen black giants, grasping their long-shafted axes" (ch. II)
   axeman: { scale: 1.3, bulk: 1.3, belly: 0, skin: 'DARKSKIN', head: 'helm_horned', torso: 'bare', hips: 'mail', arms: 'bare', legs: 'bare', feet: 'boots', weapon: 'axe', pauldrons: true, spikes: true, cloak: true },
-  // Conan "expected a rush of slaves"; "naked slave-boys ... pouring wine" (ch. II)
-  slave: { scale: 0.96, bulk: 0.9, belly: 0, skin: 'DARKSKIN', head: 'shaved', torso: 'bare', hips: 'loin', arms: 'bare', legs: 'bare', feet: 'bare', collar: true },
 
   // ---- e1m6 The Tower of Tamar (ch. IV) ------------------------------------------------------------------------------
   // "Prince Arpello of Pellia", "that butcher of Pellia"; "he drew and leaped at Conan"

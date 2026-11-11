@@ -148,7 +148,6 @@ The game is first person, so the hero is mostly seen as **view-models**. A full-
 | `axeman.mdl` | humanoid / giant | N | **360** | 60 | `overhead` 8 | e1m2 | Tsotha's guard: "a dozen black giants, grasping their long-shafted axes" (ch. II). Horned great helm, long axe |
 | `yothga_stem.mdl` | stem | B | **380** | 30 | `expose` 8, `wither` 12 | e1m4 | Boss core, struck once all three tendrils are cut |
 | `yothga_tendril.mdl` | tendril | S | **120** × 3 | 24 | `grab` 8, `sever` 6 | e1m4 | Regrows on a fixed 6 s timer (puzzle, README §10) |
-| `citadel_slave.mdl` | humanoid / normal | C | **280** | 58 | — | e1m5 | Tsotha's slaves: Conan "expected a rush of slaves" (ch. III). Scarlet livery. (Replaces an invented servant: README §1, canon cast only) |
 | `soldier_pellia.mdl` | humanoid / normal | C | **300** | 60 | — | e1m6 | The usurper's men-at-arms and the archers on Tamar's tower (ch. IV) |
 | `arpello.mdl` | humanoid / heavy | B | **400** | 76 | `seized` 6, `fall` 10 | e1m6 | Conan parries him, then "heaved him high above his head by crotch and neck" and hurls him from the tower (ch. IV) |
 | `strabonus.mdl` | humanoid / heavy | B | **420** | 78 | `charge` 8, `overhead` 8 | e1m7 | King of Koth. Axe: "It clanged on Conan's helmet" (ch. V) |

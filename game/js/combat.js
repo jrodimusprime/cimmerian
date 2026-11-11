@@ -34,8 +34,6 @@ const FOES = {
   // ---- e1m4-e1m8 ----
   // Yothga (ch. III): rooted; "the long tendrils arched toward him"; cut through the stem
   yothga: { hp: 560, speed: 0, reach: 4.2, dmg: 14, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
-  // Tsotha's household: "a rush of slaves" (ch. III); the black guard (above)
-  slave: { hp: 26, speed: 3.8, reach: 1.9, dmg: 7, windup: 0.45, strike: 0.2, recover: 0.5, sight: 14, name: 'citadel slave', meek: true },   // "naked slave-boys ... pouring wine": they run, they don't fight
   // Tamar (ch. IV): "the swaggering Pellian soldiery", the archers on the tower, Arpello
   pellian: { hp: 60, speed: 3.3, reach: 3.2, dmg: 14, windup: 0.6, strike: 0.22, recover: 0.7, block: 'alternate', sight: 18, name: 'Pellian man-at-arms', spears: 3, throwAt: [6, 14] },
   pellian_archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 16], sight: 26, name: 'Pellian archer' },
@@ -193,7 +191,7 @@ function updateFoes() {
       else if (d < 20 && los(f.x, f.y + 1.2, f.z, S.x, S.y + 1.2, S.z)) move(S.x, S.z, spd);
     };
     if (f.post && f.state !== 'rout' && LEVEL.postBreak && S.flags[LEVEL.postBreak]) { f.state = 'rout'; f.t = 0; }   // the host breaks: every post is abandoned
-    if (st.meek && ['chase', 'windup', 'strike', 'recover', 'block', 'investigate', 'home'].includes(f.state)) { f.state = 'meek'; f.t = 0; }   // roused, a slave-boy runs
+    if (st.meek && ['chase', 'windup', 'strike', 'recover', 'block', 'investigate', 'home'].includes(f.state)) { f.state = 'meek'; f.t = 0; }   // roused, a non-combatant runs
     switch (f.state) {
       case 'idle': f.yaw += Math.sin(S.tick * 0.01 + f.homeX) * 0.002;
         if (st.invulnerable && !f.hold && S.flags.found_it && f.territory && f.territory.includes(roomIdAt(S.x, S.z))) { f.state = 'chase'; f.alert = true; }   // the weeping thing hunts you down its tunnels by ear
@@ -503,7 +501,7 @@ function killFoe(f, how) {
 }
 // who carries food and drink into the fight (men, not monsters; bosses have their own ends)
 const RATION_ODDS = 0.5;
-const RATIONS = { warden: 'guard', spearman: 'spearman', archer: 'archer', kknight: 'knight', oknight: 'knight', axeman: 'axeman', slave: 'slave', pellian: 'man-at-arms', pellian_archer: 'archer' };
+const RATIONS = { warden: 'guard', spearman: 'spearman', archer: 'archer', kknight: 'knight', oknight: 'knight', axeman: 'axeman', pellian: 'man-at-arms', pellian_archer: 'archer' };
 // ---- falling well: a body must land on open floor, not through a wall ------------
 // The body lies along a direction from the feet. Try his natural fall first (back if kicked,
 // otherwise by a per-man hash), then sweep round; if nothing fits he slumps where he stands.
@@ -652,7 +650,7 @@ function foePose(f) {
     if (f.state === 'stagger' || f.state === 'pain') Object.assign(P, { roll: 0.5, headX: -0.4 });
     return P;
   }
-  if (FOES[f.cls].meek && !f.dead) {                     // a slave-boy: running from you, or cowering, arms over his head
+  if (FOES[f.cls].meek && !f.dead) {                     // a non-combatant: running from you, or cowering, arms over his head
     if (f.state === 'meek' && f.cower) return Object.assign(P, { lean: 0.5, headX: 0.6, drop: -0.35, uxL: -2.2, uxR: -2.3, fxL: -1.6, fxR: -1.5, uzL: 0.3, uzR: 0.3, txL: -0.9, txR: -0.9, sxL: 1.4, sxR: 1.4 });
     if (f.state === 'meek' && f.moving) { poseWalk(P, f.walk * 3.1, 1); P.lean = 0.3; P.headX = -0.1; return P; }
     return P;

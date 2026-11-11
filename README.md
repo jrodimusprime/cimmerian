@@ -18,11 +18,11 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | `e1m2` The Pits | 2:14 (9636 ticks) | ~8.9 min |
 > | `e1m3` The Tunnels Below | 2:40 (11539 ticks) | ~10.7 min |
 > | `e1m4` Yothga | 3:43 (16066 ticks) | ~14.9 min |
-> | `e1m5` The Scarlet Citadel | 2:50 (12256 ticks) | ~11.3 min |
+> | `e1m5` The Scarlet Citadel | 2:59 (12869 ticks) | ~11.9 min |
 > | `e1m6` The Tower of Tamar | 2:40 (11553 ticks) | ~10.7 min |
 > | `e1m7` The Relief of Shamar | 3:47 (16350 ticks) | ~15.1 min |
 > | `e1m8` The Tybor | 2:54 (12533 ticks) | ~11.6 min |
-> | **Campaign** | **23:07** (99875 ticks) | **~92 min** |
+> | **Campaign** | **23:16** (100488 ticks) | **~93 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -442,7 +442,7 @@ Exit: the long stair up.
 
 1. `<<puzzle>>` **The Long Stair and the Skull Door.** The brass door; the way the king was brought down, in reverse.
 2. `<<combat>>` **The Black Corridor.** The spell is thin here: some of Tsotha's black guards stir ("until his soldiers awake and cut our throats"). Kill them before they rouse the rest.
-3. `<<puzzle>>` **The Censers.** Sleeping slaves and guards along the censer corridor; pass without waking them.
+3. `<<puzzle>>` **The Censers.** Sleeping guards along the censer corridor; pass without waking them.
 4. `<<combat>>` **The Guard Hall.** A hall of Tsotha's black giants with their long axes, half-woken.
 5. `<<puzzle>>` **Tsotha's Chambers.** The wine; the crystal globe, which shows Tamar.
 6. `<<combat>>` **The Tower Stair.** The last waking guards on the stair to the roof.
@@ -826,7 +826,7 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 
 - [x] killing little black slave children seems weird right?
-  - *Done:* right. The book has them as "naked slave-boys ... pouring wine": servants, not fighters, and the game had made them enemies. Now they're no foes of yours: roused, they run from you, and cornered they cower with their arms over their heads; your blows pass them by, and a room counts as cleared without them. (There's wine and bread they dropped in the corridor of censers.)
+  - *Done:* they're gone. The book's "naked slave-boys ... pouring wine" serve the kings in ch. II, their colour never given, and in the citadel Conan expects "a rush of slaves, but silence gripped the citadel": "the slaves and soldiers are quartered in another part of the citadel." So e1m5 has no slaves at all: only Tsotha's black guard ("black giants, grasping their long-shafted axes"). The Tsotha's-chambers wine is poured as in the book: Conan fills Pelias's goblet and drinks from the jug.
 
 - [x] you dont die when you fall off the tower in teh air over tamar
   - *Done:* the air round Tamar's tower is a forty-metre drop whose bottom is the ground, and a fall only counted as deadly below the floor of the world. Now any drop of more than nine metres kills, wherever it ends.
@@ -841,4 +841,18 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 
 - [x] theres a weird bug where low poly characters load then the better ones load later... just wait for the level to load
   - *Done:* the built models were loading in the background while the part-built stand-ins showed. Now a level doesn't begin until its cast has arrived (a line says the cast is coming up out of the dark if it takes a moment), and the next level's cast starts loading while you read its title card.
+
+- [ ] display health bar for yothu, make his attacks more damaging
+
+- [ ] a lot of the cave floors are flat, make them more uneven and tunnel like
+
+- [ ] generally improve the detail of the walls of castles so they have tapestries, fittings, metal weapon things that are empty, whatever else goes in a castle i guess
+
+- [ ] pelias doesnt actually hae a vine hanging from the roof so add one, in that room add more plant matter around so the plant makes sense
+
+- [ ] make the put things voice sound less like a squeak. 
+
+- [ ] have less pit things generally by half but make them twice as dangerous, make their mouths more toothy and bloody
+
+- [ ] the axe men at the black corridor etc their axe swing animation still looks bad and one hand goes up for no reason eitehr, make it a diagonal slash where it throws its body, also make it wince in pain. fewer axe men are required but make them more dangerous in damage and harder to kill, half the amount
 
