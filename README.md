@@ -16,13 +16,13 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:23 (10330 ticks) | ~9.6 min |
 > | `e1m2` The Pits | 2:01 (8726 ticks) | ~8.1 min |
-> | `e1m3` The Tunnels Below | 2:07 (9134 ticks) | ~8.5 min |
+> | `e1m3` The Tunnels Below | 2:03 (8878 ticks) | ~8.2 min |
 > | `e1m4` Yothga | 2:44 (11798 ticks) | ~10.9 min |
 > | `e1m5` The Scarlet Citadel | 2:53 (12465 ticks) | ~11.5 min |
 > | `e1m6` The Tower of Tamar | 2:16 (9821 ticks) | ~9.1 min |
 > | `e1m7` The Relief of Shamar | 3:43 (16086 ticks) | ~14.9 min |
 > | `e1m8` The Tybor | 2:54 (12530 ticks) | ~11.6 min |
-> | **Campaign** | **21:02** (90890 ticks) | **~84 min** |
+> | **Campaign** | **20:59** (90634 ticks) | **~84 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -417,7 +417,7 @@ Exit: the sound of a woman weeping down a smaller, dank tunnel.
 1. `<<puzzle>>` **The Weeping.** Follow the sound through a branching dank tunnel; it moves when you do.
 2. `<<combat>>` **The Weeping Thing.** It can't be harmed. Flee down the far tunnel while the pits' things, driven ahead of it, block the way; the tunnel floor has fallen in, so drop into the break and jump the far ledge with them at your back.
 3. `<<agility>>` **The Well.** A shaft across the tunnel floor, narrow enough to leap. The wind rises from below and leans your torch flame; something comes up out of it.
-4. `<<combat>>` **The Dark.** The presence blows your torch out. Fight blind toward the red ember of the fallen torch; a gap in the black tunnel, faintly pale from below, has to be leapt in the dark.
+4. `<<combat>>` **The Dark.** The presence blows your torch down to a red ember in your fist; for seven seconds you fight by its glow alone, then blow it alight again. A gap in the black tunnel, faintly pale from below, has to be leapt in the dark.
 5. `<<puzzle>>` **The Crossing.** The chamber where the tunnels cross. Relight the torch and find the tunnel back to the main corridor, read from the draft and the marks of the dead.
 6. `<<combat>>` **The Side Tunnels.** Things in the tunnels off the main corridor.
 7. `<<puzzle>>` **Satha Returns.** She comes up the corridor: get into a side tunnel and put your torch out before she reaches you.
@@ -522,7 +522,7 @@ Each level is a **gated chain**: explore, find a clue, act on it, open the way o
 | `e0m1` The Phoenix | The crypt frieze shows four braziers in an order → light them in that order → the sage wakes and marks your sword (the only weapon that hurts the demon). In the bedchamber, the axe is mounted high, so knock its wall mount loose with the broken hilt to drop it |
 | `e1m1` Plain of Shamu | Light puzzle (a combat level). The captains bawl before each volley, so dash from dead horse to dead horse between volleys; read the riders' lanes from the churned ground and cross each one while it stands empty. The level always ends with the scripted fang: answer Tsotha's offer with the sword |
 | `e1m2` The Pits | Lie still while Satha passes (moving under her draws the venom); the strangler's keys land beyond your hands, so slip your foot free and grip them with your toes; Shukeli slams the grille, so strike through the bars before he flees |
-| `e1m3` The Tunnels | Follow the weeping (wrong turnings grow fainter); flee the weeping thing; leap the well between its breaths; find the torch by its ember after the presence takes it; go where the air comes from (the flame leans away from the draft) before it comes up again; when Satha comes, get into a side tunnel and shake out your torch |
+| `e1m3` The Tunnels | Follow the weeping (wrong turnings grow fainter); flee the weeping thing; leap the well between its breaths; blow the torch alight from its ember after the presence takes the flame; go where the air comes from (the flame leans away from the draft) before it comes up again; when Satha comes, get into a side tunnel and shake out your torch |
 | `e1m4` Yothga | Open the cage with one of Shukeli's keys. Cut Yothga's stem, never its roots (the book: touching the roots is death). Pelias needs no puzzle to scare Satha off; he raises Shukeli to work the bolt |
 | `e1m5` The Scarlet Citadel | Pass Tsotha's sleeping men without waking them; read the crystal globe (Tamar and Shamar, as in the book); on the roof, Pelias calls the winged beast |
 | `e1m6` The Tower of Tamar | Clear Arpello's archers from the turrets; parry Arpello, then seize and hurl him from the tower (a grapple action, as in the book) |
@@ -754,3 +754,5 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
   - *Done:* the stair ran down directly against the open crown and the air, so its walls were bare planes with nothing behind them. It now runs inside the tower's wall, a full cell of masonry between it and the outdoors, entered by a doorway at its head: closed in on the way down, and a solid block with a sloping roof seen from the crown.
 - [x] e1m1: more horses, heading at you then running off; ground they can't cross; a spiked pit to jump
   - *Done:* the three fixed lanes are gone. Six Ophirean knights ("leaped their horses over mounds of corpses"), no more than three in the saddle at once, each come out of the press at an edge of the riders' ground, ride at where you'll be, thunder past and are gone off the field, to wheel and come again (step aside at the last moment). They shy from stakes and stake-pits, so the stake crescents on the riders' ground are shelter, and a ditch sown with stakes runs the length of the field before the heap: leap it; no horse will take it.
+- [x] e1m3: the black tunnels are too dark when the wind blows out the torch; let it go to an ember and come back in 7 seconds
+  - *Done:* the presence no longer tears the torch from your hand. It blows it down to an ember in your fist, a red glow that lights a few paces; seven seconds later you blow it alight again (it brightens as you do). The same the second time it rises.

@@ -1154,7 +1154,7 @@ function objective() {
     if (['driven', 'dark', 'side', 'dead_n', 'dead_s'].some(live)) return 'Fight!';
     if (!f.found_it) return 'Follow the weeping.';
     if (!f.crossed_well) return S.room === 'cross_n' ? 'Leap the well, between its breaths.' : 'Flee.';
-    if (S.torch === 'dropped') return T.pres === 'up' ? 'Flee in the dark.' : 'Find your torch by its ember.';
+    if (S.torch === 'ember') return T.pres === 'up' ? 'Flee in the dark, and blow on your ember.' : 'Blow on your ember.';
     if (!f.got_out) return T.pres === 'rising' ? 'It is coming up again. Go where the air comes from!' : 'Find the way back to the main corridor. Watch your flame.';
     if (!f.satha_passed) return S.satha.start === null ? 'Back along the main corridor.' : S.torch === 'lit' ? 'Into a side tunnel, and shake out your torch! (T)' : 'Keep still in the dark.';
     return 'Toward the glow at the end of the corridor.';
@@ -1193,14 +1193,18 @@ function shakeOutTorch() {
   S.torch = 'out'; Sfx.swing();
   log('You shake out the torch. The dark comes down on you like a lid.', 'warn');
 }
-// the presence blows the torch out and tears it from your hand; it falls by the well's rim, an ember
+// the presence blows the torch down to an ember in your fist; a few breaths on it, running, and it catches again
+const EMBER_SECS = 7;
 function blowOutTorch() {
-  const W = LEVEL.well, x = W.ember[0] * CELL, z = W.ember[1] * CELL;
-  S.torch = 'dropped'; S.flags.torch_found = false; Sfx.wind(1); Sfx.sting();
-  S.items.push({ id: 'ember' + S.tun.rises, kind: 'ember', name: 'torch', x, z, y: groundInfo(x, z).floor, taken: false });
+  S.torch = 'ember'; S.emberT = EMBER_SECS; S.flags.torch_found = false; Sfx.wind(1); Sfx.sting();
+}
+function updateEmber() {
+  if (S.torch !== 'ember' || mode !== 'play') return;
+  S.emberT -= DT;
+  if (S.emberT <= 0) { S.torch = 'lit'; setFlag('torch_found'); Sfx.wind(0.35); log('You blow on the ember in your fist, and the torch catches again.', 'good'); }
 }
 const PRESENCE_LINES = [
-  'The wind rises out of the well, cold as the deep it comes from, and with it something comes floating up: vague, bodiless, a presence felt more than seen. Your torch goes out as if a hand had closed on it, and is torn from your fingers. You flee in the dark.',
+  'The wind rises out of the well, cold as the deep it comes from, and with it something comes floating up: vague, bodiless, a presence felt more than seen. Your torch goes out as if a hand had closed on it, to a red ember in your fist. You flee in the dark.',
   'Again the wind rises out of the well. The flame streams and gutters in your fist. It is coming up again.',
 ];
 function updateTunnels() {
@@ -1239,7 +1243,7 @@ function updateTunnels() {
     if (S.room === 'out1' || S.room === 'out2') { T.pres = 'calm'; T.gt = 0; }
     else if (T.pt > 5) {
       T.pres = 'up'; T.pt = 0; T.rises = 1;
-      if (['cross_s', 'well', 'blind', 'loop1', 'cross_n'].includes(S.room)) { blowOutTorch(); log('The presence comes up out of the well, and your torch dies in your hand and is gone. You flee in the dark again.', 'bad'); }
+      if (['cross_s', 'well', 'blind', 'loop1', 'cross_n'].includes(S.room)) { blowOutTorch(); log('The presence comes up out of the well, and your torch dies to an ember in your hand. You flee in the dark again.', 'bad'); }
       else T.pres = 'calm';
     }
   } else {
@@ -1422,7 +1426,7 @@ function tick(inp) {
   if (mode !== 'play') return;
   updateShukeli();
   updateFoes();
-  updateTunnels();
+  updateEmber(); updateTunnels();
   updateShamu();
   updatePlanks();
   updateBeats();
@@ -1610,6 +1614,7 @@ function render(alpha) {
   const lampPos = [px + f[0] * 0.3, eyeY - 0.2, pz + f[2] * 0.3];
   let lc = [0.24, 0.215, 0.18], lampRange = 10;
   if (S.tun && !torchLit()) { lc = [0.06, 0.056, 0.05]; lampRange = 6; }   // the dark below: no fire at all
+  if (S.torch === 'ember') { const p = 0.8 + 0.2 * Math.sin(gameTime * 2.3) + 0.08 * Math.sin(gameTime * 7.1); lc = [0.34 * p, 0.1 * p, 0.04 * p]; lampRange = 8; }   // an ember in the fist: a red glow, a few paces
   if (torchLit()) {                    // the torch in his left hand: warm, flickering, guttering in the draft
     const gutter = 1 - Math.min(0.55, Math.abs(S.windNow) * 0.3) * (0.6 + 0.4 * Math.sin(gameTime * 23));
     const fl = (0.88 + 0.08 * Math.sin(gameTime * 11.3) + 0.05 * Math.sin(gameTime * 29.1)) * gutter;
@@ -1925,6 +1930,9 @@ function render(alpha) {
         const fp = [0, 1, 2].map(i => torch[4 + i] * 0.29 + torch[12 + i]), fl = 1 + 0.12 * Math.sin(gameTime * 17) + 0.06 * Math.sin(gameTime * 41);
         const k = ((Math.floor(gameTime * 12) % 4) + 4) % 4;
         R.drawEntity(getModel('flame_sprite:' + k), m4mul(m4trs(fp[0], fp[1], fp[2], 0, -lean * 0.5, roll * 0.8, 1), m4s3(0.12 * (2 - fl), 0.2 * fl, 1)), [1, 1, 1], 1, 1, true, true);
+      } else if (S.torch === 'ember') {                   // the head of the torch a red ember, brightening as you blow on it
+        const pulse = 0.55 + 0.3 * Math.sin(gameTime * 2.3) + 0.1 * Math.sin(gameTime * 7.1) + 0.4 * (1 - S.emberT / EMBER_SECS);
+        drawM('vm_flame_core', m4mul(torch, m4trs(0, 0.3, 0, 0, 0, 0, 0.45)), [0.9, 0.18, 0.06], pulse);
       }
     }
   }

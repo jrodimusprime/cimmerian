@@ -303,7 +303,7 @@ const LEVEL_E1M3 = {
     actions: [
       { id: 'follow_the_weeping', needs: [], sets: 'found_it', at: 'weep_den' },
       { id: 'leap_the_well', needs: ['found_it'], sets: 'crossed_well', at: 'cross_s' },
-      { id: 'find_the_ember', needs: ['crossed_well'], sets: 'torch_found', at: 'cross_n' },
+      { id: 'blow_the_ember_alight', needs: ['crossed_well'], sets: 'torch_found', at: 'loop1' },
       { id: 'go_where_the_air_comes_from', needs: ['torch_found'], sets: 'got_out', at: 'out1', clue: 'insc_well' },
       { id: 'hide_and_shake_out_the_torch', needs: ['got_out'], sets: 'satha_passed', at: 'alcove1' },
     ],
