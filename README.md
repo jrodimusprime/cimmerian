@@ -19,10 +19,10 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | `e1m3` The Tunnels Below | 2:20 (10057 ticks) | ~9.3 min |
 > | `e1m4` Yothga | 3:24 (14682 ticks) | ~13.6 min |
 > | `e1m5` The Scarlet Citadel | 3:14 (13991 ticks) | ~13.0 min |
-> | `e1m6` The Tower of Tamar | 2:06 (9065 ticks) | ~8.4 min |
-> | `e1m7` The Relief of Shamar | 3:18 (14247 ticks) | ~13.2 min |
-> | `e1m8` The Tybor | 3:09 (13624 ticks) | ~12.6 min |
-> | **Campaign** | **23:32** (101673 ticks) | **~94 min** |
+> | `e1m6` The Tower of Tamar | 2:04 (8908 ticks) | ~8.2 min |
+> | `e1m7` The Relief of Shamar | 3:06 (13395 ticks) | ~12.4 min |
+> | `e1m8` The Tybor | 3:02 (13090 ticks) | ~12.1 min |
+> | **Campaign** | **23:11** (100130 ticks) | **~93 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -845,7 +845,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] display health bar for yothu, make his attacks more damaging
   - *Done:* a roused boss now has his name and a blood-bar over the field (Yothga, and the other bosses too). Yothga's lash does 22 (was 14), a seed-head bursting on you 17 (was 12).
 
-- [ ] a lot of the cave floors are flat, make them more uneven and tunnel like
+- [x] a lot of the cave floors are flat, make them more uneven and tunnel like
+  - *Done:* the rough floors rise toward the walls, like a tunnel worn hollow down its middle, and are lumped and pitted between; you walk on it, it's not just paint. Never within two cells of a pit or ledge, so no leap is changed. Scree and fallen rock heaped at the foot of the cave walls, and dripstone hanging from the roofs, clear of your head.
 
 - [x] generally improve the detail of the walls of castles so they have tapestries, fittings, metal weapon things that are empty, whatever else goes in a castle i guess
   - *Done:* new furnishings: woven tapestries on poles, iron candle-sconces (lit), arms on the walls (a shield over crossed blades, or the bare blades), empty weapon pegs, golden censers hung from the vault, carpets, divans heaped with cushions, iron-bound chests, casks. The conclave and corridors of e1m2, and all through the citadel in e1m5 (halls, the censer corridor, the soldiers' quarters, the gold-domed chamber, the stair), along with e1m6's furnished guardroom.
@@ -862,7 +863,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] the axe men at the black corridor etc their axe swing animation still looks bad and one hand goes up for no reason eitehr, make it a diagonal slash where it throws its body, also make it wince in pain. fewer axe men are required but make them more dangerous in damage and harder to kill, half the amount
   - *Done:* the blow is two-handed now (the left hand on the haft, no hand flung up): the axe heaved up over the right shoulder and held there trembling, then high, then down across him to the left with his whole weight thrown after it (he lunges in with it) and the head biting the floor at his feet. Struck, he winces: doubled over, the free hand clutching the wound. 320 to kill (was 160), 32 a blow (was 20). There are five of them in the citadel now (were twenty-five): see the silent citadel below.
 
-- [ ] taking health and potions should be made simpler with an inventory when you press the escape button, in there show a simple inventory with counts. taking inspiration from all otehr novels add the potions and health potions likely that would be possible - this should change the dynamic of fighting... and help the player have a pause to take them during battle
+- [x] taking health and potions should be made simpler with an inventory when you press the escape button, in there show a simple inventory with counts. taking inspiration from all otehr novels add the potions and health potions likely that would be possible - this should change the dynamic of fighting... and help the player have a pause to take them during battle
+  - *Done:* Esc opens your satchel with the pause: what you carry, grouped with counts and what each does, a button to eat, drink or apply each one there and then, with the fight held while you do (and your health, bleeding and daze shown). It holds 8 now (was 4). Two potions from Howard's other tales, found rarely from e1m2 on and kept for when you need them (never drunk when you pick them up): the golden wine of Xuthal ("The Slithering Shadow": it heals all, and clears bleeding and daze) and a wound-balm (+20, stops the bleeding, clears a bite's daze). H still eats from the satchel, food first, keeping the potions back.
 
 - [x] theh door at the end of E1m6 needs a better design to make them look more oaky. take some free art for it perhaps
   - *Done:* the door is rebuilt: five boards of old black oak (a new grain texture, knots and all, darker at the foot), ledges and a brace behind, three studded strap hinges with curled ends, nail-heads down every board, a ring on its plate, a stone sill. Every heavy door in the game uses it (e1m2's brass door, e1m4's stairhead, e1m6's postern).

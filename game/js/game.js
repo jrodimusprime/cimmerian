@@ -610,6 +610,10 @@ function interact() {
   }
 }
 function takeItem(it) {
+  if (it.potion) {                                        // a potion is kept for when it's needed (Esc: the satchel)
+    if (!stow(it)) { if (S.health < 100) { it.taken = true; eat(it); } else log('Your satchel is full.', 'dim'); }
+    return;
+  }
   if (it.heal) {
     if (S.health < 100) { it.taken = true; eat(it); return; }
     if (!stow(it)) log('You are not hurt, and your satchel is full. You leave the ' + it.name.replace(/^(a|an|the) /, '') + ' for later.', 'dim');
@@ -655,16 +659,22 @@ function takeItem(it) {
   }
 }
 // food and drink: eaten now, or stowed in the satchel (POUCH_MAX) and taken later with H
-const POUCH_MAX = 4;
+const POUCH_MAX = 8;
+// the potions (from Howard's other tales, where the pits' wounds could use them): found rarely, kept in the satchel, taken from it (Esc) in the thick of a fight
+const POTIONS = {
+  xuthal: { label: 'golden wine of Xuthal', line: 'You drink the golden wine of Xuthal. A tingling glow runs through your veins; your wounds close, and new strength wells up in you as from a spring. (+all)' },
+  balm: { label: 'wound-balm', line: 'You smear the bitter wound-balm into your hurts. The bleeding stops, and the dizziness of the bite clears from your head. (+' },
+};
 function eat(it) {
   S.health = Math.min(100, S.health + it.heal); S.bleed = 0; Sfx.heal();   // (and it staunches a bite's bleeding)
   const nm = it.name.replace(/^(a|an|the) /, '');   // 'a camp loaf' -> 'the camp loaf'
+  if (it.potion) { S.daze = 0; log(POTIONS[it.potion].line + (it.potion === 'balm' ? it.heal + ')' : ''), 'good'); return; }
   log(it.kind === 'bread' ? 'You wolf down the ' + nm + '. Stale, gritty, and better than any feast. (+' + it.heal + ')' : 'You drink the ' + nm + '. It burns going down. (+' + it.heal + ')', 'good');
 }
 function stow(it) {
   if (S.pouch.length >= POUCH_MAX) return false;
-  it.taken = true; S.pouch.push({ name: it.name, kind: it.kind, heal: it.heal }); Sfx.pickup();
-  log('You stow the ' + it.name.replace(/^(a|an|the) /, '') + ' in your satchel (' + S.pouch.length + '/' + POUCH_MAX + ').' + (S.hints.has('satchel') ? '' : ' Press H to eat or drink from it.'), 'dim');
+  it.taken = true; S.pouch.push(Object.assign({ name: it.name, kind: it.kind, heal: it.heal }, it.potion ? { potion: it.potion } : {})); Sfx.pickup();
+  log('You stow the ' + it.name.replace(/^(a|an|the) /, '') + ' in your satchel (' + S.pouch.length + '/' + POUCH_MAX + ').' + (S.hints.has('satchel') ? '' : ' Press H to eat or drink from it, or Esc to open it.'), 'dim');
   S.hints.add('satchel');
   return true;
 }
@@ -672,14 +682,16 @@ function stow(it) {
 function useSatchel() {
   if (!S.pouch.length) { log('Your satchel is empty.', 'dim'); return; }
   if (S.health >= 100) { log('You are not hurt.', 'dim'); return; }
-  const miss = 100 - S.health, fits = S.pouch.filter(p => p.heal >= miss);
-  const pick = fits.length ? fits.reduce((a, b) => b.heal < a.heal ? b : a) : S.pouch.reduce((a, b) => b.heal > a.heal ? b : a);
+  const food = S.pouch.filter(p => !p.potion), from = food.length ? food : S.pouch;   // H eats food first; the potions are kept back unless there's nothing else
+  const miss = 100 - S.health, fits = from.filter(p => p.heal >= miss);
+  const pick = fits.length ? fits.reduce((a, b) => b.heal < a.heal ? b : a) : from.reduce((a, b) => b.heal > a.heal ? b : a);
   S.pouch.splice(S.pouch.indexOf(pick), 1); eat(pick);
 }
 // walk over food or drink: eaten if you need all of it, else into the satchel if there's room
 function autoFood() {
   for (const it of S.items) {
     if (it.taken || !it.heal || Math.hypot(it.x - S.x, it.z - S.z) > 1.1 || Math.abs((it.y || 0) - S.y) > 1.2) continue;
+    if (it.potion) { stow(it); continue; }
     if (100 - S.health >= it.heal) { it.taken = true; eat(it); }
     else stow(it);
   }
@@ -1137,6 +1149,7 @@ function promptText(t) {
   if (!t) return '';
   if (t.type === 'item' && t.it.kind === 'cellkey') return S.hints.has('stoop') ? '[E] slip your foot from its sandal and grip the keys with your toes' : '[E] bend to the keys';
   if (t.type === 'item' && t.it.kind === 'ember') return '[E] take up the torch and blow on the ember';
+  if (t.type === 'item' && t.it.potion) return '[E] take the ' + t.it.name.replace(/^(a|an|the) /, '') + ' (Esc: your satchel)';
   if (t.type === 'item') return t.it.heal ? '[E] ' + (S.health < 100 ? (t.it.kind === 'bread' ? 'eat' : 'drink') + ' the ' + t.it.name.replace(/^(a|an|the) /, '') : 'stow the ' + t.it.name.replace(/^(a|an|the) /, '') + ' in your satchel') : '[E] take the ' + t.it.name.replace(/^(a|an|the) /, '');
   switch (t.type) {
     case 'act': return '[E] ' + t.f.prompt;
@@ -1651,11 +1664,33 @@ function loadLevel(id, carry) {
   const pz = solvePuzzle(LEVEL.puzzle);
   console.log('[solve] ' + id + ': ' + pz.states + ' states, goal ' + (pz.goalReachable ? 'reachable' : 'UNREACHABLE') + ', softlocks: ' + (pz.softlocks.length || 'none'));
 }
+// the satchel, opened in the pause (Esc): what you carry, by kind with counts; take any of it here, the fight held while you do
+function satchelGroups() {
+  const g = new Map();
+  for (const p of S.pouch) { const key = p.potion || p.name; if (!g.has(key)) g.set(key, { label: p.potion ? POTIONS[p.potion].label : p.name.replace(/^(a|an|the) /, ''), potion: p.potion, heal: p.heal, kind: p.kind, n: 0 }); g.get(key).n++; }
+  return [...g.entries()].sort((a, b) => (!!b[1].potion - !!a[1].potion) || b[1].heal - a[1].heal);
+}
+function takeFromSatchel(key) {
+  const i = S.pouch.findIndex(p => (p.potion || p.name) === key); if (i < 0) return;
+  const p = S.pouch[i];
+  if (!p.potion && S.health >= 100) { log('You are not hurt.', 'dim'); return; }
+  S.pouch.splice(i, 1); eat(p);
+}
+function drawInventory() {
+  const el = $('inv'); if (!el) return;
+  const rows = satchelGroups().map(([key, g]) => '<div class="invrow"><span class="invn">' + g.n + '×</span><span class="invl' + (g.potion ? ' pot' : '') + '">' + g.label + '</span><span class="invh">' +
+    (g.potion === 'xuthal' ? 'heals all, clears bleeding and daze' : g.potion === 'balm' ? '+' + g.heal + ', stops bleeding, clears the daze' : '+' + g.heal) + '</span><button data-k="' + encodeURIComponent(key) + '">' + (g.kind === 'bread' ? 'Eat' : g.potion === 'balm' ? 'Apply' : 'Drink') + '</button></div>').join('');
+  const arms = ['the ' + S.weapon].concat(Object.keys(S.weapons).filter(w => S.weapons[w] && w !== S.weapon && w !== 'fists').map(w => 'the ' + w)).concat(S.spears.length ? [S.spears.length + ' spear' + (S.spears.length > 1 ? 's' : '') + ' on your back'] : []).concat(S.flags.has_keys ? ['keys'] : []);
+  el.innerHTML = '<div class="invbox"><div class="invt">Satchel <span>' + S.pouch.length + '/' + POUCH_MAX + ' · health ' + Math.ceil(S.health) + (S.bleed > 0 ? ' · bleeding' : '') + (S.daze > 0 ? ' · dazed' : '') + '</span></div>' +
+    (rows || '<div class="invempty">Empty. Food and drink you find when you are not hurt go in here.</div>') + '<div class="invarms">Carrying: ' + arms.join(', ') + '</div></div>';
+  for (const b of el.querySelectorAll('button')) b.onclick = () => { takeFromSatchel(decodeURIComponent(b.dataset.k)); drawInventory(); updateHUD(); };
+}
 function showPause() {
   mode = 'paused';
   overlay.className = '';
   overlay.innerHTML = '<div class="panel"><h2>Paused</h2><p class="sub">' + LEVEL.level + ' · tick ' + S.tick + ' · state ' + stateHash() + '</p>' +
     '<div class="keys"><b>W A S D</b> move · <b>mouse</b> look · <b>Shift</b> run · <b>Space</b> jump<br><b>E</b> use · <b>Click</b> strike or throw · <b>Right-click / F</b> parry (with a spear: throw) · <b>G</b> throw spear · <b>H</b> eat or drink from your satchel · <b>1 2 3 4</b> fists, dagger, sword, spear · <b>P</b> resolution · <b>F4</b> palette · <b>K</b> sound · <b>F3</b> debug</div>' +
+    '<div id="inv"></div>' +
     '<div class="setting"><label for="brIn">Brightness</label><input type="range" id="brIn" min="0.8" max="2.2" step="0.05" value="' + brightness + '"><span id="brVal">' + brightness.toFixed(2) + '</span></div>' +
     '<div class="setting"><label for="sensIn">Mouse sensitivity</label><input type="range" id="sensIn" min="0.1" max="4" step="0.05" value="' + sensMul + '"><span id="sensVal">' + sensMul.toFixed(2) + '×</span></div>' +
     '<div class="setting"><label for="volIn">Sound volume</label><input type="range" id="volIn" min="0" max="1.5" step="0.05" value="' + volume + '"><span id="volVal">' + Math.round(volume * 100) + '%</span></div>' +
@@ -1665,6 +1700,7 @@ function showPause() {
   $('brIn').oninput = e => { brightness = parseFloat(e.target.value); R.gamma = brightness; $('brVal').textContent = brightness.toFixed(2); try { localStorage.setItem(BRIGHT_KEY, String(brightness)); } catch (err) { /* ignore */ } };
   $('volIn').oninput = e => { volume = parseFloat(e.target.value); Sfx.setVolume(volume); $('volVal').textContent = Math.round(volume * 100) + '%'; try { localStorage.setItem(VOL_KEY, String(volume)); } catch (err) { /* ignore */ } };
   $('ambIn').oninput = e => { ambience = parseFloat(e.target.value); Sfx.setAmbience(ambience); $('ambVal').textContent = Math.round(ambience * 100) + '%'; try { localStorage.setItem(AMB_KEY, String(ambience)); } catch (err) { /* ignore */ } };
+  drawInventory();
   $('bRes').onclick = () => { hideOverlay(); mode = 'play'; lockPointer(); };
   if (CHEAT) { $('bAuto').onclick = () => startAutoplay(1); $('bAuto3').onclick = () => startAutoplay(3); }
   $('bRestart').onclick = () => { AUTO = null; agentInput = null; loadLevel(LEVEL.level, LEVEL_CARRY && JSON.parse(JSON.stringify(LEVEL_CARRY))); startPlay(false); };   // this level, from its start, as you came into it

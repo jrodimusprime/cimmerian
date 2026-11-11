@@ -128,7 +128,7 @@ window.__fight0 = (groups, maxTicks, radius, maxSteps) => {
   }
   return CIM.obs();
 };
-window.__heal = () => { for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
+window.__heal = () => { for (const it of CIM.state.items) if (!it.taken && it.heal && !it.potion && (CIM.state.health < 80 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < 30) { __nav(it.x, it.z); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); };
 // run at (x, z), leaping any gap and jumping up any ledge on the way
 window.__jumpTo = (x, z, maxTicks = 400) => {
   for (let i = 0; i < 2400 && CIM.state.daze > 0 && CIM.obs().mode === 'play'; i++) {   // dazed by a bite: no jump until it passes; fight off whatever's biting meanwhile
@@ -153,4 +153,4 @@ await ev(`window.__clear = (radius = 18, maxTicks = 6000) => __fight([...new Set
 const finish = async EXPECTED => { const fin = { tick: await ev('CIM.state.tick'), hash: await ev('CIM.hash()'), mode: await ev('mode'), deaths: await ev('CIM.state.deaths'), kills: await ev('CIM.state.kills') };
   log(fin.mode === 'done' && fin.tick === EXPECTED.tick && fin.hash === EXPECTED.hash ? 'PASS ' + JSON.stringify(fin) : 'FAIL ' + JSON.stringify(fin) + ' expected ' + JSON.stringify(EXPECTED)); };
 await ev(`window.__heal = (r = 26, steps = 16) => { if (__boss(14)) return CIM.obs();   // never turn your back on him for bread
-  const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z, true, 4000, true); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);
+  const reach = bfs(cellIdx(Math.floor(CIM.state.x / C), Math.floor(CIM.state.z / C))); for (const it of CIM.state.items) if (!it.taken && it.heal && !it.potion && (CIM.state.health < 85 || CIM.state.pouch.length < 4) && Math.hypot(it.x - CIM.state.x, it.z - CIM.state.z) < r && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] >= 0 && reach[cellIdx(Math.floor(it.x / C), Math.floor(it.z / C))] <= steps && Math.abs((it.y || 0) - CIM.state.y) < 2.5) { __nav(it.x, it.z, true, 4000, true); __face(it.x, it.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 1); } return CIM.obs(); }; true`);

@@ -216,6 +216,24 @@ function addPrefab(mb, p) {
       addBox(mb, bx, p.y + 2.9, bz, 0.8, 1.25, 0.02, T.BANNER, yaw);
       break;
     }
+    case 'pavilion': {                                   // a lord's pavilion of the host: a round tent of dyed cloth, its peak on a pole with a pennon, guy-ropes pegged out
+      const r = p.r || 2.2, cl = p.cloth === 'velvet' ? T.VELVET : T.TABARD, yaw = p.rot || 0;
+      addLathe(mb, p.x, p.y, p.z, [[r, 0], [r * 0.98, 1.7], [r * 0.9, 1.8], [r * 0.25, 3.3], [0.05, 3.55]], 12, cl, yaw);
+      addLathe(mb, p.x, p.y + 1.7, p.z, [[r + 0.08, 0], [r * 0.98, 0.35], [r * 0.95, 0.38], [r + 0.04, 0.02]], 12, T.GILT, yaw);   // the scalloped valance
+      smoothLathe(mb, p.x, p.y, p.z, [[0.05, 0], [0.04, 4.4]], 5, T.WOOD, ONE3, [0, 1, 0]);
+      addBox(mb, p.x + 0.45, p.y + 4.15, p.z, 0.45, 0.18, 0.01, T.BANNER, 0.2);                                     // the pennon
+      { const a = yaw, dx = Math.sin(a), dz = Math.cos(a); addBox(mb, p.x + dx * (r - 0.02), p.y + 0.8, p.z + dz * (r - 0.02), 0.5, 0.8, 0.04, T.BLACK, a); }   // the door-flap thrown back
+      for (let k = 0; k < 6; k++) { const a = yaw + 0.5 + k / 6 * Math.PI * 2, x0 = p.x + Math.sin(a) * r * 0.95, z0 = p.z + Math.cos(a) * r * 0.95, x1 = p.x + Math.sin(a) * (r + 1.3), z1 = p.z + Math.cos(a) * (r + 1.3);
+        const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, L = Math.hypot(x1 - x0, z1 - z0) + 0.1; addBox(mb, mx, p.y + 0.95, mz, 0.012, 0.012, L / 2 * 1.25, T.ROBE, Math.atan2(x1 - x0, z1 - z0), ONE3, 0.62);
+        addBox(mb, x1, p.y + 0.1, z1, 0.03, 0.12, 0.03, T.WOOD); }
+      break;
+    }
+    case 'campfire': {                                   // a camp-fire: a ring of stones, the logs fallen in, the embers (its flame and light: level.js)
+      for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2; addRock(mb, p.x + Math.cos(a) * 0.65, p.y + 0.08, p.z + Math.sin(a) * 0.65, 0.16, 0.11, 0.14, k + 21, T.ROCK, 0.3); }
+      for (let k = 0; k < 4; k++) { const a = k * 0.9 + 0.3; addBox(mb, p.x, p.y + 0.12, p.z, 0.06, 0.06, 0.45, T.WOOD, a, ONE3, 0.15); }
+      addRock(mb, p.x, p.y + 0.06, p.z, 0.32, 0.05, 0.32, 5, T.BLACK, 0.3);
+      break;
+    }
     case 'tapestry': {                                   // a woven hanging on a pole, its foot weighted and hanging a hand off the wall
       const bx = p.x + n[0] * 0.1, bz = p.z + n[1] * 0.1, yaw = Math.atan2(n[0], n[1]), w = p.w || 1.1, h = p.h || 1.6, top = p.y + (p.top || 3.3);
       addBox(mb, bx, top + 0.05, bz, 0.04, 0.04, w + 0.15, T.WOOD, yaw + Math.PI / 2);
@@ -458,6 +476,13 @@ function buildLevelMesh() {
     if (!open) {
       if (diag) { mb.tri(e0, e1, e2, cLayer, 0, -1, 0); mb.tri(e0, e2, e3, cLayer, 0, -1, 0); }
       else { mb.tri(e0, e1, e3, cLayer, 0, -1, 0); mb.tri(e1, e2, e3, cLayer, 0, -1, 0); }
+      if (k === 1 && LV.rough[idx] >= 0.75 && !LEVEL.open) for (let q = 0; q < 3; q++) {   // a cave's roof: dripstone hanging from it, clear of a man's head
+        if (hrand(i, j, q + 40, 81) > 0.3) continue;
+        const x = (i + 0.15 + 0.7 * hrand(i, j, q, 82)) * CELL, z = (j + 0.15 + 0.7 * hrand(i, j, q, 83)) * CELL, g = groundInfo(x, z), room = g.ceil - g.floor - 2.3;
+        if (room < 0.15) continue;
+        const len = Math.min(room, 0.25 + 0.75 * hrand(i, j, q, 84)), r = 0.05 + 0.08 * hrand(i, j, q, 85);
+        addSpike(mb, x, g.ceil + 0.1, z, [0, -1, 0], len + 0.1, r, 5, LV.tex[idx] && T[LV.tex[idx].wall] !== undefined ? T[LV.tex[idx].wall] : T.ROCK);
+      }
     }
     for (const d of DIRS) {
       const nk = kindAt(i + d[0], j + d[1]);
@@ -468,6 +493,14 @@ function buildLevelMesh() {
         continue;
       }
       if (nk === 0) wallStrip(mb, ca, cb, fy(ca), fy(cb), ca.c, cb.c, T[tex.wall], -d[0], -d[1]);
+      if (nk === 0 && k === 1 && LV.rough[idx] >= 0.75 && !LEVEL.open) {   // a cave: fallen rock and scree heaped at the foot of its walls
+        for (let q = 0; q < 3; q++) {
+          const h = hrand(i * 4 + d[0] + 7, j * 4 + d[1] + 7, q, 71); if (h > 0.62) continue;
+          const u = 0.15 + 0.7 * hrand(i, j, q * 3 + d[0] * 5 + d[1] * 11, 72), ax = ca.x + (cb.x - ca.x) * u, az = ca.z + (cb.z - ca.z) * u;
+          const sz = 0.12 + 0.3 * hrand(i, j, q + 9, 73), x = ax - d[0] * (sz + 0.12), z = az - d[1] * (sz + 0.12), y = groundInfo(x, z).floor;
+          addRock(mb, x, y + sz * 0.35, z, sz * 1.3, sz * 0.8, sz * 1.1, i * 131 + j * 17 + q, q === 2 ? T.ROCK : T[tex.wall], 0.4);
+        }
+      }
       else if (k === 2 && nk === 1) mb.quad(P(ca, ca.fp), P(cb, cb.fp), P(cb, cb.fo), P(ca, ca.fo), T[tex.wall], -d[0], 0, -d[1]);
     }
   }

@@ -142,6 +142,7 @@ const LEVEL_E1M2 = {
     { kind: 'wine', name: 'rotted water-skin', at: [36.2, 17.6], heal: 25 },
     { kind: 'bread', name: 'dead prisoner\'s crust', at: [53.5, 9.6], heal: 25 },
     { kind: 'wine', name: 'acolyte\'s water-skin', at: [63.6, 12.4], heal: 25 },
+    { kind: 'wine', potion: 'balm', name: 'a pot of wound-balm in a dead man\'s scrip', heal: 20, at: [36.6, 17.2] },
   ],
   entities: [
     { class: 'info_player_start', at: [6.9, 9.6], yaw: -Math.PI / 2, flags: ['chained'] },
@@ -352,6 +353,7 @@ const LEVEL_E1M3 = {
     { kind: 'bread', name: 'mouldy crust', at: [54, 18.6], heal: 25 },
     { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 30, at: [50.5, 9.6] },
     { kind: 'wine', name: 'jug of water', at: [45, 34.2], heal: 25 },
+    { kind: 'wine', potion: 'balm', name: 'a pot of wound-balm', heal: 20, at: [17.6, 5.8] }, { kind: 'wine', potion: 'xuthal', name: 'a flask of the golden wine of Xuthal', heal: 100, at: [45.4, 33.8] },
   ],
   entities: [
     { class: 'info_player_start', at: [3.5, 17], yaw: -Math.PI / 2 },
@@ -605,7 +607,7 @@ const LEVEL_E1M4 = {
   ],
   shafts: [], links: [],
   props: [
-    { prefab: 'door', at: [32, 25.5], wall: 'W', open: 0.55 }, { prefab: 'torch', at: [32, 24.5], wall: 'W', dim: 0.9 }, { prefab: 'torch', at: [32, 26.6], wall: 'W', dim: 0.9 },   // the stair ends at a door: the way out, standing ajar
+    { prefab: 'door', at: [32, 25.5], wall: 'W', open: 0.55, free: true }, { prefab: 'torch', at: [32, 24.5], wall: 'W', dim: 0.9 }, { prefab: 'torch', at: [32, 26.6], wall: 'W', dim: 0.9 },   // the stair ends at a door: the way out, standing ajar
     { prefab: 'torch', at: [6.5, 14], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [13.5, 22], wall: 'S', dim: 0.6 }, { prefab: 'torch', at: [31, 10], wall: 'N', dim: 0.6 },
     { prefab: 'torch', at: [48, 4], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [56, 4], wall: 'N', dim: 0.6 }, { prefab: 'torch', at: [40, 22], wall: 'N', dim: 0.8 },
     { prefab: 'fungus', at: [52.5, 33.5] }, { prefab: 'fungus', at: [44.5, 31.5] }, { prefab: 'fungus', at: [36.5, 33.5] }, { prefab: 'fungus', at: [27.5, 31.5] }, { prefab: 'fungus', at: [19.5, 33.5] }, { prefab: 'fungus', at: [11.5, 31.5] }, { prefab: 'fungus', at: [4.5, 33.5] }, { prefab: 'fungus', at: [3.5, 25.5] },
@@ -619,7 +621,9 @@ const LEVEL_E1M4 = {
   items: [{ kind: 'bread', name: 'a prisoner\'s crust, hidden in the straw', heal: 30, at: [3.2, 16.2] }, { kind: 'wine', name: 'a leather water-skin, half full', heal: 30, at: [4.6, 19.6] },
     { kind: 'bread', name: 'heel of black bread', heal: 30, at: [12.5, 24.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [6.5, 27] }, { kind: 'bread', name: 'heel of black bread', heal: 30, at: [27, 18.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [43, 13.5] },
     { kind: 'bread', name: 'heel of black bread', heal: 30, at: [57, 14] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [60, 23] }, { kind: 'bread', name: 'heel of black bread', heal: 30, at: [43, 26] },
-    { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [40, 32.5] }, { kind: 'bread', name: 'heel of black bread', heal: 30, at: [3, 30] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [9, 25.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [33, 28.8] }],
+    { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [40, 32.5] }, { kind: 'bread', name: 'heel of black bread', heal: 30, at: [3, 30] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [9, 25.5] }, { kind: 'wine', name: 'skin of sour wine', heal: 35, at: [33, 28.8] },
+    { kind: 'wine', potion: 'balm', name: 'a pot of wound-balm', heal: 20, at: [27.4, 18.8] }, { kind: 'wine', potion: 'xuthal', name: 'a flask of the golden wine of Xuthal', heal: 100, at: [57.4, 14.3] },
+  ],
   entities: [
     { class: 'info_player_start', at: [3.5, 18], yaw: -Math.PI / 2 },
     { class: 'yothga', id: 'yo', at: [10, 18], group: 'yothga', yaw: Math.PI / 2 },
@@ -738,21 +742,23 @@ const LEVEL_E1M5 = {
     { prefab: 'torch', at: [63, 12], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [63, 18], wall: 'E', dim: 0.6 },
     // the citadel furnished: hangings, sconces and arms on the walls; the quarters strewn with the guards' gear
     { prefab: 'tapestry', at: [24, 18], wall: 'N', w: 1.1, h: 1.6, top: 2.5 }, { prefab: 'tapestry', at: [30, 21], wall: 'S', w: 1.1, h: 1.6, top: 2.5 },
-    { prefab: 'sconce', at: [37, 14], wall: 'W' }, { prefab: 'sconce', at: [40, 18], wall: 'E' }, { prefab: 'tapestry', at: [37, 18.5], wall: 'W', w: 0.9, h: 1.8, top: 2.9 }, { prefab: 'tapestry', at: [40, 9.5], wall: 'E', w: 0.9, h: 1.8, top: 2.9 },
+    { prefab: 'sconce', at: [37, 14], wall: 'W' }, { prefab: 'sconce', at: [40, 18], wall: 'E' }, { prefab: 'tapestry', at: [37, 11.5], wall: 'W', w: 0.9, h: 1.8, top: 2.9 }, { prefab: 'tapestry', at: [40, 16.5], wall: 'E', w: 0.9, h: 1.8, top: 2.9 },
     { prefab: 'carpet', at: [38.5, 15.5], w: 0.8, l: 9 },
-    { prefab: 'tapestry', at: [46, 3], wall: 'N', w: 1.5, h: 2.6, top: 3.9 }, { prefab: 'tapestry', at: [52, 7], wall: 'E', w: 1.0, h: 2.2, top: 3.6 }, { prefab: 'trophy', at: [40, 7], wall: 'W' },
+    { prefab: 'tapestry', at: [46, 3], wall: 'N', w: 1.5, h: 2.6, top: 3.9 }, { prefab: 'tapestry', at: [50.8, 13], wall: 'S', w: 0.9, h: 2.2, top: 3.6 }, { prefab: 'trophy', at: [40, 7], wall: 'W' },
     { prefab: 'banner', at: [44, 13], wall: 'S' }, { prefab: 'banner', at: [48, 13], wall: 'S' }, { prefab: 'sconce', at: [50, 3], wall: 'N' }, { prefab: 'sconce', at: [42, 3], wall: 'N' },
     { prefab: 'bunk', at: [24, 6.6] }, { prefab: 'bunk', at: [29, 6.6] }, { prefab: 'bunk', at: [34, 6.6] }, { prefab: 'cask', at: [26.5, 2.7] }, { prefab: 'cask', at: [31.5, 5.4], lie: true },
     { prefab: 'pegs', at: [27, 2], wall: 'N' }, { prefab: 'trophy', at: [32, 2], wall: 'N', bare: true }, { prefab: 'chest', at: [35.6, 3.0] }, { prefab: 'table', at: [30, 4.3] },
     { prefab: 'rack', at: [14, 3], wall: 'W' }, { prefab: 'spear_rack', at: [14, 6.5], wall: 'W' }, { prefab: 'pegs', at: [17.5, 1], wall: 'N' }, { prefab: 'trophy', at: [17.5, 9], wall: 'S' },
-    { prefab: 'divan', at: [57.5, 11.6], yaw: Math.PI }, { prefab: 'tapestry', at: [60, 9], wall: 'E', w: 1.1, h: 2.2, top: 3.4 }, { prefab: 'tapestry', at: [56, 5], wall: 'N', w: 1.2, h: 2.0, top: 3.4 },
+    { prefab: 'divan', at: [57.5, 11.6], yaw: Math.PI }, { prefab: 'tapestry', at: [56, 13], wall: 'S', w: 1.1, h: 2.2, top: 3.4 }, { prefab: 'tapestry', at: [56, 5], wall: 'N', w: 1.2, h: 2.0, top: 3.4 },
     { prefab: 'sconce', at: [60, 16], wall: 'W' }, { prefab: 'sconce', at: [63, 20], wall: 'E' },
   ],
   lights: [{ at: [56, 9], y: 7.5, col: [0.4, 0.6, 1.0], rad: 10, i: 1.2 }],
   items: [{ kind: 'wine', name: 'a wine-skin left on the battlements', heal: 35, at: [30, 27.5] }, { kind: 'wine', name: 'a forgotten cup of wine', heal: 35, at: [38.5, 21.6] },
     { kind: 'bread', name: 'a guard\'s black bread', heal: 30, at: [30, 4.5] }, { kind: 'wine', name: 'a guard\'s wine-skin', heal: 35, at: [19, 2] }, { kind: 'bread', name: 'a heel of bread from the quarters', heal: 30, at: [24.5, 4.5] },
     { kind: 'wine', name: 'Tsotha\'s wine', heal: 40, at: [55, 8] }, { kind: 'bread', name: 'a honey-cake on a gold dish', heal: 25, at: [45, 4.5] },
-    { kind: 'wine', name: 'a flask of wine', heal: 30, at: [61, 22] }],
+    { kind: 'wine', name: 'a flask of wine', heal: 30, at: [61, 22] },
+    { kind: 'wine', potion: 'xuthal', name: 'a flask of golden wine from Tsotha\'s table, the wine of Xuthal', heal: 100, at: [55.4, 8.3] },
+  ],
   // "The slaves and soldiers are quartered in another part of the citadel ... Tonight, their master being away, they doubtless lie drunk on wine or lotus-juice."
   // Pelias's way up through the citadel is silent. Tsotha's black guard lies drunk in its quarters, off it to the west: let them lie, or go in among them.
   entities: [
@@ -848,7 +854,13 @@ const LEVEL_E1M6 = {
   ],
   shafts: [], links: [], features: [],
   planks: [{ from: [28.9, 19.5], to: [30.1, 19.5] }],
-  props: [{ prefab: 'torch', at: [54, 15], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [54, 21], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [55, 26], wall: 'N', dim: 0.8 }, { prefab: 'brazier', at: [52.6, 2.6] }, { prefab: 'brazier', at: [55.6, 2.6] },
+  props: [
+    // Arpello's tower furnished: hangings and arms in the hall at the stair's foot, sconces down the stairs, the household's table
+    { prefab: 'tapestry', at: [57.5, 33], wall: 'S', w: 1.5, h: 2.2, top: 3.3 }, { prefab: 'banner', at: [62, 28.5], wall: 'E' }, { prefab: 'banner', at: [62, 31.2], wall: 'E' },
+    { prefab: 'sconce', at: [53, 30.5], wall: 'W' }, { prefab: 'trophy', at: [60, 26], wall: 'N' }, { prefab: 'table', at: [58.5, 30.6] }, { prefab: 'stool', at: [57.2, 30.9] }, { prefab: 'chest', at: [61.2, 32.3] },
+    { prefab: 'sconce', at: [51, 18], wall: 'W' }, { prefab: 'sconce', at: [51, 23.5], wall: 'W' }, { prefab: 'sconce', at: [57, 16.5], wall: 'W' }, { prefab: 'sconce', at: [60, 21], wall: 'E' },
+    { prefab: 'banner', at: [64, 6], wall: 'E' }, { prefab: 'sconce', at: [53, 4.2], wall: 'W' }, { prefab: 'tapestry', at: [57.5, 2], wall: 'N', w: 1.2, h: 2.0, top: 3.6 }, { prefab: 'cask', at: [63.2, 8.4] },
+    { prefab: 'torch', at: [54, 15], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [54, 21], wall: 'E', dim: 0.6 }, { prefab: 'torch', at: [55, 26], wall: 'N', dim: 0.8 }, { prefab: 'brazier', at: [52.6, 2.6] }, { prefab: 'brazier', at: [55.6, 2.6] },
     // the postern: a heavy door at the end of the gate passage, standing ajar on the street, a torch either side
     { prefab: 'door', at: [54, 0], wall: 'N', open: 0.6 }, { prefab: 'torch', at: [53.2, 0], wall: 'N', dim: 0.9 }, { prefab: 'torch', at: [54.8, 0], wall: 'N', dim: 0.9 },
     // the guardroom of the gate-tower: the household guard's quarters
@@ -861,7 +873,9 @@ const LEVEL_E1M6 = {
   items: [{ kind: 'wine', name: 'Arpello\'s wine-flask', heal: 40, at: [44, 13] }, { kind: 'bread', name: 'a guard\'s bread', heal: 30, at: [48.5, 21.5] }, { kind: 'wine', name: 'a guard\'s wine-skin', heal: 35, at: [52.5, 23.5] }, { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [9, 16] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [24, 22] },
     { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [40, 21] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [53, 20] },
     { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [61, 28] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [58, 14] }, { kind: 'wine', name: 'a cup of Arpello\'s wine', heal: 40, at: [62, 11] },
-    { kind: 'bread', name: 'an archer\'s bread', heal: 30, at: [34.8, 16] }, { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [59.2, 24.5] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [54, 32] }],
+    { kind: 'bread', name: 'an archer\'s bread', heal: 30, at: [34.8, 16] }, { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [59.2, 24.5] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [54, 32] },
+    { kind: 'wine', potion: 'balm', name: 'a pot of wound-balm', heal: 20, at: [53.4, 20.3] }, { kind: 'wine', potion: 'xuthal', name: 'a flask of the golden wine of Xuthal', heal: 100, at: [62.3, 11.3] },
+  ],
   entities: [
     { class: 'info_player_start', at: [43.2, 17.5], yaw: -Math.PI / 2 },
     // "his archers ranged the parapets, bolts drawn": on the turret across the leads, shooting down at the crowd; when he goes over, their nerve breaks
@@ -963,13 +977,19 @@ const LEVEL_E1M7 = {
   scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'deadhorse', n: 14, rect: [16, 6, 72, 32] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] }],
   shafts: [], links: [], features: [],
   lights: [],
-  props: [{ prefab: 'brazier', at: [89.5, 18.2] }, { prefab: 'brazier', at: [89.5, 25.8] }, { prefab: 'standard', at: [91, 18.8] }, { prefab: 'standard', at: [91.5, 25.2] }, { prefab: 'standard', at: [93.5, 19.5] }],   // the camp-fires of Koth burning at the road's mouth
+  props: [
+    // "burning the pavilions": the lords' tents of the host pitched behind Strabonus's palace troops, and their fires
+    { prefab: 'pavilion', at: [80, 6.5], rot: 0 }, { prefab: 'pavilion', at: [88, 6.8], rot: 0.4, cloth: 'velvet' }, { prefab: 'pavilion', at: [80, 37.5], rot: 3.1, cloth: 'velvet' }, { prefab: 'pavilion', at: [88.5, 37.2], rot: 2.8 },
+    { prefab: 'campfire', at: [84, 9.2] }, { prefab: 'campfire', at: [84, 34.8] },
+    { prefab: 'brazier', at: [89.5, 18.2] }, { prefab: 'brazier', at: [89.5, 25.8] }, { prefab: 'standard', at: [91, 18.8] }, { prefab: 'standard', at: [91.5, 25.2] }, { prefab: 'standard', at: [93.5, 19.5] }],   // the camp-fires of Koth burning at the road's mouth
   items: [{ kind: 'wine', name: 'a dead knight\'s wine-flask', heal: 40, at: [71.5, 20.5] }, { kind: 'bread', name: 'bread from a Kothian saddle-bag', heal: 35, at: [71.5, 24] },
     { kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [25, 12] }, { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [26, 33] }, { kind: 'wine', name: 'a captain\'s wine-flask', heal: 40, at: [75.2, 30] }, { kind: 'wine', name: 'a palace-guard\'s wine-skin', heal: 35, at: [74.5, 21] }, { kind: 'bread', name: 'a palace-guard\'s bread', heal: 30, at: [77, 26] },
     { kind: 'bread', name: 'a Shemite\'s barley-cake', heal: 30, at: [19, 17] }, { kind: 'wine', name: 'a Shemite\'s wine-skin', heal: 35, at: [21, 27] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [28, 22] },
     { kind: 'bread', name: 'a Bossonian\'s bread', heal: 30, at: [32, 19] }, { kind: 'wine', name: 'a pikeman\'s wine-skin', heal: 35, at: [34, 38] },
     { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [57, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [71.6, 28.5] }, { kind: 'wine', name: 'a wine-skin', heal: 35, at: [75, 12] },
-    { kind: 'wine', name: 'a Gunderman\'s wine-skin', heal: 35, at: [56, 19] }, { kind: 'bread', name: 'a Gunderman\'s bread', heal: 30, at: [56, 25] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [69, 19.5] }, { kind: 'bread', name: 'a knight\'s saddle-bread', heal: 30, at: [69, 24.5] }],
+    { kind: 'wine', name: 'a Gunderman\'s wine-skin', heal: 35, at: [56, 19] }, { kind: 'bread', name: 'a Gunderman\'s bread', heal: 30, at: [56, 25] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [69, 19.5] }, { kind: 'bread', name: 'a knight\'s saddle-bread', heal: 30, at: [69, 24.5] },
+    { kind: 'wine', potion: 'balm', name: 'a surgeon\'s pot of wound-balm', heal: 20, at: [28.4, 22.3] }, { kind: 'wine', potion: 'xuthal', name: 'a flask of the golden wine of Xuthal', heal: 100, at: [71.9, 20.8] },
+  ],
   // the siege lines of Koth: banks of stakes before the spearmen and round the king's own troops, with gaps to sally through; stake-pits in the press
   stakes: [{ from: [48, 5], to: [48, 19], face: -Math.PI / 2 }, { from: [48, 25], to: [48, 39], face: -Math.PI / 2 }, { from: [73, 5], to: [73, 18], face: -Math.PI / 2 }, { from: [73, 26], to: [73, 39], face: -Math.PI / 2 },
     // the Shemites' line: curving banks on its flanks, so the way in bends toward its centre
@@ -1075,12 +1095,18 @@ const LEVEL_E1M8 = {
   boulders: [{ from: [2.5, 3], to: [2.5, 61], r: [1.6, 3.2] }, { from: [3, 61.2], to: [30, 61.2], r: [1.6, 3], jitter: 2 }, { from: [54, 61.2], to: [80, 61.2], r: [1.6, 3], jitter: 2 }, { from: [80.5, 37], to: [80.5, 61], r: [1.6, 3] }, { from: [66, 37.2], to: [92, 37.2], r: [1.6, 3], jitter: 2 },
     { from: [92.5, 3], to: [92.5, 37], r: [1.8, 3.6] }, { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3] }, { from: [54, 2.8], to: [92, 2.8], r: [1.4, 3] }],
   scatter: [{ prefab: 'fallen', n: 40, rect: [4, 5, 25, 30] }, { prefab: 'standard', n: 9, rect: [5, 38, 22, 20] }, { prefab: 'fallen', n: 30, rect: [4, 37, 25, 22] }, { prefab: 'deadhorse', n: 6, rect: [5, 38, 22, 20] }, { prefab: 'deadhorse', n: 8, rect: [5, 6, 22, 28] }, { prefab: 'fallen', n: 14, rect: [55, 5, 10, 30] }],
-  shafts: [], links: [], features: [], lights: [], props: [],
+  shafts: [], links: [], features: [], lights: [], props: [
+    // the camp of Koth by the river: the tents, cut loose and half struck, and the fires still burning
+    { prefab: 'pavilion', at: [4.6, 44.5], rot: 1.6 }, { prefab: 'pavilion', at: [4.6, 51.5], rot: 1.5, cloth: 'velvet' }, { prefab: 'pavilion', at: [14, 59.6], rot: 3.1 }, { prefab: 'pavilion', at: [22, 59.6], rot: 3.2, cloth: 'velvet' }, { prefab: 'pavilion', at: [28.4, 57], rot: -1.5 },
+    { prefab: 'campfire', at: [12, 54.5] }, { prefab: 'campfire', at: [22, 55.5] }, { prefab: 'campfire', at: [7.5, 47.8] },
+  ],
   items: [{ kind: 'bread', name: 'a dead man\'s ration', heal: 30, at: [16, 31] }, { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 35, at: [20.5, 27.5] }, { kind: 'bread', name: 'a dead man\'s ration', heal: 30, at: [13, 26] },   // the rear-guard's ground
     { kind: 'wine', name: 'a knight\'s wine-skin', heal: 35, at: [62, 40] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [72, 50] },
     { kind: 'wine', name: 'a Kothian captain\'s wine', heal: 40, at: [14, 50] }, { kind: 'bread', name: 'camp bread', heal: 30, at: [24, 42] },
     { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 35, at: [18, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [26, 28] },
-    { kind: 'wine', name: 'a fugitive\'s wine-skin', heal: 35, at: [60, 12] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [64, 30] }],
+    { kind: 'wine', name: 'a fugitive\'s wine-skin', heal: 35, at: [60, 12] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [64, 30] },
+    { kind: 'wine', potion: 'balm', name: 'a pot of wound-balm', heal: 20, at: [24.4, 42.3] }, { kind: 'wine', potion: 'xuthal', name: 'a flask of the golden wine of Xuthal', heal: 100, at: [62.4, 40.3] },
+  ],
   // the Kothian camp by the river, fortified on its landward side: a bank of stakes with a gate, stake-pits before it
   stakes: [{ from: [3, 36], to: [8, 36], face: Math.PI }, { from: [13, 36], to: [29, 36], face: Math.PI },
     // the rout's own works: the camp's outer bank curls round the river bank, and on the meadow the fugitives' last stand
@@ -1273,6 +1299,8 @@ function buildLevel(spec) {
     else if (p.prefab === 'stool') LV.colliders.push({ x, z, r: 0.35 });
     else if (p.prefab === 'divan') { const c = Math.cos(p.yaw || 0), sn = Math.sin(p.yaw || 0); for (const u of [-0.55, 0.55]) LV.colliders.push({ x: x + c * u, z: z - sn * u, r: 0.5 }); }
     else if (p.prefab === 'chest' || p.prefab === 'cask') LV.colliders.push({ x, z, r: 0.5 });
+    else if (p.prefab === 'pavilion') LV.colliders.push({ x, z, r: (p.r || 2.2) + 0.1 });
+    else if (p.prefab === 'campfire') { LV.flames.push({ x, y: prop.y + 0.2, z, w: 0.8, h: 1.0 }, { x: x + 0.15, y: prop.y + 0.2, z: z - 0.1, w: 0.5, h: 0.7 }); LV.lights.push({ x, y: prop.y + 1.2, z, r: 1.0, g: 0.55, b: 0.22, rad: 13, i: 1.5 }); }
     else if (p.prefab === 'sconce') LV.flames.push({ x: x + wallIn(p.wall)[0] * 0.22, y: prop.y + 2.0, z: z + wallIn(p.wall)[1] * 0.22, w: 0.06, h: 0.12 });
   }
   // parapets: a crenellated wall along every edge of a high masonry roof that drops away into the void (not across a gap
@@ -1314,7 +1342,7 @@ function buildLevel(spec) {
 function checkWallMounts(spec) {
   const bad = [];
   for (const m of spec.features.concat(spec.props)) {
-    if (!m.wall) continue;
+    if (!m.wall || m.free) continue;   // (free: a door standing in an open doorway, not on a wall)
     const n = wallIn(m.wall), front = cellIdx(Math.floor(m.at[0] + n[0] * 0.3), Math.floor(m.at[1] + n[1] * 0.3)), back = cellIdx(Math.floor(m.at[0] - n[0] * 0.3), Math.floor(m.at[1] - n[1] * 0.3));
     if (front < 0 || LV.kind[front] === 0 || (back >= 0 && LV.kind[back] !== 0)) bad.push((m.id || m.prefab) + ' at ' + m.at.join(',') + ' wall ' + m.wall);
   }
@@ -1354,18 +1382,22 @@ function scatterProps(spec) {
   });
   return out;
 }
+function nearPit(gx, gz) { for (let dz = -3; dz <= 2; dz++) for (let dx = -3; dx <= 2; dx++) { const i = cellIdx(gx + dx, gz + dz); if (i >= 0 && LV.kind[i] === 2) return true; } return false; }   // within two cells of a drop: a run-up is left level
 function computeCorner(gx, gz) {
-  let nOpen = 0, sumF = 0, nPit = 0, sumP = 0, nNS = 0, sumC = 0, maxC = -1e9, tall = false, sx = 0, sz = 0, nSolid = 0, rough = 0, vault = 0;
+  let nOpen = 0, sumF = 0, nPit = 0, sumP = 0, nNS = 0, sumC = 0, maxC = -1e9, tall = false, sx = 0, sz = 0, nSolid = 0, rough = 0, vault = 0, fMin = 1e9, fMax = -1e9;
   for (let k = 0; k < 4; k++) {
     const ix = gx - 1 + (k & 1), iz = gz - 1 + (k >> 1), idx = cellIdx(ix, iz), kind = idx < 0 ? 0 : LV.kind[idx];
     if (kind === 0) { nSolid++; sx += ix + 0.5 - gx; sz += iz + 0.5 - gz; continue; }
     nNS++; const c = LV.ceil[idx]; sumC += c; if (c > maxC) maxC = c;
     rough += LV.rough[idx]; vault = Math.max(vault, LV.vault[idx]);
     if (LV.flags[idx] & F_TALL) tall = true;
-    if (kind === 1) { nOpen++; sumF += LV.floor[idx]; } else { nPit++; sumP += LV.floor[idx]; }
+    if (kind === 1) { nOpen++; sumF += LV.floor[idx]; fMin = Math.min(fMin, LV.floor[idx]); fMax = Math.max(fMax, LV.floor[idx]); } else { nPit++; sumP += LV.floor[idx]; }
   }
   rough = nNS ? rough / nNS : 1;
-  const fo = nOpen ? sumF / nOpen : (nPit ? sumP / nPit : 0), fp = nPit ? sumP / nPit : fo;
+  let fo = nOpen ? sumF / nOpen : (nPit ? sumP / nPit : 0); const fp = nPit ? sumP / nPit : fo;
+  // a cave's floor is never flat: worn hollow down the middle of a tunnel and rising to its walls, lumped and pitted between
+  // (only where it is all one floor round the corner: never at a pit's lip, a ledge or a stair, so no leap is changed)
+  if (rough >= 0.75 && nOpen > 0 && nPit === 0 && fMax - fMin < 0.6 && !(LEVEL && LEVEL.open) && !nearPit(gx, gz)) fo += (nSolid > 0 ? 0.16 + 0.12 * hrand(gx, gz, 8, 41) : (hrand(gx, gz, 9, 43) - 0.55) * 0.34) * rough;
   const h = hrand(gx, gz, 2, 33);
   let c = nNS ? (tall ? maxC : sumC / nNS + (h - 0.5) * 0.6 * rough) : 0;
   if (nSolid > 0 && vault > 0 && !tall) c -= vault;           // vaulted hewn ceilings
