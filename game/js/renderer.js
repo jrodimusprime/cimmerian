@@ -141,8 +141,98 @@ void main() {
   c = mix(c, uFlashCol, uFlash);
   c *= 1.0 - uFade;
   // the Quake look: every pixel snapped to the nearest colour of the game's palette
-  if (uPal > 0.5) { vec3 q = floor(clamp(c, 0.0, 1.0) * 31.0 + 0.5); c = texture(uLut, vec2((q.r + 32.0 * q.b + 0.5) / 1024.0, (q.g + 0.5) / 32.0)).rgb; }
+  if (uPal > 0.5) {
+    // ordered dither on the low-res pixel grid, so a gradient (a sky, a torch's falloff) breaks into Quake's stipple, not hard bands
+    ivec2 pp = ivec2(vUv * vec2(textureSize(uScene, 0))) & 3;
+    int bi = pp.y * 4 + pp.x;
+    float bay = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0)[bi] / 16.0 - 0.47;
+    c += bay * 0.055 * (0.35 + c);
+    vec3 q = floor(clamp(c, 0.0, 1.0) * 31.0 + 0.5); c = texture(uLut, vec2((q.r + 32.0 * q.b + 0.5) / 1024.0, (q.g + 0.5) / 32.0)).rgb; }
   outColor = vec4(c, 1.0);
+}`;
+
+// The open sky, per pixel: a sunset of banked, sun-lit cloud over far ridges, or a night of stars and a moon.
+const SKY_VS = `#version 300 es
+out vec2 vNdc;
+void main() {
+  vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0);
+  vNdc = p;
+  gl_Position = vec4(p, 0.9999, 1.0);
+}`;
+const SKY_FS = `#version 300 es
+precision highp float;
+uniform mat4 uInvVP;
+uniform vec3 uSun;
+uniform vec3 uHaze;
+uniform float uNight;
+uniform float uTime;
+in vec2 vNdc;
+out vec4 outColor;
+float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * vn(p); p = p * 2.03 + vec2(17.1, 9.2); a *= 0.5; } return s; }
+float ridge(float az, float k, float amp, float base) {   // a far skyline: a sharp-crested mountain wall
+  float r = 0.0, a = 1.0, f = k;
+  for (int i = 0; i < 4; i++) { r += a * (1.0 - abs(vn(vec2(az * f, 3.7 * float(i) + base * 11.0)) * 2.0 - 1.0)); a *= 0.5; f *= 2.1; }
+  return base + amp * r / 1.875;
+}
+void main() {
+  vec4 a = uInvVP * vec4(vNdc, -1.0, 1.0), b = uInvVP * vec4(vNdc, 1.0, 1.0);
+  vec3 d = normalize(b.xyz / b.w - a.xyz / a.w);
+  vec3 sun = normalize(uSun);
+  float e = d.y, az = atan(d.z, d.x), sd = dot(d, sun);
+  vec3 col;
+  if (uNight < 0.5) {
+    // the sunset: a burning band at the horizon, crimson above it, a bruised dusk at the top of the sky
+    float sh = max(dot(normalize(d.xz), normalize(sun.xz)), 0.0);               // how far round toward the sun
+    vec3 hor = mix(uHaze * 1.25, vec3(1.05, 0.48, 0.16), 0.35 + 0.65 * pow(sh, 3.0));
+    vec3 mid = vec3(0.62, 0.13, 0.09), top = vec3(0.16, 0.035, 0.06);
+    float t = clamp(e, 0.0, 1.0);
+    col = mix(hor, mid, smoothstep(0.0, 0.16, t));
+    col = mix(col, top, smoothstep(0.14, 0.75, t));
+    col += vec3(1.0, 0.5, 0.18) * pow(max(sd, 0.0), 10.0) * 0.55 + vec3(1.0, 0.7, 0.3) * pow(max(sd, 0.0), 120.0) * 0.8;   // the glow about the sun
+    // the sun itself: a great disc, struck through with bars of cloud low down
+    float disc = smoothstep(0.9984, 0.9988, sd);
+    vec3 sp = d - sun * sd; float sy = dot(sp, vec3(0.0, 1.0, 0.0)) / 0.05;
+    if (disc > 0.0 && !(sy < 0.0 && fract(sy * 3.0 + 0.1 * uTime) < 0.25 + 0.5 * -sy)) col = mix(col, vec3(1.25, 0.82, 0.38) + vec3(0.25, 0.2, 0.1) * (sy * 0.5 + 0.5), disc);
+    // clouds: long streaks banked over the plain, lit gold where they face the sun and dark plum where they don't
+    if (e > 0.0) {
+      vec2 cp = d.xz / (e + 0.06);
+      float n = fbm(cp * vec2(0.35, 1.6) + vec2(uTime * 0.004, 0.0));
+      float n2 = fbm(cp * vec2(0.9, 3.2) + vec2(-uTime * 0.006, 4.0));
+      float c = smoothstep(0.5, 0.78, n * 0.75 + n2 * 0.4) * smoothstep(0.0, 0.08, e) * (1.0 - smoothstep(0.45, 0.9, e));
+      float lit = pow(max(sd * 0.5 + 0.5, 0.0), 3.0);
+      vec3 cc = mix(vec3(0.24, 0.055, 0.07), vec3(1.0, 0.42, 0.14), lit * (0.4 + 0.6 * smoothstep(0.6, 0.85, n2)));
+      col = mix(col, cc, c * 0.85);
+    }
+    // the far mountains, two ranges, the nearer darker, hazed into the glow
+    float r1 = ridge(az, 2.0, 0.05, 0.012), r2 = ridge(az + 1.3, 3.5, 0.03, 0.004);
+    if (e < r1) col = mix(col, uHaze * 0.85 + vec3(0.06, 0.02, 0.02) * sh, 0.8);
+    if (e < r2) col = mix(col, uHaze * 0.62, 0.9);
+    if (e < 0.0) col = uHaze * 0.62;
+  } else {
+    // the night: a deep blue-black sky, paler at the horizon, thick with stars, a low moon
+    float t = clamp(e, 0.0, 1.0);
+    col = mix(vec3(0.075, 0.075, 0.12), vec3(0.012, 0.014, 0.03), smoothstep(0.0, 0.6, t));
+    vec2 sg = vec2(az * 120.0, asin(clamp(e, -1.0, 1.0)) * 120.0);
+    float st = h21(floor(sg)), tw = 0.75 + 0.25 * sin(uTime * 3.0 + st * 60.0);
+    if (st > 0.985 && e > 0.04) col += vec3(0.9, 0.88, 0.8) * (st - 0.985) / 0.015 * tw * smoothstep(0.04, 0.2, e);
+    float band = exp(-pow(dot(d, normalize(vec3(0.3, 0.8, -0.5))) / 0.18, 2.0));   // the river of stars
+    col += vec3(0.05, 0.05, 0.07) * band * fbm(sg * 0.05);
+    float md = smoothstep(0.9991, 0.9994, sd);
+    col += vec3(0.25, 0.25, 0.3) * pow(max(sd, 0.0), 200.0) + vec3(0.1, 0.1, 0.13) * pow(max(sd, 0.0), 20.0);
+    if (md > 0.0) col = mix(col, vec3(0.95, 0.92, 0.82) * (0.85 + 0.15 * fbm((d - sun).xy * 400.0)), md);
+    if (e > 0.0) {
+      vec2 cp = d.xz / (e + 0.08);
+      float c = smoothstep(0.55, 0.8, fbm(cp * vec2(0.4, 1.4) + vec2(uTime * 0.003, 0.0))) * smoothstep(0.02, 0.1, e) * (1.0 - smoothstep(0.4, 0.8, e));
+      col = mix(col, vec3(0.03, 0.03, 0.05) + vec3(0.12, 0.12, 0.14) * pow(max(sd, 0.0), 6.0), c * 0.8);
+    }
+    float r1 = ridge(az, 2.0, 0.045, 0.01);
+    if (e < r1) col = vec3(0.012, 0.012, 0.022);
+    if (e < 0.0) col = uHaze;
+  }
+  outColor = vec4(col, 1.0);
 }`;
 
 class Renderer {
@@ -152,6 +242,9 @@ class Renderer {
     this.gl = gl; this.canvas = canvas;
     this.prog = this.program(SCENE_VS, SCENE_FS);
     this.post = this.program(POST_VS, POST_FS);
+    this.skyProg = this.program(SKY_VS, SKY_FS);
+    this.su = {};
+    for (const n of ['uInvVP', 'uSun', 'uHaze', 'uNight', 'uTime']) this.su[n] = gl.getUniformLocation(this.skyProg, n);
     this.u = {};
     for (const n of ['uVP', 'uModel', 'uEnt', 'uTexScale', 'uTex', 'uEntLight', 'uGlow', 'uAlpha', 'uLampPos', 'uLampCol', 'uLampRange', 'uCamPos', 'uFog', 'uTime', 'uLightMul', 'uUV', 'uKeyDir', 'uHaze', 'uGFog', 'uGFogCol', 'uDecal', 'uVoid', 'uVoidW'])
       this.u[n] = gl.getUniformLocation(this.prog, n);
@@ -267,6 +360,17 @@ class Renderer {
     gl.uniform3fv(this.u.uHaze, this.haze);
     gl.uniform4fv(this.u.uGFog, this.gfog); gl.uniform3fv(this.u.uGFogCol, this.gfogCol);
     gl.uniform4fv(this.u.uVoid, this.voidLine); gl.uniform1f(this.u.uVoidW, this.voidW);
+  }
+  drawSky(vp, sun, night, time) {                             // before the world, behind everything; leaves the scene program bound
+    const gl = this.gl, u = this.su;
+    gl.useProgram(this.skyProg);
+    gl.depthMask(false);
+    gl.uniformMatrix4fv(u.uInvVP, false, m4inv(vp)); gl.uniform3fv(u.uSun, sun); gl.uniform3fv(u.uHaze, this.haze);
+    gl.uniform1f(u.uNight, night ? 1 : 0); gl.uniform1f(u.uTime, time);
+    gl.bindVertexArray(this.postVao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.depthMask(true);
+    gl.useProgram(this.prog);
   }
   lightMul(v) { this.gl.uniform1f(this.u.uLightMul, v); }
   setCamera(vp, camPos, lampPos, lampCol, lampRange, fog) {

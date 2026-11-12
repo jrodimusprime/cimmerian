@@ -18,7 +18,7 @@ const F_HIDE = 1, F_NOPASS = 2, F_TALL = 4, F_SKY = 8, F_SLIME = 16, F_WIND = 32
 //   captain's landing (action) -> exit.
 const LEVEL_E1M2 = {
   // strip: the king wakes in chains; whatever he carried on the plain is gone
-  level: 'e1m2', next: 'e1m3', strip: true, ambient: [0.05, 0.046, 0.04], exitVoid: { from: [65.5, 14], to: [72, 14], w: 3.5 }, title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [72, 32],
+  level: 'e1m2', next: 'e1m3', strip: true, ambient: [0.06, 0.056, 0.05], exitVoid: { from: [65.5, 14], to: [72, 14], w: 3.5 }, title: 'The Pits', ramps: ['ink', 'jade', 'fire'], grid: [72, 32],
   // README §9, e1m2: the book's beats in the book's order (ch. II–III)
   // ch. II: the conclave in the citadel, and the march down to the pits, before the vault
   prologue: { start: [61, 27.6, 0], done: 'in_vault', objectives: [['answered', 'Hear them out, and answer them. (E)'], ['refused', 'Answer the wizard. (E)'], ['spat', 'Answer Amalrus. (E)'], ['marched', 'Stand.'], ['in_vault', 'Go where they march you.']] },
@@ -34,11 +34,11 @@ const LEVEL_E1M2 = {
   ],
   rooms: [
     // "a chamber with a domed ceiling of carven jet, and the fretted arches of doorways glimmering with strange dark jewels"
-    { id: 'conclave', name: 'a chamber domed with carven jet', at: [56, 21], size: [10, 9], h: 5.5, vault: 2.6, style: 'hewn', tex: { floor: 'MOSAIC', wall: 'BLACK', ceil: 'BLACK' } },
+    { id: 'conclave', name: 'a chamber domed with carven jet', at: [56, 21], size: [10, 9], h: 5.5, vault: 2.6, style: 'hewn', tex: { floor: 'MOSAIC', wall: 'JET', ceil: 'JET' } },
     // "a winding corridor, whose floor was of many-hued mosaics, whose walls were inlaid with gold tissue and silver chasing ... golden censers"
     { id: 'censers', name: 'the corridor of censers', at: [47, 24], size: [9, 2], h: 3.6, vault: 0.9, style: 'hewn', tex: { floor: 'MOSAIC', wall: 'HEWN', ceil: 'HEWN' } },
     // "a smaller corridor, done in jet and black jade, gloomy and awful, which ended at a brass door"
-    { id: 'jetcorr', name: 'a corridor of jet and black jade', at: [45, 20], size: [2, 6], h: 3, style: 'hewn', tex: { floor: 'BLACK', wall: 'BLACK', ceil: 'BLACK' } },
+    { id: 'jetcorr', name: 'a corridor of jet and black jade', at: [45, 20], size: [2, 6], h: 3, style: 'hewn', tex: { floor: 'BLACK', wall: 'JET', ceil: 'BLACK' } },
     { id: 'brassdoor', name: 'the brass door', at: [45, 19], size: [2, 1], h: 3, style: 'hewn', tex: { floor: 'BLACK', wall: 'BLACK', ceil: 'BLACK' } },
     { id: 'stairfoot', name: 'the foot of the stair', at: [6, 3], size: [4, 4], h: 3, style: 'hewn' },
     { id: 'grille_door', name: 'the grille', at: [7, 7], size: [1, 1], h: 1.4, style: 'hewn' },
@@ -109,10 +109,18 @@ const LEVEL_E1M2 = {
     // the pitted way and the bone pit
     { prefab: 'bones', at: [55.5, 17.6] }, { prefab: 'skull', at: [59.4, 9.5] },
     { prefab: 'bones', at: [62, 12], big: true }, { prefab: 'bones', at: [63.6, 15.6], big: true }, { prefab: 'skull', at: [64.3, 11.7] },
+    // the pits' damp: slime running down the walls, glowing faintly jade, and pale fungus in the rough places (drawn only)
+    { prefab: 'seep', at: [8.5, 13], wall: 'N' }, { prefab: 'seep', at: [5.5, 15], wall: 'S' }, { prefab: 'seep', at: [28.5, 13], wall: 'N', top: 3.2 }, { prefab: 'seep', at: [29.5, 15], wall: 'S' },
+    { prefab: 'seep', at: [22.5, 20], wall: 'N' }, { prefab: 'seep', at: [25.5, 29], wall: 'S' }, { prefab: 'seep', at: [20, 24.5], wall: 'W' },
+    { prefab: 'seep', at: [35, 17.5], wall: 'W' }, { prefab: 'seep', at: [45, 10.5], wall: 'E' }, { prefab: 'seep', at: [41.5, 19], wall: 'S' },
+    { prefab: 'seep', at: [53.5, 9], wall: 'N' }, { prefab: 'seep', at: [59.5, 19], wall: 'S' }, { prefab: 'seep', at: [65, 16.2], wall: 'E', top: 2.4 },
+    { prefab: 'fungus', at: [36.5, 3.5] }, { prefab: 'fungus', at: [43.6, 2.8] }, { prefab: 'fungus', at: [44.2, 6.6] }, { prefab: 'fungus', at: [26.3, 17.6] },
+    { prefab: 'fungus', at: [49.5, 13.3] }, { prefab: 'fungus', at: [64.5, 16.4] }, { prefab: 'fungus', at: [68.5, 13.3] }, { prefab: 'fungus', at: [61.5, 16.5] },
   ],
   lights: [
     { at: [51.5, 25], y: 2.6, col: [1.0, 0.75, 0.4], rad: 12, i: 1.1 },          // the censers' smouldering glow
     { at: [61, 25], y: 4, col: [0.9, 0.55, 0.35], rad: 14, i: 0.9 },             // the conclave's lamps
+    { at: [58.5, 25.5], y: 3.2, col: [1.0, 0.6, 0.3], rad: 9, i: 0.8 }, { at: [63.5, 25.5], y: 3.2, col: [1.0, 0.6, 0.3], rad: 9, i: 0.8 },   // and the braziers' glow thrown up into the dome
     { at: [4, 14], y: -4, col: [0.25, 0.55, 0.38], rad: 10, i: 0.9 },             // slime glow in the well
     { at: [28, 7], y: -8, col: [0.25, 0.55, 0.38], rad: 9, i: 0.6 },              // slime glow in the serpent's hole
     { at: [6.4, 9.4], y: 2.4, col: [1.0, 0.6, 0.28], rad: 14, i: 2.3 },           // the torch in the niche above the king: it lights the whole vault
@@ -411,10 +419,10 @@ const STREAM = { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M1 = {
   level: 'e1m1', next: 'e1m2', title: 'The Plain of Shamu', ramps: ['earth', 'night', 'scarlet'], grid: [120, 64],
   squads: ['charge', 'heap1', 'heap2', 'heap3', 'heap4', 'heap5', 'heap6', 'heap7'],                // five or six men who fight as one (combat.js squadChase)
-  ambient: [0.3, 0.18, 0.13], haze: [0.52, 0.1, 0.08], arms: 'sword',
+  ambient: [0.36, 0.21, 0.15], haze: [0.52, 0.1, 0.08], arms: 'sword',
   // no walls: the plain goes on to the horizon under the sky; a stream and lines of boulders close the field in
   open: true, fog: 0.011, sun: [-1, 0.07, 0.3], waterY: -0.5,
-  groundFog: { density: 0.085, falloff: 0.7, floor: 0, col: [0.5, 0.15, 0.1] },   // the battle's smoke and the evening mist, lying on the dead
+  groundFog: { density: 0.04, falloff: 0.9, floor: 0, col: [0.5, 0.15, 0.1] },   // the battle's smoke and the evening mist, lying on the dead
   areas: [
     { id: 'charge', type: 'action', name: 'The Broken Charge', rooms: ['charge'] },
     { id: 'arrows', type: 'puzzle', name: 'The Arrow Ground', rooms: ['gully', 'arrowground'], cp: [31, 31, -Math.PI / 2] },
@@ -451,6 +459,16 @@ const LEVEL_E1M1 = {
     { prefab: 'standard', n: 14, rect: [4, 8, 100, 49] },
     { prefab: 'boulder', n: 9, rect: [6, 12, 54, 42], size: [1.2, 2.8] },     // outcrops in the field: cover, and a ragged skyline
     { prefab: 'boulder', n: 4, rect: [85, 10, 16, 44], size: [1.2, 2.4] },
+    // (drawn only, none of them in anyone's way) the wreck of the day: the volleys' shafts in the turf, slanting back to the Shemite rise;
+    // broken lances standing against the sky, shields, mounds of corpses, and the trodden grass between
+    { prefab: 'arrows', n: 170, rect: [34, 6, 27, 51], from: Math.PI / 2 },
+    { prefab: 'arrows', n: 50, rect: [8, 6, 26, 51], from: Math.PI / 2 },
+    { prefab: 'arrows', n: 50, rect: [70, 6, 32, 51], from: Math.PI / 2 },
+    { prefab: 'lance', n: 70, rect: [4, 6, 99, 51] },
+    { prefab: 'shieldfall', n: 70, rect: [4, 6, 99, 51] },
+    { prefab: 'mound', n: 16, rect: [6, 8, 26, 47] },
+    { prefab: 'mound', n: 12, rect: [83, 8, 19, 47] },
+    { prefab: 'tufts', n: 900, rect: [2, 5, 112, 54] },
   ],
   props: [
     // the arrow ground: dead horses are the only cover
@@ -459,7 +477,7 @@ const LEVEL_E1M1 = {
     { prefab: 'heap', at: [92, 31.5] }, { prefab: 'standard', at: [90, 28], rot: 0.4 }, { prefab: 'standard', at: [94.5, 35], rot: 2.4 },
   ],
   lights: [
-    { at: [-40, 32], y: 26, col: [1.0, 0.5, 0.3], rad: 260, i: 1.4 },             // the sun going down in the west
+    { at: [-40, 32], y: 26, col: [1.0, 0.5, 0.3], rad: 260, i: 1.7 },             // the sun going down in the west
     { at: [60, 30], y: 40, col: [0.85, 0.42, 0.35], rad: 150, i: 0.6 },
     { at: [100, 32], y: 30, col: [0.8, 0.4, 0.35], rad: 90, i: 0.6 },
   ],
@@ -1344,6 +1362,8 @@ function buildLevel(spec) {
     else if (p.prefab === 'chest' || p.prefab === 'cask') LV.colliders.push({ x, z, r: 0.5 });
     else if (p.prefab === 'pavilion') LV.colliders.push({ x, z, r: (p.r || 2.2) + 0.1 });
     else if (p.prefab === 'campfire') { LV.flames.push({ x, y: prop.y + 0.2, z, w: 0.8, h: 1.0 }, { x: x + 0.15, y: prop.y + 0.2, z: z - 0.1, w: 0.5, h: 0.7 }); LV.lights.push({ x, y: prop.y + 1.2, z, r: 1.0, g: 0.55, b: 0.22, rad: 13, i: 1.5 }); }
+    else if (p.prefab === 'seep') LV.lights.push({ x: x + wallIn(p.wall)[0] * 0.8, y: prop.y + 1.0, z: z + wallIn(p.wall)[1] * 0.8, r: 0.25, g: 0.6, b: 0.4, rad: 9.5, i: 0.95 });   // its own faint phosphor
+    else if (p.prefab === 'fungus') LV.lights.push({ x, y: prop.y + 0.5, z, r: 0.3, g: 0.6, b: 0.45, rad: 7, i: 0.8 });
     else if (p.prefab === 'sconce') LV.flames.push({ x: x + wallIn(p.wall)[0] * 0.22, y: prop.y + 2.0, z: z + wallIn(p.wall)[1] * 0.22, w: 0.06, h: 0.12 });
   }
   // parapets: a crenellated wall along every edge of a high masonry roof that drops away into the void (not across a gap
@@ -1402,7 +1422,7 @@ function checkWallMounts(spec) {
 // Walls are not on the grid lines: each corner is set back into the rock (computeCorner: jx, jz) and each wall bows back
 // between floor and ceiling (mesh.js wallStrip: bul, in three rows). How far the real face stands behind the grid line at
 // a hung thing (its span along the wall, between its foot and its top), the least of it so nothing sinks into the stone.
-const HUNG = new Set(['tapestry', 'banner', 'trophy', 'pegs', 'sconce', 'chains']);
+const HUNG = new Set(['tapestry', 'banner', 'trophy', 'pegs', 'sconce', 'chains', 'seep']);
 function wallRecess(p, n) {
   const along = n[0] === 0 ? 0 : 1, u0 = along === 0 ? p.at[0] : p.at[1], line = along === 0 ? Math.round(p.at[1]) : Math.round(p.at[0]);
   const g0 = Math.floor(u0), u = u0 - g0, ca = along === 0 ? corner(g0, line) : corner(line, g0), cb = along === 0 ? corner(g0 + 1, line) : corner(line, g0 + 1);
@@ -1431,7 +1451,7 @@ function scatterProps(spec) {
     for (let k = 0; k < sc.n; k++) {
       const h = q => hrand(k, q, si + 3, 61), [x0, z0, w, d] = sc.rect, ci = cellIdx(Math.floor(x0 + h(1) * w), Math.floor(z0 + h(2) * d));
       if (ci < 0 || LV.kind[ci] === 0 || (LV.room[ci] >= 0 && spec.rooms[LV.room[ci]].noscatter)) continue;   // not inside a wall, nor on a stair
-      out.push({ prefab: sc.prefab, at: [x0 + h(1) * w, z0 + h(2) * d], rot: h(3) * 6.283, size: sc.size ? sc.size[0] + h(4) * (sc.size[1] - sc.size[0]) : 1 });
+      out.push({ prefab: sc.prefab, at: [x0 + h(1) * w, z0 + h(2) * d], rot: h(3) * 6.283, size: sc.size ? sc.size[0] + h(4) * (sc.size[1] - sc.size[0]) : 1, from: sc.from });
     }
   });
   (spec.boulders || []).forEach((ln, li) => {

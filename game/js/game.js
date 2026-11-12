@@ -1674,7 +1674,6 @@ function loadLevel(id, carry) {
   if (levelMesh) R.deleteMesh(levelMesh);
   { const lm = buildLevelMesh(); levelMesh = R.createMesh(lm); buildWallDecals(lm); }
   if (skyMesh) { R.deleteMesh(skyMesh); skyMesh = null; }
-  if (LEVEL.open) skyMesh = R.createMesh(buildSkyMesh(LEVEL.night ? (LEVEL.moon || [0.5, 0.35, -0.6]) : (LEVEL.sun || [-1, 0.05, 0.2]), LEVEL.night));
   R.haze = LEVEL.haze || [0.035, 0.026, 0.02];
   const gf = LEVEL.groundFog;                               // low fog lying on the field
   R.gfog = gf ? [gf.density, gf.falloff, gf.floor || 0, 1] : [0, 0, 0, 0]; R.gfogCol = gf ? gf.col : [0, 0, 0];
@@ -1887,10 +1886,7 @@ function render(alpha) {
   R.voidLine = ev ? [ev.from[0] * CELL, ev.from[1] * CELL, ev.to[0] * CELL, ev.to[1] * CELL] : [0, 0, 0, 0]; R.voidW = ev ? ev.w : 0;
   R.beginScene(gameTime);
   R.lightMul(lm);
-  if (skyMesh) {                                         // the open sky: drawn first, with no haze, and always at the horizon
-    R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, 0);
-    R.key = [0, 1, 0]; R.drawEntity(skyMesh, m4t(px, 0, pz), [0.3, 0.2, 0.2], 1, 1, false);
-  }
+  if (LEVEL.open) R.drawSky(vp, LEVEL.night ? (LEVEL.moon || [0.5, 0.35, -0.6]) : (LEVEL.sun || [-1, 0.05, 0.2]), LEVEL.night, gameTime);   // the open sky: drawn first, behind everything
   R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, LEVEL.fog || 0.034);
   R.drawWorld(levelMesh);
   // every torch, brazier and candle flame: an upright sprite turned to the eye, cycling its four frames

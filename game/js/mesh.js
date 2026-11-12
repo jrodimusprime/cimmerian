@@ -361,6 +361,76 @@ function addPrefab(mb, p) {
       addBox(mb, p.x + Math.sin(yaw) * 1.3 + Math.cos(yaw) * 0.5, p.y + 0.04, p.z + Math.cos(yaw) * 1.3 - Math.sin(yaw) * 0.5, 0.5, 0.02, 0.45, T.BANNER, yaw);
       break;
     }
+    case 'arrows': {                                      // a volley's shafts driven into the turf, all slanting the way they came ("feathering them with shafts")
+      const sd = Math.floor(p.x * 17 + p.z * 29), from = p.from !== undefined ? p.from : 0, n = 4 + Math.floor(hrand(sd, 1, 1, 1) * 8);
+      for (let k = 0; k < n; k++) {
+        const a = hrand(sd, k, 2, 2) * 6.283, r = Math.sqrt(hrand(sd, k, 3, 3)) * 1.3, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, y = groundInfo(x, z).floor;
+        const yaw = from + (hrand(sd, k, 4, 4) - 0.5) * 0.4, tilt = 0.5 + hrand(sd, k, 5, 5) * 0.35, L = 0.55 + hrand(sd, k, 6, 6) * 0.3;
+        const dx = Math.sin(yaw) * Math.sin(tilt), dy = Math.cos(tilt), dz = Math.cos(yaw) * Math.sin(tilt), top = [x + dx * L, y + dy * L, z + dz * L];
+        addSeg(mb, [x - dx * 0.05, y - dy * 0.05, z - dz * 0.05], top, 0.012, 0.012, T.WOOD, ONE3);
+        for (const q of [0, 1.57]) {                     // the fletching: two crossed vanes
+          const ux = Math.cos(yaw + q) * 0.035, uz = -Math.sin(yaw + q) * 0.035, b = [top[0] - dx * 0.16, top[1] - dy * 0.16, top[2] - dz * 0.16];
+          mb.quad([b[0] - ux, b[1], b[2] - uz], [b[0] + ux, b[1], b[2] + uz], [top[0] + ux * 0.6, top[1], top[2] + uz * 0.6], [top[0] - ux * 0.6, top[1], top[2] - uz * 0.6], T.FEATHER, uz, 0, -ux);
+        }
+      }
+      break;
+    }
+    case 'lance': {                                       // a broken lance left standing where it fell, its splintered end to the sky
+      const sd = Math.floor(p.x * 13 + p.z * 31), yaw = p.rot || 0, tilt = 0.15 + hrand(sd, 1, 1, 1) * 0.55, L = 2.2 + hrand(sd, 2, 2, 2) * 2.2;
+      const d = [Math.sin(yaw) * Math.sin(tilt), Math.cos(tilt), Math.cos(yaw) * Math.sin(tilt)], top = [p.x + d[0] * L, p.y + d[1] * L, p.z + d[2] * L];
+      addSeg(mb, [p.x, p.y - 0.3, p.z], top, 0.045, 0.035, T.WOOD, ONE3);
+      for (let k = 0; k < 3; k++) addSpike(mb, top[0], top[1] - 0.05, top[2], [d[0] + (hrand(sd, k, 3, 3) - 0.5) * 0.4, d[1], d[2] + (hrand(sd, k, 4, 4) - 0.5) * 0.4], 0.18 + 0.12 * k, 0.018, 3, T.WOOD);   // splinters
+      if (hrand(sd, 3, 5, 5) < 0.45) {                    // a rag of pennon still bound below the break
+        const b = [p.x + d[0] * (L - 0.5), p.y + d[1] * (L - 0.5), p.z + d[2] * (L - 0.5)], sx = Math.cos(yaw) * 0.55, sz = -Math.sin(yaw) * 0.55;
+        mb.quad(b, [b[0], b[1] - 0.35, b[2]], [b[0] + sx, b[1] - 0.5, b[2] + sz], [b[0] + sx * 1.1, b[1] - 0.12, b[2] + sz * 1.1], T.BANNER, -sz, 0, sx);
+      }
+      break;
+    }
+    case 'tufts': {                                       // grass: a few tufts, dry blades fanned out from the root
+      const sd = Math.floor(p.x * 7 + p.z * 19);
+      for (let k = 0; k < 5; k++) {
+        const x = p.x + (hrand(sd, k, 1, 1) - 0.5) * 2.2, z = p.z + (hrand(sd, k, 2, 2) - 0.5) * 2.2, y = groundInfo(x, z).floor - 0.02, h = 0.3 + hrand(sd, k, 3, 3) * 0.45;
+        for (let b = 0; b < 6; b++) {
+          const a = b / 6 * 6.283 + hrand(sd, k, b, 4), lean = 0.25 + hrand(sd, k, b, 5) * 0.4, w = 0.05;
+          const tx = x + Math.cos(a) * h * lean, tz = z + Math.sin(a) * h * lean, px = -Math.sin(a) * w, pz = Math.cos(a) * w;
+          mb.tri([x + px, y, z + pz], [x - px, y, z - pz], [tx, y + h * (0.8 + 0.3 * hrand(sd, k, b, 6)), tz], b % 3 ? T.STRAW : T.YOTHGA_LEAF, Math.cos(a), 0.6, Math.sin(a));
+        }
+      }
+      break;
+    }
+    case 'shieldfall': {                                  // a shield in the mud, face up or tipped on its rim against the dead
+      const sd = Math.floor(p.x * 11 + p.z * 23), up = hrand(sd, 1, 1, 1) < 0.6, yaw = p.rot || 0;
+      const ax = up ? [Math.sin(yaw) * 0.15, 1, Math.cos(yaw) * 0.15] : [Math.sin(yaw), 0.5, Math.cos(yaw)];
+      smoothLathe(mb, p.x, p.y + (up ? 0.03 : 0.38), p.z, [[0.0, 0], [0.4, 0.0], [0.38, 0.05], [0.12, 0.09], [0.0, 0.1]], 12, hrand(sd, 2, 2, 2) < 0.5 ? T.SHIELD : T.GILT, ONE3, ax);
+      break;
+    }
+    case 'mound': {                                       // "mounds of corpses": men and a horse fallen across one another
+      const sd = Math.floor(p.x * 5 + p.z * 37);
+      addRock(mb, p.x, p.y + 0.35, p.z, 0.9, 0.42, 1.2, sd, T.HIDE, 0.25);
+      for (let k = 0; k < 4; k++) {
+        const a = k * 1.9 + hrand(sd, k, 1, 1), r = 0.5 + hrand(sd, k, 2, 2) * 0.6, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r;
+        addRock(mb, x, p.y + 0.3 + (k % 2) * 0.25, z, 0.25, 0.16, 0.42, sd + k, k % 2 ? T.MAIL : T.GILT, 0.15);
+        addRock(mb, x + Math.cos(a) * 0.45, p.y + 0.22, z + Math.sin(a) * 0.45, 0.12, 0.12, 0.14, sd + k + 7, T.STEEL, 0.05);
+      }
+      for (let k = 0; k < 3; k++) { const a = k * 2.1 + 0.4; addBox(mb, p.x + Math.cos(a) * 0.4, p.y + 0.7, p.z + Math.sin(a) * 0.4, 0.025, 0.025, 1.1, T.WOOD, a, ONE3, 0.3 + k * 0.2); }
+      break;
+    }
+    case 'seep': {                                        // the pits' damp: a glistening run of slime down the wall, pooling at its foot
+      const t = [n[1], -n[0]], sd = Math.floor(p.x * 17 + p.z * 5), top = p.y + (p.top || 2.8), NS = 8;
+      let prev = null;
+      for (let k = 0; k <= NS; k++) {
+        const v = k / NS, y = top - (top - p.y) * v, wid = 0.12 + 0.22 * Math.sin(v * 3.1) * (0.6 + 0.6 * hrand(sd, k, 1, 1)), dx = (hrand(sd, k, 2, 2) - 0.5) * 0.25 + Math.sin(v * 5 + sd) * 0.1;
+        const cx = p.x + n[0] * 0.03 + t[0] * dx, cz = p.z + n[1] * 0.03 + t[1] * dx, a = [cx - t[0] * wid, y, cz - t[1] * wid], b = [cx + t[0] * wid, y, cz + t[1] * wid];
+        if (prev) mb.quad(prev[0], prev[1], b, a, T.SLIME, n[0], 0, n[1]);
+        prev = [a, b];
+      }
+      for (let k = 0; k < 7; k++) {                       // the pool
+        const a0 = k / 7 * Math.PI * 2, a1 = (k + 1) / 7 * Math.PI * 2, r0 = 0.45 + 0.3 * hrand(sd, k, 3, 3), r1 = 0.45 + 0.3 * hrand(sd, (k + 1) % 7, 3, 3);
+        const c = [p.x + n[0] * 0.5, p.y + 0.015, p.z + n[1] * 0.5];
+        mb.tri(c, [c[0] + Math.cos(a0) * r0, c[1], c[2] + Math.sin(a0) * r0 * 0.8], [c[0] + Math.cos(a1) * r1, c[1], c[2] + Math.sin(a1) * r1 * 0.8], T.SLIME, 0, 1, 0);
+      }
+      break;
+    }
     case 'boulder': {                                     // a weathered boulder, sunk into the turf, often with a smaller one leaning on it
       const r = p.size, sd = Math.floor(p.x * 13 + p.z * 7);
       addRock(mb, p.x, p.y + r * 0.3, p.z, r, r * (0.6 + 0.3 * hrand(sd, 1, 2, 3)), r * (0.8 + 0.3 * hrand(sd, 2, 2, 3)), sd, T.ROCK, 0.45);
@@ -378,7 +448,7 @@ function addPrefab(mb, p) {
         const bx = p.x + dx, bz = p.z + dz, tx = bx + Math.sin(lean) * hgt, tz = bz;
         addSeg(mb, [bx, p.y + 0.5, bz], [tx, p.y + hgt, tz], 0.09, 0.06, T.BLACK, ONE3);
         addBox(mb, tx, p.y + hgt - 0.1, tz, 0.05, 0.05, 1.2, T.BLACK, 0);                           // the crossbar
-        addBox(mb, tx, p.y + hgt - 1.7, tz, 0.03, 1.55, 1.1, T.BLACK, 0, ONE3, 0.05);            // the banner hanging from it: black against the red sky
+        addRag(mb, [tx, p.y + hgt - 0.12, tz - 1.1], [0, 0, 2.2], 3.1, T.BLACK, Math.floor(hgt * 10));   // the banner hanging from it: black against the red sky, torn
       }
       break;
     }
@@ -425,6 +495,46 @@ function bakeLights(mb, lights, amb) {
   }
 }
 const AMBIENT = [0.07, 0.064, 0.056];
+// Dressed corridors are ribbed: every two cells a transverse arch follows the vault across, sprung from a pilaster on each
+// wall (with a plinth and a corbel), so a long passage reads in bays as Piranesi drew them, not as one plain tube.
+// Drawn only, and kept within a hand of the wall, inside a man's radius, so nothing walks into them.
+function addRibs(mb) {
+  const W = LV.W, T0 = 0.22, HW = 0.2;
+  LV.spec.rooms.forEach((r, ri) => {
+    if (r.style !== 'hewn' || r.solid || r.pit || r.sky || r.noribs || !r.size) return;
+    const [w, d] = r.size, along = w >= d ? 'x' : 'z', L = Math.max(w, d), S = Math.min(w, d);
+    if (S > 3 || L < 4) return;
+    for (let k = 2; k < L - 1; k += 2) {
+      const line = along === 'x' ? r.at[0] + k : r.at[1] + k;           // the grid line the rib stands on
+      const cells = [];
+      for (let j = 0; j < S; j++) for (const back of [-1, 0]) {
+        const gx = along === 'x' ? line + back : r.at[0] + j, gz = along === 'x' ? r.at[1] + j : line + back, i = cellIdx(gx, gz);
+        cells.push(i >= 0 && LV.room[i] === ri && LV.kind[i] === 1 && !(LV.flags[i] & (F_TALL | F_SKY)));
+      }
+      if (!cells.every(Boolean)) continue;
+      const tex = T.ASHLAR;
+      const cs = [];
+      for (let j = 0; j <= S; j++) cs.push(along === 'x' ? corner(line, r.at[1] + j) : corner(r.at[0] + j, line));
+      const off = along === 'x' ? [1, 0] : [0, 1];                        // the rib's thickness runs along the corridor
+      const pt = (q, dy, e) => [(along === 'x' ? line * CELL : q.x) + off[0] * e * HW, q.c + dy, (along === 'x' ? q.z : line * CELL) + off[1] * e * HW];
+      for (let j = 0; j < S; j++) {
+        const a = cs[j], b = cs[j + 1];
+        mb.quad(pt(a, -T0, -1), pt(b, -T0, -1), pt(b, -T0, 1), pt(a, -T0, 1), tex, 0, -1, 0);                       // its soffit
+        for (const e of [-1, 1]) mb.quad(pt(a, 0.05, e), pt(b, 0.05, e), pt(b, -T0, e), pt(a, -T0, e), tex, off[0] * e, 0, off[1] * e);   // its faces
+      }
+      for (const [q, inward] of [[cs[0], 1], [cs[S], -1]]) {               // the pilasters, where a wall stands behind
+        const gx = along === 'x' ? line : r.at[0] + (inward > 0 ? -1 : S), gz = along === 'x' ? r.at[1] + (inward > 0 ? -1 : S) : line;
+        const gx2 = along === 'x' ? line - 1 : gx, gz2 = along === 'x' ? gz : line - 1;
+        if (kindAt(gx, gz) !== 0 || kindAt(gx2, gz2) !== 0) continue;
+        const nx = along === 'x' ? 0 : inward, nz = along === 'x' ? inward : 0, x = (along === 'x' ? line * CELL : q.x) + nx * 0.1, z = (along === 'x' ? q.z : line * CELL) + nz * 0.1;
+        const f = q.fo, top = q.c - T0, yaw = along === 'x' ? 0 : Math.PI / 2;
+        addBox(mb, x, (f + top) / 2, z, HW, (top - f) / 2, 0.13, tex, yaw);
+        addBox(mb, x + nx * 0.03, f + 0.2, z + nz * 0.03, HW + 0.06, 0.2, 0.17, tex, yaw);                 // the plinth
+        addBox(mb, x + nx * 0.05, top - 0.1, z + nz * 0.05, HW + 0.07, 0.1, 0.2, tex, yaw);                // the corbel the arch springs from
+      }
+    }
+  });
+}
 const DIRS = [[0, -1, 0, 0, 1, 0], [1, 0, 1, 0, 1, 1], [0, 1, 1, 1, 0, 1], [-1, 0, 0, 1, 0, 0]];
 function buildLevelMesh() {
   const mb = new MeshBuilder(40000), W = LV.W, H = LV.H;
@@ -509,6 +619,7 @@ function buildLevelMesh() {
     }
   }
   for (const p of LV.props) addPrefab(mb, p);
+  addRibs(mb);
   for (const q of LV.parapets || []) {                  // the crenellated parapet: a low wall, merlons on it, a round post at each end of a run
     const len = Math.hypot(q.x1 - q.x0, q.z1 - q.z0), yaw = Math.atan2(q.x1 - q.x0, q.z1 - q.z0), mx = (q.x0 + q.x1) / 2, mz = (q.z0 + q.z1) / 2;
     addBox(mb, mx, q.y + 0.5, mz, 0.22, 0.5, len / 2, T.HEWN, yaw);
@@ -872,6 +983,20 @@ function addFinger(mb, base, lens, rad, curls, col) {
       addBox(mb, q[0], q[1], q[2], r * 0.7, 0.0018, L * 0.32, T.NAIL, 0, ONE3, th);
     }
     p = [p[0] + d[0] * L * 0.94, p[1] + d[1] * L * 0.94, p[2] + d[2] * L * 0.94];
+  }
+}
+// a hanging cloth: from a top edge (origin, span vector), falling `h`, rippled, its foot cut ragged into tongues
+function addRag(mb, o, span, h, layer, seed, col = ONE3) {
+  const NX = 6, NY = 5, L = Math.hypot(span[0], span[2]) || 1, nx = -span[2] / L, nz = span[0] / L, P = [];
+  for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+    const u = i / NX, v = j / NY, tongue = j === NY ? (i % 2 ? -0.28 : 0.05) * h + (hrand(seed, i, 1, 2) - 0.5) * 0.25 * h : 0;
+    const ripple = Math.sin(u * 7 + seed) * 0.12 * (0.3 + v) + (hrand(seed, i, j, 3) - 0.5) * 0.06;
+    P.push([o[0] + span[0] * u + nx * ripple, o[1] - v * h * (1 - 0.1 * u) + tongue * (j === NY ? 1 : 0), o[2] + span[2] * u + nz * ripple]);
+  }
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+    if (j === NY - 1 && hrand(seed, i, 7, 4) < 0.2) continue;               // a hole torn out of the hem
+    const a = P[j * (NX + 1) + i], b = P[j * (NX + 1) + i + 1], c = P[(j + 1) * (NX + 1) + i + 1], d = P[(j + 1) * (NX + 1) + i];
+    mb.quad(a, b, c, d, layer, nx, 0, nz, col);
   }
 }
 function addSeg(mb, a, b, r0, r1, layer, col) {

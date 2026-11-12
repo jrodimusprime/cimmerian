@@ -18,7 +18,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
   'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
   'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
-  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC', 'OAK'];
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC', 'OAK', 'ASHLAR', 'JET'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -144,33 +144,45 @@ function hatch(v, x, y, strength) {
 // Each spec returns {v, ramp, lo, hi, e} per texel. 'ramp' picks one of the
 // declared ramps, so no texture can use a colour outside the level's set.
 const TEXGEN = {
-  HEWN: { pre: s => {                                 // dressed stone in irregular courses (Piranesi's prisons)
-    const r = new RNG(s), rows = [];
-    for (let i = 0; i < 4; i++) { const n = r.int(2, 3), cuts = [0]; for (let k = 1; k < n; k++) cuts.push((k + r.range(-0.28, 0.28)) / n); cuts.push(1); rows.push({ off: r.next(), cuts }); }
+  HEWN: { pre: s => {                                 // great dressed blocks in courses (Piranesi's prisons): each block its own tone, a lit arris above, shadow below
+    const r = new RNG(s), rows = [], hs = [0.27, 0.23, 0.26, 0.24];
+    let y = 0;
+    for (let i = 0; i < 4; i++) { const n = r.int(2, 3), cuts = [0]; for (let k = 1; k < n; k++) cuts.push((k + r.range(-0.25, 0.25)) / n); cuts.push(1); rows.push({ y0: y, y1: y + hs[i], off: r.next(), cuts }); y += hs[i]; }
     return rows;
   }, f: (x, y, s, rows) => {
-    const px = x / 64, py = y / 64, row = Math.min(3, Math.floor(py * 4)), R = rows[row], ly = py * 4 - row;
+    const px = x / 64, py = y / 64;
+    let row = 0; while (row < 3 && py >= rows[row].y1) row++;
+    const R = rows[row], hgt = R.y1 - R.y0, ly = (py - R.y0) / hgt;
     const bxr = (px + R.off) % 1; let bi = 0; while (bi < R.cuts.length - 2 && bxr > R.cuts[bi + 1]) bi++;
     const w = R.cuts[bi + 1] - R.cuts[bi], lx = (bxr - R.cuts[bi]) / w;
-    const edge = Math.min(Math.min(lx, 1 - lx) * w * 64, Math.min(ly, 1 - ly) * 16);
-    if (edge < 0.9 + tfbm(px, py, 16, 2, s + 7) * 2.6) return { v: 0.1 + 0.25 * tfbm(px, py, 16, 2, s + 3), ramp: 'ink', lo: 0, hi: 0.3 };   // chipped mortar
-    const id = hrand(row, bi, s, 4);
-    let v = 0.36 + 0.24 * id + 0.26 * tfbm(px + id, py, 8, 4, s);
-    v -= 0.3 * Math.pow(tfbm(px, py, 32, 1, s + 11), 4) * 2;                         // pitting
-    if (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 9) > 0.965) v -= 0.22;        // specks
-    v -= 0.14 * (1 - smoothstep(1, 4.5, edge));                                       // worn bevels
-    if (Math.abs(tfbm(px + id * 3, py, 4, 3, s + 19) - 0.5) < 0.011 && id > 0.45) v -= 0.3;   // cracks
-    v -= 0.22 * smoothstep(0.55, 0.8, tfbmP(px, py, 16, 2, 3, s + 23));               // grime running down
-    if (tfbm(px, py, 2, 3, s + 9) > 0.64 && py > 0.5) return { v: v * 0.85, ramp: 'jade', lo: 0.04, hi: 0.55, h: 0.05 };
-    return { v, ramp: 'ink', lo: 0.04, hi: 0.46, h: 0.05 };
+    const dl = lx * w * 64, dr = (1 - lx) * w * 64, dt = ly * hgt * 64, db = (1 - ly) * hgt * 64;   // texels to each edge
+    const chip = 0.45 + 1.1 * Math.pow(tfbm(px, py, 16, 2, s + 7), 3) * 3;
+    const edge = Math.min(dl, dr, dt, db);
+    if (edge < chip) return { v: 0.1 + 0.18 * tfbm(px, py, 16, 2, s + 3), ramp: 'ink', lo: 0, hi: 0.3 };   // the joint, and a chipped arris
+    const id = hrand(row, bi, s, 4), id2 = hrand(row, bi, s, 6);
+    let v = 0.4 + 0.16 * (id - 0.5) + 0.2 * (tfbm(px + id * 7, py, 6, 4, s) - 0.5) + 0.08 * (tfbm(px, py, 24, 2, s + 1) - 0.5);
+    v += 0.16 * (1 - smoothstep(chip, chip + 1.6, dt)) + 0.08 * (1 - smoothstep(chip, chip + 1.4, dl));   // the lit arris, above and to the left
+    v -= 0.2 * (1 - smoothstep(chip, chip + 2.6, db)) + 0.1 * (1 - smoothstep(chip, chip + 2, dr));    // and the shadowed one beneath
+    v -= 0.1 * Math.pow(1 - Math.min(1, edge / 10), 2);                                                 // the face falls away toward its edges (rock-faced)
+    if (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 9) > 0.975) v -= 0.14;                           // tool marks
+    if (Math.abs(tfbm(px + id * 3, py, 4, 3, s + 19) - 0.5) < 0.006 && id2 > 0.7) v -= 0.18;             // a hairline crack
+    v -= 0.16 * smoothstep(0.55, 0.85, tfbmP(px, py, 12, 1.5, 3, s + 23));                              // water stains, running down
+    if (id2 < 0.12 && tfbm(px, py, 8, 3, s + 9) > 0.55) return { v: v * 0.9, ramp: 'jade', lo: 0.04, hi: 0.5, h: 0.03 };   // a damp block
+    return { v, ramp: 'ink', lo: 0.05, hi: 0.5, h: 0.03 };
   } },
-  ROCK: { pre: s => makeCells(5, s), f: (x, y, s, c) => {    // raw pit rock: ridged, bedded, fissured
-    const px = x / 64, py = y / 64, ridge = 1 - Math.abs(tfbm(px, py, 4, 5, s) * 2 - 1);
-    let v = 0.18 + 0.36 * ridge + 0.14 * tfbm(px, py, 16, 2, s + 9) + 0.12 * (tfbmP(px, py, 2, 16, 3, s + 4) - 0.5);
-    const k = cellAt(c, px, py); if (k.f2 - k.f1 < 0.012 + tfbm(px, py, 16, 1, s) * 0.01) v -= 0.35;
-    if (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 2) > 0.975) v += 0.2;
-    if (tfbm(px, py, 2, 3, s + 3) > 0.62) return { v: v * 0.9, ramp: 'jade', lo: 0.02, hi: 0.5, h: 0.05 };
-    return { v, ramp: 'ink', lo: 0.03, hi: 0.4, h: 0.05 };
+  ROCK: { pre: s => makeCells(3, s), f: (x, y, s, c) => {    // raw pit rock: ridged and knobbed, bedded in layers, split along a few deep joints
+    const px = x / 64, py = y / 64, ridge = 1 - Math.abs(tfbm(px, py, 4, 5, s) * 2 - 1), knob = tfbm(px, py, 8, 3, s + 21);
+    const strata = tfbmP(px + 0.15 * ridge, py, 1, 7, 3, s + 4);
+    let v = 0.2 + 0.26 * ridge + 0.16 * (knob - 0.5) + 0.06 * tfbm(px, py, 24, 2, s + 9) + 0.16 * (strata - 0.5);
+    const lay = Math.abs(((py * 6 + 0.5 * ridge) % 1) - 0.5);
+    if (lay < 0.035) v -= 0.12;                                                    // a bedding seam
+    const j1 = Math.abs(tfbm(px, py, 3, 4, s + 31) - 0.5), j2 = Math.abs(tfbmP(px, py, 2, 5, 3, s + 37) - 0.5);
+    const g = Math.min(j1, j2 * 1.3);
+    if (g < 0.008) v -= 0.28;                                                        // a deep joint, wandering as rock splits
+    else if (g < 0.03) v += 0.08 * (1 - g / 0.03) * (j1 < j2 * 1.3 ? 1 : -0.5);     // one lip catching the light, the other in shadow
+    if (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 2) > 0.98) v += 0.13;
+    if (tfbm(px, py, 3, 3, s + 3) > 0.7 && knob < 0.5) return { v: v * 0.95, ramp: 'jade', lo: 0.03, hi: 0.3, h: 0.04 };   // damp in the hollows
+    return { v, ramp: 'ink', lo: 0.03, hi: 0.44, h: 0.04 };
   } },
   FLAG: { pre: s => makeCells(5, s), f: (x, y, s, c) => {     // worn flagstones, dirt and wet in the joints
     const px = x / 64, py = y / 64, k = cellAt(c, px, py), gap = k.f2 - k.f1;
@@ -439,17 +451,49 @@ const TEXGEN = {
     const ramp = ['bronze', 'scarlet', 'ink'][ring], v = 0.3 + 0.25 * id + 0.15 * tfbm(x / 64, y / 64, 4, 2, s);
     return { v, ramp, lo: 0.06, hi: 0.55 };
   } },
-  CAVE: { f: (x, y, s) => {                           // wet limestone, flowstone drips running down
-    const px = x / 64, py = y / 64, drip = tfbmP(px, py, 16, 2, 4, s), lumps = tfbm(px, py, 4, 4, s + 5);
-    const v = 0.2 + 0.32 * lumps + 0.28 * (drip - 0.5) - (Math.abs(tfbm(px, py, 4, 3, s + 1) - 0.5) < 0.01 ? 0.25 : 0);
-    if (tfbm(px, py, 2, 3, s + 8) > 0.6) return { v: v + 0.08, ramp: 'jade', lo: 0.05, hi: 0.72, h: 0.04 };
-    return { v, ramp: 'ink', lo: 0.05, hi: 0.58, h: 0.05 };
+  ASHLAR: { f: (x, y, s) => {                         // finer dressed stone for ribs, pilasters, quoins: paler, close-jointed, its arrises worn
+    const px = x / 64, py = y / 64, bx = Math.floor(px * 4), by = Math.floor(py * 8), lx = px * 4 - bx, ly = py * 8 - by;
+    const sx = (bx + (by % 2) * 0.5), lx2 = ((px * 4 + (by % 2) * 0.5) % 1 + 1) % 1, e = Math.min(lx2, 1 - lx2) * 16, ey = Math.min(ly, 1 - ly) * 8;
+    if (Math.min(e, ey) < 0.55) return { v: 0.16, ramp: 'ink', lo: 0, hi: 0.4 };
+    const id = hrand(Math.floor(sx), by, s, 3);
+    let v = 0.55 + 0.12 * (id - 0.5) + 0.15 * (tfbm(px, py, 8, 3, s) - 0.5) + 0.12 * (1 - smoothstep(0.55, 1.6, ey)) * (ly < 0.5 ? 1 : -1.4);
+    v -= 0.18 * smoothstep(0.6, 0.85, tfbmP(px, py, 10, 2, 3, s + 5));                  // soot and seep
+    return { v, ramp: 'ink', lo: 0.06, hi: 0.6, h: 0.03 };
   } },
-  MUD: { pre: s => makeCells(9, s), f: (x, y, s, c) => {   // cave floor: mud, gravel, standing wet
-    const px = x / 64, py = y / 64, k = cellAt(c, px, py);
-    if (k.f1 < 0.022 + 0.012 * k.id) return { v: 0.3 + 0.45 * k.id - k.f1 * 6, ramp: 'ink', lo: 0.08, hi: 0.55 };
-    if (tfbm(px, py, 4, 2, s + 4) > 0.6) return { v: 0.2 + 0.3 * tfbm(px, py, 16, 1, s), ramp: 'jade', lo: 0, hi: 0.32, e: 0.02 };
-    return { v: 0.14 + 0.22 * tfbm(px, py, 8, 3, s), ramp: 'earth', lo: 0.05, hi: 0.5, h: 0.04 };
+  JET: { f: (x, y, s) => {                            // carven jet: polished black, cut in deep interlaced relief whose edges take the light, a dark jewel at each knot
+    const px = x / 64, py = y / 64, u = (px * 4) % 1, v = (py * 4) % 1, cu = Math.floor(px * 4), cv = Math.floor(py * 4);
+    const ring = Math.abs(Math.hypot(u - 0.5, v - 0.5) - 0.34), diag = Math.min(Math.abs(u - v), Math.abs(u + v - 1)), knot = Math.hypot(u - 0.5, v - 0.5);
+    if (knot < 0.055 && hrand(cu, cv, s, 9) > 0.7) return { v: 0.5 + 0.4 * (1 - knot / 0.055), ramp: hrand(cu, cv, s, 8) > 0.5 ? 'scarlet' : 'magic', lo: 0.05, hi: 0.45, e: 0.3 };   // a dark jewel, glimmering
+    if (knot < 0.075) return { v: 0.03, ramp: 'ink', lo: 0, hi: 0.3 };
+    const cut = Math.min(ring, diag * 0.8);
+    let t = 0.12 + 0.08 * tfbm(px, py, 8, 2, s);
+    if (cut < 0.03) t = 0.015;                                                       // the cut
+    else if (cut < 0.065) t += 0.75 * (1 - (cut - 0.03) / 0.035);                    // its polished lip
+    if (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 4) > 0.997) t = 0.55;         // a glint
+    return { v: t, ramp: 'ink', lo: 0, hi: 0.7 };
+  } },
+  CAVE: { f: (x, y, s) => {                           // wet limestone: bedded in layers, flowstone running down it, pocked
+    const px = x / 64, py = y / 64, drip = tfbmP(px, py, 20, 2, 3, s), lumps = tfbm(px, py, 4, 4, s + 5);
+    const bed = tfbmP(px + 0.2 * lumps, py, 1, 6, 2, s + 2), layer = Math.abs(((py * 5 + 0.6 * lumps) % 1) - 0.5);
+    let v = 0.26 + 0.26 * lumps + 0.16 * (drip - 0.5) + 0.1 * (bed - 0.5);
+    v -= 0.1 * (1 - smoothstep(0.0, 0.06, layer)); v += 0.05 * (smoothstep(0.04, 0.08, layer) - smoothstep(0.08, 0.14, layer));   // the bedding planes
+    if (tfbm(px, py, 16, 2, s + 6) > 0.7) v -= 0.12;                                                // pocks
+    if (drip > 0.66 && tfbm(px, py, 2, 2, s + 8) > 0.55) return { v: v + 0.06, ramp: 'jade', lo: 0.05, hi: 0.5, h: 0.04 };   // wet flowstone
+    return { v, ramp: 'ink', lo: 0.05, hi: 0.55, h: 0.04 };
+  } },
+  MUD: { pre: s => makeCells(11, s), f: (x, y, s, c) => {   // cave floor: trodden mud, loose stones lying in it, standing wet in the hollows
+    const px = x / 64, py = y / 64, k = cellAt(c, px, py), rad = 0.012 + 0.016 * (k.id - 0.7) / 0.3;
+    if (k.id > 0.7 && k.f1 < rad) {                                     // a stone: lit on its upper side, a shadow under it
+      const ck = cellAt(c, px + 0.006, py + 0.006);
+      return { v: 0.3 + 0.25 * k.id + (ck.f1 > k.f1 ? 0.12 : -0.05), ramp: 'ink', lo: 0.08, hi: 0.5 };
+    }
+    if (k.id > 0.7 && k.f1 < rad + 0.007) return { v: 0.06, ramp: 'earth', lo: 0, hi: 0.3 };
+    const n = tfbm(px, py, 4, 3, s + 4);
+    if (n > 0.7) return { v: 0.3 + 0.4 * tfbm(px, py, 16, 1, s), ramp: 'jade', lo: 0, hi: 0.26, e: 0.02 };    // standing wet
+    let v = 0.2 + 0.25 * tfbm(px, py, 8, 3, s) + 0.08 * (tfbm(px, py, 32, 1, s + 2) - 0.5) - 0.1 * smoothstep(0.6, 0.7, n);
+    if (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 12) > 0.96) v += 0.15;                                  // grit
+    if (Math.abs(tfbm(px, py, 6, 2, s + 11) - 0.5) < 0.012) v -= 0.1;                                       // footworn ruts
+    return { v, ramp: 'earth', lo: 0.04, hi: 0.5, h: 0.03 };
   } },
   GRIME: { f: (x, y, s) => ({ v: 0.5 * tfbm(x / 64, y / 64, 2, 4, s) + 0.5 * tfbm(x / 64, y / 64, 4, 3, s + 3), ramp: 'ink', lo: 0, hi: 1 }) },   // large-scale stain map (renderer)
   PALE: { f: (x, y, s) => {                           // corpse-pale hide, blue-green veins
@@ -500,12 +544,18 @@ const TEXGEN = {
   TALLY2: { f: (x, y, s) => tallyTex(x, y, s, 2) },
   TALLY3: { f: (x, y, s) => tallyTex(x, y, s, 3) },
   // ---- e1m1, the plain of Shamu -----------------------------------------
-  TURF: { pre: s => makeCells(7, s), f: (x, y, s, c) => {       // trampled meadow: churned turf, hoof-holes, blood
+  TURF: { pre: s => makeCells(9, s), f: (x, y, s, c) => {       // trampled meadow: tufted grass, bare earth where the hosts trod it, a stone, dried blood
     const px = x / 64, py = y / 64, k = cellAt(c, px, py);
-    if (k.f1 < 0.03 + 0.015 * k.id) return { v: 0.15 + 0.2 * k.id, ramp: 'earth', lo: 0.02, hi: 0.3 };       // hoof-holes
-    if (tfbm(px, py, 4, 3, s + 7) > 0.66) return { v: 0.3 + 0.4 * tfbm(px, py, 16, 1, s), ramp: 'scarlet', lo: 0.05, hi: 0.4 };
-    const blades = Math.abs(Math.sin(TAU * (x * 0.37 + tfbm(px, py, 8, 2, s) * 4))) > 0.7;
-    return blades ? { v: 0.4 + 0.3 * tfbm(px, py, 8, 2, s), ramp: 'jade', lo: 0.1, hi: 0.55 } : { v: 0.2 + 0.3 * tfbm(px, py, 8, 3, s + 3), ramp: 'earth', lo: 0.05, hi: 0.45, h: 0.04 };
+    if (k.id > 0.9 && k.f1 < 0.014) return { v: 0.45 + 0.3 * k.id, ramp: 'ink', lo: 0.1, hi: 0.5 };            // a stone
+    const worn = tfbm(px, py, 3, 3, s + 7), blood = tfbm(px, py, 6, 3, s + 17);
+    if (blood > 0.7 && tfbm(px, py, 24, 2, s + 19) > 0.42) return { v: 0.2 + 0.4 * tfbm(px, py, 16, 1, s), ramp: 'scarlet', lo: 0.02, hi: 0.32 };   // blood, dried dark
+    const grass = smoothstep(0.4, 0.62, worn);                    // the earth shows where the grass is trodden away
+    const tk = cellAt(c, px * 4, py * 4), tuft = tk.f1 * 4 < 0.05 + 0.04 * grass && tk.id < grass;   // tufts: dark at the root, the dry blade-tips lit
+    if (tuft) { const t = 1 - tk.f1 * 4 / (0.09); return { v: 0.18 + 0.4 * t + 0.1 * hrand(Math.floor(x), Math.floor(y), s, 33), ramp: tk.id > 0.5 ? 'bronze' : 'jade', lo: 0.03, hi: tk.id > 0.5 ? 0.4 : 0.42 }; }
+    if (grass > 0.3 && hrand(Math.floor(x), Math.floor(y), s, 34) < 0.25 * grass) return { v: 0.2 + 0.2 * grass, ramp: 'jade', lo: 0.03, hi: 0.36 };
+    let v = 0.22 + 0.3 * tfbm(px, py, 8, 3, s + 3) - 0.08 * smoothstep(0.2, 0.35, -worn + 0.6);
+    if (Math.abs(tfbm(px, py, 5, 2, s + 9) - 0.5) < 0.014) v -= 0.12;   // a hoof-scarred rut
+    return { v, ramp: 'earth', lo: 0.04, hi: 0.48, h: 0.03 };
   } },
   GILT: { f: (x, y, s) => {                                     // Ophir's gilded mail
     const row = Math.floor(y / 3), fx = ((x + (row % 2) * 1.5) / 3) % 1, fy = (y / 3) % 1, d = Math.abs(Math.hypot(fx - 0.5, fy - 0.5) - 0.3);
