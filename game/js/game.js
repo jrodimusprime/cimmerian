@@ -837,7 +837,7 @@ function updateGiant() {
       const ox = g.x, oz = g.z; g.x = hd.x; g.z = hd.z;
       if ([0.25, 0.8, 1.5].some(c => g.t >= c && g.t - DT < c)) { Sfx.crush(); for (let q = 0; q < 8; q++) particles.push({ m: 'blood', x: g.x, y: hd.y, z: g.z, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 0.8, max: 0.8, g: 9, s: 1.2 }); }
       g.drag = (g.drag || 0) + Math.hypot(g.x - ox, g.z - oz);
-      if (g.drag > 0.7) { g.drag = 0; (g.smear = g.smear || []).push([g.x, g.z]); if (g.smear.length > 60) g.smear.shift(); }   // "only a great smear of blood on the stone floor"
+      if (g.drag > 0.7) { g.drag = 0; g.smear = g.smear || []; if (g.smear.length < 90) g.smear.push([g.x, g.z]); }   // "only a great smear of blood on the stone floor"
       break;
     }
     case 'coiled': {                                     // "whipped around it in glistening coils": she wears him on her body and carries him off
@@ -848,7 +848,7 @@ function updateGiant() {
       g.x = lerp(g.attach[0], p[0], k); g.z = lerp(g.attach[1], p[2], k);
       if ([0.5, 1.1, 1.8].some(c => g.t >= c && g.t - DT < c)) { Sfx.crush(); for (let q = 0; q < 8; q++) particles.push({ m: 'blood', x: g.x, y: g.y + 0.6, z: g.z, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2.5, vz: (Math.random() - 0.5) * 3, life: 0.8, max: 0.8, g: 9, s: 1.2 }); }   // the snap and splintering of bones
       g.drag = (g.drag || 0) + Math.hypot(g.x - ox, g.z - oz);
-      if (g.drag > 0.6) { g.drag = 0; (g.smear = g.smear || []).push([g.x, g.z]); if (g.smear.length > 60) g.smear.shift(); }   // "only a great smear of blood on the stone floor"
+      if (g.drag > 0.6) { g.drag = 0; g.smear = g.smear || []; if (g.smear.length < 90) g.smear.push([g.x, g.z]); }   // "only a great smear of blood on the stone floor"
       break;
     }
   }
@@ -1857,6 +1857,37 @@ function chainSim(A, B, rn, W) {
   }
   return P;
 }
+// the trail he leaves: one continuous smear along the stones, broad and ragged, thinning where it trails off (drawn only)
+const SMEAR = { s: null, n: -1, last: null, mesh: null };
+function drawSmear(pts) {
+  if (!pts || pts.length < 2) return;
+  const last = pts[pts.length - 1];
+  if (SMEAR.s !== S || SMEAR.n !== pts.length || SMEAR.last !== last) {
+    SMEAR.s = S; SMEAR.n = pts.length; SMEAR.last = last;
+    const mb = new MeshBuilder(2048), N = pts.length;
+    let fy = groundInfo(pts[0][0], pts[0][1]).floor;
+    const at = (x, z) => { const g = groundInfo(x, z); if (g.kind === 1) fy = g.floor; return [x, fy + 0.022, z]; };   // (an edge over the wall's foot keeps the floor's height, never the wall's)
+    let pl = null, pr = null;
+    for (let i = 0; i < N; i++) {
+      const [x, z] = pts[i], a = pts[Math.max(0, i - 1)], b = pts[Math.min(N - 1, i + 1)];
+      let tx = b[0] - a[0], tz = b[1] - a[1]; const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+      const gap = i > 0 && Math.hypot(x - pts[i - 1][0], z - pts[i - 1][1]) > 2.2;   // a break in the trail: start afresh
+      const ends = Math.min(1, (i + 0.5) / 2.5, (N - i - 0.5) / 1.5), sd = Math.floor(x * 13 + z * 7);
+      const wl = (0.32 + 0.28 * hrand(sd, i, 1, 1)) * ends, wr = (0.32 + 0.28 * hrand(sd, i, 2, 2)) * ends, sway = (hrand(sd, i, 3, 3) - 0.5) * 0.25;
+      const L = at(x - tz * (wl - sway), z + tx * (wl - sway)), Rr = at(x + tz * (wr + sway), z - tx * (wr + sway));
+      if (pl && !gap) mb.quad(pl, pr, Rr, L, T.BLOOD, 0, 1, 0);
+      if (hrand(sd, i, 4, 4) < 0.45) {                    // a splash off its edge, where he struck the stones
+        const side = hrand(sd, i, 5, 5) < 0.5 ? -1 : 1, d = (side < 0 ? wl : wr) + 0.1 + 0.25 * hrand(sd, i, 6, 6), cx = x + tz * d * side, cz = z - tx * d * side, r = 0.08 + 0.14 * hrand(sd, i, 7, 7);
+        const c = at(cx, cz); for (let k = 0; k < 6; k++) { const a0 = k / 6 * TAU, a1 = (k + 1) / 6 * TAU, r0 = r * (0.6 + 0.6 * hrand(sd, i, k, 8)), r1 = r * (0.6 + 0.6 * hrand(sd, i, (k + 1) % 6, 8)); mb.tri(c, at(cx + Math.cos(a0) * r0, cz + Math.sin(a0) * r0), at(cx + Math.cos(a1) * r1, cz + Math.sin(a1) * r1), T.BLOOD, 0, 1, 0); }
+      }
+      pl = L; pr = Rr;
+    }
+    const d = mb.finish();
+    if (!SMEAR.mesh) SMEAR.mesh = R.createMesh(d); else R.updateMesh(SMEAR.mesh, d);
+  }
+  const [mx, mz] = pts[Math.floor(pts.length / 2)], l = sampleLight(mx, groundInfo(mx, mz).floor + 0.5, mz); l.d = [0, 1, 0];
+  R.key = l.d; R.drawEntity(SMEAR.mesh, m4ident(), [l[0] * 0.24, l[1] * 0.14, l[2] * 0.13], 0);   // dark, as blood goes on stone
+}
 function render(alpha) {
   let px = lerp(prev.x, S.x, alpha), py = lerp(prev.y, S.y, alpha), pz = lerp(prev.z, S.z, alpha);
   const bob = Math.sin(bobPhase * 2) * 0.05 * bobAmt;
@@ -1970,7 +2001,7 @@ function render(alpha) {
   if (has('portcullis')) drawM('bars:5:6', m4trs(45 * CELL, 0.4 + S.portc.open * 5.2, 13 * CELL + 5, Math.PI / 2, 0, 0, 1), sampleLight(45 * CELL, 2, HALL_Z));
   // the black giant
   const g = S.giant, gl = sampleLight(g.x, 1.5, g.z);
-  for (const [x, z] of (g.smear || [])) { const y = groundInfo(x, z).floor; drawM('blood', m4mul(m4trs(x, y + 0.02, z, x * 7 + z * 3, 0, 0, 1), m4s3(7, 0.25, 4.5)), sampleLight(x, y + 0.5, z)); }   // the smear he leaves
+  drawSmear(g.smear);   // "only a great smear of blood on the stone floor"
   if (g.state === 'gone' || g.state === 'seized') { /* not here, or in her jaws (drawn with her head) */ } else if (g.state === 'struck') {
     const k = smoothstep(0, 1, g.fall);
     drawCharacter('giant', g.x, g.y + 0.25 * Math.sin(Math.PI * Math.min(1, g.t / 0.45)), g.z, g.yaw + 0.6 * k, { unarmed: true, pitch: -1.4 * k, roll: 0.5 * k, uzL: 1.4 * k, uzR: 1.1 * k, uxL: -1.2 * k, uxR: -0.6 * k, txL: -0.5 * k, sxL: 0.9 * k, txR: 0.3 * k, headX: -0.6 * k }, gl);
