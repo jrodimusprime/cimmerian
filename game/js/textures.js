@@ -18,7 +18,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
   'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
   'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
-  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC', 'OAK', 'ASHLAR', 'JET'];
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC', 'OAK', 'ASHLAR', 'JET', 'WINDOWS'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -471,6 +471,14 @@ const TEXGEN = {
     else if (cut < 0.065) t += 0.75 * (1 - (cut - 0.03) / 0.035);                    // its polished lip
     if (hrand(Math.floor(x * 2), Math.floor(y * 2), s, 4) > 0.997) t = 0.55;         // a glint
     return { v: t, ramp: 'ink', lo: 0, hi: 0.7 };
+  } },
+  WINDOWS: { f: (x, y, s) => {                        // a town wall by night: dark plastered stone, small deep windows, a few of them lamplit
+    const px = x / 64, py = y / 64, cx = Math.floor(px * 3), cy = Math.floor(py * 2), u = px * 3 - cx, v = py * 2 - cy;
+    if (Math.abs(u - 0.5) < 0.12 && Math.abs(v - 0.45) < 0.18) {
+      const lit = hrand(cx, cy, s, 1) < 0.38;
+      return lit ? { v: 0.55 + 0.35 * hrand(cx, cy, s, 2), ramp: 'fire', lo: 0.3, hi: 0.85, e: 1 } : { v: 0.02, ramp: 'ink', lo: 0, hi: 0.1 };
+    }
+    return { v: 0.25 + 0.25 * tfbm(px, py, 8, 3, s) - (Math.abs(v - 0.98) < 0.03 ? 0.15 : 0), ramp: 'ink', lo: 0.04, hi: 0.35, h: 0.03 };
   } },
   CAVE: { f: (x, y, s) => {                           // wet limestone: bedded in layers, flowstone running down it, pocked
     const px = x / 64, py = y / 64, drip = tfbmP(px, py, 20, 2, 3, s), lumps = tfbm(px, py, 4, 4, s + 5);

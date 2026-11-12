@@ -356,6 +356,7 @@ function sampleLight(x, y, z) {
   for (const l of LV.lights) {
     const dx = l.x - x, dy = l.y - y, dz = l.z - z, d2 = dx * dx + dy * dy + dz * dz;
     if (d2 > l.rad * l.rad) continue;
+    if (l.sky) { const ci = cellIdx(Math.floor(x / CELL), Math.floor(z / CELL)); if (ci >= 0 && LV.kind[ci] !== 0 && !(LV.flags[ci] & F_SKY)) continue; }   // moonlight: not indoors
     const d = Math.sqrt(d2) || 1e-3;
     let a = 1 - d / l.rad; a = a * a * l.i * 0.7;
     r += l.r * a; g += l.g * a; b += l.b * a;
@@ -1886,7 +1887,7 @@ function render(alpha) {
   R.voidLine = ev ? [ev.from[0] * CELL, ev.from[1] * CELL, ev.to[0] * CELL, ev.to[1] * CELL] : [0, 0, 0, 0]; R.voidW = ev ? ev.w : 0;
   R.beginScene(gameTime);
   R.lightMul(lm);
-  if (LEVEL.open) R.drawSky(vp, LEVEL.night ? (LEVEL.moon || [0.5, 0.35, -0.6]) : (LEVEL.sun || [-1, 0.05, 0.2]), LEVEL.night, gameTime);   // the open sky: drawn first, behind everything
+  if (LEVEL.open) R.drawSky(vp, LEVEL.night ? (LEVEL.moon || [0.5, 0.35, -0.6]) : (LEVEL.sun || [-1, 0.05, 0.2]), LEVEL.dawn ? 'dawn' : LEVEL.night, gameTime);   // the open sky: drawn first, behind everything
   R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, LEVEL.fog || 0.034);
   R.drawWorld(levelMesh);
   // every torch, brazier and candle flame: an upright sprite turned to the eye, cycling its four frames

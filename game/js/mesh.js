@@ -473,6 +473,17 @@ function addPrefab(mb, p) {
       }
       break;
     }
+    case 'reeds': {                                       // a reed-bed: tall stems in a clump, bowed every way, a few with their brown heads
+      const sd = Math.floor(p.x * 23 + p.z * 7);
+      for (let k = 0; k < 22; k++) {
+        const a = hrand(sd, k, 1, 1) * 6.283, r = Math.sqrt(hrand(sd, k, 2, 2)) * 1.4, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, y = groundInfo(x, z).floor - 0.05;
+        const h = 1.1 + hrand(sd, k, 3, 3) * 1.2, la = hrand(sd, k, 4, 4) * 6.283, lean = 0.1 + hrand(sd, k, 5, 5) * 0.3, w = 0.03;
+        const tx = x + Math.cos(la) * h * lean, tz = z + Math.sin(la) * h * lean, px = -Math.sin(la) * w, pz = Math.cos(la) * w;
+        mb.tri([x + px, y, z + pz], [x - px, y, z - pz], [tx, y + h, tz], k % 3 ? T.STRAW : T.YOTHGA_LEAF, Math.cos(la), 0.3, Math.sin(la));
+        if (k % 4 === 0) addRock(mb, x + (tx - x) * 0.85, y + h * 0.85, z + (tz - z) * 0.85, 0.035, 0.12, 0.035, sd + k, T.HIDE, 0.1);   // a bulrush head
+      }
+      break;
+    }
     case 'boulder': {                                     // a weathered boulder, sunk into the turf, often with a smaller one leaning on it
       const r = p.size, sd = Math.floor(p.x * 13 + p.z * 7);
       addRock(mb, p.x, p.y + r * 0.3, p.z, r, r * (0.6 + 0.3 * hrand(sd, 1, 2, 3)), r * (0.8 + 0.3 * hrand(sd, 2, 2, 3)), sd, T.ROCK, 0.45);
@@ -528,14 +539,66 @@ function wallStrip(mb, ca, cb, ba, bb, ta, tb, layer, hx, hz) {
   }
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const a = P[r][c], b = P[r][c + 1], e = P[r + 1][c + 1], f = P[r + 1][c]; mb.quadV(a, b, e, f, layer, hx, 0, hz, a[3], b[3], e[3], f[3]); }
 }
+// A city spread out below a high place (e1m5: Khorshemish round the Scarlet Citadel), drawn only and far out of reach: flat-roofed
+// houses, domes, towers with lamplit windows, a ring of walls with towers, all sunk below the level's own ground.
+function addCity(mb, C) {
+  const rng = new RNG(C.seed || 77), X = LV.W * CELL, Z = LV.H * CELL, y0 = C.ground !== undefined ? C.ground : -2;
+  const cx = C.at ? C.at[0] * CELL : X / 2, cz = C.at ? C.at[1] * CELL : Z / 2, hx = C.at ? 0 : X / 2, hz = C.at ? 0 : Z / 2;   // round the level, or round a point of its own
+  const inPit = (x, z, r) => { for (const [dx, dz] of [[0, 0], [r, r], [-r, r], [r, -r], [-r, -r]]) { const i = cellIdx(Math.floor((x + dx) / CELL), Math.floor((z + dz) / CELL)); if (i >= 0 && LV.kind[i] !== 2) return false; } return true; };
+  const clear = (x, z, r) => x + r > -8 && x - r < X + 8 && z + r > -8 && z - r < Z + 8 && !(C.inside && inPit(x, z, r + 2));   // keep off the citadel itself (but a city may fill the drop below the roofs)
+  for (let k = 0; k < (C.n || 260); k++) {
+    const a = rng.range(0, Math.PI * 2), d = rng.range(C.r0 || 20, C.r1 || 230), inner = C.inside && k % 3 === 0;
+    const x = inner ? rng.range(0, X) : cx + Math.cos(a) * (d + hx), z = inner ? rng.range(0, Z) : cz + Math.sin(a) * (d + hz);
+    let w = rng.range(5, 12), dp = rng.range(5, 12), h = rng.range(4, 9) * (d < 60 ? 1.25 : 1) * (C.tall || 1), yaw = rng.range(0, 0.3) + (k % 2) * Math.PI / 2;
+    if (clear(x, z, Math.max(w, dp))) continue;
+    if (C.crowd && Math.hypot(x / CELL - C.crowd[0], z / CELL - C.crowd[1]) < C.crowd[2] / CELL + Math.max(w, dp) / CELL) continue;   // the square stays open
+    if (C.maxH) h = Math.min(h, C.maxH);
+    addBox(mb, x, y0 + h / 2, z, w / 2, h / 2, dp / 2, T.WINDOWS, yaw);
+    const kind = rng.next(), m = Math.min(w, dp);
+    addBox(mb, x, y0 + h + 0.15, z, w / 2 + 0.15, 0.15, dp / 2 + 0.15, kind < 0.5 ? T.MUD : T.HEWN, yaw);       // its flat roof
+    if (kind < 0.16) smoothLathe(mb, x, y0 + h + 0.3, z, [[m * 0.42, 0], [m * 0.4, m * 0.18], [m * 0.3, m * 0.36], [0.15, m * 0.46], [0.05, m * 0.56], [0, m * 0.58]], 10, k % 3 ? T.GILT : T.HEWN, ONE3, [0, 1, 0]);   // a dome
+    else if (kind < 0.16 + (C.towers || 0.06)) {                                    // a tower, with a conical cap
+      const th = h + rng.range(5, 13) * (C.tall || 1), tr = rng.range(1.5, 2.4);
+      addLathe(mb, x, y0, z, [[tr, 0], [tr, th], [tr * 1.25, th + 0.6], [tr * 1.25, th + 1.2], [0, th + 1.2]], 8, T.WINDOWS);
+      addLathe(mb, x, y0 + th + 1.2, z, [[tr * 1.3, 0], [0, tr * 2.2]], 8, T.SHIELD);
+    } else if (kind < 0.5) for (let q = 0; q < 4; q++) {                          // a parapet round the roof terrace
+      const e = q < 2 ? 1 : -1, along = q % 2 === 0, c = Math.cos(yaw), sn = Math.sin(yaw), lx = along ? 0 : e * w / 2, lz = along ? e * dp / 2 : 0;
+      addBox(mb, x + lx * c + lz * sn, y0 + h + 0.6, z - lx * sn + lz * c, along ? w / 2 : 0.15, 0.35, along ? 0.15 : dp / 2, T.HEWN, yaw);
+    }
+  }
+  if (C.crowd) {                                                                 // the multitude in the square below: a thousand dark heads and shoulders
+    const [qx, qz, qr, qn] = C.crowd;
+    for (let k = 0; k < qn; k++) {
+      const a = rng.range(0, Math.PI * 2), r = Math.sqrt(rng.next()) * qr, x = (qx + Math.cos(a) * r / CELL) * CELL, z = (qz + Math.sin(a) * r / CELL) * CELL, h = rng.range(1.55, 1.85), tint = rng.next();
+      addBox(mb, x, y0 + h * 0.4, z, 0.22, h * 0.4, 0.15, tint < 0.3 ? T.CLOTH : tint < 0.6 ? T.ROBE : tint < 0.8 ? T.TABARD : T.LEATHER, rng.range(0, 3));
+      addRock(mb, x, y0 + h * 0.88, z, 0.13, 0.14, 0.13, k, rng.next() < 0.5 ? T.HAIR : T.SKIN, 0.1);
+      if (rng.next() < 0.3) addBox(mb, x + 0.2, y0 + h + 0.15, z, 0.04, 0.35, 0.04, T.SKIN, 0, ONE3, rng.range(-0.3, 0.3));   // a fist raised, shaking at Arpello
+    }
+  }
+  if (C.nowall) return;
+  const R = C.at ? C.wall : Math.max(X, Z) / 2 + (C.wall || 210), N = C.at ? 24 : 36, WH = C.wallH || 7;   // the city wall, with a tower at every turn
+  for (let k = 0; k < N; k++) {
+    const a0 = k / N * Math.PI * 2, a1 = (k + 1) / N * Math.PI * 2, x0 = cx + Math.cos(a0) * R, z0 = cz + Math.sin(a0) * R * 0.8, x1 = cx + Math.cos(a1) * R, z1 = cz + Math.sin(a1) * R * 0.8;
+    const L = Math.hypot(x1 - x0, z1 - z0), yaw = Math.atan2(x1 - x0, z1 - z0);
+    addBox(mb, (x0 + x1) / 2, y0 + WH, (z0 + z1) / 2, 2.2, WH, L / 2 + 1, T.HEWN, yaw);
+    for (let q = 0; q < Math.floor(L / 3); q++) { const u = (q + 0.5) / Math.floor(L / 3); addBox(mb, x0 + (x1 - x0) * u, y0 + WH * 2 + 0.7, z0 + (z1 - z0) * u, 0.7, 0.7, 0.9, T.HEWN, yaw); }   // merlons
+    addLathe(mb, x0, y0, z0, [[5, 0], [5, WH * 2 + 5], [5.8, WH * 2 + 5.5], [5.8, WH * 2 + 7], [0, WH * 2 + 7]], 8, T.HEWN);
+    for (let q = 0; q < 8; q++) { const a = q / 8 * Math.PI * 2; addBox(mb, x0 + Math.cos(a) * 5.4, y0 + WH * 2 + 7.6, z0 + Math.sin(a) * 5.4, 0.7, 0.6, 0.7, T.HEWN, a); }
+  }
+}
 function bakeLights(mb, lights, amb) {
   const d = mb.d;
   for (let i = 0; i < mb.n; i++) {
     const o = i * 10, px = d[o], py = d[o + 1], pz = d[o + 2], nx = d[o + 3], ny = d[o + 4], nz = d[o + 5];
     let r = amb[0], g = amb[1], b = amb[2];
+    let outside = -1;
     for (const L of lights) {
       const dx = L.x - px, dy = L.y - py, dz = L.z - pz, d2 = dx * dx + dy * dy + dz * dz;
       if (d2 > L.rad * L.rad) continue;
+      if (L.sky) {                                        // the moon: on what stands under the open sky, not into the halls
+        if (outside < 0) { const gx = Math.floor((px - nx * 0.05) / CELL), gz = Math.floor((pz - nz * 0.05) / CELL), ci = cellIdx(gx, gz); outside = ci < 0 || LV.kind[ci] === 0 || (LV.flags[ci] & F_SKY) ? 1 : 0; }
+        if (!outside) continue;
+      }
       const dist = Math.sqrt(d2) || 1e-3;
       let att = 1 - dist / L.rad; att *= att;
       const lam = Math.max(0, (dx * nx + dy * ny + dz * nz) / dist) * 0.75 + 0.25;
@@ -624,7 +687,7 @@ function buildLevelMesh() {
     const fl = LV.flags[idx], tex = LV.tex[idx];
     const c0 = corner(i, j), c1 = corner(i + 1, j), c2 = corner(i + 1, j + 1), c3 = corner(i, j + 1);
     const fy = q => (k === 2 ? q.fp : q.fo);
-    const fLayer = k === 2 ? (LV.void[idx] ? T.BLACK : T.SLIME) : T[tex.floor];   // a deep pit's bottom is black: a drop, not a puddle
+    const fLayer = k === 2 ? (LV.void[idx] ? T.BLACK : LEVEL.open && !(fl & F_WATER) ? T.MUD : T.SLIME) : T[tex.floor];   // (a pit dug in a field has earth at its bottom)   // a deep pit's bottom is black: a drop, not a puddle
     const diag = hash4(i, j, 2, 3) & 1;
     const f0 = P(c0, fy(c0)), f1 = P(c1, fy(c1)), f2 = P(c2, fy(c2)), f3 = P(c3, fy(c3));
     const ao = q => (q.ao === undefined ? 1 : q.ao), a0 = ao(c0), a1 = ao(c1), a2 = ao(c2), a3 = ao(c3);   // the floor darkens where it meets a wall
@@ -708,6 +771,7 @@ function buildLevelMesh() {
       addRock(mb, cx, -6, cz, 50 + 60 * hrand(k, 3, 4, 4), 10 + 16 * hrand(k, 4, 4, 4), 40 + 50 * hrand(k, 5, 4, 4), 300 + k, k % 3 ? T.TURF : T.ROCK, 0.3);
     }
   }
+  if (LEVEL.city) addCity(mb, LEVEL.city);
   bakeLights(mb, LV.lights, LEVEL.ambient || AMBIENT);
   return mb.finish();
 }

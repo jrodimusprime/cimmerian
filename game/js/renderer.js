@@ -90,6 +90,12 @@ void main() {
   vec3 tint = uEnt > 0.5 ? (uUV > 0.5 ? vec3(vCol.z) : vCol) : vec3(1.0);
   float e = clamp(t.a + uGlow, 0.0, 1.0);
   vec3 col = t.rgb * tint * (light * 1.9 * (1.0 - e) + e * 1.3);
+  if (abs(vLayer - ${T.WATER}.0) < 0.5 && uEnt < 0.5) {      // open water takes the sky's glare at a low angle
+    vec3 vd = normalize(vWPos - uCamPos);
+    float fres = pow(1.0 - abs(vd.y), 3.0) * (0.55 + 0.45 * t.g / max(t.r + t.g + t.b, 0.05) * 3.0 * 0.5);   // broken by the ripples
+    vec3 sky = uGFog.w > 0.5 || uHaze.r > 0.2 ? mix(uHaze * 1.1, vec3(1.0, 0.42, 0.16), 0.45) : uHaze * 1.4;
+    col = mix(col * 0.7, sky, clamp(fres, 0.0, 0.85));
+  }
   // stains and soot at the scale of rooms, so no wall reads as one tile repeated
   if (uEnt < 0.5) col *= mix(0.42, 1.12, texture(uTex, vec3(vUv2, ${T.GRIME}.0)).r * (1.0 - e) + e);
   float fd = length(vWPos - uCamPos);
@@ -183,11 +189,12 @@ void main() {
   vec3 sun = normalize(uSun);
   float e = d.y, az = atan(d.z, d.x), sd = dot(d, sun);
   vec3 col;
-  if (uNight < 0.5) {
+  float dawn = step(1.5, uNight);                        // dawn: the same crimson at the horizon, a cold violet sky above it
+  if (uNight < 0.5 || dawn > 0.5) {
     // the sunset: a burning band at the horizon, crimson above it, a bruised dusk at the top of the sky
     float sh = max(dot(normalize(d.xz), normalize(sun.xz)), 0.0);               // how far round toward the sun
     vec3 hor = mix(uHaze * 1.25, vec3(1.05, 0.48, 0.16), 0.35 + 0.65 * pow(sh, 3.0));
-    vec3 mid = vec3(0.62, 0.13, 0.09), top = vec3(0.16, 0.035, 0.06);
+    vec3 mid = mix(vec3(0.62, 0.13, 0.09), vec3(0.58, 0.2, 0.24), dawn), top = mix(vec3(0.16, 0.035, 0.06), vec3(0.1, 0.1, 0.24), dawn);
     float t = clamp(e, 0.0, 1.0);
     col = mix(hor, mid, smoothstep(0.0, 0.16, t));
     col = mix(col, top, smoothstep(0.14, 0.75, t));
@@ -203,7 +210,7 @@ void main() {
       float n2 = fbm(cp * vec2(0.9, 3.2) + vec2(-uTime * 0.006, 4.0));
       float c = smoothstep(0.5, 0.78, n * 0.75 + n2 * 0.4) * smoothstep(0.0, 0.08, e) * (1.0 - smoothstep(0.45, 0.9, e));
       float lit = pow(max(sd * 0.5 + 0.5, 0.0), 3.0);
-      vec3 cc = mix(vec3(0.24, 0.055, 0.07), vec3(1.0, 0.42, 0.14), lit * (0.4 + 0.6 * smoothstep(0.6, 0.85, n2)));
+      vec3 cc = mix(mix(vec3(0.24, 0.055, 0.07), vec3(0.2, 0.15, 0.26), dawn), mix(vec3(1.0, 0.42, 0.14), vec3(1.0, 0.5, 0.35), dawn), lit * (0.4 + 0.6 * smoothstep(0.6, 0.85, n2)));
       col = mix(col, cc, c * 0.85);
     }
     // the far mountains, two ranges, the nearer darker, hazed into the glow
@@ -366,7 +373,7 @@ class Renderer {
     gl.useProgram(this.skyProg);
     gl.depthMask(false);
     gl.uniformMatrix4fv(u.uInvVP, false, m4inv(vp)); gl.uniform3fv(u.uSun, sun); gl.uniform3fv(u.uHaze, this.haze);
-    gl.uniform1f(u.uNight, night ? 1 : 0); gl.uniform1f(u.uTime, time);
+    gl.uniform1f(u.uNight, night === 'dawn' ? 2 : night ? 1 : 0); gl.uniform1f(u.uTime, time);
     gl.bindVertexArray(this.postVao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.depthMask(true);

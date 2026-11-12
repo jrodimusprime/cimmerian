@@ -714,7 +714,7 @@ const LEVEL_E1M4 = {
 const HALL_TEX = { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' };
 const LEVEL_E1M5 = {
   level: 'e1m5', next: 'e1m6', torch: true, title: 'The Scarlet Citadel', ramps: ['ink', 'scarlet', 'bronze'], grid: [70, 34], ambient: [0.07, 0.05, 0.045], arms: 'sword',
-  open: true, night: true, moon: [-0.6, 0.3, 0.5], sun: [0.3, -0.2, 0.9], fog: 0.012, haze: [0.02, 0.02, 0.04],
+  open: true, night: true, moon: [-0.6, 0.3, 0.5], sun: [0.3, -0.2, 0.9], fog: 0.0075, haze: [0.025, 0.027, 0.05],
   intro: [['THE SCARLET CITADEL', 'title'], ['Up the long stair, Pelias leading. "Tsotha is away, riding for Shamar with the kings," he says. "His household will not trouble us tonight."', 'voice']],
   objectives: [['door_passed', 'Up the long stair behind Pelias, to the skull-crowned door.'], ['censers_passed', 'Through the silent citadel.'], ['in_chamber', 'On, behind Pelias.'], ['globe_ready', 'Drink.'],
     ['globe_seen', 'Look into Tsotha\'s crystal. (E)'], ['tower_climbed', 'Up the gold-worked stair to the pinnacles.'], ['beast_came', 'Across the battlements to the tallest tower.'], ['beast_called', 'Hear him out.'], ['zz', 'Mount, and ride.']],
@@ -741,7 +741,7 @@ const LEVEL_E1M5 = {
     { id: 'passage', name: 'a passage off the guard hall', at: [37, 4], size: [3, 2], h: 2.8, floor: 6, style: 'hewn', tex: HALL_TEX },
     { id: 'barracks', name: 'the soldiers\' quarters', at: [21, 2], size: [16, 6], h: 3.2, floor: 6, style: 'hewn', tex: { floor: 'MUD', wall: 'HEWN', ceil: 'HEWN' } },
     { id: 'armoury', name: 'the armoury', at: [14, 1], size: [7, 8], h: 3.6, floor: 6, vault: 0.8, style: 'hewn', tex: HALL_TEX },
-    { id: 'chambers', name: 'a gold-domed chamber, floored with silver', at: [52, 5], size: [8, 8], h: 3.8, floor: 6, vault: 1, style: 'hewn', tex: { floor: 'TABARD', wall: 'HEWN', ceil: 'HEWN' } },
+    { id: 'chambers', name: 'a gold-domed chamber, floored with silver', at: [52, 5], size: [8, 8], h: 4.6, floor: 6, vault: 1.6, style: 'hewn', tex: { floor: 'TABARD', wall: 'HEWN', ceil: 'GILT' } },
     { id: 'towerstair', name: 'a flight of marble, gold-worked stairs', at: [60, 7], size: [3, 17], h: 3, floor: 6.4, rise: 0.5, riseAxis: 'z', style: 'hewn' },
     { id: 'roof1', name: 'the battlements', at: [57, 24], size: [6, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SKY' } },
     { id: 'gap1', name: 'a gap in the battlements', at: [56, 24], size: [1, 5], floor: 14.5, pit: 40, void: true, sky: true, style: 'hewn' },
@@ -776,7 +776,9 @@ const LEVEL_E1M5 = {
     { prefab: 'divan', at: [57.5, 11.6], yaw: Math.PI }, { prefab: 'tapestry', at: [56, 13], wall: 'S', w: 1.1, h: 2.2, top: 3.4 }, { prefab: 'tapestry', at: [56, 5], wall: 'N', w: 1.2, h: 2.0, top: 3.4 },
     { prefab: 'sconce', at: [60, 16], wall: 'W' }, { prefab: 'sconce', at: [63, 20], wall: 'E' },
   ],
-  lights: [{ at: [56, 9], y: 7.5, col: [0.4, 0.6, 1.0], rad: 10, i: 1.2 }],
+  lights: [{ at: [56, 9], y: 7.5, col: [0.4, 0.6, 1.0], rad: 10, i: 1.2 },
+    { at: [-25, 67], y: 90, col: [0.5, 0.56, 0.8], rad: 600, i: 0.7, sky: true }],   // the moon over the battlements (only on what is under the sky)
+  city: { seed: 31, n: 560, r0: 14, r1: 190, ground: -4, tall: 1.7, towers: 0.14 },   // Khorshemish below the citadel, lamplit
   items: [{ kind: 'wine', name: 'a wine-skin left on the battlements', heal: 35, at: [30, 27.5] }, { kind: 'wine', name: 'a forgotten cup of wine', heal: 35, at: [38.5, 21.6] },
     { kind: 'bread', name: 'a guard\'s black bread', heal: 30, at: [30, 4.5] }, { kind: 'wine', name: 'a guard\'s wine-skin', heal: 35, at: [19, 2] }, { kind: 'bread', name: 'a heel of bread from the quarters', heal: 30, at: [24.5, 4.5] },
     { kind: 'wine', name: 'Tsotha\'s wine', heal: 40, at: [55, 8] }, { kind: 'bread', name: 'a honey-cake on a gold dish', heal: 25, at: [45, 4.5] },
@@ -843,7 +845,9 @@ const ROOF_TEX = { floor: 'FLAG', wall: 'HEWN', ceil: 'SUNSET' };
 const LEVEL_E1M6 = {
   level: 'e1m6', next: 'e1m7', title: 'The Tower of Tamar', ramps: ['ink', 'scarlet', 'bronze'], grid: [64, 36], ambient: [0.16, 0.1, 0.09], arms: 'sword',
   squads: [ 'stair', 'stair3', 'lower', 'guard', 'guard3'],   // men who fight as one: they ring you, and never more than two blows in the air at once (combat.js squadChase)
-  open: true, sun: [1, 0.06, 0.15], fog: 0.006, haze: [0.35, 0.12, 0.08],
+  open: true, dawn: true, sun: [1, 0.06, 0.15], fog: 0.006, haze: [0.35, 0.12, 0.1],
+  city: { seed: 9, n: 700, r0: 10, r1: 220, ground: 0, inside: true, maxH: 26, crowd: [30, 29, 18, 900] },
+  // (the sun just up in the east, on the city and the leads: under the open sky only)   // Tamar below the leads, and its people in the square, "screaming their hate at Arpello"
   intro: [['THE TOWER OF TAMAR', 'title'], ['Under the great tower beside the royal palace the people swirl and mill, screaming their hate at Arpello, who stands on the turrets and laughs down at them while his archers range the parapets.', ''],
     ['Arpello: "Fools! Howl as you will! Conan is dead and Arpello is king!"', 'voice'],
     ['Out of the crimson dawn comes a flying speck that grows to a bat, then to an eagle. It roars over the great tower; from between its titan-wings you spring onto the turret, half naked, blood-stained, brandishing a great sword. From the multitude below rises a roar that rocks the towers: "The king! It is the king!"', 'warn']],
@@ -893,7 +897,8 @@ const LEVEL_E1M6 = {
     { prefab: 'rack', at: [53, 7], wall: 'W' }, { prefab: 'spear_rack', at: [53, 10], wall: 'W' }, { prefab: 'rack', at: [64, 11.5], wall: 'E' },
     { prefab: 'chains', at: [60.5, 2], wall: 'N' }, { prefab: 'brazier', at: [61, 12] },
     { prefab: 'standard', at: [45, 14], rot: 1.2 }, { prefab: 'bones', at: [22, 20] }],
-  lights: [{ at: [54, -0.4], y: 19, col: [1.0, 0.7, 0.4], rad: 6, i: 1.4 }, { at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 2.2 }, ],
+  lights: [{ at: [54, -0.4], y: 19, col: [1.0, 0.7, 0.4], rad: 6, i: 1.4 }, { at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 2.2 },
+    { at: [150, 30], y: 60, col: [1.0, 0.62, 0.4], rad: 900, i: 1.7, sky: true }],   // the crimson dawn on Tamar's roofs and streets
   items: [{ kind: 'wine', name: 'Arpello\'s wine-flask', heal: 40, at: [44, 13] }, { kind: 'bread', name: 'a guard\'s bread', heal: 30, at: [48.5, 21.5] }, { kind: 'wine', name: 'a guard\'s wine-skin', heal: 35, at: [52.5, 23.5] }, { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [9, 16] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [24, 22] },
     { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [40, 21] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [53, 20] },
     { kind: 'wine', name: 'a guardsman\'s wine-skin', heal: 35, at: [61, 28] }, { kind: 'bread', name: 'a guardsman\'s bread', heal: 30, at: [58, 14] }, { kind: 'wine', name: 'a cup of Arpello\'s wine', heal: 40, at: [62, 11] },
@@ -1016,7 +1021,12 @@ const LEVEL_E1M7 = {
   ],
   boulders: [{ from: [2.5, 3], to: [2.5, 41], r: [1.6, 3.2] }, { from: [3, 41.2], to: [92, 41.2], r: [1.6, 3.4], jitter: 2 }, { from: [92.5, 3], to: [92.5, 17.5], r: [1.8, 3.6] }, { from: [92.5, 26.5], to: [92.5, 41], r: [1.8, 3.6] },   // a gap: the road east, to the river
     { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3], jitter: 1.5 }, { from: [48, 2.8], to: [92, 2.8], r: [1.4, 3], jitter: 1.5 }],
-  scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] }],
+  scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] },
+    // drawn only: the Bossonian shafts that went over your head into the Shemites, the wreck of the lines, the trodden grass
+    { prefab: 'arrows', n: 120, rect: [15, 5, 18, 34], from: -Math.PI / 2 }, { prefab: 'arrows', n: 40, rect: [47, 5, 30, 34], from: -Math.PI / 2 },
+    { prefab: 'lance', n: 50, rect: [44, 5, 46, 34] }, { prefab: 'shieldfall', n: 50, rect: [15, 5, 75, 34] }, { prefab: 'mound', n: 10, rect: [47, 6, 40, 32] },
+    { prefab: 'tufts', n: 700, rect: [3, 4, 89, 37] }],
+  city: { at: [48, -52], seed: 5, n: 160, r0: 0, r1: 70, ground: -1, wall: 80, wallH: 8, tall: 2.2, towers: 0.3 },   // Shamar on the Tybor, its walls and towers against the north
   shafts: [], links: [], features: [],
   lights: [{ at: [35.5, 11], y: 2.6, col: [1.0, 0.62, 0.3], rad: 9, i: 1.3 }, { at: [43.5, 32.5], y: 2.6, col: [1.0, 0.62, 0.3], rad: 9, i: 1.3 }],   // a lantern on each tower's stair
   props: [
@@ -1149,7 +1159,12 @@ const LEVEL_E1M8 = {
   planks: [{ from: [32.9, 19.5], to: [34.1, 19.5] }, { from: [37.9, 21.5], to: [39.1, 21.5] }, { from: [42.9, 19.5], to: [44.1, 19.5] }, { from: [47.9, 21.5], to: [49.1, 21.5] }, { from: [52.9, 20.5], to: [54.1, 20.5] }],
   boulders: [{ from: [2.5, 3], to: [2.5, 61], r: [1.6, 3.2] }, { from: [3, 61.2], to: [30, 61.2], r: [1.6, 3], jitter: 2 }, { from: [54, 61.2], to: [80, 61.2], r: [1.6, 3], jitter: 2 }, { from: [80.5, 37], to: [80.5, 61], r: [1.6, 3] }, { from: [66, 37.2], to: [92, 37.2], r: [1.6, 3], jitter: 2 },
     { from: [92.5, 3], to: [92.5, 37], r: [1.8, 3.6] }, { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3] }, { from: [54, 2.8], to: [92, 2.8], r: [1.4, 3] }],
-  scatter: [{ prefab: 'fallen', n: 40, rect: [4, 5, 25, 30] }, { prefab: 'standard', n: 9, rect: [5, 38, 22, 20] }, { prefab: 'fallen', n: 30, rect: [4, 37, 25, 22] }, { prefab: 'deadhorse', n: 6, rect: [5, 38, 22, 20] }, { prefab: 'deadhorse', n: 8, rect: [5, 6, 22, 28] }, { prefab: 'fallen', n: 14, rect: [55, 5, 10, 30] }],
+  scatter: [{ prefab: 'fallen', n: 40, rect: [4, 5, 25, 30] }, { prefab: 'standard', n: 9, rect: [5, 38, 22, 20] }, { prefab: 'fallen', n: 30, rect: [4, 37, 25, 22] }, { prefab: 'deadhorse', n: 6, rect: [5, 38, 22, 20] }, { prefab: 'deadhorse', n: 8, rect: [5, 6, 22, 28] }, { prefab: 'fallen', n: 14, rect: [55, 5, 10, 30] },
+    // drawn only: the reed-beds along both banks and where the fugitives hid; the shafts and broken lances of the rout; trodden grass
+    { prefab: 'reeds', n: 60, rect: [66, 40, 14, 20] }, { prefab: 'reeds', n: 30, rect: [27.5, 4, 2.5, 56] }, { prefab: 'reeds', n: 30, rect: [54, 4, 2.5, 56] },
+    { prefab: 'arrows', n: 50, rect: [4, 5, 25, 55], from: Math.PI }, { prefab: 'lance', n: 30, rect: [4, 5, 25, 55] }, { prefab: 'shieldfall', n: 40, rect: [4, 5, 25, 55] },
+    { prefab: 'tufts', n: 500, rect: [3, 4, 89, 57] }],
+  city: { at: [12, -70], seed: 5, n: 160, r0: 0, r1: 70, ground: -1, wall: 80, wallH: 8, tall: 2.2, towers: 0.3 },   // Shamar, upstream on the Tybor
   shafts: [], links: [], features: [], lights: [], props: [
     // the camp of Koth by the river: the tents, cut loose and half struck, and the fires still burning
     { prefab: 'pavilion', at: [4.6, 44.5], rot: 1.6 }, { prefab: 'pavilion', at: [4.6, 51.5], rot: 1.5, cloth: 'velvet' }, { prefab: 'pavilion', at: [14, 59.6], rot: 3.1 }, { prefab: 'pavilion', at: [22, 59.6], rot: 3.2, cloth: 'velvet' }, { prefab: 'pavilion', at: [28.4, 57], rot: -1.5 },
@@ -1390,7 +1405,7 @@ function buildLevel(spec) {
   }
   for (const l of spec.lights) {
     const [x, z] = W2(l.at[0], l.at[1]);
-    LV.lights.push({ x, y: l.y, z, r: l.col[0], g: l.col[1], b: l.col[2], rad: l.rad, i: l.i });
+    LV.lights.push({ x, y: l.y, z, r: l.col[0], g: l.col[1], b: l.col[2], rad: l.rad, i: l.i, sky: l.sky });
   }
   for (const f of spec.features) {
     const [x, z] = W2(f.at[0], f.at[1]);
