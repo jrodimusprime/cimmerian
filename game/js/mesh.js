@@ -268,10 +268,11 @@ function addPrefab(mb, p) {
     }
     case 'divan': {                                      // a low couch heaped with silk cushions: "on divans lounged Strabonus and Amalrus in their silks and gold"
       const yaw = p.yaw || 0, c = Math.cos(yaw), s2 = Math.sin(yaw), at = (u, v) => [p.x + c * u + s2 * v, p.z - s2 * u + c * v];
-      { const q = at(0, 0); addBox(mb, q[0], p.y + 0.2, q[1], 1.05, 0.2, 0.5, T.WOOD, yaw); addBox(mb, q[0], p.y + 0.45, q[1], 1.0, 0.07, 0.46, T.VELVET, yaw); }
-      { const q = at(0, -0.45); addBox(mb, q[0], p.y + 0.72, q[1], 1.05, 0.3, 0.08, T.VELVET, yaw); }
-      for (const e of [-1, 1]) { const q = at(e * 1.0, 0); addBox(mb, q[0], p.y + 0.62, q[1], 0.08, 0.2, 0.5, T.GILT, yaw); }
-      for (const [u, v] of [[-0.6, -0.25], [0.55, -0.28], [0.05, -0.3]]) { const q = at(u, v); addRock(mb, q[0], p.y + 0.62, q[1], 0.26, 0.13, 0.18, Math.floor(u * 9 + 20), T.TABARD, 0.1); }
+      // a seat 0.66 deep (front edge at v 0.33), its cushion top 0.5 high; the back and the arms rise above it
+      { const q = at(0, 0); addBox(mb, q[0], p.y + 0.2, q[1], 1.05, 0.2, 0.33, T.WOOD, yaw); addBox(mb, q[0], p.y + 0.44, q[1], 1.0, 0.06, 0.32, T.VELVET, yaw); }
+      { const q = at(0, -0.3); addBox(mb, q[0], p.y + 0.75, q[1], 1.05, 0.33, 0.07, T.VELVET, yaw); }
+      for (const e of [-1, 1]) { const q = at(e * 1.0, 0); addBox(mb, q[0], p.y + 0.6, q[1], 0.08, 0.18, 0.33, T.GILT, yaw); }
+      for (const [u, v] of [[-0.68, -0.17], [0.7, -0.17]]) { const q = at(u, v); addRock(mb, q[0], p.y + 0.66, q[1], 0.22, 0.16, 0.08, Math.floor(u * 9 + 20), T.TABARD, 0.1); }   // bolsters at the ends, clear of whoever sits in the middle
       break;
     }
     case 'censer': {                                     // "golden censers, filling the corridor with dreamy perfumed clouds": hung from the vault on a chain
@@ -431,18 +432,19 @@ function buildLevelMesh() {
   // under the open sky a building has a body: the masonry about a roofed room stands up to just over its ceiling, with a
   // top, an outer face toward the sky and a roof over the room, not the bare inner planes of the room seen from behind
   const ROOF = 0.35, roofed = (x, z) => x >= 0 && z >= 0 && x < W && z < H && LV.kind[z * W + x] !== 0 && !(LV.flags[z * W + x] & F_SKY);
-  const roofTop = (x, z) => { let t = -Infinity; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (roofed(x + dx, z + dz)) t = Math.max(t, LV.ceil[(z + dz) * W + x + dx]); return t + ROOF; };
+  const masonTex = (x, z, w) => { const t = x >= 0 && z >= 0 && x < W && z < H ? LV.tex[z * W + x] : null; return t && LV.kind[z * W + x] === 0 && T[t[w]] !== undefined ? T[t[w]] : T.HEWN; };   // a solid room's own face (an earth bank, raw hides), or plain masonry
+  const roofTop = (x, z) => { if (x >= 0 && z >= 0 && x < W && z < H && LV.kind[z * W + x] === 0 && LV.top[z * W + x] > 0) return LV.top[z * W + x]; let t = -Infinity; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (roofed(x + dx, z + dz)) t = Math.max(t, LV.ceil[(z + dz) * W + x + dx]); return t + ROOF; };
   if (LEVEL.open) for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const idx = j * W + i, x0 = i * CELL, x1 = x0 + CELL, z0 = j * CELL, z1 = z0 + CELL;
     if (LV.kind[idx] === 0) {                             // masonry about a roofed room: its flat top
       const t = roofTop(i, j); if (t === -Infinity) continue;
-      mb.quad([x0, t, z0], [x0, t, z1], [x1, t, z1], [x1, t, z0], T.HEWN, 0, 1, 0);
+      mb.quad([x0, t, z0], [x0, t, z1], [x1, t, z1], [x1, t, z0], masonTex(i, j, 'floor'), 0, 1, 0);
       for (const d of DIRS) {                             // and its sides, where its neighbour (masonry, or a room's roof) stands lower: no step left open, however small
         const nx = i + d[0], nz = j + d[1]; if (nx < 0 || nz < 0 || nx >= W || nz >= H) continue;
         const nI = nz * W + nx, tn = LV.kind[nI] === 0 ? roofTop(nx, nz) : !(LV.flags[nI] & F_SKY) ? LV.ceil[nI] + ROOF : null;
         if (tn === null || tn >= t - 0.001) continue;
         const b = tn === -Infinity ? t - 6 : tn, ax = (i + d[2]) * CELL, az = (j + d[3]) * CELL, bx = (i + d[4]) * CELL, bz = (j + d[5]) * CELL;
-        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], T.HEWN, d[0], 0, d[1]);
+        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], masonTex(i, j, 'wall'), d[0], 0, d[1]);
       }
     } else if (!(LV.flags[idx] & F_SKY)) {                 // a roofed room: a roof over it
       const t = LV.ceil[idx] + ROOF;
@@ -451,7 +453,7 @@ function buildLevelMesh() {
         const nx = i + d[0], nz = j + d[1]; if (nx < 0 || nz < 0 || nx >= W || nz >= H) continue;
         const nI = nz * W + nx; if (LV.kind[nI] === 0 || !(LV.flags[nI] & F_SKY)) continue;
         const ax = (i + d[2]) * CELL, az = (j + d[3]) * CELL, bx = (i + d[4]) * CELL, bz = (j + d[5]) * CELL, b = LV.ceil[idx] - 0.05;
-        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], T.HEWN, d[0], 0, d[1]);
+        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], LV.tex[idx] && T[LV.tex[idx].wall] !== undefined && LEVEL.level === 'e1m7' ? T[LV.tex[idx].wall] : T.HEWN, d[0], 0, d[1]);   // (a siege tower's lintel is timber)
       }
     }
   }
@@ -472,7 +474,9 @@ function buildLevelMesh() {
       mb.quad([c0.x, wy, c0.z], [c1.x, wy, c1.z], [c2.x, wy, c2.z], [c3.x, wy, c3.z], T.WATER, 0, 1, 0);
     }
     const cLayer = (fl & F_SKY) ? (tex.ceil === 'SUNSET' ? T.SUNSET : T.SKY) : T[tex.ceil];
-    const e0 = P(c0, c0.c), e1 = P(c1, c1.c), e2 = P(c2, c2.c), e3 = P(c3, c3.c);
+    // under the open sky a roofed cell's corner can be shared with the sky's: its walls and ceiling stop at its own roof, not run up to the sky's
+    const cy = LEVEL.open && !(fl & F_SKY) ? q => (q.tall ? Math.min(q.c, LV.ceil[idx] + 0.2) : q.c) : q => q.c;   // (only a corner the sky shares: between two roofed cells the corner stays shared, watertight)
+    const e0 = P(c0, cy(c0)), e1 = P(c1, cy(c1)), e2 = P(c2, cy(c2)), e3 = P(c3, cy(c3));
     if (!open) {
       if (diag) { mb.tri(e0, e1, e2, cLayer, 0, -1, 0); mb.tri(e0, e2, e3, cLayer, 0, -1, 0); }
       else { mb.tri(e0, e1, e3, cLayer, 0, -1, 0); mb.tri(e1, e2, e3, cLayer, 0, -1, 0); }
@@ -489,10 +493,10 @@ function buildLevelMesh() {
       const ca = corner(i + d[2], j + d[3]), cb = corner(i + d[4], j + d[5]);
       if (nk === 0 && open) {                               // the edge of the world: nothing; the masonry of a building: its outer face
         const t = roofTop(i + d[0], j + d[1]);
-        if (t !== -Infinity) wallStrip(mb, ca, cb, fy(ca), fy(cb), t, t, T.HEWN, -d[0], -d[1]);
+        if (t !== -Infinity) wallStrip(mb, ca, cb, fy(ca), fy(cb), t, t, masonTex(i + d[0], j + d[1], 'wall'), -d[0], -d[1]);
         continue;
       }
-      if (nk === 0) wallStrip(mb, ca, cb, fy(ca), fy(cb), ca.c, cb.c, T[tex.wall], -d[0], -d[1]);
+      if (nk === 0) wallStrip(mb, ca, cb, fy(ca), fy(cb), cy(ca), cy(cb), T[tex.wall], -d[0], -d[1]);
       if (nk === 0 && k === 1 && LV.rough[idx] >= 0.75 && !LEVEL.open) {   // a cave: fallen rock and scree heaped at the foot of its walls
         for (let q = 0; q < 3; q++) {
           const h = hrand(i * 4 + d[0] + 7, j * 4 + d[1] + 7, q, 71); if (h > 0.62) continue;
@@ -643,10 +647,14 @@ function buildModel(name) {
     case 'satha_tail':
       addLathe(mb, 0, 0, 0, [[0.6, 0.6], [0.6, 0.3], [0.4, -0.8], [0.18, -1.9], [0, -2.6]], 6, T.SCALES, 0.2, ONE3, [0, 0, 1]);
       break;
-    case 'ring':
-      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; addBox(mb, Math.cos(a) * 0.16, Math.sin(a) * 0.16, 0, 0.035, 0.055, 0.035, T.IRON, 0, ONE3, 0); }
-      addBox(mb, 0, 0.18, -0.06, 0.07, 0.05, 0.08, T.IRON);
+    case 'ring': {                                       // an iron ring hanging from a staple leaded into the stone (origin at the wall's face, +z out of it)
+      addBox(mb, 0, 0, 0.012, 0.07, 0.08, 0.012, T.IRON);                                   // the plate
+      for (const sx of [-0.035, 0.035]) addBox(mb, sx, 0, 0.04, 0.012, 0.012, 0.03, T.IRON);   // the staple's legs
+      addBox(mb, 0, 0, 0.068, 0.047, 0.012, 0.012, T.IRON);                                 // and its bridge, the ring through it
+      const prof = []; for (let k = 0; k <= 8; k++) { const a = k / 8 * Math.PI * 2; prof.push([0.115 + Math.cos(a) * 0.02, Math.sin(a) * 0.02]); }
+      addLathe(mb, 0, -0.115, 0.05, prof, 14, T.IRON, 0, ONE3, [0, 0, 1]);                  // hanging flat to the wall
       break;
+    }
     case 'link':
       addBox(mb, -0.05, 0, 0, 0.018, 0.018, 0.1, T.IRON); addBox(mb, 0.05, 0, 0, 0.018, 0.018, 0.1, T.IRON);
       addBox(mb, 0, 0, 0.09, 0.06, 0.018, 0.018, T.IRON); addBox(mb, 0, 0, -0.09, 0.06, 0.018, 0.018, T.IRON);

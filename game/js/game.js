@@ -387,14 +387,15 @@ function dynColliders(self) {
   const g = S.giant; if (!giantTaken()) c.push({ x: g.x, z: g.z, r: 0.6 });
   for (const f of S.foes) if (!f.dead && f !== self && f.state !== 'dormant' && f.state !== 'lurk') c.push({ x: f.x, z: f.z, r: !self && FOES[f.cls].body || 0.42 });   // (a bulk like the weeping thing's is solid all the way out to its edge: you can't walk into it)   // not one still clinging to the roof, or not yet come
   const n = S.npc; if (n && n !== self && (self || S.onGround)) c.push({ x: n.x, z: n.z, r: 0.35 });   // (not in mid-leap: a jump isn't spoilt on him)
-  if (!self && S.shamu) for (const r of S.shamu.riders) c.push({ x: r.x, z: r.z, r: 0.75 });   // a horse is a wall of muscle: you don't walk through it   // Pelias is flesh: you cannot walk through him
+  if (S.shamu) for (const r of S.shamu.riders) if (r !== self) c.push({ x: r.x, z: r.z, r: 0.75 });   // a horse is a wall of muscle: nobody walks through it   // Pelias is flesh: you cannot walk through him
   actorColliders(c, self);
-  if (!self) {                                            // your own men are flesh too: you shoulder past the Bossonians and Gundermen, you don't walk through them
-    for (const a of LEVEL.allies || []) if (!a.fight) for (let k = 0; k < a.n; k++) {
-      const x = (a.at[0] + (k % a.cols) * a.step) * CELL, z = (a.at[1] + Math.floor(k / a.cols) * a.step) * CELL;
-      if (Math.abs(x - S.x) < 6 && Math.abs(z - S.z) < 6) c.push({ x, z, r: 0.38 });
-    }
+  // your own men are flesh too, to you and to the enemy: nobody walks through the Bossonians or the Gundermen
+  const me = self || S;
+  for (const a of LEVEL.allies || []) if (!a.fight) for (let k = 0; k < a.n; k++) {
+    const x = (a.at[0] + (k % a.cols) * a.step) * CELL, z = (a.at[1] + Math.floor(k / a.cols) * a.step) * CELL;
+    if (Math.abs(x - me.x) < 6 && Math.abs(z - me.z) < 6) c.push({ x, z, r: 0.38 });
   }
+  for (const m of S.allyMen || []) if (m !== self && Math.abs(m.x - me.x) < 6 && Math.abs(m.z - me.z) < 6) c.push({ x: m.x, z: m.z, r: 0.38 });
   if (self) c.push({ x: S.x, z: S.z, r: RADIUS });
   // Satha's body is solid: you cannot walk through her coils (only lie still while she passes)
   else if (S.satha.pts && (!entitySpec('scripted_satha') || S.flags.free)) {
@@ -937,12 +938,7 @@ function updateSatha() {
     log(seesFire && hidden ? 'The great head swings to your torchlight, and strikes into the tunnel mouth!' : 'The great head strikes, and you are flung across the corridor!', 'bad');
     S.vx += hdx / (hd || 1) * 9; S.vz += hdz / (hd || 1) * 9; S.vy = 3; S.onGround = false;
   }
-  // her venom drips as she goes ("From them dripped a colorless liquid that he instinctively knew was death")
-  if (sa.spitCool <= 0 && hd < 8) {
-    sa.spitCool = 1.1;
-    const hx = Math.sin(h.yaw), hz = Math.cos(h.yaw);
-    S.proj.push({ type: 'venom', x: h.x + hx * 1.1, y: h.y + 0.1, z: h.z + hz * 1.1, vx: hx * 0.6, vy: 0, vz: hz * 0.6, life: 2, spin: 0 });
-  }
+  // she spits nothing: her venom only drips from the fangs as she goes (drawn in render, it does no harm unless she is over you)
 }
 
 // ---------------------------------------------------------------- Shukeli, the jailer
@@ -1812,6 +1808,54 @@ function updateHUD() {
 }
 
 // ---------------------------------------------------------------- render
+// The chain from the ring to the king's fetters: a rope of links, simulated in the render only (it touches no state). It hangs
+// from the ring, lies along the floor when slack, comes taut when he strains at the end of it, and drops loose when it parts.
+const CHAIN_N = 22, CHAIN_SEG = 0.17;
+let CHAIN = null;
+function ringWall(ring, rn) {
+  if (ring._rc === undefined) ring._rc = wallRecess({ at: [ring.x / CELL, ring.z / CELL], prefab: 'ring' }, rn) + (rn[0] ? ring.x / CELL - Math.round(ring.x / CELL) : ring.z / CELL - Math.round(ring.z / CELL)) * CELL * (rn[0] || rn[1]);
+  return ring._rc;
+}
+function chainFloor(x, z, A, rn) {                     // in the band between the grid line and the stone's real face, take the vault's floor
+  const g = groundInfo(x, z);
+  return (g.kind === 0 ? groundInfo(A[0] + rn[0] * 0.6, A[2] + rn[1] * 0.6).floor : g.floor) + 0.025;
+}
+function chainSim(A, B, rn, W) {
+  const now = performance.now();
+  if (!CHAIN || CHAIN.s !== S || (B && Math.hypot(B[0] - CHAIN.p[CHAIN_N][0], B[2] - CHAIN.p[CHAIN_N][2]) > 3)) {
+    const E = B || [A[0] + rn[0] * 1.6, A[1] - 1, A[2] + rn[1] * 1.6];
+    CHAIN = { s: S, t: now, p: [], q: [] };
+    const ex = E[0] - A[0], ez = E[2] - A[2], el = Math.hypot(ex, ez) || 1;
+    for (let i = 0; i <= CHAIN_N; i++) {               // laid out in a loose bow, so the slack lies in a curve on the floor and not heaped in a line
+      const t = i / CHAIN_N, b = Math.sin(Math.PI * t) * 0.7, x = lerp(A[0], E[0], t) - ez / el * b, z = lerp(A[2], E[2], t) + ex / el * b, y = Math.max(chainFloor(x, z, A, rn), lerp(A[1], E[1], t) - Math.sin(Math.PI * t) * 0.8);
+      CHAIN.p.push([x, y, z]); CHAIN.q.push([x, y, z]);
+    }
+  }
+  const P = CHAIN.p, Q = CHAIN.q, steps = clamp(Math.round((now - CHAIN.t) / 8), 1, 6), h = 1 / 120;
+  CHAIN.t = now;
+  for (let s = 0; s < steps; s++) {
+    for (let i = 1; i <= CHAIN_N; i++) {               // verlet, damped
+      const p = P[i], q = Q[i], vx = (p[0] - q[0]) * 0.97, vy = (p[1] - q[1]) * 0.97, vz = (p[2] - q[2]) * 0.97;
+      q[0] = p[0]; q[1] = p[1]; q[2] = p[2]; p[0] += vx; p[1] += vy - 9.8 * h * h; p[2] += vz;
+    }
+    for (let it = 0; it < 14; it++) {
+      P[0][0] = A[0]; P[0][1] = A[1]; P[0][2] = A[2];
+      if (B) { P[CHAIN_N][0] = B[0]; P[CHAIN_N][1] = B[1]; P[CHAIN_N][2] = B[2]; }
+      for (let i = 0; i < CHAIN_N; i++) {
+        const a = P[i], b = P[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], d = Math.hypot(dx, dy, dz) || 1e-6, e = (d - CHAIN_SEG) / d;
+        const wa = i === 0 ? 0 : (B && i + 1 === CHAIN_N ? 1 : 0.5), wb = i === 0 ? 1 : (B && i + 1 === CHAIN_N ? 0 : 0.5);
+        a[0] += dx * e * wa; a[1] += dy * e * wa; a[2] += dz * e * wa; b[0] -= dx * e * wb; b[1] -= dy * e * wb; b[2] -= dz * e * wb;
+      }
+      for (let i = 1; i <= CHAIN_N; i++) {               // the floor holds it up, the wall keeps it out of the stone
+        const p = P[i], f = chainFloor(p[0], p[2], A, rn);
+        if (p[1] < f) { p[1] = f; Q[i][0] = lerp(Q[i][0], p[0], 0.5); Q[i][2] = lerp(Q[i][2], p[2], 0.5); }   // and drags along it
+        const o = (p[0] - W[0]) * rn[0] + (p[2] - W[1]) * rn[1] - 0.04;
+        if (o < 0) { p[0] -= rn[0] * o; p[2] -= rn[1] * o; }
+      }
+    }
+  }
+  return P;
+}
 function render(alpha) {
   let px = lerp(prev.x, S.x, alpha), py = lerp(prev.y, S.y, alpha), pz = lerp(prev.z, S.z, alpha);
   const bob = Math.sin(bobPhase * 2) * 0.05 * bobAmt;
@@ -1870,21 +1914,19 @@ function render(alpha) {
     drawM(mesh, m, light, 0.06 + 0.05 * Math.sin(gameTime * 3));
   }
   // ring and chain
-  const ring = feature('ring') || { x: -1e4, y: 0, z: -1e4, wall: 'N' }, rn = wallIn(ring.wall), rl = sampleLight(ring.x + rn[0], 1, ring.z + rn[1]);
-  drawM('ring', m4trs(ring.x + rn[0] * 0.08, ring.y, ring.z + rn[1] * 0.08, Math.atan2(rn[0], rn[1]), 0, 0, 1.4), rl);
-  const A = [ring.x + rn[0] * 0.12, ring.y - 0.22, ring.z + rn[1] * 0.12];
-  if (feature('ring')) {
-  const fx = ring.x + rn[0] * 1.6 + rn[1] * 0.5, fz = ring.z + rn[1] * 1.6 + rn[0] * 0.5;
-  const B = S.flags.free ? [fx, groundInfo(fx, fz).floor + 0.03, fz] : [px, py + 0.12, pz];
-  const dist = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]), n = Math.max(4, Math.ceil(dist / 0.17)), sag = Math.sqrt(Math.max(0, 3.6 * 3.6 - dist * dist)) * 0.45;
-  let lp = A;
-  for (let i = 1; i <= n; i++) {
-    const tt = i / n, x = lerp(A[0], B[0], tt), z = lerp(A[2], B[2], tt);
-    const y = Math.max(groundInfo(x, z).floor + 0.03, lerp(A[1], B[1], tt) - sag * Math.sin(Math.PI * tt));
-    const dx = x - lp[0], dy = y - lp[1], dz = z - lp[2];
-    drawM('link', m4trs((x + lp[0]) / 2, (y + lp[1]) / 2, (z + lp[2]) / 2, Math.atan2(dx, dz), -Math.atan2(dy, Math.hypot(dx, dz)), i % 2 ? Math.PI / 2 : 0, 1), sampleLight(x, y + 0.5, z));
-    lp = [x, y, z];
-  }
+  const ring = feature('ring');
+  if (ring) {
+    const rn = wallIn(ring.wall), rc = ringWall(ring, rn), wx = ring.x - rn[0] * rc, wz = ring.z - rn[1] * rc;   // the wall's face behind the ring, as the stone really stands
+    drawM('ring', m4trs(wx, ring.y, wz, Math.atan2(rn[0], rn[1]), 0, 0, 1), sampleLight(wx + rn[0], ring.y, wz + rn[1]));
+    if (!inPrologue()) {                                  // no chain on the march: it is made fast to the ring when they leave him in the vault
+      const A = [wx + rn[0] * 0.05, ring.y - 0.25, wz + rn[1] * 0.05];
+      const B = S.flags.free ? null : [px, py + 0.14, pz];
+      const pts = chainSim(A, B, rn, [wx, wz]);
+      for (let i = 1; i < pts.length; i++) {
+        const p0 = pts[i - 1], p1 = pts[i], dx = p1[0] - p0[0], dy = p1[1] - p0[1], dz = p1[2] - p0[2];
+        drawM('link', m4trs((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2, Math.atan2(dx, dz), -Math.atan2(dy, Math.hypot(dx, dz)), i % 2 ? Math.PI / 2 : 0, 1), sampleLight(p1[0], p1[1] + 0.5, p1[2]));
+      }
+    }
   }
   const nt = feature('niche_torch');
   if (nt && !S.flags.has_torch) {
@@ -2058,7 +2100,7 @@ function render(alpha) {
       const hl0 = sampleLight(h[0], h[1] + 1, h[2]), hl = [hl0[0] * SATHA_HEAD_L[0], hl0[1] * SATHA_HEAD_L[1], hl0[2] * SATHA_HEAD_L[2]]; hl.d = hl0.d;   // the head's own texture is pale: dim the light on it to match the dark hide
       if (h[1] > -10) {
         const held = S.giant && S.giant.state === 'seized';
-        const jaw = held ? 1.15 : clamp((S.satha.cool - 0.8) * 2.5, 0, 1) + clamp((S.satha.spitCool - 1.8) * 2.5, 0, 1);
+        const jaw = held ? 1.15 : clamp((S.satha.cool - 0.8) * 2.5, 0, 1);
         if (held) {                                       // the strangler crosswise in her jaws, bent over them, kicking
           const gt = S.giant.t + alpha * DT, kick = Math.sin(gt * 9), ap = (m, v) => [0, 1, 2].map(i => m[i] * v[0] + m[4 + i] * v[1] + m[8 + i] * v[2] + m[12 + i]);
           const c = ap(hm, [0, -0.32, 0.72]), ax = [hm[0], hm[1], hm[2]], al = Math.hypot(ax[0], ax[2]) || 1, bx = ax[0] / al, bz = ax[2] / al;
@@ -2069,6 +2111,10 @@ function render(alpha) {
         }
         const jm = m4mul(hm, m4mul(m4t(0, -0.1, -0.3), m4mul(m4rx(Math.min(1, jaw) * 0.65 + 0.06 * Math.sin(gameTime * 3)), m4t(0, 0.1, 0.3))));
         drawPart('satha_head', 'satha_head_uv', hm, hl, SATHA_GLOW); drawPart('satha_jaw', 'satha_jaw_uv', jm, hl, SATHA_GLOW);   // only a faint sheen of her own: the torch models her
+        if (!held && mode === 'play' && Math.random() < 0.05) {   // "From them dripped a colorless liquid that he instinctively knew was death": a drop off a fang now and then, nothing thrown
+          const fx = Math.random() < 0.5 ? -0.07 : 0.07, f = [0, 1, 2].map(i => hm[i] * fx + hm[4 + i] * -0.2 + hm[8 + i] * 0.5 + hm[12 + i]);
+          particles.push({ m: 'drop', x: f[0], y: f[1], z: f[2], vx: 0, vy: 0, vz: 0, life: 0.9, max: 0.9, g: 9, s: 0.35 });
+        }
       }
       if (!sathaMeshes) sathaMeshes = Array.from({ length: SATHA_CHUNKS }, () => R.createMesh(new Float32Array(10)));
       const down = norm3([-hm[4], -hm[5], -hm[6]]), L = BODY_LEN, cl = L / SATHA_CHUNKS, fw = norm3([hm[8], hm[9], hm[10]]);
@@ -2313,10 +2359,10 @@ function buildWallDecals(lm) {
 // a rider's seat: the built war-horse stands taller than the old part-built one
 function seatY() { return typeof SKINNED !== 'undefined' && SKINNED.horse ? 0.68 : 0.5; }
 const W_MODELS = ['vm_arm', 'w_sword', 'w_greatsword', 'w_dagger', 'w_axe', 'w_spear', 'w_pike', 'w_bow'];
-const ALL_MODELS = Object.keys(CAST).concat(['horse', 'steed', 'weeper_body', 'weeper_tentacle', 'weeper_head', 'yothga_stem', 'yothga_tendril', 'yothga_bloom', 'eagle_body', 'eagle_wing', 'satha_head', 'satha_jaw', 'presence'], W_MODELS);
+const ALL_MODELS = Object.keys(CAST).concat(['horse', 'steed', 'oozey', 'weeper_body', 'weeper_tentacle', 'weeper_head', 'yothga_stem', 'yothga_tendril', 'yothga_bloom', 'eagle_body', 'eagle_wing', 'satha_head', 'satha_jaw', 'presence'], W_MODELS);
 // only what this level puts on screen
 function levelCast(L) {
-  const ids = new Set(W_MODELS.concat(L.satha || L.entities.some(e => e.class === 'scripted_satha') ? ['satha_head', 'satha_jaw'] : [])), map = { black_giant: ['giant'], monster_shukeli: ['shukeli'], thing: ['thing', 'thing_b', 'thing_c'], weeper: ['weeper_body', 'weeper_tentacle', 'weeper_head', 'presence'] };
+  const ids = new Set(W_MODELS.concat(L.satha || L.entities.some(e => e.class === 'scripted_satha') ? ['satha_head', 'satha_jaw'] : [])), map = { black_giant: ['giant'], monster_shukeli: ['shukeli'], thing: ['thing', 'thing_b', 'thing_c'], weeper: ['oozey', 'weeper_body', 'weeper_tentacle', 'weeper_head', 'presence'] };
   for (const e of L.entities) for (const id of (map[e.class] || (CAST[e.class] ? [e.class] : []))) ids.add(id);
   if (L.kings) { for (const r of L.kings.riders) ids.add(r[2]); ids.add('tsotha'); ids.add('horse'); ids.add('oknight'); }
   if (L.host) ids.add('pikeman');

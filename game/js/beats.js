@@ -48,6 +48,10 @@ function updateBeats() {
     }
     if (b.sathaIn !== undefined) S.satha.start = S.tick + Math.round(b.sathaIn * SIM_HZ);   // the serpent's rounds begin
     if (b.cp) S.checkpoint = { x: b.cp[0] * CELL, z: b.cp[1] * CELL, yaw: b.cp[2] || 0 };
+    if (b.alliesTo && S.allyMen) {                       // the pikes come up behind you (out of your sight): in rank at the given place
+      const [ax, az] = b.alliesTo; S.allyMoved = true; S.allyAnchor = { x: ax * CELL, z: az * CELL }; S.allyFlow = null;
+      for (const m of S.allyMen) { m.x = (ax + (m.k % 3 - 1) * 0.8) * CELL; m.z = (az + Math.floor(m.k / 3) * 0.6) * CELL; m.tgt = null; }
+    }
   }
   while (B.queue.length && B.queue[0].at <= S.tick) { const q = B.queue.shift(); log(q.t, q.c); if (q.c === 'voice') Sfx.voice(0); }
   updateSleepers();
@@ -63,7 +67,10 @@ function updateAllyMen() {
   const M = S.allyMen; if (!M || !M.length) return;
   const A = S.allyAnchor || (S.allyAnchor = { x: M[0].x, z: M[0].z });
   if (S.flags.press_through) { A.x = 70 * CELL; A.z = 22 * CELL; }   // the press broken, they halt and hold the field in rank: they don't trail you round the palace
-  else { A.x = Math.max(A.x, S.x - 10); A.z += (S.z - A.z) * 0.02; }
+  else {
+    A.x = Math.max(A.x, S.x - 10); A.z += (S.z - A.z) * 0.02;
+    const hold = LEVEL.allyHold; if (hold && !S.flags[hold.until] && !S.allyMoved) A.x = Math.min(A.x, hold.x * CELL);   // they keep this side of the lines till they are brought over
+  }
   if (!S.allyFlow || S.tick % 36 === 0) { const g = groundInfo(A.x, A.z); S.allyFlow = g.idx >= 0 ? bfs(g.idx) : null; }
   for (const m of M) {
     m.t += DT; m.mv = false;
@@ -95,7 +102,6 @@ function updateAllyMen() {
         if (!m.tgt) m.yaw = Math.atan2(ux, uz);
       } else if (!m.tgt) m.yaw = Math.PI / 2;
     }
-    for (const o of M) if (o !== m) { const ox = m.x - o.x, oz = m.z - o.z, od = Math.hypot(ox, oz); if (od < 0.8 && od > 1e-4) { m.x += ox / od * (0.8 - od) * 0.5; m.z += oz / od * (0.8 - od) * 0.5; } }   // shoulder to shoulder, not inside each other
   }
 }
 function allyHit(f, dmg, m) {

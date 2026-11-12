@@ -62,8 +62,29 @@ function weeperBody(f, t, core = false) {
   for (let i = 0; i < NT; i++) for (let j = 0; j < NP; j++) { put(i, j); put(i + 1, j); put(i + 1, j + 1); put(i, j); put(i + 1, j + 1); put(i, j + 1); }
   return out;
 }
+// The weeping thing is "Oozey the Slime" by Mophs (OpenGameArt, CC-BY 3.0): a mound of ooze rising into a frog's head, a gaping
+// maw, eyes on stalks. A static mesh, so it is made to live here: it breathes and quakes, shudders as it titters, rears and
+// lunges as it strikes, hitches its bulk along, and drools. (The procedural thing below stands in until it has loaded.)
+const OOZE = { s: 0.45, cx: 0.41, cz: 0.18, y0: 0.103 };   // to ~3 m across (its body: 1.45 m round), set on its base, centred
+function drawOozey(f, l, t) {
+  const M = SKINNED.oozey, S = new Float32Array(32 * 16); S.set(m4ident(), 0);
+  const titter = f.alert ? 1 : 0, hitch = f.moving ? Math.sin(f.walk * 2.4) : 0;
+  const sob = titter ? 0.03 * Math.sin(t * 15) : 0.05 * Math.max(0, Math.sin(t * 2.2)) ** 2;          // weeping, slow heaves; tittering, a fast shudder
+  const rear = f.state === 'windup' ? smoothstep(0, 0.4, f.t) : 0, lunge = f.state === 'strike' ? 1 : f.state === 'recover' ? Math.max(0, 1 - f.t * 2) : 0;
+  const sy = (1 + 0.035 * Math.sin(t * 1.3) + sob + 0.12 * rear - 0.12 * lunge) * (1 - 0.07 * hitch), sxz = 1 / Math.sqrt(sy);
+  const quake = 0.025 * Math.sin(t * 3.1) + 0.015 * Math.sin(t * 7.3 + 1);                              // the quaking jelly
+  const root = m4mul(m4trs(f.x, f.y, f.z, f.yaw, 0, 0, 1), m4mul(m4trs(0, 0, 0.55 * lunge, 0, -0.18 * rear + 0.3 * lunge, quake, 1),
+    m4mul(m4s3(sxz * (1 + 0.04 * Math.sin(t * 2.6)), sy, sxz * (1 + 0.1 * hitch)), m4mul(m4s(OOZE.s), m4t(OOZE.cx, OOZE.y0, OOZE.cz)))));
+  R.key = l.d;
+  skinDraw(M, root, S, l, 0.06, 1);
+  if (Math.random() < (titter ? 0.12 : 0.05)) {                                                          // drool from the blubbery lower lip
+    const u = (Math.random() - 0.5) * 1.6, p = [0, 1, 2].map(i => root[i] * (u - OOZE.cx) + root[4 + i] * (2.4 - OOZE.y0) + root[8 + i] * (2.55 - OOZE.cz) + root[12 + i]);
+    particles.push({ m: 'drop', x: p[0], y: p[1], z: p[2], vx: 0, vy: -0.1, vz: 0, life: 0.9, max: 0.9, g: 7, s: 0.9 });
+  }
+}
 function drawWeeper(f, lightOverride) {
   const l = lightOverride || sampleLight(f.x, f.y + 1, f.z), t = gameTime + f.homeX;
+  if (typeof SKINNED !== 'undefined' && SKINNED.oozey) return drawOozey(f, l, t);
   const root = m4trs(f.x, f.y, f.z, f.yaw, 0, 0, 1);
   R.key = l.d;
   // stubby tentacles round the rim, writhing; more frantic when it comes after you

@@ -14,15 +14,15 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 >
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
-> | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
+> | `e1m1` The Plain of Shamu | 2:12 (9496 ticks) | ~8.8 min |
 > | `e1m2` The Pits | 3:53 (16777 ticks) | ~15.5 min |
 > | `e1m3` The Tunnels Below | 2:15 (9732 ticks) | ~9.0 min |
 > | `e1m4` Yothga | 3:24 (14682 ticks) | ~13.6 min |
 > | `e1m5` The Scarlet Citadel | 3:14 (13991 ticks) | ~13.0 min |
 > | `e1m6` The Tower of Tamar | 2:04 (8908 ticks) | ~8.2 min |
-> | `e1m7` The Relief of Shamar | 2:58 (12848 ticks) | ~11.9 min |
-> | `e1m8` The Tybor | 3:02 (13090 ticks) | ~12.1 min |
-> | **Campaign** | **23:08** (99970 ticks) | **~93 min** |
+> | `e1m7` The Relief of Shamar | 3:24 (14701 ticks) | ~13.6 min |
+> | `e1m8` The Tybor | 3:19 (14346 ticks) | ~13.3 min |
+> | **Campaign** | **23:45** (102633 ticks) | **~95 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -706,7 +706,7 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - Map tools: ericw-tools (GPL-2).
 - Sound (`game/sound/`, all **CC0** from OpenGameArt, converted to mono MP3): [sword swings](https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes) and clashes (StarNinjas), [footsteps on stone and sand](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone) (Fantozzi), [blows to the body](https://opengameart.org/content/40-wet-towel-clubpoundhitattack-sounds) and [men in pain](https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds), [hit and death sounds](https://opengameart.org/content/5-hit-sounds-dying), [creatures](https://opengameart.org/content/80-cc0-creature-sfx) (the pit-things), [metal and wood](https://opengameart.org/content/100-cc0-metal-and-wood-sfx) (grilles, keys, chains), and the ambiences [dungeon](https://opengameart.org/content/loopable-dungeon-ambience), [dripping water](https://opengameart.org/content/dripping-water-loop) and [ambient horror](https://opengameart.org/content/ambient-horror). The plain's wind and distant battle are synthesised from these.
 - Art: see `story/credits.json`. Every source is public domain or CC0, with the artist's death year recorded.
-- The cast's bodies: [MakeHuman / MPFB](https://static.makehumancommunity.org/mpfb.html) base mesh, shape targets, game-engine skeleton and weights, and the [MakeHuman system assets](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html) and [Skins 02](https://static.makehumancommunity.org/assets/assetpacks/skins02.html) packs (skins, eyes, eyebrows, hair). All **CC0**. The war-horse and Tsotha's steed are OpenGameArt's CC0 [Rigged Horse](https://opengameart.org/content/rigged-horse), and the pit-things its CC0 [Goblin](https://opengameart.org/content/goblin-1). Satha's head is "Snake" by Swp, supplied by the project's owner, its hide darkened to match her body (licence as supplied). Photographed skins for the weeping thing and Satha's head are CC0 from [ambientCG](https://ambientcg.com/). The armour, helms, masks, robes, other beasts and weapons are this project's own. How they're built: [`tools/blender/`](tools/blender/README.md).
+- The cast's bodies: [MakeHuman / MPFB](https://static.makehumancommunity.org/mpfb.html) base mesh, shape targets, game-engine skeleton and weights, and the [MakeHuman system assets](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html) and [Skins 02](https://static.makehumancommunity.org/assets/assetpacks/skins02.html) packs (skins, eyes, eyebrows, hair). All **CC0**. The war-horse and Tsotha's steed are OpenGameArt's CC0 [Rigged Horse](https://opengameart.org/content/rigged-horse), and the pit-things its CC0 [Goblin](https://opengameart.org/content/goblin-1). Satha's head is "Snake" by Swp, supplied by the project's owner, its hide darkened to match her body (licence as supplied). The weeping thing is ["Oozey the Slime"](https://opengameart.org/content/oozey-the-slime) by Mophs (OpenGameArt, **CC-BY 3.0**, after a CC0 concept from Surt's scraps), animated in the game's code. Photographed skins for Satha's head are CC0 from [ambientCG](https://ambientcg.com/). The armour, helms, masks, robes, other beasts and weapons are this project's own. How they're built: [`tools/blender/`](tools/blender/README.md).
 - This project: GPL-2 code, CC0 generated assets. Non-commercial fan work, not affiliated with any rights holder.
 
 
@@ -875,8 +875,8 @@ Quake-era limits keep the game fast on laptops and phones. `budget.js` fails the
 - [x] E1m7 there are archers on my side i think but i can walk throgh them.
   - *Done:* the Bossonian archers on the ridge are solid now: you shoulder past them. (The Gundermen in the thick of the fighting you can still slip between.)
 
-- [ ] E1m7 has a confusing layout where you have to stand on top of towers to trigger things... redesign the middle part of the map with the towers but make it more complicated, like have it walled off but you have to go inside those towers to walk down and through? makes it a more fun interactive map
-  - *Partly:* the confusing part is gone: nothing is triggered by standing on the towers any more (Shamar's sortie burns them, as in the book). The walled-off middle you go down through the towers to cross is not built yet.
+- [x] E1m7 has a confusing layout where you have to stand on top of towers to trigger things... redesign the middle part of the map with the towers but make it more complicated, like have it walled off but you have to go inside those towers to walk down and through? makes it a more fun interactive map
+  - *Done:* the middle of the plain is rebuilt. The siege lines of Koth run right across it: an earth bank faced with timber, 7 m high, a wall-walk along its top between two breastworks, and two siege towers built into it, hung with raw bull-hides (before, the "towers" were bare earth mounds with ramps, standing in strips of grey water, and you could walk round them). There's no way over but through them: in at the foot of the north tower, up the stair that turns round its solid core to the top, out onto the wall-walk and along it, fighting its sentries, into the top of the south tower, down round its core and out at its foot behind the lines. Each tower has its own guard, the stair is lit by a lantern, and there's food along the way. Trocero and Prospero hold the north tower's foot and bring the knights round when you're over; the Gundermen keep this side of the lines till you are across, then come up behind you. (New in the engine for it: `solid` rooms, masonry or earth with its own top height and texture, so an open level can have sheer walls and buildings with roofed rooms inside them; a roofed cell open to the sky no longer has its walls run up into the sky.)
 
 - [ ] E1M8 put an underground trench to get through a wall of pikes, like a sortof man height trench you cant jump out of where troops are inside to make it more dynamic
 
@@ -942,4 +942,15 @@ Tsotha's demon birth, which sets up "son of—".
   - *Done:* a round map in the top right of everything you have seen of the level (round about you and not through rock; in the open, farther), turned to your heading with you at its heart, north marked, the walls' edges drawn, pits dark, Pelias a green dot. M hides or shows it.
 - [x] e1m7: dudes walking around randomly with spears that don't do anything (they were meant to guard the exit); no horses at all
   - *Done:* the rank holding the road east stands at its posts and fights whoever comes close; when Strabonus falls they throw down their spears and run, each down his own lane, and are gone in two or three seconds (before, all five ran for one point, jammed against each other and the braziers, and shuffled there with their spears forever). The tower guards had the same ids as the gate rank: given their own. And no horses in e1m7 at all: Trocero and Prospero are on foot at your side, no dead horses on the field.
-
+- [x] e1m2: the king still doesn't sit on the seat right
+  - *Done:* the divans were a metre deep and the kings sat on the very front lip with their legs hanging off. Each divan is a real couch now (seat 0.66 deep, back and arms, bolsters at the ends), and each king sits back in it against the cushions, thighs on the seat, knees at its edge, feet on the floor.
+- [x] e1m2: the chain you get pulled around on doesn't look right
+  - *Done:* through the conclave and the march a chain ran from your feet, up into the air and right across the citadel to the vault's ring; now there's no chain until they make you fast in the vault. The ring is a real ring now, hanging from a staple leaded into the wall's face (it was a lump of studs). The chain hangs from the bottom of it, simulated link by link (in the render only): it lies in a loose curve on the floor when you're slack, comes up taut and straight when you strain at the end of it, and drops in a heap under the ring when it parts.
+- [x] stop the snake from shooting poison
+  - *Done:* Satha spits nothing now: no venom thrown, no burning puddles. As in the book her venom only drips from her fangs, "a colorless liquid that he instinctively knew was death", a clear drop now and then as she goes; the drops on your thigh while she's poised over you, and her bite, are as they were.
+- [x] e1m7: the spear dudes that don't do anything, and you can walk through them
+  - *Done:* the Gunderman pikemen marching with you were the one body in the game nobody collided with: you, the enemy and Trocero all walked through them. They're solid now. They also got jammed against the spearmen's stakes (a rule that kept them apart shoved them without regard to walls), so they hung back out of the fight; it's gone, and they come up and fight again.
+- [x] nobody should be able to walk through anyone
+  - *Done:* checked by replaying every level's golden run and testing every tick for a body inside another. Besides the Gundermen: the standing allies (the Bossonians on the ridge) and the kings' horses on the heap block the enemy as well as you; Trocero and Prospero are solid; at Shamu two pairs of men from different waves (second and third, fourth and sixth) stood on the same spot, and on the Tybor two of the rout stood inside the rear-guard (sharing their ids too); all placed apart.
+- [x] the frog monster still is not ideal: three free models to compare
+  - *Done:* three found and rendered in the game in its den, at its size: Slime Mold (Grefuntor, CC-BY 3.0), Oozey the Slime (Mophs, CC-BY 3.0) and Frog Guy (Drummyfish, CC0). Oozey was picked: a mound of ooze rising into a frog's head, a gaping toothy maw, eyes on stalks. It is a static mesh, so the game makes it live: it breathes and quakes, heaves with its sobs and shudders as it titters, rears back before a strike and lunges forward into it, hitches its bulk as it moves, and drools from its lip. Scaled to 3 m across, the size of its body. Credited in §17.

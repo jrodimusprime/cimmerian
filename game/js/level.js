@@ -179,7 +179,7 @@ const LEVEL_E1M2 = {
   // ch. II, the conclave: "In front of him stood Tsotha, and on divans lounged Strabonus and Amalrus in their silks and gold ...
   // On either side of him stood a dozen black giants, grasping their long-shafted axes."
   actors: [
-    { id: 'strabonus', at: [59.3, 22.5], pose: 'drink', seat: -0.45 }, { id: 'amalrus', at: [62.7, 22.5], pose: 'sit', seat: -0.45 },
+    { id: 'strabonus', at: [59.3, 22.37], pose: 'drink', seat: -0.45 }, { id: 'amalrus', at: [62.7, 22.37], pose: 'sit', seat: -0.45 },
     { id: 'tsotha', at: [61, 25.1], pose: 'stand' },
     { id: 'g1', cast: 'axeman', at: [59.6, 27.0], yaw: Math.PI, pose: 'guard' }, { id: 'g2', cast: 'axeman', at: [59.6, 28.6], yaw: Math.PI, pose: 'guard' },
     { id: 'g3', cast: 'axeman', at: [62.4, 27.0], yaw: Math.PI, pose: 'guard' }, { id: 'g4', cast: 'axeman', at: [62.4, 28.6], yaw: Math.PI, pose: 'guard' },
@@ -211,7 +211,7 @@ const LEVEL_E1M2 = {
     { id: 'c_dust', needs: ['spat'], after: 7.2, act: { tsotha: { pose: 'dust', face: 'amalrus' }, amalrus: { pose: 'blind', to: [62.7, 23.4], sp: 1.2 } },
       lines: [['Tsotha: "Back, I say!" His lean hand comes from his wide sleeve and casts a shower of dust into the Ophirean\'s contorted face.', 'warn'],
         ['Amalrus cries out and staggers back, clutching at his eyes, the sword falling from his hand. Strabonus hurriedly gulps another goblet of wine, with hands that tremble.', '']] },
-    { id: 'c_sit', needs: ['spat'], after: 12.5, sets: 'dusted', act: { amalrus: { pose: 'sit', at: [62.7, 22.5], seat: -0.45, face: null, yaw: 0 }, tsotha: { pose: 'speak', face: 'amalrus' } },
+    { id: 'c_sit', needs: ['spat'], after: 12.5, sets: 'dusted', act: { amalrus: { pose: 'sit', at: [62.7, 22.37], seat: -0.45, face: null, yaw: 0 }, tsotha: { pose: 'speak', face: 'amalrus' } },
       lines: [['Amalrus: "I went blind. What did you do to me, wizard?"', 'voice'],
         ['Tsotha: "Merely a gesture to convince you who was the real master. Strabonus has learned his lesson; let you learn yours. It was but a dust I found in a Stygian tomb. If I brush out their sight again, I will leave you to grope in darkness for the rest of your life."', 'voice']] },
     // "At the wizard's gesture, the blacks laid hold of their prisoner and marched him behind Tsotha"
@@ -511,7 +511,7 @@ const LEVEL_E1M1 = {
     { class: 'oknight', id: 'h10', at: [101.6, 34.5], group: 'heap2', yaw: Math.PI / 2, hold: true },
     { class: 'kknight', id: 'h11', at: [102.4, 25], group: 'heap3', yaw: Math.PI / 2, hold: true },     // and a third: "again and again they came"
     { class: 'spearman', id: 'h12', at: [101.6, 28], group: 'heap3', yaw: Math.PI / 2, hold: true },
-    { class: 'kknight', id: 'h13', at: [102.4, 32], group: 'heap3', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h13', at: [101.6, 32.6], group: 'heap3', yaw: Math.PI / 2, hold: true },
     { class: 'spearman', id: 'h14', at: [101.6, 36], group: 'heap3', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h15', at: [102.4, 39], group: 'heap3', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h16', at: [101.6, 30.5], group: 'heap3', yaw: Math.PI / 2, hold: true },
@@ -531,7 +531,7 @@ const LEVEL_E1M1 = {
     { class: 'oknight', id: 'h30', at: [102.4, 31], group: 'heap6', yaw: Math.PI / 2, hold: true },
     { class: 'spearman', id: 'h31', at: [101.6, 33.5], group: 'heap6', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h32', at: [102.4, 36], group: 'heap6', yaw: Math.PI / 2, hold: true },
-    { class: 'kknight', id: 'h33', at: [101.6, 38.5], group: 'heap6', yaw: Math.PI / 2, hold: true },
+    { class: 'kknight', id: 'h33', at: [102.4, 38.2], group: 'heap6', yaw: Math.PI / 2, hold: true },
     { class: 'spearman', id: 'h34', at: [101.6, 26.5], group: 'heap7', yaw: Math.PI / 2, hold: true },     // and a seventh, the last of them before the kings
     { class: 'kknight', id: 'h35', at: [102.4, 29], group: 'heap7', yaw: Math.PI / 2, hold: true },
     { class: 'oknight', id: 'h36', at: [101.6, 31.5], group: 'heap7', yaw: Math.PI / 2, hold: true },
@@ -933,6 +933,32 @@ const LEVEL_E1M6 = {
 // loosing overhead, fire a siege tower, through Shemites, spearmen and the press
 // of knights to Strabonus among his palace troops.
 // ---------------------------------------------------------------------------
+// e1m7's siege lines (cells): the bank's two breastworks (x 39 and 41) and the walk between them (x 40); the north tower against
+// its near side (x 33-38, z 8-13), the south tower against its far side (x 42-47, z 28-33). Each tower is a shell of timber and
+// hides round a solid core, and a stair of single-cell steps runs round three sides of the core inside it.
+function siegeLines() {
+  const BANK = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' }, HIDES = { floor: 'PLANK', wall: 'HIDE', ceil: 'HIDE' }, WALK = { floor: 'PLANK', wall: 'MUD', ceil: 'SUNSET' };
+  const IN = { floor: 'PLANK', wall: 'PLANK', ceil: 'PLANK' };
+  const R = [
+    { id: 'bankW', solid: true, at: [39, 4], size: [1, 36], top: 7.2, tex: BANK }, { id: 'bankE', solid: true, at: [41, 4], size: [1, 36], top: 7.2, tex: BANK },
+    { id: 'bankN', solid: true, at: [40, 4], size: [1, 2], top: 7.2, tex: BANK }, { id: 'bankS', solid: true, at: [40, 37], size: [1, 3], top: 7.2, tex: BANK },
+    { id: 'walk', name: 'the wall-walk of the siege lines', at: [40, 6], size: [1, 31], floor: 6, sky: true, style: 'hewn', tex: WALK, noscatter: true },
+    { id: 'towerN', solid: true, at: [33, 8], size: [6, 6], top: 12, tex: HIDES }, { id: 'towerS', solid: true, at: [41, 28], size: [6, 6], top: 12, tex: HIDES },
+  ];
+  const step = (id, name, x, z, fl) => R.push({ id, name, at: [x, z], size: [1, 1], floor: fl, h: 1.4, style: 'hewn', tex: IN, noscatter: true });
+  // the north tower: in at the foot of its west face, up round the core, out at the top onto the walk
+  step('ndoor', 'the door of a siege tower', 33, 9, 0.1);
+  [[34, 9], [34, 10], [34, 11], [34, 12], [35, 12], [36, 12], [37, 12], [37, 11], [37, 10]].forEach(([x, z], k) => step('ns' + k, 'the stair inside the siege tower', x, z, 0.2 + 0.75 * k));
+  step('ntop', 'the top of the siege tower', 38, 10, 6.15);
+  R.push({ id: 'nout', name: 'the wall-walk of the siege lines', at: [39, 10], size: [1, 1], floor: 6, sky: true, style: 'hewn', tex: WALK, noscatter: true });
+  // the south tower, built out from the bank's far face (a lane left between it and the spearmen's stakes): in from the walk at
+  // its top, down round the core, out at the foot of its north face behind the lines
+  step('stop', 'the top of the second siege tower', 41, 30, 6.15);
+  [[42, 30], [42, 31], [42, 32], [43, 32], [44, 32], [45, 32], [45, 31], [45, 30], [45, 29]].forEach(([x, z], k) => step('ss' + k, 'the stair inside the second siege tower', x, z, 6.2 - 0.75 * k));
+  step('sdoor', 'the door of the second siege tower', 45, 28, 0.1);
+  return R;
+}
+const SIEGE_N = ['ndoor', 'ns0', 'ns1', 'ns2', 'ns3', 'ns4', 'ns5', 'ns6', 'ns7', 'ns8', 'ntop'], SIEGE_S = ['stop', 'ss0', 'ss1', 'ss2', 'ss3', 'ss4', 'ss5', 'ss6', 'ss7', 'ss8', 'sdoor'];
 const MEADOW = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' };
 const LEVEL_E1M7 = {
   level: 'e1m7', next: 'e1m8', title: 'The Relief of Shamar', ramps: ['earth', 'night', 'scarlet'], grid: [96, 44], arms: 'sword',
@@ -947,8 +973,9 @@ const LEVEL_E1M7 = {
   allies: [{ id: 'bossonian', at: [8, 13], n: 18, cols: 3, step: 1.6, yaw: Math.PI / 2, loose: true }, { id: 'gunderman', at: [4, 26], n: 12, cols: 3, step: 1.5, yaw: Math.PI / 2, fight: ['shemites2', 'spears', 'press'] }],
   areas: [
     { id: 'ridge', type: 'action', name: 'The Ridge', rooms: ['ridge'], cp: [4.5, 21.5, -Math.PI / 2] },
-    { id: 'towers', type: 'puzzle', name: 'The Siege Towers', rooms: ['climb1', 'tp1', 'tp2', 'climb2', 'ttop'], cp: [33, 12, -Math.PI / 2] },
-    { id: 'towers2', type: 'puzzle', name: 'The Second Tower', rooms: ['climb1b', 'tp1b', 'tp2b', 'climb2b', 'ttopb'], cp: [33, 26, -Math.PI / 2] },
+    { id: 'towers', type: 'puzzle', name: 'The Siege Lines', rooms: ['field', ...SIEGE_N], cp: [32, 12, -Math.PI / 2] },
+    { id: 'walk', type: 'action', name: 'The Wall-Walk', rooms: ['walk', 'nout'], cp: [40.5, 10.5, Math.PI] },
+    { id: 'towers2', type: 'puzzle', name: 'The Second Tower', rooms: SIEGE_S, cp: [41.5, 30.5, -Math.PI / 2] },
     { id: 'shemites', type: 'action', name: 'The Shemite Archers', rooms: ['line1'], cp: [20, 22, -Math.PI / 2] },
     { id: 'spears', type: 'action', name: 'The Kothian Spearmen', rooms: ['line2'], cp: [50, 22, -Math.PI / 2] },
     { id: 'press', type: 'puzzle', name: 'The Press of Knights', rooms: ['press'], cp: [63, 22, -Math.PI / 2] },
@@ -958,30 +985,21 @@ const LEVEL_E1M7 = {
     { id: 'rim', name: 'the plain before Shamar', at: [0, 0], size: [96, 44], nopass: true, sky: true, tex: MEADOW },
     { id: 'ridge', name: 'the ridge', at: [3, 4], size: [12, 36], floor: 3.2, rise: -0.25, sky: true, tex: MEADOW },
     { id: 'line1', name: 'the Shemite line', at: [15, 4], size: [16, 36], sky: true, tex: MEADOW },
-    { id: 'field', name: 'the plain before the walls', at: [31, 18], size: [16, 22], sky: true, tex: MEADOW },
-    { id: 'tbase', name: 'a siege tower hung with raw bull-hides', at: [37, 6], size: [10, 10], floor: 12, pit: 12, sky: true, tex: { floor: 'MUD', wall: 'HIDE', ceil: 'SUNSET' } },
-    { id: 'tfoot', name: 'the foot of the siege tower', at: [31, 4], size: [6, 14], sky: true, tex: MEADOW },
-    { id: 'climb1', name: 'the tower\'s ladders', at: [33, 10], size: [6, 2], floor: 0.4, rise: 1.0, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'tp1', name: 'a platform of the tower', at: [39, 10], size: [2, 2], floor: 6.0, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'tp2', name: 'a platform of the tower', at: [42, 10], size: [2, 3], floor: 6.4, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'climb2', name: 'the tower\'s ladders', at: [42, 13], size: [2, 2], floor: 7.0, rise: 1.0, riseAxis: 'z', sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'ttop', name: 'the top of the siege tower', at: [44, 12], size: [3, 3], floor: 8.6, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'tbase2', name: 'a siege tower hung with raw bull-hides', at: [37, 26], size: [10, 10], floor: 12, pit: 12, sky: true, tex: { floor: 'MUD', wall: 'HIDE', ceil: 'SUNSET' } },
-    { id: 'climb1b', name: 'the tower\'s ladders', at: [33, 30], size: [6, 2], floor: 0.4, rise: 1.0, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'tp1b', name: 'a platform of the tower', at: [39, 30], size: [2, 2], floor: 6.0, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'tp2b', name: 'a platform of the tower', at: [42, 30], size: [2, 3], floor: 6.4, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'climb2b', name: 'the tower\'s ladders', at: [42, 33], size: [2, 2], floor: 7.0, rise: 1.0, riseAxis: 'z', sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
-    { id: 'ttopb', name: 'the top of the second siege tower', at: [44, 32], size: [3, 3], floor: 8.6, sky: true, tex: { floor: 'PLANK', wall: 'PLANK', ceil: 'SUNSET' } },
+    // the siege lines of Koth across the plain: an earthen bank faced with timber, a wall-walk along its top between two breastworks,
+    // and the siege towers, hung with raw bull-hides, built into it. No way over but up through a tower, along the walk, and down through the other.
+    { id: 'field', name: 'before the siege lines of Koth', at: [31, 4], size: [8, 36], sky: true, tex: MEADOW },
+    { id: 'behind', name: 'behind the siege lines', at: [42, 4], size: [5, 36], sky: true, tex: MEADOW },
     { id: 'line2', name: 'the Kothian spearmen', at: [47, 4], size: [12, 36], sky: true, tex: MEADOW },
     { id: 'press', name: 'the press of knights', at: [59, 4], size: [14, 36], sky: true, tex: MEADOW },
     { id: 'palace', name: 'Strabonus\'s palace troops', at: [73, 4], size: [18, 36], sky: true, tex: MEADOW },
     { id: 'road', name: 'the road east, to the river', at: [89, 19], size: [7, 6], sky: true, tex: { floor: 'MUD', wall: 'MUD', ceil: 'SUNSET' } },
+    ...siegeLines(),
   ],
   boulders: [{ from: [2.5, 3], to: [2.5, 41], r: [1.6, 3.2] }, { from: [3, 41.2], to: [92, 41.2], r: [1.6, 3.4], jitter: 2 }, { from: [92.5, 3], to: [92.5, 17.5], r: [1.8, 3.6] }, { from: [92.5, 26.5], to: [92.5, 41], r: [1.8, 3.6] },   // a gap: the road east, to the river
     { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3], jitter: 1.5 }, { from: [48, 2.8], to: [92, 2.8], r: [1.4, 3], jitter: 1.5 }],
   scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] }],
   shafts: [], links: [], features: [],
-  lights: [],
+  lights: [{ at: [35.5, 11], y: 2.6, col: [1.0, 0.62, 0.3], rad: 9, i: 1.3 }, { at: [43.5, 32.5], y: 2.6, col: [1.0, 0.62, 0.3], rad: 9, i: 1.3 }],   // a lantern on each tower's stair
   props: [
     // "burning the pavilions": the lords' tents of the host pitched behind Strabonus's palace troops, and their fires
     { prefab: 'pavilion', at: [80, 6.5], rot: 0 }, { prefab: 'pavilion', at: [88, 6.8], rot: 0.4, cloth: 'velvet' }, { prefab: 'pavilion', at: [80, 37.5], rot: 3.1, cloth: 'velvet' }, { prefab: 'pavilion', at: [88.5, 37.2], rot: 2.8 },
@@ -993,6 +1011,8 @@ const LEVEL_E1M7 = {
     { kind: 'bread', name: 'a Bossonian\'s bread', heal: 30, at: [32, 19] }, { kind: 'wine', name: 'a pikeman\'s wine-skin', heal: 35, at: [34, 38] },
     { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [57, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [71.6, 28.5] }, { kind: 'wine', name: 'a wine-skin', heal: 35, at: [75, 12] },
     { kind: 'wine', name: 'a Gunderman\'s wine-skin', heal: 35, at: [56, 19] }, { kind: 'bread', name: 'a Gunderman\'s bread', heal: 30, at: [56, 25] }, { kind: 'wine', name: 'a dead knight\'s wine-skin', heal: 35, at: [69, 19.5] }, { kind: 'bread', name: 'a knight\'s saddle-bread', heal: 30, at: [69, 24.5] },
+    { kind: 'bread', name: 'a tower-guard\'s bread', heal: 30, at: [37.5, 11.5] }, { kind: 'wine', name: 'a sentry\'s wine-skin', heal: 35, at: [40.5, 19] }, { kind: 'bread', name: 'a sentry\'s bread', heal: 30, at: [40.5, 28] },
+    { kind: 'wine', name: 'a dead pikeman\'s wine-skin', heal: 35, at: [43.5, 25.5] }, { kind: 'bread', name: 'a Kothian\'s barley-loaf', heal: 30, at: [45.5, 14] },
     { kind: 'wine', potion: 'balm', name: 'a surgeon\'s pot of wound-balm', heal: 20, at: [28.4, 22.3] }, { kind: 'wine', potion: 'xuthal', name: 'a flask of the golden wine of Xuthal', heal: 100, at: [71.9, 20.8] },
   ],
   // the siege lines of Koth: banks of stakes before the spearmen and round the king's own troops, with gaps to sally through; stake-pits in the press
@@ -1010,8 +1030,12 @@ const LEVEL_E1M7 = {
     { class: 'archer', id: 'm1', at: [28, 9], group: 'shemites2' }, { class: 'archer', id: 'm2', at: [29, 16], group: 'shemites2' }, { class: 'spearman', id: 'm3', at: [27, 22], group: 'shemites2', yaw: Math.PI / 2 },
     { class: 'archer', id: 'm4', at: [29, 29], group: 'shemites2' }, { class: 'spearman', id: 'm5', at: [27, 35], group: 'shemites2', yaw: Math.PI / 2 }, { class: 'spearman', id: 'm6', at: [26, 13], group: 'shemites2', yaw: Math.PI / 2 },
     { class: 'archer', id: 'm7', at: [29.5, 37], group: 'shemites2' },
-    { class: 'spearman', id: 'tg1', at: [33, 6], group: 'tower' }, { class: 'spearman', id: 'tg2', at: [35, 14], group: 'tower' }, { class: 'archer', id: 'tg3', at: [32, 16], group: 'tower' },
-    { class: 'spearman', id: 'u1', at: [33, 27], group: 'tower2' }, { class: 'kknight', id: 'u2', at: [35, 37], group: 'tower2' }, { class: 'archer', id: 'u3', at: [31.5, 38], group: 'tower2' }, { class: 'spearman', id: 'u4', at: [36, 34], group: 'tower2' },
+    // the siege lines: men at the foot of the north tower and on its stair, on the wall-walk, and in the south tower and behind it
+    { class: 'spearman', id: 'tg1', at: [32, 6.5], group: 'tower' }, { class: 'spearman', id: 'tg2', at: [36, 16], group: 'tower' }, { class: 'archer', id: 'tg3', at: [32, 18], group: 'tower' },
+    { class: 'spearman', id: 'tg4', at: [37.5, 12.5], group: 'tower', yaw: -Math.PI / 2 },
+    { class: 'spearman', id: 'w1', at: [40.5, 16], group: 'wall', yaw: Math.PI }, { class: 'archer', id: 'w2', at: [40.5, 22], group: 'wall', yaw: Math.PI }, { class: 'spearman', id: 'w3', at: [40.5, 26], group: 'wall', yaw: Math.PI },
+    { class: 'archer', id: 'w4', at: [40.5, 35.5], group: 'wall', yaw: Math.PI },
+    { class: 'spearman', id: 'u1', at: [43.5, 32.5], group: 'tower2', yaw: -Math.PI / 2 }, { class: 'kknight', id: 'u2', at: [44.5, 22], group: 'behind' }, { class: 'archer', id: 'u3', at: [44.5, 37], group: 'behind' }, { class: 'spearman', id: 'u4', at: [45.5, 18], group: 'behind' },
     { class: 'spearman', id: 's1', at: [52, 14], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's2', at: [52, 19], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's3', at: [52, 24], group: 'spears', yaw: Math.PI / 2 },
     { class: 'spearman', id: 's4', at: [53, 29], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's5', at: [55, 17], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's6', at: [55, 26], group: 'spears', yaw: Math.PI / 2 },
     { class: 'kknight', id: 'k1', at: [63, 16], group: 'press', yaw: Math.PI / 2 }, { class: 'oknight', id: 'k2', at: [64, 21], group: 'press', yaw: Math.PI / 2 }, { class: 'kknight', id: 'k3', at: [63, 26], group: 'press', yaw: Math.PI / 2 },
@@ -1031,8 +1055,14 @@ const LEVEL_E1M7 = {
   beats: [
     { id: 'side', at: 'ridge', act: { trocero: { escort: { side: -3.0, back: 1.5 } }, prospero: { escort: { side: 3.0, back: 1.5 } } } },   // they keep at the king's side
     { id: 'down', at: 'line1', sets: 'ridge_down', wake: ['shemites'], lines: [['The Bossonians loose over your head: "the cord to the nock, shaft to the ear, the king of Koth for a mark!"', 'dim']] },
-    { id: 'tower', at: ['tfoot', 'climb1', 'field'], wake: ['tower'], lines: [['"The men on the battle-towers can mask any sorties": the siege towers, hung with raw bull-hides, stand against Shamar\'s walls, and their guards come down off them at you.', '']] },
-    { id: 'tower2', at: ['climb1b', 'tp1b', 'field'], needs: ['ridge_down'], after: 6, wake: ['tower2'] },
+    { id: 'tower', at: ['field', ...SIEGE_N], wake: ['tower'], lines: [['The siege lines of Koth run across the plain: an earth bank faced with timber, and the siege towers built into it, hung with raw bull-hides. "The men on the battle-towers can mask any sorties."', ''], ['No way over the bank but up through a tower, along the wall-walk, and down through the other.', 'warn']] },
+    { id: 'hold', at: SIEGE_N, act: { trocero: { escort: null, to: [31.5, 10.5], sp: 3 }, prospero: { escort: null, to: [31.5, 12.5], sp: 3 } }, lines: [['Trocero and Prospero hold the tower\'s foot with the knights, to bring them round when the lines are broken.', 'dim']] },
+    { id: 'wall', at: ['ntop', 'nout', 'walk'], wake: ['wall'] },
+    { id: 'tower2', at: SIEGE_S, wake: ['tower2'] },
+    { id: 'behind', at: ['ss8', 'sdoor', 'behind'], wake: ['behind'] },
+    { id: 'gunder', at: ['ss4', 'ss5', 'ss6', 'ss7', 'ss8', 'sdoor', 'behind'], alliesTo: [44.5, 36.5] },
+    { id: 'over', at: 'behind', sets: 'over_lines', act: { trocero: { at: [43, 22], escort: { side: -3.0, back: 1.5 } }, prospero: { at: [45.5, 21], escort: { side: 3.0, back: 1.5 } } },
+      lines: [['Out at the tower\'s foot, behind the lines. The Gundermen come through the tower after you, and Trocero and Prospero have brought the knights round the end of the bank.', 'good']] },
     { id: 'shem', killed: 'shemites', wake: ['shemites2'], lines: [['The first rank of Shemites breaks; behind it their second line nocks and draws.', 'warn']] },
     { id: 'shem2', killed: 'shemites2', sets: 'shemites_broken', lines: [['The Shemite line breaks and runs.', 'good']] },
     { id: 'spears', at: 'line2', wake: ['spears'], lines: [['The Kothian spearmen; and beside you, the Gundermen, "the purest blood of all the Hyborian peoples," whom no infantry can match.', '']] },
@@ -1047,7 +1077,8 @@ const LEVEL_E1M7 = {
       ['Amalrus goes down dying, "his shoulder-bone hewn in twain by Prospero\'s two-handed sword." The host breaks, and runs for the river.', 'good'], ['The rank holding the road east throws down its spears and runs.', 'good'], ['East, between the camp-fires, the road to the Tybor. After them!', 'warn']] },
   ],
   // Trocero and Prospero at the king's side: "I see Trocero and his captain Prospero"
-  actors: [{ id: 'trocero', at: [5, 19.5], yaw: Math.PI / 2, pose: 'stand', solid: false }, { id: 'prospero', at: [5, 24.5], yaw: Math.PI / 2, pose: 'stand', solid: false }],
+  actors: [{ id: 'trocero', at: [5, 19.5], yaw: Math.PI / 2, pose: 'stand' }, { id: 'prospero', at: [5, 24.5], yaw: Math.PI / 2, pose: 'stand' }],
+  allyHold: { x: 31.5, until: 'over_lines' },          // the Gundermen keep this side of the siege lines till you are over
   puzzle: {
     flags: ['ridge_down', 'shemites_broken', 'spears_broken', 'press_through', 'guards_down', 'strabonus_dead'],
     actions: [
@@ -1110,6 +1141,7 @@ const LEVEL_E1M8 = {
     { kind: 'wine', name: 'a Kothian captain\'s wine', heal: 40, at: [14, 50] }, { kind: 'bread', name: 'camp bread', heal: 30, at: [24, 42] },
     { kind: 'wine', name: 'a dead man\'s wine-skin', heal: 35, at: [18, 14] }, { kind: 'bread', name: 'a camp loaf', heal: 30, at: [26, 28] },
     { kind: 'wine', name: 'a fugitive\'s wine-skin', heal: 35, at: [60, 12] }, { kind: 'bread', name: 'a fugitive\'s bread', heal: 30, at: [64, 30] },
+    { kind: 'wine', name: 'a wine-skin thrown down in the rout', heal: 35, at: [10.5, 29] }, { kind: 'bread', name: 'bread thrown down in the rout', heal: 30, at: [9.5, 21] },
     { kind: 'wine', potion: 'balm', name: 'a pot of wound-balm', heal: 20, at: [24.4, 42.3] }, { kind: 'wine', potion: 'xuthal', name: 'a flask of the golden wine of Xuthal', heal: 100, at: [62.4, 40.3] },
   ],
   // the Kothian camp by the river, fortified on its landward side: a bank of stakes with a gate, stake-pits before it
@@ -1127,9 +1159,9 @@ const LEVEL_E1M8 = {
     { class: 'kknight', id: 'c1', at: [10, 50], group: 'camp' }, { class: 'spearman', id: 'c2', at: [14, 47], group: 'camp' }, { class: 'archer', id: 'c3', at: [20, 52], group: 'camp' },
     { class: 'oknight', id: 'c4', at: [18, 44], group: 'camp' }, { class: 'spearman', id: 'c5', at: [8, 41], group: 'camp' }, { class: 'spearman', id: 'c6', at: [24, 46], group: 'camp' },
     { class: 'archer', id: 'c7', at: [26, 39], group: 'camp' }, { class: 'kknight', id: 'c8', at: [13, 38], group: 'camp' }, { class: 'oknight', id: 'c9', at: [22, 37], group: 'camp' },
-    { class: 'spearman', id: 'r1', at: [12, 15], group: 'rout' }, { class: 'kknight', id: 'r2', at: [14, 24], group: 'rout' }, { class: 'archer', id: 'r3', at: [17, 10], group: 'rout' },
-    { class: 'spearman', id: 'r4', at: [19, 20], group: 'rout' }, { class: 'oknight', id: 'r5', at: [22, 27], group: 'rout' }, { class: 'spearman', id: 'r6', at: [24, 16], group: 'rout' },
-    { class: 'kknight', id: 'r7', at: [26, 22], group: 'rout' }, { class: 'archer', id: 'r8', at: [27, 30], group: 'rout' },
+    { class: 'spearman', id: 'q1', at: [12, 15], group: 'rout' }, { class: 'kknight', id: 'q2', at: [14, 24], group: 'rout' }, { class: 'archer', id: 'q3', at: [17, 10], group: 'rout' },
+    { class: 'spearman', id: 'q4', at: [19, 20], group: 'rout' }, { class: 'oknight', id: 'q5', at: [23, 25], group: 'rout' }, { class: 'spearman', id: 'q6', at: [24, 16], group: 'rout' },
+    { class: 'kknight', id: 'q7', at: [26, 22], group: 'rout' }, { class: 'archer', id: 'q8', at: [27, 30], group: 'rout' },
     { class: 'spearman', id: 'f1', at: [57, 15], group: 'far' }, { class: 'kknight', id: 'f2', at: [58, 22], group: 'far' }, { class: 'spearman', id: 'f3', at: [60, 27], group: 'far' },
     { class: 'archer', id: 'f4', at: [63, 12], group: 'far' }, { class: 'oknight', id: 'f5', at: [62, 20], group: 'far' }, { class: 'archer', id: 'f6', at: [64, 30], group: 'far' },
     { class: 'kknight', id: 'y1', at: [60, 44], group: 'bay' }, { class: 'spearman', id: 'y2', at: [63, 48], group: 'bay' }, { class: 'archer', id: 'y3', at: [70, 46], group: 'bay' },
@@ -1203,7 +1235,7 @@ function buildLevel(spec) {
   const [W, H] = spec.grid, N = W * H;
   Object.assign(LV, {
     spec, W, H, kind: new Uint8Array(N), floor: new Float32Array(N), ceil: new Float32Array(N), flags: new Uint8Array(N),
-    room: new Int8Array(N).fill(-1), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), spikes: new Uint8Array(N), ride: null, planks: [],
+    room: new Int8Array(N).fill(-1), top: new Float32Array(N), rough: new Float32Array(N).fill(1), vault: new Float32Array(N), tex: new Array(N), deep: new Uint8Array(N), void: new Uint8Array(N), spikes: new Uint8Array(N), ride: null, planks: [],
     rooms: spec.rooms, features: [], props: [], lights: [], flames: [], colliders: [], items: [], blockers: new Set(), corners: null,
   });
   spec.rooms.forEach((r, ri) => {
@@ -1211,6 +1243,11 @@ function buildLevel(spec) {
     const tex = Object.assign(st ? { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' } : { floor: 'ROCK', wall: 'ROCK', ceil: 'ROCK' }, r.tex || {});
     for (let j = 0; j < r.size[1]; j++) for (let i = 0; i < r.size[0]; i++) {
       const gx = r.at[0] + i, gz = r.at[1] + j, idx = gz * W + gx;
+      if (r.solid) {                                     // solid: masonry, an earth bank, a tower's timbers: no floor at all, a body standing to r.top
+        LV.kind[idx] = 0; LV.room[idx] = -1; LV.flags[idx] = 0; LV.top[idx] = r.top || 0; LV.tex[idx] = r.tex ? Object.assign({ floor: 'HEWN', wall: 'HEWN', ceil: 'HEWN' }, r.tex) : undefined;
+        continue;
+      }
+      LV.top[idx] = 0;
       const wx = (gx + 0.5) * CELL, wz = (gz + 0.5) * CELL;
       let fl = (r.floor || 0) + (st ? (vnoise(wx * 0.5, wz * 0.5, 7) - 0.5) * 0.06 : (vnoise(wx * 0.4, wz * 0.4, 9) - 0.5) * 0.5);
       if (r.rise) fl = r.floor + (r.riseAxis === 'z' ? j : i) * r.rise;
@@ -1392,7 +1429,8 @@ function scatterProps(spec) {
   const out = [];
   (spec.scatter || []).forEach((sc, si) => {
     for (let k = 0; k < sc.n; k++) {
-      const h = q => hrand(k, q, si + 3, 61), [x0, z0, w, d] = sc.rect;
+      const h = q => hrand(k, q, si + 3, 61), [x0, z0, w, d] = sc.rect, ci = cellIdx(Math.floor(x0 + h(1) * w), Math.floor(z0 + h(2) * d));
+      if (ci < 0 || LV.kind[ci] === 0 || (LV.room[ci] >= 0 && spec.rooms[LV.room[ci]].noscatter)) continue;   // not inside a wall, nor on a stair
       out.push({ prefab: sc.prefab, at: [x0 + h(1) * w, z0 + h(2) * d], rot: h(3) * 6.283, size: sc.size ? sc.size[0] + h(4) * (sc.size[1] - sc.size[0]) : 1 });
     }
   });
@@ -1428,7 +1466,7 @@ function computeCorner(gx, gz) {
   let jx = 0, jz = 0;
   if (nSolid > 0 && nSolid < 4) { const l = Math.hypot(sx, sz); if (l > 0.01) { jx = sx / l; jz = sz / l; } }
   const amt = (0.12 + 0.3 * h) * CELL * rough;
-  return { gx, gz, x: gx * CELL + jx * amt, z: gz * CELL + jz * amt, fo, fp, c, jx, jz, bul: (0.1 + 0.35 * hrand(gx, gz, 5, 99)) * CELL * rough };
+  return { gx, gz, x: gx * CELL + jx * amt, z: gz * CELL + jz * amt, fo, fp, c, tall, jx, jz, bul: (0.1 + 0.35 * hrand(gx, gz, 5, 99)) * CELL * rough };
 }
 function corner(gx, gz) { return LV.corners[clamp(gz, 0, LV.H) * (LV.W + 1) + clamp(gx, 0, LV.W)]; }
 
