@@ -452,6 +452,7 @@ const LEVEL_E1M1 = {
     { from: [2.4, 4], to: [2.4, 59.5], r: [1.8, 3.8] },
     { from: [2, 58.6], to: [118, 58.6], r: [1.6, 3.8], jitter: 2 },
     { from: [113.4, 3], to: [113.4, 59], r: [1.8, 3.8] },
+    { from: [103.4, 5.5], to: [103.4, 58], r: [1.0, 1.0], prefab: 'shieldwall', rot: -Math.PI / 2, deco: true },   // the host's front rank: shields planted rim to rim, spears over them
   ],
   scatter: [
     { prefab: 'fallen', n: 90, rect: [4, 7, 98, 50] },
@@ -848,7 +849,8 @@ const ROOF_TEX = { floor: 'FLAG', wall: 'HEWN', ceil: 'SUNSET' };
 const LEVEL_E1M6 = {
   level: 'e1m6', next: 'e1m7', title: 'The Tower of Tamar', ramps: ['ink', 'scarlet', 'bronze'], grid: [64, 36], ambient: [0.16, 0.1, 0.09], arms: 'sword',
   squads: [ 'stair', 'stair3', 'lower', 'guard', 'guard3'],   // men who fight as one: they ring you, and never more than two blows in the air at once (combat.js squadChase)
-  open: true, dawn: true, sun: [1, 0.06, 0.15], fog: 0.006, haze: [0.35, 0.12, 0.1],
+  open: true, dawn: true, breaches: [[37.5, 13], [21.5, 24], [5.5, 23]],   // the parapet broken where the archers fled over it
+  sun: [1, 0.06, 0.15], fog: 0.006, haze: [0.35, 0.12, 0.1],
   city: { seed: 9, n: 700, r0: 10, r1: 220, ground: 0, inside: true, maxH: 26, crowd: [30, 29, 18, 900] },
   // (the sun just up in the east, on the city and the leads: under the open sky only)   // Tamar below the leads, and its people in the square, "screaming their hate at Arpello"
   intro: [['THE TOWER OF TAMAR', 'title'], ['Under the great tower beside the royal palace the people swirl and mill, screaming their hate at Arpello, who stands on the turrets and laughs down at them while his archers range the parapets.', ''],
@@ -1023,7 +1025,10 @@ const LEVEL_E1M7 = {
     ...siegeLines(),
   ],
   boulders: [{ from: [2.5, 3], to: [2.5, 41], r: [1.6, 3.2] }, { from: [3, 41.2], to: [92, 41.2], r: [1.6, 3.4], jitter: 2 }, { from: [92.5, 3], to: [92.5, 17.5], r: [1.8, 3.6] }, { from: [92.5, 26.5], to: [92.5, 41], r: [1.8, 3.6] },   // a gap: the road east, to the river
-    { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3], jitter: 1.5 }, { from: [48, 2.8], to: [92, 2.8], r: [1.4, 3], jitter: 1.5 }],
+    { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3], jitter: 1.5 }, { from: [48, 2.8], to: [92, 2.8], r: [1.4, 3], jitter: 1.5 },
+    // drawn only, on ground already barred: the stretch before the siege lines, the road's flanks, the holes in the southern line
+    { from: [16.5, 2.8], to: [49, 2.8], r: [2.1, 3.0], jitter: 0.6, deco: true }, { from: [90, 17.9], to: [96, 17.9], r: [1.8, 2.6], deco: true }, { from: [90.5, 25.4], to: [96, 25.4], r: [1.4, 2.4], deco: true },
+    { from: [4, 40.7], to: [14.5, 40.7], r: [1.3, 2.2], deco: true }, { from: [78.5, 40.7], to: [82, 40.7], r: [1.3, 2.2], deco: true }],
   scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] },
     // drawn only: the Bossonian shafts that went over your head into the Shemites, the wreck of the lines, the trodden grass
     { prefab: 'arrows', n: 120, rect: [15, 5, 18, 34], from: -Math.PI / 2 }, { prefab: 'arrows', n: 40, rect: [47, 5, 30, 34], from: -Math.PI / 2 },
@@ -1161,7 +1166,9 @@ const LEVEL_E1M8 = {
   ],
   planks: [{ from: [32.9, 19.5], to: [34.1, 19.5] }, { from: [37.9, 21.5], to: [39.1, 21.5] }, { from: [42.9, 19.5], to: [44.1, 19.5] }, { from: [47.9, 21.5], to: [49.1, 21.5] }, { from: [52.9, 20.5], to: [54.1, 20.5] }],
   boulders: [{ from: [2.5, 3], to: [2.5, 61], r: [1.6, 3.2] }, { from: [3, 61.2], to: [30, 61.2], r: [1.6, 3], jitter: 2 }, { from: [54, 61.2], to: [80, 61.2], r: [1.6, 3], jitter: 2 }, { from: [80.5, 37], to: [80.5, 61], r: [1.6, 3] }, { from: [66, 37.2], to: [92, 37.2], r: [1.6, 3], jitter: 2 },
-    { from: [92.5, 3], to: [92.5, 37], r: [1.8, 3.6] }, { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3] }, { from: [54, 2.8], to: [92, 2.8], r: [1.4, 3] }],
+    { from: [92.5, 3], to: [92.5, 37], r: [1.8, 3.6] }, { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3] }, { from: [54, 2.8], to: [92, 2.8], r: [1.4, 3] },
+    // drawn only, on ground already barred: between the meadow and the reed-beds, and two holes
+    { from: [65.5, 38.2], to: [81, 38.2], r: [2.4, 3.4], jitter: 0.8, deco: true }, { from: [65.5, 36.6], to: [81, 36.6], r: [1.6, 2.6], jitter: 0.8, deco: true }, { from: [66.2, 39.3], to: [80, 39.3], r: [1.3, 2.0], jitter: 0.5, deco: true }, { from: [85, 36.7], to: [88, 36.7], r: [1.3, 2], deco: true }, { from: [18.5, 2.6], to: [22, 2.6], r: [1.3, 2], deco: true }],
   scatter: [{ prefab: 'fallen', n: 40, rect: [4, 5, 25, 30] }, { prefab: 'standard', n: 9, rect: [5, 38, 22, 20] }, { prefab: 'fallen', n: 30, rect: [4, 37, 25, 22] }, { prefab: 'deadhorse', n: 6, rect: [5, 38, 22, 20] }, { prefab: 'deadhorse', n: 8, rect: [5, 6, 22, 28] }, { prefab: 'fallen', n: 14, rect: [55, 5, 10, 30] },
     // drawn only: the reed-beds along both banks and where the fugitives hid; the shafts and broken lances of the rout; trodden grass
     { prefab: 'reeds', n: 60, rect: [66, 40, 14, 20] }, { prefab: 'reeds', n: 30, rect: [27.5, 4, 2.5, 56] }, { prefab: 'reeds', n: 30, rect: [54, 4, 2.5, 56] },
@@ -1369,7 +1376,7 @@ function buildLevel(spec) {
     } else if (p.prefab === 'table') { LV.colliders.push({ x, z, r: 1.15 }); LV.flames.push({ x: x - 0.4, y: prop.y + 1.26, z: z + 0.15, w: 0.07, h: 0.15 }); }
     else if (p.prefab === 'candles') for (let k = 0; k < 4; k++) LV.flames.push({ x: x + Math.cos(k * 2.3) * 0.25, y: prop.y + 0.08 + (k % 3) * 0.06, z: z + Math.sin(k * 2.3) * 0.25, w: 0.05, h: 0.1 });
     else if (p.prefab === 'heap') LV.colliders.push({ x, z, r: 2.0 });
-    else if (p.prefab === 'boulder') LV.colliders.push({ x, z, r: p.size * 0.85 });
+    else if (p.prefab === 'boulder' && !p.deco) LV.colliders.push({ x, z, r: p.size * 0.85 });   // (a deco line stands on ground already barred: drawn, nothing more)
     else if (p.prefab === 'deadhorse') { LV.colliders.push({ x, z, r: 0.75 }); if (p.cover) { const ci = cellIdx(Math.floor(p.at[0]), Math.floor(p.at[1])); if (ci >= 0) LV.flags[ci] |= F_HIDE; } }
     else if (p.prefab === 'column') LV.colliders.push({ x, z, r: 0.75 });
     else if (p.prefab === 'winch') LV.colliders.push({ x, z, r: 0.45 });
@@ -1387,7 +1394,7 @@ function buildLevel(spec) {
   }
   // parapets: a crenellated wall along every edge of a high masonry roof that drops away into the void (not across a gap
   // meant to be leapt: level ground two or three cells over), so its edge has a body and a man doesn't walk off it
-  LV.parapets = [];
+  LV.parapets = []; LV.breaches = [];
   if (spec.open) {
     const W = LV.W, H = LV.H, at = (x, z) => x >= 0 && z >= 0 && x < W && z < H ? z * W + x : -1;
     for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
@@ -1401,6 +1408,7 @@ function buildLevel(spec) {
         if (leap) continue;
         const ex = (dx > 0 ? x + 1 : dx < 0 ? x : x + 0.5) * CELL, ez = (dz > 0 ? z + 1 : dz < 0 ? z : z + 0.5) * CELL, tx = dz !== 0 ? 1 : 0, tz = dx !== 0 ? 1 : 0, inset = 0.24;
         const cx = ex - dx * inset, cz = ez - dz * inset;
+        if ((spec.breaches || []).some(([bx, bz]) => Math.hypot(bx * CELL - cx, bz * CELL - cz) < 1.3)) { LV.breaches = LV.breaches || []; LV.breaches.push({ x: cx, z: cz, y: LV.floor[i], nx: dx, nz: dz, tx, tz }); continue; }   // broken through: where the archers went over
         LV.parapets.push({ x0: cx - tx * CELL / 2, z0: cz - tz * CELL / 2, x1: cx + tx * CELL / 2, z1: cz + tz * CELL / 2, y: LV.floor[i], nx: dx, nz: dz });
         for (let k = 0; k <= 6; k++) LV.colliders.push({ x: cx + tx * CELL * (k / 6 - 0.5), z: cz + tz * CELL * (k / 6 - 0.5), r: 0.24 });
       }
@@ -1477,7 +1485,7 @@ function scatterProps(spec) {
     const [x0, z0] = ln.from, [x1, z1] = ln.to, L = Math.hypot(x1 - x0, z1 - z0), nx = -(z1 - z0) / L, nz = (x1 - x0) / L;
     for (let t = 0, k = 0; t <= L; k++) {
       const h = q => hrand(k, q, li + 11, 91), r = ln.r[0] + h(1) * (ln.r[1] - ln.r[0]), off = (h(2) - 0.5) * (ln.jitter || 1.2);
-      out.push({ prefab: 'boulder', at: [x0 + (x1 - x0) * t / L + nx * off, z0 + (z1 - z0) * t / L + nz * off], size: r, rot: h(3) * 6.283 });
+      out.push({ prefab: ln.prefab || 'boulder', at: [x0 + (x1 - x0) * t / L + nx * off, z0 + (z1 - z0) * t / L + nz * off], size: r, rot: ln.rot !== undefined ? ln.rot : h(3) * 6.283, deco: ln.deco });
       t += r / CELL * (0.75 + 0.35 * h(4));
     }
   });

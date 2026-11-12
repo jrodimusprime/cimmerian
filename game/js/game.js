@@ -29,6 +29,7 @@ const keys = {};
 let mouseDX = 0, mouseDY = 0, pressUse = false, pressFire = false, agentInput = null;
 let acc = 0, lastFrame = 0, gameTime = 0, fade = 1, fadeTarget = 0, flash = 0, flashCol = [0.75, 0.06, 0.02];
 let prev = { x: 0, y: 0, z: 0 }, renderAlpha = 0, hudT = 0, debugOn = false;
+const FALL = { s: null, m: new Map() };   // the fallers (drawn only)
 let skyMesh = null, particles = [], interactTarget = null, bobPhase = 0, bobAmt = 0, stepAcc = 0, chainSndT = 0, pressKick = false, pressTorch = false, pressThrow = false, pressDrink = false, wantWeapon = null;
 let punchPitch = 0, punchYaw = 0;          // cosmetic view kick, never fed back into the sim
 
@@ -1923,6 +1924,16 @@ function render(alpha) {
         const p0 = pts[i - 1], p1 = pts[i], dx = p1[0] - p0[0], dy = p1[1] - p0[1], dz = p1[2] - p0[2];
         drawM('link', m4trs((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2, Math.atan2(dx, dz), -Math.atan2(dy, Math.hypot(dx, dz)), i % 2 ? Math.PI / 2 : 0, 1), sampleLight(p1[0], p1[1] + 0.5, p1[2]));
       }
+    }
+  }
+  // the archers who break and go over through the broken parapet: they are gone from the sim at the edge; here they fall (drawn only)
+  if (LV.breaches && LV.breaches.length) {
+    if (FALL.s !== S) { FALL.s = S; FALL.m = new Map(); }
+    for (const f of S.foes) if (f.gone && f.state === 'rout' && !FALL.m.has(f)) { const b = LV.breaches.find(q => Math.hypot(q.x - f.x, q.z - f.z) < 3.5); FALL.m.set(f, b ? { t0: gameTime, x: f.x, z: f.z, y: f.y || groundInfo(f.x, f.z).floor, b } : null); }
+    for (const [f, F] of FALL.m) {
+      if (!F) continue; const t = gameTime - F.t0; if (t > 4) continue;
+      const out = Math.min(t, 0.5) * 3.2 + Math.max(0, t - 0.5) * 1.5, x = F.x + F.b.nx * (0.6 + out), z = F.z + F.b.nz * (0.6 + out), y = F.y + (t < 0.35 ? 0.9 * t : 0.32 - 4.9 * (t - 0.35) * (t - 0.35));   // a leap up onto the broken stones, out, and down
+      drawCharacter(f.cls, x, y, z, Math.atan2(F.b.nx, F.b.nz), { unarmed: true, noShield: true, pitch: -Math.max(0, t - 0.3) * 1.6, uxL: -2.6 + Math.sin(t * 11) * 0.5, uxR: -2.4 - Math.sin(t * 9) * 0.5, txL: -0.6, txR: 0.3, sxL: 0.8 }, sampleLight(x, F.y + 1, z));
     }
   }
   // the march: the chain from your manacles to the fist of the black who leads you (it sags between, and drags if you lag)

@@ -484,6 +484,16 @@ function addPrefab(mb, p) {
       }
       break;
     }
+    case 'shieldwall': {                                  // a front rank's wall: big round shields planted rim to rim, the spears of the rank behind slanting over them
+      const yaw = p.rot || 0, fx = Math.sin(yaw), fz = Math.cos(yaw), sx = fz, sz = -fx, sd = Math.floor(p.x * 7 + p.z * 13);
+      for (let k = -1; k <= 1; k++) {
+        const u = k * 0.85, x = p.x + sx * u, z = p.z + sz * u, lean = 0.12 + 0.08 * hrand(sd, k, 1, 1);
+        smoothLathe(mb, x + fx * 0.1, p.y + 0.62, z + fz * 0.1, [[0.0, 0], [0.55, 0.0], [0.53, 0.06], [0.15, 0.12], [0.0, 0.13]], 12, hrand(sd, k, 2, 2) < 0.6 ? T.SHIELD : T.GILT, ONE3, [fx, lean, fz]);
+        addSpike(mb, x - fx * 0.5, p.y + 0.4, z - fz * 0.5, [fx * 0.8, 0.6, fz * 0.8], 3.2 + hrand(sd, k, 3, 3) * 0.6, 0.03, 4, T.WOOD);
+        addSpike(mb, x - fx * 0.25 + fx * 2.45 * 0.8, p.y + 0.4 + 2.45 * 0.6, z - fz * 0.25 + fz * 2.45 * 0.8, [fx * 0.8, 0.6, fz * 0.8], 0.35, 0.045, 4, T.STEEL);   // its head
+      }
+      break;
+    }
     case 'boulder': {                                     // a weathered boulder, sunk into the turf, often with a smaller one leaning on it
       const r = p.size, sd = Math.floor(p.x * 13 + p.z * 7);
       addRock(mb, p.x, p.y + r * 0.3, p.z, r, r * (0.6 + 0.3 * hrand(sd, 1, 2, 3)), r * (0.8 + 0.3 * hrand(sd, 2, 2, 3)), sd, T.ROCK, 0.45);
@@ -755,6 +765,18 @@ function buildLevelMesh() {
   }
   for (const p of LV.props) addPrefab(mb, p);
   addRibs(mb);
+  for (const q of LV.breaches || []) {                   // a breach in the parapet: broken stumps either side, its stones fallen on the roof and gone over the edge
+    const sd = Math.floor(q.x * 7 + q.z * 3);
+    for (const e of [-1, 1]) {
+      const x = q.x + q.tx * e * CELL * 0.45, z = q.z + q.tz * e * CELL * 0.45;
+      addBox(mb, x, q.y + 0.35, z, q.tx ? 0.22 : 0.22, 0.35, 0.22, MASON, 0);
+      addRock(mb, x - q.tx * e * 0.1, q.y + 0.75, z - q.tz * e * 0.1, 0.24, 0.18, 0.24, sd + e, MASON, 0.6);   // its broken top
+    }
+    for (let k = 0; k < 7; k++) {
+      const u = (hrand(sd, k, 1, 1) - 0.5) * 2.4, v = 0.3 + hrand(sd, k, 2, 2) * 1.6, r = 0.12 + 0.18 * hrand(sd, k, 3, 3);
+      addRock(mb, q.x + q.tx * u - q.nx * v, q.y + r * 0.6, q.z + q.tz * u - q.nz * v, r * 1.3, r, r * 1.1, sd + k * 5, MASON, 0.5);
+    }
+  }
   for (const q of LV.parapets || []) {                  // the crenellated parapet: a low wall, merlons on it, a round post at each end of a run
     const len = Math.hypot(q.x1 - q.x0, q.z1 - q.z0), yaw = Math.atan2(q.x1 - q.x0, q.z1 - q.z0), mx = (q.x0 + q.x1) / 2, mz = (q.z0 + q.z1) / 2;
     addBox(mb, mx, q.y + 0.5, mz, 0.22, 0.5, len / 2, MASON, yaw);
