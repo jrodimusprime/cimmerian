@@ -15,14 +15,14 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:18 (9942 ticks) | ~9.2 min |
-> | `e1m2` The Pits | 3:43 (16065 ticks) | ~14.9 min |
-> | `e1m3` The Tunnels Below | 2:20 (10057 ticks) | ~9.3 min |
+> | `e1m2` The Pits | 3:53 (16777 ticks) | ~15.5 min |
+> | `e1m3` The Tunnels Below | 2:15 (9732 ticks) | ~9.0 min |
 > | `e1m4` Yothga | 3:24 (14682 ticks) | ~13.6 min |
 > | `e1m5` The Scarlet Citadel | 3:14 (13991 ticks) | ~13.0 min |
 > | `e1m6` The Tower of Tamar | 2:04 (8908 ticks) | ~8.2 min |
-> | `e1m7` The Relief of Shamar | 3:06 (13395 ticks) | ~12.4 min |
+> | `e1m7` The Relief of Shamar | 2:58 (12848 ticks) | ~11.9 min |
 > | `e1m8` The Tybor | 3:02 (13090 ticks) | ~12.1 min |
-> | **Campaign** | **23:11** (100130 ticks) | **~93 min** |
+> | **Campaign** | **23:08** (99970 ticks) | **~93 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -927,3 +927,19 @@ Tsotha's demon birth, which sets up "son of—".
 
 - [x] The city's sortie is given to Conan (e1m7).
   - *Done:* you no longer climb and fire the siege towers, and Strabonus no longer waits on them: their guards come down off them at you, and when Strabonus falls, "behind the dazed and stricken invaders goes up a mighty clamour and the blaze of a huge conflagration": Shamar's defenders sally, cut down the men in the towers and burn the pavilions and the engines, as the book has it. In the book, Shamar's defenders sally out and burn the siege engines after Strabonus falls. In the game Conan fires the towers himself, and Strabonus can't die until he has.
+
+- [x] e1m3: the frog thing: wall you in as well, the thing comes in to kill you and busts both walls open, and you run; and its hitbox (you could walk inside it)
+  - *Done:* round the bend into the north tunnel with it after you, the roof comes down behind you too: walled in between two falls. It hears you and comes straight for the stones behind you and bursts through them; with your back to the far fall you dodge its lurch, and its bulk brings that fall down; out, and run. Its body is solid all the way to the edge of its jelly now (1.45 m, not a man's 0.42), for you and for its own movement, so neither of you ends up inside the other; it rears and strikes from that distance.
+- [x] another iteration on the jelly frog beast
+  - *Done:* the body is clearer, quaking jelly with the dark knot of its guts heaving inside it, seen through it; twelve stubby tentacles lying out round it, tips curling, now and then one lifting to grope, pale suckers under them; a lower jaw that hangs open as it titters and gapes as it rears, a wet red mouth and tongue in it; a pallid throat-sac that swells with its sobs; bigger, bulging, swelling eyes.
+- [x] the axe guys' left arm is still in the air
+  - *Done:* found it: his resting stance (standing, walking, closing in) held the left fist up by his chest, gripping nothing. The left arm hangs at his side now; the wince presses that hand to his belly instead of throwing it up; both hands go to the haft only for the blow.
+- [x] some tapestries are floating in the air
+  - *Done:* the dressed-stone walls are set back from the grid line at their corners and bow back between floor and ceiling (by up to a third of a metre), and the hangings were hung on the grid line in front of them. Every hanging, banner, arms-trophy, peg-rail, sconce and chain is hung on the wall as it really stands now. (Also: one tapestry that shared its place with a torch, and chains on top of another torch, moved.)
+- [x] e1m2: the king doesn't sit right; the black guy walks funny: you pass out asleep and he wakes you up instead
+  - *Done:* Strabonus and Amalrus sit on their divans now (back on the cushions, thighs level, knees bent, shins straight down, hands on their thighs, Strabonus at his wine). In the vault, after Tsotha's farewell and the serpent's venom, weariness takes you and you sleep; a foot jars your ribs and you wake with the strangler standing over you, the grille half open behind him. No walk.
+- [x] the map is confusing at times: an explored map, top right, in a bubble
+  - *Done:* a round map in the top right of everything you have seen of the level (round about you and not through rock; in the open, farther), turned to your heading with you at its heart, north marked, the walls' edges drawn, pits dark, Pelias a green dot. M hides or shows it.
+- [x] e1m7: dudes walking around randomly with spears that don't do anything (they were meant to guard the exit); no horses at all
+  - *Done:* the rank holding the road east stands at its posts and fights whoever comes close; when Strabonus falls they throw down their spears and run, each down his own lane, and are gone in two or three seconds (before, all five ran for one point, jammed against each other and the braziers, and shuffled there with their spears forever). The tower guards had the same ids as the gate rank: given their own. And no horses in e1m7 at all: Trocero and Prospero are on foot at your side, no dead horses on the field.
+

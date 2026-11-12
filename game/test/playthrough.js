@@ -1,6 +1,6 @@
 // Golden playthrough of e1m2, The Pits, through the CIM agent API (README §11).
 // It plays the level in the book's order, using only player inputs.
-const EXPECTED = { tick: 16065, hash: 'a35dc937' };
+const EXPECTED = { tick: 16777, hash: '1afdc611' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -112,7 +112,7 @@ o = await O(`(() => { for (let i = 0; i < 6000 && !CIM.state.flags.marched; i++)
   for (let i = 0; i < 12000 && !CIM.state.flags.in_vault; i++) { const a = actor('tsotha'), s = CIM.state, d = Math.hypot(a.x - s.x, a.z - s.z); CIM.step({ forward: d > 2.6 ? 1 : 0, yaw: Math.atan2(-(a.x - s.x), -(a.z - s.z)), pitch: 0 }, 1); }
   return CIM.obs(); })()`); log('vault:', brief(o));
 // THE VAULT (puzzle): lie still while Satha passes; the black; the keys at your feet
-for (let i = 0; i < 120 && !o.flags.keys_down; i++) o = await O('__wait(36)');
+for (let i = 0; i < 240 && !o.flags.keys_down; i++) o = await O('__wait(36)');
 log('keys down:', brief(o));
 for (let i = 0; i < 60 && await ev('!!(CIM.state.satha.pts && inVault(CIM.state.satha.pts[CIM.state.satha.pts.length - 1].x, CIM.state.satha.pts[CIM.state.satha.pts.length - 1].z) || (CIM.state.satha.pts && inVault(CIM.state.satha.pts[0].x, CIM.state.satha.pts[0].z)))'); i++) o = await O('__wait(24)');
 o = await O('(() => { const k = __item("cellkey"); __face(k.x, k.z, -0.8); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 2); CIM.step({ use: true, yaw: CIM.state.yaw, pitch: -0.8 }, 2); return CIM.obs(); })()');

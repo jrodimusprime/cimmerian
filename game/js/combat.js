@@ -42,7 +42,7 @@ const FOES = {
   strabonus: { hp: 320, speed: 3.6, reach: 2.9, dmg: 22, windup: 0.62, strike: 0.26, recover: 0.6, block: 'front', sight: 24, name: 'Strabonus of Koth', boss: true },
   // the Tybor (ch. V): Tsotha at bay, throwing the globes of fire
   tsotha: { hp: 280, speed: 3.4, reach: 0, dmg: 0, windup: 0.9, strike: 0.2, recover: 1.1, ranged: true, globe: true, keep: [5, 13], sight: 30, name: 'Tsotha-lanti', boss: true },
-  weeper: { hp: 1e9, speed: 2.7, reach: 1.9, dmg: 30, windup: 0.65, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: null, leap: 9 },   // it rears, then its whole bulk lurches forward with the blow
+  weeper: { hp: 1e9, speed: 2.7, reach: 2.2, body: 1.45, dmg: 30, windup: 0.65, strike: 0.3, recover: 0.6, sight: 16, name: 'weeping thing', invulnerable: true, territory: null, leap: 9 },   // it rears, then its whole bulk lurches forward with the blow
 };
 const ALERT_LINES = {
   scout: '"Who screamed? Who\'s there?" A Kothian guard comes up the south passage with his sword out.',
@@ -177,7 +177,7 @@ function updateFoes() {
     const move = (tx, tz, spd) => {
       const ddx = tx - f.x, ddz = tz - f.z, dd = Math.hypot(ddx, ddz);
       if (dd < 0.05) return;
-      const r = collide(f.x + ddx / dd * spd * DT, f.z + ddz / dd * spd * DT, st.invulnerable ? 1.0 : 0.42, f.y, f);
+      const r = collide(f.x + ddx / dd * spd * DT, f.z + ddz / dd * spd * DT, st.body || (st.invulnerable ? 1.0 : 0.42), f.y, f);
       if (f.territory && !f.territory.includes(roomIdAt(r[0], r[1]))) { f.state = 'home'; f.t = 0; return; }   // it will not leave its tunnels
       f.walk += Math.hypot(r[0] - f.x, r[1] - f.z); f.x = r[0]; f.z = r[1]; f.moving = true;
       let a = Math.atan2(ddx, ddz) - f.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); f.yaw += clamp(a, -8 * DT, 8 * DT);
@@ -228,9 +228,11 @@ function updateFoes() {
         if (mode === 'play' && Math.hypot(S.x - f.homeX, S.z - f.homeZ) < POST_R) { f.state = 'chase'; f.t = 0; }
         break;
       case 'rout':                                      // the host breaks: he throws down his post and runs for the river
-      { const to = f.routTo || LEVEL.routTo;
-        move(f.x + (to[0] * CELL - f.x), f.z + (to[1] * CELL - f.z), st.speed * 1.2);
-        if (Math.hypot(to[0] * CELL - f.x, to[1] * CELL - f.z) < 1.5) { f.dead = true; f.gone = true; f.hp = 0; } }
+      { const to = f.routTo || LEVEL.routTo, tz = f.routTo ? to[1] * CELL : f.homeZ;   // each man down his own lane (the rank side by side, not all to one point and jammed there)
+        const ox = f.x, oz = f.z;
+        move(to[0] * CELL, tz, st.speed * 1.2);
+        f.stuck = Math.hypot(f.x - ox, f.z - oz) < st.speed * DT * 0.3 ? (f.stuck || 0) + DT : 0;
+        if (Math.hypot(to[0] * CELL - f.x, tz - f.z) < 1.5 || f.stuck > 1.2) { f.dead = true; f.gone = true; f.hp = 0; } }   // gone, out of sight (or into the press of the rout)
         break;
       case 'chase':
         if (mode !== 'play') break;
@@ -624,6 +626,7 @@ function punchView(p, y) { punchPitch += p; punchYaw += y; }
 // ---- drawing the foes ---------------------------------------------------------
 function foePose(f) {
   const st = FOES[f.cls], P = poseIdle({}, gameTime + f.homeX), c = CAST[f.cls];
+  if (f.state === 'rout' && !f.dead) { poseWalk(P, f.walk * 2.6, 1); return Object.assign(P, { unarmed: true, noShield: true, lean: 0.3, headX: -0.2 }); }   // weapons thrown down, running
   if (f.cls === 'thing' && typeof SKINNED !== 'undefined' && SKINNED.thing) {   // the goblin body: a hunched lope on two legs
     const t = gameTime + f.homeX;
     if (f.dead) {                                     // a ragdoll like the men: over the way the blow drives it, limbs flung out, then still
@@ -705,7 +708,7 @@ function axePose(f, st, P) {
   const t = f.t, e = x => x * x * (3 - 2 * x), eo = x => 1 - (1 - x) * (1 - x) * (1 - x), mix = (A, B, k) => { for (const q in B) P[q] = lerp(A[q] ?? 0, B[q], k); };
   const breathe = Math.sin(gameTime * 2.1 + f.homeX) * 0.03;
   const STANCE = { lean: 0.32, headX: -0.28 + breathe, drop: -0.14, txL: -0.42, txR: 0.12, sxL: 0.55, sxR: 0.65, tzL: 0.12, tzR: -0.08, twist: 0.12,
-    uxR: -0.95, fxR: -1.25, uzR: 0.25, uxL: -0.75, fxL: -1.55, uzL: -0.15, we: 0.95 + breathe, roll: breathe * 0.4 };
+    uxR: -0.95, fxR: -1.25, uzR: 0.25, uxL: -0.22, fxL: -0.42, uzL: 0.16, we: 0.95 + breathe, roll: breathe * 0.4 };   // the axe in his right fist; the left arm hangs loose at his side
   Object.assign(P, STANCE);
   if (f.moving && f.state !== 'windup' && f.state !== 'strike') {   // a heavy stride, the axe carried across him
     const ph = f.walk * 3.0, sw = Math.sin(ph);
@@ -735,7 +738,7 @@ function axePose(f, st, P) {
   } else if (f.state === 'block') Object.assign(P, { uxR: -1.6, fxR: -1.0, uxL: -1.5, fxL: -1.2, uzL: 0.2, we: 1.5, lean: 0.05, headX: -0.1 });   // the haft up across him
   else if (f.state === 'pain' || f.state === 'stagger') {   // he winces: doubled over the wound, the free hand clutching at it, the axe hanging
     const k = f.state === 'stagger' ? Math.sin(Math.min(1, t / KICK.stagger) * Math.PI) : Math.sin(Math.min(1, t / (st.pain || 0.34)) * Math.PI);
-    mix(STANCE, { lean: 0.45, headX: 0.5, drop: -0.22, roll: 0.15, twist: 0.1, uxL: -0.5, fxL: -2.2, uzL: -0.6, uxR: -0.5, fxR: -1.0, uzR: 0.2, we: 1.0, txL: -0.5, sxL: 0.9, txR: 0.1, sxR: 0.7 }, k);
+    mix(STANCE, { lean: 0.45, headX: 0.5, drop: -0.22, roll: 0.15, twist: 0.1, uxL: -0.3, fxL: -1.45, uzL: -0.55, uxR: -0.5, fxR: -1.0, uzR: 0.2, we: 1.0, txL: -0.5, sxL: 0.9, txR: 0.1, sxR: 0.7 }, k);   // the free hand pressed to his belly
   }
   return P;
 }

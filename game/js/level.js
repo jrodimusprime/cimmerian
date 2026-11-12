@@ -179,7 +179,7 @@ const LEVEL_E1M2 = {
   // ch. II, the conclave: "In front of him stood Tsotha, and on divans lounged Strabonus and Amalrus in their silks and gold ...
   // On either side of him stood a dozen black giants, grasping their long-shafted axes."
   actors: [
-    { id: 'strabonus', at: [59.3, 22.65], pose: 'drink', seat: -0.42 }, { id: 'amalrus', at: [62.7, 22.65], pose: 'sit', seat: -0.42 },
+    { id: 'strabonus', at: [59.3, 22.5], pose: 'drink', seat: -0.45 }, { id: 'amalrus', at: [62.7, 22.5], pose: 'sit', seat: -0.45 },
     { id: 'tsotha', at: [61, 25.1], pose: 'stand' },
     { id: 'g1', cast: 'axeman', at: [59.6, 27.0], yaw: Math.PI, pose: 'guard' }, { id: 'g2', cast: 'axeman', at: [59.6, 28.6], yaw: Math.PI, pose: 'guard' },
     { id: 'g3', cast: 'axeman', at: [62.4, 27.0], yaw: Math.PI, pose: 'guard' }, { id: 'g4', cast: 'axeman', at: [62.4, 28.6], yaw: Math.PI, pose: 'guard' },
@@ -211,7 +211,7 @@ const LEVEL_E1M2 = {
     { id: 'c_dust', needs: ['spat'], after: 7.2, act: { tsotha: { pose: 'dust', face: 'amalrus' }, amalrus: { pose: 'blind', to: [62.7, 23.4], sp: 1.2 } },
       lines: [['Tsotha: "Back, I say!" His lean hand comes from his wide sleeve and casts a shower of dust into the Ophirean\'s contorted face.', 'warn'],
         ['Amalrus cries out and staggers back, clutching at his eyes, the sword falling from his hand. Strabonus hurriedly gulps another goblet of wine, with hands that tremble.', '']] },
-    { id: 'c_sit', needs: ['spat'], after: 12.5, sets: 'dusted', act: { amalrus: { pose: 'sit', at: [62.7, 22.65], seat: -0.42, face: null, yaw: 0 }, tsotha: { pose: 'speak', face: 'amalrus' } },
+    { id: 'c_sit', needs: ['spat'], after: 12.5, sets: 'dusted', act: { amalrus: { pose: 'sit', at: [62.7, 22.5], seat: -0.45, face: null, yaw: 0 }, tsotha: { pose: 'speak', face: 'amalrus' } },
       lines: [['Amalrus: "I went blind. What did you do to me, wizard?"', 'voice'],
         ['Tsotha: "Merely a gesture to convince you who was the real master. Strabonus has learned his lesson; let you learn yours. It was but a dust I found in a Stygian tomb. If I brush out their sight again, I will leave you to grope in darkness for the rest of your life."', 'voice']] },
     // "At the wizard's gesture, the blacks laid hold of their prisoner and marched him behind Tsotha"
@@ -223,15 +223,15 @@ const LEVEL_E1M2 = {
     { id: 'c_jet', at: 'jetcorr', needs: ['marched'],
       lines: [['Down a smaller corridor, done in jet and black jade, gloomy and awful, to a brass door over whose arch a human skull grins. At the door stands a fat, repellent figure dangling a bunch of keys: Tsotha\'s chief eunuch, Shukeli.', '']] },
     // "The brass door let onto a narrow stair that seemed to wind down into the very bowels of the hill ... They made the king fast to a ring in the stone wall."
-    { id: 'c_down', at: ['jetcorr', 'brassdoor'], needs: ['marched'], quiet: true, after: 1.0, sets: 'in_vault', teleport: [6.9, 9.6, -Math.PI / 2], sathaIn: 0,
+    { id: 'c_down', at: ['jetcorr', 'brassdoor'], needs: ['marched'], quiet: true, after: 1.0, sets: 'in_vault', teleport: [6.9, 9.6, -Math.PI / 2], sathaIn: 22,
       act: { tsotha: { at: [8.7, 9.9], face: 'player', lead: 0, to: [] }, g1: { hide: true, escort: null }, g2: { hide: true, escort: null }, g3: { hide: true, escort: null }, g4: { hide: true, escort: null },
         shukeli: { hide: true }, strabonus: { hide: true }, amalrus: { hide: true }, g5: { hide: true }, g6: { hide: true }, g7: { hide: true }, g8: { hide: true } },
       lines: [['Down a narrow stair that winds into the very bowels of the hill; through an iron door built to withstand the battering of rams, and a grille of steel bars with a bolt that works only from outside. The blacks make you fast to a ring in the stone wall, set a torch in the niche above your head, and file out in stumbling haste, casting fearful glances at the dark.', ''],
         ['Tsotha: "And so, farewell, barbarian. I must ride to Shamar, and the siege. In ten days I will be in your palace in Tamar, with my warriors. What word from you shall I say to your women, before I flay their dainty skins for scrolls whereon to chronicle the triumphs of Tsotha-lanti?"', 'voice'],
         ['You answer with a searing Cimmerian curse. Tsotha laughs thinly and withdraws; through the bars you glimpse his vulture-like figure as he slides home the grate. The heavy outer door clangs, and silence falls like a pall.', ''],
         ['Out in the black beyond the arch, something vast is moving.', 'warn'], ['(E to use things. Read whatever the dead have left you.)', 'dim']] },
-    { id: 'c_gone', needs: ['in_vault'], after: 15, act: { tsotha: { to: [7.5, 8.3], sp: 1.6, face: null } } },
-    { id: 'c_gone2', needs: ['in_vault'], after: 17.5, act: { tsotha: { hide: true } } },
+    { id: 'c_gone', needs: ['in_vault'], after: 27, act: { tsotha: { to: [7.5, 8.3], sp: 1.6, face: null } } },
+    { id: 'c_gone2', needs: ['in_vault'], after: 29.5, act: { tsotha: { hide: true } } },
   ],
   // README §10: flags and actions, in the book's order. solve() proves it can't softlock.
   puzzle: {
@@ -331,7 +331,7 @@ const LEVEL_E1M3 = {
   // the weeping, "piteously, like a woman": where it seems to come from, until the thing shows itself
   weeping: { from: [22, 2.5], wake: { room: 'weep_den', z: 4.6 } },
   // a fall of stones chokes the tunnel north: nothing a man can shift. The weeping thing's bulk can, floundering into it
-  choke: { rect: [38, 9, 40, 10] },
+  choke: { rect: [38, 9, 40, 10], behind: [38, 5, 40, 6] },   // behind: the second fall, that walls you in when you are round the bend (game.js updateTunnels)
   // the well's breath: gusts between which you leap; the presence; the draft from the main corridor
   well: { row: 17, x: [34, 44], ember: [39, 15.9], mouth: [33.6, 21], period: 5.5 },
   // Satha's road: up out of her hole by the cage, west down the main corridor, and down into her well
@@ -610,7 +610,7 @@ const LEVEL_E1M4 = {
     // the ossuary of the old works: the bones of the builders heaped along its walls, skulls set in rows
     { prefab: 'bones', at: [7, 23.6], big: true }, { prefab: 'bones', at: [9.5, 23.6], big: true }, { prefab: 'bones', at: [12.5, 23.7], big: true }, { prefab: 'bones', at: [13.4, 26.5], big: true },
     { prefab: 'skull', at: [8, 23.4] }, { prefab: 'skull', at: [8.6, 23.4] }, { prefab: 'skull', at: [11, 23.4] }, { prefab: 'skull', at: [11.6, 23.4] }, { prefab: 'skull', at: [13.6, 25] },
-    { prefab: 'chains', at: [10, 23], wall: 'N' }, { prefab: 'candles', at: [6.6, 27.3] },
+    { prefab: 'chains', at: [12.2, 23], wall: 'N' }, { prefab: 'candles', at: [6.6, 27.3] },
     
     { prefab: 'door', at: [32, 25.5], wall: 'W', open: 0.55, free: true }, { prefab: 'torch', at: [32, 24.5], wall: 'W', dim: 0.9 }, { prefab: 'torch', at: [32, 26.6], wall: 'W', dim: 0.9 },   // the stair ends at a door: the way out, standing ajar
     { prefab: 'torch', at: [6.5, 14], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [13.5, 22], wall: 'S', dim: 0.6 }, { prefab: 'torch', at: [31, 10], wall: 'N', dim: 0.6 },
@@ -749,7 +749,7 @@ const LEVEL_E1M5 = {
     { prefab: 'tapestry', at: [24, 18], wall: 'N', w: 1.1, h: 1.6, top: 2.5 }, { prefab: 'tapestry', at: [30, 21], wall: 'S', w: 1.1, h: 1.6, top: 2.5 },
     { prefab: 'sconce', at: [37, 14], wall: 'W' }, { prefab: 'sconce', at: [40, 18], wall: 'E' }, { prefab: 'tapestry', at: [37, 11.5], wall: 'W', w: 0.9, h: 1.8, top: 2.9 }, { prefab: 'tapestry', at: [40, 16.5], wall: 'E', w: 0.9, h: 1.8, top: 2.9 },
     { prefab: 'carpet', at: [38.5, 15.5], w: 0.8, l: 9 },
-    { prefab: 'tapestry', at: [46, 3], wall: 'N', w: 1.5, h: 2.6, top: 3.9 }, { prefab: 'tapestry', at: [50.8, 13], wall: 'S', w: 0.9, h: 2.2, top: 3.6 }, { prefab: 'trophy', at: [40, 7], wall: 'W' },
+    { prefab: 'tapestry', at: [48.4, 3], wall: 'N', w: 1.4, h: 2.6, top: 3.9 }, { prefab: 'tapestry', at: [50.8, 13], wall: 'S', w: 0.9, h: 2.2, top: 3.6 }, { prefab: 'trophy', at: [40, 7], wall: 'W' },
     { prefab: 'banner', at: [44, 13], wall: 'S' }, { prefab: 'banner', at: [48, 13], wall: 'S' }, { prefab: 'sconce', at: [50, 3], wall: 'N' }, { prefab: 'sconce', at: [42, 3], wall: 'N' },
     { prefab: 'bunk', at: [24, 6.6] }, { prefab: 'bunk', at: [29, 6.6] }, { prefab: 'bunk', at: [34, 6.6] }, { prefab: 'cask', at: [26.5, 2.7] }, { prefab: 'cask', at: [31.5, 5.4], lie: true },
     { prefab: 'pegs', at: [27, 2], wall: 'N' }, { prefab: 'trophy', at: [32, 2], wall: 'N', bare: true }, { prefab: 'chest', at: [35.6, 3.0] }, { prefab: 'table', at: [30, 4.3] },
@@ -939,7 +939,7 @@ const LEVEL_E1M7 = {
   squads: ['palace', 'guards', 'press', 'spears'],   // men who fight as one: they ring you, and never more than two blows in the air at once (combat.js squadChase)
   ambient: [0.34, 0.24, 0.16], haze: [0.5, 0.32, 0.2], open: true, fog: 0.008, sun: [0.6, 0.35, -0.4],
   intro: [['THE RELIEF OF SHAMAR', 'title'], ['"It is King Conan!" Strabonus shrieks it, paling; Tsotha squalls that you have been in Satha\'s belly for days.', 'voice'],
-    ['Beside you ride Count Trocero of Poitain, whom your rider brought back to you, and his captain Prospero. On the ridge behind you the stolid Bossonians nock and draw; the Gundermen level their pikes. Down onto the plain!', '']],
+    ['Beside you stand Count Trocero of Poitain, whom your rider brought back to you, and his captain Prospero, on foot with the knights of Poitain. On the ridge behind you the stolid Bossonians nock and draw; the Gundermen level their pikes. Down onto the plain!', '']],
   objectives: [['ridge_down', 'Down off the ridge.'], ['shemites_broken', 'Break the Shemite archers.'],
     ['spears_broken', 'The Kothian spearmen, with the Gunderman pikes beside you.'], ['press_through', 'Find the gap through the press of knights.'], ['guards_down', 'Cut through his palace troops.'], ['strabonus_dead', 'Strabonus.'], ['zz', 'The host breaks: east along the road between the camp-fires, after it to the river.']],
   exitNeeds: 'strabonus_dead', postBreak: 'strabonus_dead', routTo: [95.3, 22],
@@ -979,7 +979,7 @@ const LEVEL_E1M7 = {
   ],
   boulders: [{ from: [2.5, 3], to: [2.5, 41], r: [1.6, 3.2] }, { from: [3, 41.2], to: [92, 41.2], r: [1.6, 3.4], jitter: 2 }, { from: [92.5, 3], to: [92.5, 17.5], r: [1.8, 3.6] }, { from: [92.5, 26.5], to: [92.5, 41], r: [1.8, 3.6] },   // a gap: the road east, to the river
     { from: [3, 2.8], to: [30, 2.8], r: [1.4, 3], jitter: 1.5 }, { from: [48, 2.8], to: [92, 2.8], r: [1.4, 3], jitter: 1.5 }],
-  scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'deadhorse', n: 14, rect: [16, 6, 72, 32] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] }],
+  scatter: [{ prefab: 'fallen', n: 60, rect: [14, 5, 76, 34] }, { prefab: 'standard', n: 10, rect: [16, 6, 72, 32] }],
   shafts: [], links: [], features: [],
   lights: [],
   props: [
@@ -1010,7 +1010,7 @@ const LEVEL_E1M7 = {
     { class: 'archer', id: 'm1', at: [28, 9], group: 'shemites2' }, { class: 'archer', id: 'm2', at: [29, 16], group: 'shemites2' }, { class: 'spearman', id: 'm3', at: [27, 22], group: 'shemites2', yaw: Math.PI / 2 },
     { class: 'archer', id: 'm4', at: [29, 29], group: 'shemites2' }, { class: 'spearman', id: 'm5', at: [27, 35], group: 'shemites2', yaw: Math.PI / 2 }, { class: 'spearman', id: 'm6', at: [26, 13], group: 'shemites2', yaw: Math.PI / 2 },
     { class: 'archer', id: 'm7', at: [29.5, 37], group: 'shemites2' },
-    { class: 'spearman', id: 'g1', at: [33, 6], group: 'tower' }, { class: 'spearman', id: 'g2', at: [35, 14], group: 'tower' }, { class: 'archer', id: 'g3', at: [32, 16], group: 'tower' },
+    { class: 'spearman', id: 'tg1', at: [33, 6], group: 'tower' }, { class: 'spearman', id: 'tg2', at: [35, 14], group: 'tower' }, { class: 'archer', id: 'tg3', at: [32, 16], group: 'tower' },
     { class: 'spearman', id: 'u1', at: [33, 27], group: 'tower2' }, { class: 'kknight', id: 'u2', at: [35, 37], group: 'tower2' }, { class: 'archer', id: 'u3', at: [31.5, 38], group: 'tower2' }, { class: 'spearman', id: 'u4', at: [36, 34], group: 'tower2' },
     { class: 'spearman', id: 's1', at: [52, 14], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's2', at: [52, 19], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's3', at: [52, 24], group: 'spears', yaw: Math.PI / 2 },
     { class: 'spearman', id: 's4', at: [53, 29], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's5', at: [55, 17], group: 'spears', yaw: Math.PI / 2 }, { class: 'spearman', id: 's6', at: [55, 26], group: 'spears', yaw: Math.PI / 2 },
@@ -1029,7 +1029,7 @@ const LEVEL_E1M7 = {
     { class: 'trigger_exit', rect: [92, 19, 95, 25] },
   ],
   beats: [
-    { id: 'ride', at: 'ridge', act: { trocero: { escort: { side: -3.0, back: 1.5 } }, prospero: { escort: { side: 3.0, back: 1.5 } } } },   // they keep at the king's side
+    { id: 'side', at: 'ridge', act: { trocero: { escort: { side: -3.0, back: 1.5 } }, prospero: { escort: { side: 3.0, back: 1.5 } } } },   // they keep at the king's side
     { id: 'down', at: 'line1', sets: 'ridge_down', wake: ['shemites'], lines: [['The Bossonians loose over your head: "the cord to the nock, shaft to the ear, the king of Koth for a mark!"', 'dim']] },
     { id: 'tower', at: ['tfoot', 'climb1', 'field'], wake: ['tower'], lines: [['"The men on the battle-towers can mask any sorties": the siege towers, hung with raw bull-hides, stand against Shamar\'s walls, and their guards come down off them at you.', '']] },
     { id: 'tower2', at: ['climb1b', 'tp1b', 'field'], needs: ['ridge_down'], after: 6, wake: ['tower2'] },
@@ -1044,10 +1044,10 @@ const LEVEL_E1M7 = {
     { id: 'guards2', killed: 'guards', sets: 'guards_down' },
     { id: 'strab2', killed: 'palace', sets: 'strabonus_dead', act: { trocero: { escort: null, to: [80, 20], sp: 6 }, prospero: { escort: null, to: [82, 24], sp: 6 } }, lines: [['Strabonus goes down beneath the five-foot blade, his skull crushed, and the great banner of Koth goes down with him.', 'good'],
       ['Then behind the dazed and stricken invaders goes up a mighty clamour and the blaze of a huge conflagration: the defenders of Shamar have made a desperate sortie, cut down the men in the siege towers, and are burning the pavilions and the siege engines.', 'good'],
-      ['Amalrus goes down dying beneath the trampling hoofs, "his shoulder-bone hewn in twain by Prospero\'s two-handed sword." The host breaks, and runs for the river.', 'good'], ['The rank holding the road east throws down its spears and runs.', 'good'], ['East, between the camp-fires, the road to the Tybor. After them!', 'warn']] },
+      ['Amalrus goes down dying, "his shoulder-bone hewn in twain by Prospero\'s two-handed sword." The host breaks, and runs for the river.', 'good'], ['The rank holding the road east throws down its spears and runs.', 'good'], ['East, between the camp-fires, the road to the Tybor. After them!', 'warn']] },
   ],
-  // Trocero and Prospero ride beside the king: "I see Trocero and his captain Prospero—but who rides between them?"
-  actors: [{ id: 'trocero', at: [5, 19.5], yaw: Math.PI / 2, pose: 'ride', solid: false }, { id: 'prospero', at: [5, 24.5], yaw: Math.PI / 2, pose: 'ride', solid: false }],
+  // Trocero and Prospero at the king's side: "I see Trocero and his captain Prospero"
+  actors: [{ id: 'trocero', at: [5, 19.5], yaw: Math.PI / 2, pose: 'stand', solid: false }, { id: 'prospero', at: [5, 24.5], yaw: Math.PI / 2, pose: 'stand', solid: false }],
   puzzle: {
     flags: ['ridge_down', 'shemites_broken', 'spears_broken', 'press_through', 'guards_down', 'strabonus_dead'],
     actions: [
@@ -1280,7 +1280,8 @@ function buildLevel(spec) {
     fort.push({ prefab: 'stakepit', at: [gx + 0.5, gz + 0.5] });
   }
   for (const p of spec.props.concat(scatterProps(spec), fort)) {
-    const [x, z] = W2(p.at[0], p.at[1]);
+    let [x, z] = W2(p.at[0], p.at[1]);
+    if (HUNG.has(p.prefab) && p.wall) { const n = wallIn(p.wall), rc = wallRecess(p, n); x -= n[0] * rc; z -= n[1] * rc; }   // hung on the wall as it really stands, not on the grid line in front of it
     const prop = Object.assign({}, p, { x, z, y: p.level !== undefined ? p.level : groundInfo(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6).floor });
     LV.props.push(prop);
     if (p.prefab === 'torch') {
@@ -1361,6 +1362,24 @@ function checkWallMounts(spec) {
   return bad;
 }
 // unit vector pointing out of a wall into the room
+// Walls are not on the grid lines: each corner is set back into the rock (computeCorner: jx, jz) and each wall bows back
+// between floor and ceiling (mesh.js wallStrip: bul, in three rows). How far the real face stands behind the grid line at
+// a hung thing (its span along the wall, between its foot and its top), the least of it so nothing sinks into the stone.
+const HUNG = new Set(['tapestry', 'banner', 'trophy', 'pegs', 'sconce', 'chains']);
+function wallRecess(p, n) {
+  const along = n[0] === 0 ? 0 : 1, u0 = along === 0 ? p.at[0] : p.at[1], line = along === 0 ? Math.round(p.at[1]) : Math.round(p.at[0]);
+  const g0 = Math.floor(u0), u = u0 - g0, ca = along === 0 ? corner(g0, line) : corner(line, g0), cb = along === 0 ? corner(g0 + 1, line) : corner(line, g0 + 1);
+  const fl = groundInfo((along === 0 ? u0 : line) * CELL + n[0] * 0.6, (along === 0 ? line : u0) * CELL + n[1] * 0.6).floor;
+  const top = p.prefab === 'tapestry' ? (p.top || 3.3) : p.prefab === 'banner' ? 4.2 : 2.3, foot = p.prefab === 'tapestry' ? top - (p.h || 1.6) : p.prefab === 'banner' ? 1.6 : 1.4;
+  const rec = (c, y) => {                                 // set back at corner c, height y: the corner's own setback, plus the bow at that height
+    const back = -((c.x - c.gx * CELL) * n[0] + (c.z - c.gz * CELL) * n[1]), dir = -(c.jx * n[0] + c.jz * n[1]);
+    const t = clamp((y - c.fo) / Math.max(0.5, c.c - c.fo), 0, 1) * 3, r0 = Math.floor(Math.min(2.999, t)), f = t - r0;
+    const k = r => Math.sin(Math.PI * r / 3) * c.bul * (0.6 + 0.8 * hrand(c.gx, c.gz, r * 7, 3));
+    return back + dir * lerp(k(r0), k(r0 + 1), f);
+  };
+  let m = Infinity; for (const y of [fl + foot, fl + (foot + top) / 2, fl + top]) m = Math.min(m, lerp(rec(ca, y), rec(cb, y), u));
+  return Math.max(0, m - 0.02);
+}
 function wallIn(w) { return w === 'N' ? [0, 1] : w === 'S' ? [0, -1] : w === 'E' ? [-1, 0] : w === 'W' ? [1, 0] : [0, 0]; }
 
 // ---- queries ----------------------------------------------------------------

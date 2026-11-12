@@ -41,6 +41,8 @@
   .invrow { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-top: 1px solid rgba(120,90,60,.25); }
   .invn { width: 26px; color: #d8c8a8; } .invl { flex: 1; } .invl.pot { color: #e8c060; } .invh { font-size: 12px; opacity: .7; width: 210px; }
   .invrow button { padding: 2px 10px; font-size: 13px; } .invempty, .invarms { font-size: 13px; opacity: .75; padding-top: 4px; }
+  #minimap { position: absolute; top: 14px; right: 16px; width: 176px; height: 176px; border-radius: 50%; border: 2px solid rgba(160,120,70,.55); box-shadow: 0 0 12px rgba(0,0,0,.8); background: rgba(10,8,6,.55); }
+  @media (max-width: 700px) { #minimap { width: 110px; height: 110px; } }
   #boss { position: absolute; top: 74px; left: 50%; transform: translateX(-50%); text-align: center; display: none; font-variant: small-caps; letter-spacing: 2px; color: #d8c8a8; text-shadow: 0 1px 2px #000; }
   #boss .bar { width: 360px; height: 8px; margin: 4px auto 0; }
   #carry { position: absolute; right: 16px; bottom: 14px; font-size: 14px; font-style: italic; color: rgba(163, 154, 133, 0.65); text-align: right; }
@@ -106,33 +108,34 @@
   <div id="debug"></div>
   <div id="status"><div>health <span id="hpNum">100</span></div><div class="bar"><div id="hpFill"></div></div></div>
   <div id="carry"></div>
+  <canvas id="minimap" width="176" height="176"></canvas>
   <div id="boss"><div id="bossName"></div><div class="bar"><div id="bossFill"></div></div></div>
 </div>
 <div id="overlay"><div class="panel"><h2>Loading the pits...</h2></div></div>
 
-<script src="js/version.js?v=f0fc9e0f1e"></script>
-<script src="js/util.js?v=f0fc9e0f1e"></script>
-<script src="js/textures.js?v=f0fc9e0f1e"></script>
-<script src="js/level.js?v=f0fc9e0f1e"></script>
-<script src="js/mesh.js?v=f0fc9e0f1e"></script>
-<script src="js/renderer.js?v=f0fc9e0f1e"></script>
-<script src="js/audio.js?v=f0fc9e0f1e"></script>
-<script src="js/splash.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/cast.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/rig.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/humanoid.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/pitthing.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/weeper.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/horse.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/broken.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/demon.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/yothga.js?v=f0fc9e0f1e"></script>
-<script src="js/chars/eagle.js?v=f0fc9e0f1e"></script>
-<script src="js/combat.js?v=f0fc9e0f1e"></script>
-<script src="js/beats.js?v=f0fc9e0f1e"></script>
-<script src="js/actors.js?v=f0fc9e0f1e"></script>
-<script src="js/skinned.js?v=f0fc9e0f1e"></script>
-<script src="js/game.js?v=f0fc9e0f1e"></script>
-<script src="js/gallery.js?v=f0fc9e0f1e"></script>
+<script src="js/version.js?v=ca81649581"></script>
+<script src="js/util.js?v=ca81649581"></script>
+<script src="js/textures.js?v=ca81649581"></script>
+<script src="js/level.js?v=ca81649581"></script>
+<script src="js/mesh.js?v=ca81649581"></script>
+<script src="js/renderer.js?v=ca81649581"></script>
+<script src="js/audio.js?v=ca81649581"></script>
+<script src="js/splash.js?v=ca81649581"></script>
+<script src="js/chars/cast.js?v=ca81649581"></script>
+<script src="js/chars/rig.js?v=ca81649581"></script>
+<script src="js/chars/humanoid.js?v=ca81649581"></script>
+<script src="js/chars/pitthing.js?v=ca81649581"></script>
+<script src="js/chars/weeper.js?v=ca81649581"></script>
+<script src="js/chars/horse.js?v=ca81649581"></script>
+<script src="js/chars/broken.js?v=ca81649581"></script>
+<script src="js/chars/demon.js?v=ca81649581"></script>
+<script src="js/chars/yothga.js?v=ca81649581"></script>
+<script src="js/chars/eagle.js?v=ca81649581"></script>
+<script src="js/combat.js?v=ca81649581"></script>
+<script src="js/beats.js?v=ca81649581"></script>
+<script src="js/actors.js?v=ca81649581"></script>
+<script src="js/skinned.js?v=ca81649581"></script>
+<script src="js/game.js?v=ca81649581"></script>
+<script src="js/gallery.js?v=ca81649581"></script>
 </body>
 </html>

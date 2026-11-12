@@ -65,8 +65,10 @@ function actorColliders(c, self) { for (const a of S.actors || []) if (!a.hidden
 const ACTOR_POSES = {
   stand: () => ({}),
   guard: () => ({ we: 1.35 }),                                                   // the long-shafted axe grounded beside him
-  sit: () => ({ txL: -1.45, txR: -1.35, sxL: 1.55, sxR: 1.45, tzL: 0.12, tzR: -0.12, lean: -0.3, unarmed: true, noShield: true, uxL: 0.2, fxL: -0.5, uzL: 0.35 }),
-  drink: t => ({ txL: -1.45, txR: -1.35, sxL: 1.55, sxR: 1.45, tzL: 0.12, tzR: -0.12, lean: -0.2, unarmed: true, noShield: true, uxR: -1.0 - 0.25 * Math.max(0, Math.sin(t * 1.7)), fxR: -2.3, uzR: -0.25, headX: -0.15 * Math.max(0, Math.sin(t * 1.7)) }),
+  // seated (on a divan): thighs level, shins straight down, back against the cushions, hands on the thighs (seat: about -0.45, the hips at the cushion)
+  sit: () => ({ txL: -1.57, txR: -1.5, sxL: 1.57, sxR: 1.5, tzL: 0.1, tzR: -0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1, uxR: -0.45, fxR: -0.9, uzR: 0.1 }),
+  drink: t => ({ txL: -1.57, txR: -1.5, sxL: 1.57, sxR: 1.5, tzL: 0.1, tzR: -0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1,
+    uxR: -1.0 - 0.25 * Math.max(0, Math.sin(t * 1.7)), fxR: -2.3, uzR: -0.25, headX: -0.15 * Math.max(0, Math.sin(t * 1.7)) }),
   speak: t => ({ uxR: -0.75 - 0.12 * Math.sin(t * 2.3), fxR: -0.7, uzR: 0.2, headX: 0.05 * Math.sin(t * 1.3) }),
   point: () => ({ uxR: -1.45, fxR: -0.1, uzR: 0.05 }),
   rush: t => ({ uxR: -2.2, fxR: -0.6, uzR: 0.2, lean: 0.2, twist: 0.2 }),          // sword up, running at you

@@ -385,7 +385,7 @@ function dynColliders(self) {
   const c = [];
   const sh = S.shukeli; if (sh.state !== 'dead') c.push({ x: sh.x, z: sh.z, r: 0.55 });
   const g = S.giant; if (!giantTaken()) c.push({ x: g.x, z: g.z, r: 0.6 });
-  for (const f of S.foes) if (!f.dead && f !== self && f.state !== 'dormant' && f.state !== 'lurk') c.push({ x: f.x, z: f.z, r: 0.42 });   // not one still clinging to the roof, or not yet come
+  for (const f of S.foes) if (!f.dead && f !== self && f.state !== 'dormant' && f.state !== 'lurk') c.push({ x: f.x, z: f.z, r: !self && FOES[f.cls].body || 0.42 });   // (a bulk like the weeping thing's is solid all the way out to its edge: you can't walk into it)   // not one still clinging to the roof, or not yet come
   const n = S.npc; if (n && n !== self && (self || S.onGround)) c.push({ x: n.x, z: n.z, r: 0.35 });   // (not in mid-leap: a jump isn't spoilt on him)
   if (!self && S.shamu) for (const r of S.shamu.riders) c.push({ x: r.x, z: r.z, r: 0.75 });   // a horse is a wall of muscle: you don't walk through it   // Pelias is flesh: you cannot walk through him
   actorColliders(c, self);
@@ -795,7 +795,15 @@ function updateGiant() {
   switch (g.state) {
     case 'wait':
       g.yaw = 0;
-      if (S.tick >= enterAt) { g.state = 'enter'; g.t = 0; S.door.target = 1; Sfx.clank(); Sfx.bars(); log('The grille creaks. A gigantic black man pads into the vault, stark naked, a huge sword in one hand and a bunch of keys in the other.', 'warn'); }
+      if (S.tick >= enterAt) { g.state = 'doze'; g.t = 0; fadeTarget = 1; log('Hunger and weariness and the long day drag at you. Your head sinks against the stone, and you sleep.', 'dim'); }
+      break;
+    case 'doze':                                         // asleep against the wall: you don't see him come in; you wake with him standing over you
+      if (g.t >= 2.2) {
+        g.x = 8.7 * CELL; g.z = 9.9 * CELL; g.yaw = Math.atan2(S.x - g.x, S.z - g.z); g.walk = 0;
+        S.door.open = S.door.target = 0.35;                // "pulling the grille partly to behind it"
+        g.state = 'gloat'; g.t = 0; g.line = 0; fadeTarget = 0; Sfx.clank();
+        log('A foot jars your ribs and you start awake. A gigantic black man stands over you, stark naked, a huge sword in one hand and a bunch of keys in the other; behind him the grille stands half open.', 'warn');
+      }
       break;
     case 'enter':
       if (g.z > 8.6 * CELL && S.door.target === 1) { S.door.target = 0.35; Sfx.clank(); }      // "pulling the grille partly to behind it"
@@ -1221,6 +1229,7 @@ function objective() {
   }
   if (LEVEL.level === 'e1m3') {
     const T = S.tun;
+    if (live('weeper') && f.walled_in && !f.choke_down) return f.burst_in ? 'Back to the far stones. Dodge as it lurches.' : 'Walled in. It is coming through.';
     if (live('weeper')) return 'Nothing you carry can harm it. RUN.';
     if (['driven', 'dark', 'side', 'dead_n', 'dead_s'].some(live)) return 'Fight!';
     if (!f.found_it) return 'Follow the weeping.';
@@ -1349,6 +1358,24 @@ function updateTunnels() {
   if (S.room === 'out1' && S.torch === 'lit') setFlag('got_out');
   // the fall of stones in the tunnel north: you can't shift it; the weeping thing, floundering after you, brings it down
   const CH = L.choke;
+  // and once you are round into the north tunnel with it after you, the roof comes down behind you too: walled in between two falls
+  if (CH && CH.behind && S.flags.found_it && !S.flags.choke_down) {
+    const [bx0, bz0, bx1, bz1] = CH.behind, wpk = S.foes.find(f => f.cls === 'weeper'), setNP = on => { for (let gz = bz0; gz < bz1; gz++) for (let gx = bx0; gx < bx1; gx++) { const i = cellIdx(gx, gz); if (on) LV.flags[i] |= F_NOPASS; else LV.flags[i] &= ~F_NOPASS; } };
+    const rd = f => Math.hypot(clamp(f.x, bx0 * CELL, bx1 * CELL) - f.x, clamp(f.z, bz0 * CELL, bz1 * CELL) - f.z);
+    if (!S.flags.walled_in && S.x > bx0 * CELL && S.x < bx1 * CELL && S.z > bz1 * CELL + 1.2 && S.z < CH.rect[1] * CELL && wpk && rd(wpk) > 4) {
+      setNP(true); setFlag('walled_in'); FLOW = null; Sfx.rumble(); punchView(0.1, 0.05);
+      for (let k = 0; k < 24; k++) particles.push({ m: 'drop', x: (bx0 + bx1) / 2 * CELL + (Math.random() - 0.5) * 4, y: 0.5 + Math.random() * 2, z: (bz0 + bz1) / 2 * CELL + (Math.random() - 0.5) * 2, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 1.2, max: 1.2, g: 9, s: 1.6 });
+      log('With a roar the roof comes down behind you as well: stones choke the way you came. You are walled in between two falls, and the weeping is coming.', 'warn');
+    }
+    if (S.flags.walled_in && !S.flags.burst_in && wpk && !['windup', 'strike', 'recover'].includes(wpk.state)) {   // it hears you behind the stones, and comes straight for them
+      wpk.state = 'investigate'; wpk.alert = true; wpk.tx = (bx0 + bx1) / 2 * CELL; wpk.tz = bz0 * CELL - 0.9;
+    }
+    if (S.flags.walled_in && !S.flags.burst_in && wpk && rd(wpk) < 2.4) {      // it comes on, and the fall behind you is nothing to its bulk
+      setNP(false); setFlag('burst_in'); FLOW = null; Sfx.rumble(); punchView(0.12, 0.06); wpk.state = 'recover'; wpk.t = -0.6;
+      for (let k = 0; k < 30; k++) particles.push({ m: 'drop', x: (bx0 + bx1) / 2 * CELL + (Math.random() - 0.5) * 4, y: 0.5 + Math.random() * 1.8, z: (bz0 + bz1) / 2 * CELL + (Math.random() - 0.5) * 2, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 1.2, max: 1.2, g: 9, s: 1.6 });
+      log('The stones behind you burst inward: the thing has come through them, its jelly heaving over the rubble toward you. Get your back to the other fall, and let it come.', 'warn');
+    }
+  }
   if (CH && !S.flags.choke_down) {
     const [x0, z0, x1, z1] = CH.rect.map(v => v * CELL), wpk = S.foes.find(f => f.cls === 'weeper');
     if (!S.hints.has('choke') && Math.hypot(clamp(S.x, x0, x1) - S.x, clamp(S.z, z0, z1) - S.z) < 3) { S.hints.add('choke'); log('A fall of stones chokes the tunnel, floor to roof: nothing you could shift. Behind you the weeping comes on, and the floor shudders under the weight of the thing.', 'warn'); }
@@ -1515,6 +1542,7 @@ function tick(inp) {
     inp = { fwd: 0, side: 0, run: false, jump: false, use: false, fire: false, kick: false };
     if (S.flags.the_end && mode === 'play') { finishLevel(); return; }
   }
+  if (S.giant && S.giant.state === 'doze') inp = { fwd: 0, side: 0, run: false, jump: false, use: false, fire: false, kick: false };   // asleep
   if (S.paralysed > 0) {                                  // the purple lotus: rigid, eyes open, falling back to the sky
     inp = { fwd: 0, side: 0, run: false, jump: false, use: false, fire: false, kick: false };
     S.pitch += (1.25 - S.pitch) * Math.min(1, DT * 1.5);
@@ -1730,7 +1758,38 @@ async function finishLevel() {
 }
 
 // ---------------------------------------------------------------- HUD
+// the explored map (top right): what you have seen of the level, turned to your heading, you at its heart. M hides it.
+// Drawn only: it reads the level and your position and keeps its own record of what you've seen, never touching the sim.
+let MAP_SEEN = null, MAP_LV = null, mapOn = true;
+function drawMinimap() {
+  const cv = $('minimap'); if (!cv) return;
+  cv.style.display = mapOn && mode !== 'splash' ? 'block' : 'none'; if (!mapOn || !S) return;
+  if (MAP_LV !== LV) { MAP_LV = LV; MAP_SEEN = new Uint8Array(LV.W * LV.H); }
+  const gx = Math.floor(S.x / CELL), gz = Math.floor(S.z / CELL), R0 = LEVEL.open ? 9 : 4;
+  for (let dz = -R0; dz <= R0; dz++) for (let dx = -R0; dx <= R0; dx++) {          // what is in sight from here (round about you, and not through rock)
+    const i = cellIdx(gx + dx, gz + dz); if (i < 0 || MAP_SEEN[i] || dx * dx + dz * dz > R0 * R0) continue;
+    const tx = (gx + dx + 0.5) * CELL, tz = (gz + dz + 0.5) * CELL, k = LV.kind[i];
+    if (LEVEL.open || Math.abs(dx) + Math.abs(dz) <= 1 || los(S.x, S.y + 1.5, S.z, tx, (k ? LV.floor[i] : S.y) + 1.2, tz)) MAP_SEEN[i] = 1;
+  }
+  const c = cv.getContext('2d'), W = cv.width, sc = LEVEL.open ? 3.2 : 7, mid = W / 2;
+  c.clearRect(0, 0, W, W); c.save(); c.beginPath(); c.arc(mid, mid, mid - 1, 0, Math.PI * 2); c.clip();
+  c.fillStyle = 'rgba(12,9,7,0.75)'; c.fillRect(0, 0, W, W);
+  c.translate(mid, mid); c.rotate(S.yaw); c.translate(-S.x / CELL * sc, -S.z / CELL * sc);   // your heading up
+  const span = Math.ceil(mid / sc * 1.5);
+  for (let z = gz - span; z <= gz + span; z++) for (let x = gx - span; x <= gx + span; x++) {
+    const i = cellIdx(x, z); if (i < 0 || !MAP_SEEN[i]) continue;
+    const k = LV.kind[i], f = LV.flags[i];
+    c.fillStyle = k === 0 ? 'rgba(0,0,0,0)' : k === 2 ? (LV.void[i] || LV.deep[i] ? '#120808' : '#3a2416') : (f & F_WATER) ? '#1c2a33' : (f & F_NOPASS) ? '#2a1d14' : (f & F_SKY) ? '#6b5a3c' : '#8a7553';
+    if (k) c.fillRect(x * sc, z * sc, sc + 0.6, sc + 0.6);
+    if (k) for (const [ddx, ddz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = cellIdx(x + ddx, z + ddz); if (j < 0 || LV.kind[j] === 0) { c.fillStyle = '#d8c39a'; c.fillRect(x * sc + (ddx > 0 ? sc - 1 : 0), z * sc + (ddz > 0 ? sc - 1 : 0), ddx ? 1.2 : sc + 0.6, ddz ? 1.2 : sc + 0.6); c.fillStyle = '#8a7553'; } }   // the walls' edge
+  }
+  if (S.npc && S.npc.mode !== 'bound') { c.fillStyle = '#7fa88a'; c.beginPath(); c.arc(S.npc.x / CELL * sc, S.npc.z / CELL * sc, 2.6, 0, Math.PI * 2); c.fill(); }
+  c.restore();
+  c.save(); c.translate(mid, mid); c.fillStyle = '#c4302b'; c.strokeStyle = '#1a0806'; c.beginPath(); c.moveTo(0, -7); c.lineTo(5, 6); c.lineTo(0, 3); c.lineTo(-5, 6); c.closePath(); c.fill(); c.stroke(); c.restore();   // you, facing up
+  c.fillStyle = 'rgba(216,195,154,.7)'; c.font = '10px serif'; c.textAlign = 'center'; c.save(); c.translate(mid, mid); c.rotate(S.yaw); c.fillText('N', 0, -mid + 12); c.restore();   // north, wherever it has turned
+}
 function updateHUD() {
+  drawMinimap();
   $('hpFill').style.width = Math.max(0, S.health) + '%';
   $('hpNum').textContent = Math.ceil(Math.max(0, S.health));
   const carry = [S.flags.has_bone ? 'thighbone (click to throw)' : S.weapon === 'fists' ? 'bare fists' : 'the ' + S.weapon + (S.weapon === 'spear' && S.spears.length ? ' (' + S.spears.length + ' more on your back)' : '')];
@@ -1939,7 +1998,9 @@ function render(alpha) {
     }
   }
   if (LEVEL.choke) { const [x0, z0, x1, z1] = LEVEL.choke.rect.map(v => v * CELL), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, fy = groundInfo(cx, cz).floor;
-    drawM(S.flags.choke_down ? 'choke_down' : 'choke', m4t(cx, fy, cz), sampleLight(cx, fy + 1, cz)); }
+    drawM(S.flags.choke_down ? 'choke_down' : 'choke', m4t(cx, fy, cz), sampleLight(cx, fy + 1, cz));
+    const B = LEVEL.choke.behind;                     // the fall behind you: down when it traps you, burst open when the thing comes through
+    if (B && S.flags.walled_in) { const bx = (B[0] + B[2]) / 2 * CELL, bz = (B[1] + B[3]) / 2 * CELL, by = groundInfo(bx, bz).floor; drawM(S.flags.burst_in ? 'choke_down' : 'choke', m4mul(m4t(bx, by, bz), m4ry(Math.PI)), sampleLight(bx, by + 1, bz)); } }
   // the planks: whole, shaking as they crack, and the halves tumbling into the dark when they go
   if (S.planks) LV.planks.forEach((p, i) => {
     const st = S.planks[i], dx = p.x1 - p.x0, dz = p.z1 - p.z0, L = Math.hypot(dx, dz), yaw = Math.atan2(dx, dz);
@@ -2169,6 +2230,7 @@ addEventListener('keydown', e => {
     case 'Digit4': wantWeapon = 'spear'; break;
     case 'KeyP': resIdx = (resIdx + 1) % RES_STEPS.length; onResize(); log('Render resolution: ' + RES_STEPS[resIdx] + ' lines.', 'dim'); break;
     case 'KeyK': log(Sfx.toggleMute() ? 'Sound off.' : 'Sound on.', 'dim'); break;
+    case 'KeyM': mapOn = !mapOn; drawMinimap(); break;
     case 'F4': e.preventDefault(); R.palette = !R.palette; log(R.palette ? 'Palette on: the Quake look.' : 'Palette off: full colour.', 'dim'); break;
   }
 });
