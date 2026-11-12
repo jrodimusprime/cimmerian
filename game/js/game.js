@@ -1873,7 +1873,7 @@ function render(alpha) {
     const gutter = 1 - Math.min(0.55, Math.abs(S.windNow) * 0.3) * (0.6 + 0.4 * Math.sin(gameTime * 23));
     const fl = (0.88 + 0.08 * Math.sin(gameTime * 11.3) + 0.05 * Math.sin(gameTime * 29.1)) * gutter;
     const tb = S.tun ? 1.35 : 1;                            // down in the tunnels it is the only light there is
-    lc = [1.0 * fl * tb, 0.62 * fl * tb, 0.3 * fl * tb]; lampRange = S.tun ? 18 : 15;
+    lc = [1.1 * fl * tb, 0.68 * fl * tb, 0.33 * fl * tb]; lampRange = S.tun ? 20 : 19;
     lampPos[0] -= Math.cos(S.yaw) * 0.4; lampPos[2] += Math.sin(S.yaw) * 0.4;
   }
   // torches gutter as Satha comes (rule 4: timing visible in the world)
@@ -2161,6 +2161,8 @@ function render(alpha) {
     else drawM('venom', m4trs(p.x, p.y, p.z, Math.atan2(p.vx, p.vz), 0, p.spin, 1.2), light, 0.5);
   }
   for (const p of particles) {
+    if (p.m === 'mote') { const a = p.life / p.max, k = Math.sin(a * Math.PI); drawM('drop', m4trs(p.x, p.y, p.z, 0, 0, 0, p.s * (0.4 + 0.6 * k)), [0.55 * k, 0.6 * k, 0.65 * k], 0.35 * k); continue; }
+    if (p.m === 'drip' || p.m === 'splash') { drawM('drop', m4trs(p.x, p.y, p.z, 0, 0, 0, p.m === 'splash' ? 0.5 : p.s), sampleLight(p.x, p.y, p.z), 0.2); continue; }
     const name = p.m === 'venom' ? 'venom' : p.m === 'blood' ? 'blood' : p.m === 'spark' ? 'spark' : 'drop';
     drawM(name, m4trs(p.x, p.y, p.z, p.life * 3, 0, 0, p.s * (p.life / p.max) * (p.m === 'venom' ? 0.4 : 1)), sampleLight(p.x, p.y, p.z), p.m === 'venom' || p.m === 'spark' ? 0.6 : 0);
   }
@@ -2211,10 +2213,32 @@ function render(alpha) {
   }
   R.present(fade, flash, flashCol);
 }
+// The places breathe (drawn only, never in the sim): water dripping from a cave's roof near you, and pale motes drifting up
+// out of a bottomless drop on the air that rises from it.
+let fxAcc = 0;
+function ambientFX(dt) {
+  if (LEVEL.open || mode !== 'play') return;
+  fxAcc += dt; if (fxAcc < 0.05) return; fxAcc = 0;
+  const gx0 = Math.floor(S.x / CELL), gz0 = Math.floor(S.z / CELL);
+  for (let k = 0; k < 3; k++) {
+    const gx = gx0 + Math.floor(Math.random() * 13) - 6, gz = gz0 + Math.floor(Math.random() * 13) - 6, i = cellIdx(gx, gz);
+    if (i < 0 || LV.kind[i] === 0) continue;
+    const x = (gx + Math.random()) * CELL, z = (gz + Math.random()) * CELL;
+    if (LV.kind[i] === 2 && LV.void[i] && particles.length < 160) {          // the breath of a well
+      const g = groundInfo(x, z), y0 = Math.max(g.floor, S.y - 6) + Math.random() * 2;
+      particles.push({ m: 'mote', x, y: y0, z, vx: (Math.random() - 0.5) * 0.2, vy: 0.5 + Math.random() * 0.6, vz: (Math.random() - 0.5) * 0.2, life: 4, max: 4, g: -0.05, s: 0.45 });
+    } else if (LV.kind[i] === 1 && LV.rough[i] >= 0.75 && Math.random() < 0.25 && particles.length < 160) {   // a drip from the roof
+      const g = groundInfo(x, z);
+      particles.push({ m: 'drip', x, y: g.ceil - 0.1, z, vx: 0, vy: 0, vz: 0, life: 1.2, max: 1.2, g: 9.8, s: 0.3 });
+    }
+  }
+}
 function updateParticles(dt) {
+  ambientFX(dt);
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.life -= dt; if (p.life <= 0) { particles.splice(i, 1); continue; }
+    if (p.m === 'drip' && p.y < groundInfo(p.x, p.z).floor + 0.05) { p.m = 'splash'; p.life = Math.min(p.life, 0.12); p.vy = 0; }
     p.vy -= (p.g || 0) * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
     const fl = groundInfo(p.x, p.z).floor; if (p.y < fl + 0.03) { p.y = fl + 0.03; p.vx *= 0.5; p.vz *= 0.5; p.vy = 0; }
   }

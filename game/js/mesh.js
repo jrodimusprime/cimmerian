@@ -35,6 +35,15 @@ class MeshBuilder {
     this.tri(a, b, c, layer, (a[0] + b[0] + c[0]) / 3 - ctr[0], (a[1] + b[1] + c[1]) / 3 - ctr[1], (a[2] + b[2] + c[2]) / 3 - ctr[2], col);
   }
   quad(a, b, c, d, layer, hx, hy, hz, col) { this.tri(a, b, c, layer, hx, hy, hz, col); this.tri(a, c, d, layer, hx, hy, hz, col); }
+  // a triangle with a colour per corner (baked occlusion: the light is multiplied into it later)
+  triV(a, b, c, layer, hx, hy, hz, ka, kb, kc) {
+    const n0 = this.n; this.tri(a, b, c, layer, hx, hy, hz);
+    if (this.n === n0) return;
+    const d = this.d, o1 = (n0 + 1) * 10, flip = d[o1] === c[0] && d[o1 + 1] === c[1] && d[o1 + 2] === c[2] && !(b[0] === c[0] && b[1] === c[1] && b[2] === c[2]);   // tri() wrote a, c, b
+    const ks = flip ? [ka, kc, kb] : [ka, kb, kc];
+    for (let q = 0; q < 3; q++) { const o = (n0 + q) * 10; d[o + 6] = ks[q]; d[o + 7] = ks[q]; d[o + 8] = ks[q]; }
+  }
+  quadV(a, b, c, d, layer, hx, hy, hz, ka, kb, kc, kd) { this.triV(a, b, c, layer, hx, hy, hz, ka, kb, kc); this.triV(a, c, d, layer, hx, hy, hz, ka, kc, kd); }
   quadC(a, b, c, d, layer, ctr, col) { this.triC(a, b, c, layer, ctr, col); this.triC(a, c, d, layer, ctr, col); }
   finish() { return this.d.slice(0, this.n * 10); }
 }
@@ -98,15 +107,37 @@ function addSpike(mb, bx, by, bz, dir, len, r, sides, layer, col = ONE3) {
   addLathe(mb, bx, by, bz, [[0, 0], [r, 0.02], [r, len * 0.72], [0, len]], sides, layer, 0.3, col, norm3(dir));
 }
 
+function addSkull(mb, x, y, z, yaw, seed, s = 1) {      // a skull: the cranium, the face under it with its dark sockets and nose, the teeth
+  const c = Math.cos(yaw), sn = Math.sin(yaw), P = (u, v) => [x + u * c + v * sn, z - u * sn + v * c];
+  addRock(mb, x, y + 0.13 * s, z, 0.12 * s, 0.11 * s, 0.14 * s, seed, T.BONE, 0.08);
+  const f = P(0, 0.09 * s); addRock(mb, f[0], y + 0.08 * s, f[1], 0.085 * s, 0.07 * s, 0.07 * s, seed + 1, T.BONE, 0.1);
+  for (const e of [-1, 1]) { const q = P(e * 0.045 * s, 0.14 * s); addRock(mb, q[0], y + 0.11 * s, q[1], 0.03 * s, 0.028 * s, 0.025 * s, seed + 2, T.BLACK, 0.1); }
+  const no = P(0, 0.155 * s); addRock(mb, no[0], y + 0.07 * s, no[1], 0.014 * s, 0.022 * s, 0.015 * s, seed + 3, T.BLACK, 0.1);
+  const t = P(0, 0.135 * s); addBox(mb, t[0], y + 0.03 * s, t[1], 0.05 * s, 0.012 * s, 0.01 * s, T.BONE, yaw);
+}
+function addLongBone(mb, a, b, r) {                     // a thigh- or arm-bone: a shaft and a knuckle at each end
+  addSeg(mb, a, b, r, r * 0.85, T.BONE, ONE3);
+  for (const [p, k] of [[a, 3], [b, 5]]) addRock(mb, p[0], p[1], p[2], r * 1.9, r * 1.5, r * 1.9, k + Math.floor(p[0] * 31), T.BONE, 0.3);
+}
 function addBones(mb, x, y, z, seed, big) {
   const r = new RNG(seed);
-  const n = big ? 3 : 1;
-  for (let s = 0; s < n; s++) {
+  for (let s = 0; s < (big ? 3 : 1); s++) {
     const ox = x + (s ? r.range(-0.6, 0.6) : 0), oz = z + (s ? r.range(-0.6, 0.6) : 0);
-    addRock(mb, ox, y + 0.12, oz, 0.16, 0.13, 0.19, seed + s, T.BONE, 0.15);
-    addBox(mb, ox + 0.04, y + 0.12, oz + 0.13, 0.04, 0.03, 0.02, T.BLACK, 0);
+    addSkull(mb, ox, y + (big && s === 0 ? 0.2 : 0), oz, r.range(0, 6.28), seed + s * 7, 0.95 + r.range(0, 0.25));
   }
-  for (let k = 0; k < (big ? 14 : 4); k++) addBox(mb, x + r.range(-0.9, 0.9), y + 0.04 + (big ? r.range(0, 0.25) : 0), z + r.range(-0.9, 0.9), 0.035, 0.035, r.range(0.15, 0.32), T.BONE, r.range(0, 3), ONE3, big ? r.range(-0.3, 0.3) : 0);
+  for (let k = 0; k < (big ? 12 : 4); k++) {             // long bones lying every way, heaped on one another in a pile
+    const cx = x + r.range(-0.85, 0.85), cz = z + r.range(-0.85, 0.85), a = r.range(0, 6.28), L = r.range(0.32, 0.5), h = y + 0.035 + (big ? r.range(0, 0.22) * (1 - Math.hypot(cx - x, cz - z)) : 0);
+    addLongBone(mb, [cx - Math.cos(a) * L / 2, h, cz - Math.sin(a) * L / 2], [cx + Math.cos(a) * L / 2, h + r.range(-0.05, 0.08), cz + Math.sin(a) * L / 2], 0.022);
+  }
+  for (let k = 0; k < (big ? 3 : 1); k++) {              // a run of ribs, still curving round nothing
+    const cx = x + r.range(-0.6, 0.6), cz = z + r.range(-0.6, 0.6), yaw = r.range(0, 6.28), c = Math.cos(yaw), sn = Math.sin(yaw);
+    for (let q = 0; q < 5; q++) for (let w = 0; w < 4; w++) {
+      const v = (q - 2) * 0.07, a0 = w / 4 * 1.4, a1 = (w + 1) / 4 * 1.4, R0 = 0.2 - q * 0.012;
+      const p0 = [cx + (Math.cos(a0) * R0) * c + v * sn, y + 0.02 + Math.sin(a0) * R0 * 0.6, cz - (Math.cos(a0) * R0) * sn + v * c];
+      const p1 = [cx + (Math.cos(a1) * R0) * c + v * sn, y + 0.02 + Math.sin(a1) * R0 * 0.6, cz - (Math.cos(a1) * R0) * sn + v * c];
+      addSeg(mb, p0, p1, 0.01, 0.009, T.BONE, ONE3);
+    }
+  }
 }
 
 // ---- prefabs baked into the level mesh (README: prefab library) ------------
@@ -158,11 +189,7 @@ function addPrefab(mb, p) {
       addLathe(mb, p.x, p.y, p.z, [[0.0, 0], [0.22, 0], [0.12, 0.08], [0.12, 0.48], [0.26, 0.5], [0.26, 0.58], [0, 0.6]], 6, T.WOOD);
       break;
     case 'bones': addBones(mb, p.x, p.y, p.z, Math.floor(p.x * 13 + p.z * 7), p.big); break;
-    case 'skull':
-      addRock(mb, p.x, p.y + 0.17, p.z, 0.17, 0.15, 0.2, 11, T.BONE, 0.08);
-      addBox(mb, p.x, p.y + 0.06, p.z + 0.08, 0.09, 0.05, 0.08, T.BONE);
-      addBox(mb, p.x - 0.06, p.y + 0.19, p.z + 0.17, 0.04, 0.035, 0.03, T.BLACK); addBox(mb, p.x + 0.06, p.y + 0.19, p.z + 0.17, 0.04, 0.035, 0.03, T.BLACK);
-      break;
+    case 'skull': addSkull(mb, p.x, p.y, p.z, p.rot || Math.floor(p.x * 7 + p.z * 3) * 0.7, Math.floor(p.x * 11 + p.z * 5), 1.2); break;
     case 'chains': {
       const bx = p.x + n[0] * 0.1, bz = p.z + n[1] * 0.1, yaw = Math.atan2(n[0], n[1]);
       addBox(mb, bx, p.y + 4.2, bz, 0.12, 0.12, 0.06, T.IRON, yaw);
@@ -431,6 +458,21 @@ function addPrefab(mb, p) {
       }
       break;
     }
+    case 'loculi': {                                      // an ossuary wall: stone shelves in tiers, dark recesses behind, skulls in rows on them and long bones stacked between
+      const t = [n[1], -n[0]], w = p.w || 1.1, yaw = Math.atan2(n[0], n[1]), sd = Math.floor(p.x * 13 + p.z * 17), tiers = p.tiers || 3;
+      addBox(mb, p.x + n[0] * 0.02, p.y + 0.35 + tiers * 0.55 / 2, p.z + n[1] * 0.02, w, tiers * 0.55 / 2 + 0.05, 0.02, T.BLACK, yaw);   // the dark of the recesses
+      for (let q = 0; q <= tiers; q++) addBox(mb, p.x + n[0] * 0.15, p.y + 0.32 + q * 0.55, p.z + n[1] * 0.15, w + 0.06, 0.04, 0.15, T.ASHLAR, yaw);   // the shelves
+      for (const e of [-1, 0, 1]) addBox(mb, p.x + n[0] * 0.15 + t[0] * e * w, p.y + 0.35 + tiers * 0.55 / 2, p.z + n[1] * 0.15 + t[1] * e * w, 0.05, tiers * 0.55 / 2 + 0.03, 0.15, T.ASHLAR, yaw);   // and the uprights
+      for (let q = 0; q < tiers; q++) {
+        const y = p.y + 0.36 + q * 0.55, row = hrand(sd, q, 1, 1) < 0.6;
+        if (row) for (let k = 0; k < 6; k++) { const u = -w + 0.2 + k * (2 * w - 0.4) / 5; if (Math.abs(u) < 0.08 || hrand(sd, q, k, 2) < 0.15) continue; addSkull(mb, p.x + n[0] * 0.15 + t[0] * u, y, p.z + n[1] * 0.15 + t[1] * u, yaw + (hrand(sd, q, k, 3) - 0.5) * 0.6, sd + q * 9 + k, 0.85); }
+        else for (let k = 0; k < 4; k++) for (const e of [-1, 1]) {
+          const h = y + 0.03 + k * 0.045, a = [p.x + n[0] * (0.08 + 0.05 * (k % 2)) + t[0] * e * 0.12, h, p.z + n[1] * (0.08 + 0.05 * (k % 2)) + t[1] * e * 0.12];
+          addLongBone(mb, a, [a[0] + t[0] * e * (w - 0.3), h, a[2] + t[1] * e * (w - 0.3)], 0.022);
+        }
+      }
+      break;
+    }
     case 'boulder': {                                     // a weathered boulder, sunk into the turf, often with a smaller one leaning on it
       const r = p.size, sd = Math.floor(p.x * 13 + p.z * 7);
       addRock(mb, p.x, p.y + r * 0.3, p.z, r, r * (0.6 + 0.3 * hrand(sd, 1, 2, 3)), r * (0.8 + 0.3 * hrand(sd, 2, 2, 3)), sd, T.ROCK, 0.45);
@@ -465,17 +507,26 @@ function addPrefab(mb, p) {
 
 // ---- the level mesh -------------------------------------------------------
 function wallStrip(mb, ca, cb, ba, bb, ta, tb, layer, hx, hz) {
-  const ROWS = 3;
-  let pA = null, pB = null;
+  const rough = Math.max(ca.bul, cb.bul) > 0.2;   // a cave wall: broken into ridges and hollows, set back into the rock
+  const ROWS = rough ? 6 : 3, COLS = rough ? 3 : 1;
+  const P = [];
   for (let r = 0; r <= ROWS; r++) {
-    const t = r / ROWS, s = Math.sin(Math.PI * t);
-    const ka = s * ca.bul * (0.6 + 0.8 * hrand(ca.gx, ca.gz, r * 7, 3));
-    const kb = s * cb.bul * (0.6 + 0.8 * hrand(cb.gx, cb.gz, r * 7, 3));
-    const A = [ca.x + ca.jx * ka, ba + (ta - ba) * t, ca.z + ca.jz * ka];
-    const B = [cb.x + cb.jx * kb, bb + (tb - bb) * t, cb.z + cb.jz * kb];
-    if (pA) mb.quad(pA, pB, B, A, layer, hx, 0, hz);
-    pA = A; pB = B;
+    const t = r / ROWS, s = Math.sin(Math.PI * t), row = [];
+    const ka = s * ca.bul * (0.6 + 0.8 * hrand(ca.gx, ca.gz, Math.round(t * 3 * 7), 3)), kb = s * cb.bul * (0.6 + 0.8 * hrand(cb.gx, cb.gz, Math.round(t * 3 * 7), 3));
+    for (let c = 0; c <= COLS; c++) {
+      const u = c / COLS;
+      let x = ca.x + ca.jx * ka + (cb.x + cb.jx * kb - ca.x - ca.jx * ka) * u, z = ca.z + ca.jz * ka + (cb.z + cb.jz * kb - ca.z - ca.jz * ka) * u;
+      if (rough && c > 0 && c < COLS) {                 // a ridge or a hollow between the corners, deeper toward the middle of the wall's height
+        const k = s * (0.12 + 0.5 * hrand(ca.gx * 7 + cb.gx, ca.gz * 7 + cb.gz, r * 5 + c, 4)) * CELL * 0.22;
+        x -= hx * k; z -= hz * k;
+      }
+      const y = ba + (ta - ba) * t + (bb - ba + (tb - ta - bb + ba) * t) * u, fl = ba + (bb - ba) * u, hgt = y - fl;
+      const deep = rough && c > 0 && c < COLS ? (0.12 + 0.5 * hrand(ca.gx * 7 + cb.gx, ca.gz * 7 + cb.gz, r * 5 + c, 4)) * s : 0;
+      row.push([x, y, z, (0.5 + 0.5 * smoothstep(0, 1.4, hgt)) * (1 - 0.18 * (1 - smoothstep(0, 0.35, 1 - t))) * (1 - 0.55 * deep)]);   // dark at its foot, under the roof, in its hollows
+    }
+    P.push(row);
   }
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const a = P[r][c], b = P[r][c + 1], e = P[r + 1][c + 1], f = P[r + 1][c]; mb.quadV(a, b, e, f, layer, hx, 0, hz, a[3], b[3], e[3], f[3]); }
 }
 function bakeLights(mb, lights, amb) {
   const d = mb.d;
@@ -491,7 +542,7 @@ function bakeLights(mb, lights, amb) {
       const k = att * lam * L.i;
       r += L.r * k; g += L.g * k; b += L.b * k;
     }
-    d[o + 6] = r; d[o + 7] = g; d[o + 8] = b;
+    d[o + 6] = r * d[o + 6]; d[o + 7] = g * d[o + 7]; d[o + 8] = b * d[o + 8];   // the vertex colour is its occlusion
   }
 }
 const AMBIENT = [0.07, 0.064, 0.056];
@@ -503,7 +554,7 @@ function addRibs(mb) {
   LV.spec.rooms.forEach((r, ri) => {
     if (r.style !== 'hewn' || r.solid || r.pit || r.sky || r.noribs || !r.size) return;
     const [w, d] = r.size, along = w >= d ? 'x' : 'z', L = Math.max(w, d), S = Math.min(w, d);
-    if (S > 3 || L < 4) return;
+    if (S > 4 || L < 4) return;
     for (let k = 2; k < L - 1; k += 2) {
       const line = along === 'x' ? r.at[0] + k : r.at[1] + k;           // the grid line the rib stands on
       const cells = [];
@@ -576,9 +627,19 @@ function buildLevelMesh() {
     const fLayer = k === 2 ? (LV.void[idx] ? T.BLACK : T.SLIME) : T[tex.floor];   // a deep pit's bottom is black: a drop, not a puddle
     const diag = hash4(i, j, 2, 3) & 1;
     const f0 = P(c0, fy(c0)), f1 = P(c1, fy(c1)), f2 = P(c2, fy(c2)), f3 = P(c3, fy(c3));
-    if (diag) { mb.tri(f0, f1, f2, fLayer, 0, 1, 0); mb.tri(f0, f2, f3, fLayer, 0, 1, 0); }
-    else { mb.tri(f0, f1, f3, fLayer, 0, 1, 0); mb.tri(f1, f2, f3, fLayer, 0, 1, 0); }
+    const ao = q => (q.ao === undefined ? 1 : q.ao), a0 = ao(c0), a1 = ao(c1), a2 = ao(c2), a3 = ao(c3);   // the floor darkens where it meets a wall
+    if (diag) { mb.triV(f0, f1, f2, fLayer, 0, 1, 0, a0, a1, a2); mb.triV(f0, f2, f3, fLayer, 0, 1, 0, a0, a2, a3); }
+    else { mb.triV(f0, f1, f3, fLayer, 0, 1, 0, a0, a1, a3); mb.triV(f1, f2, f3, fLayer, 0, 1, 0, a1, a2, a3); }
     const open = LEVEL.open && (fl & F_SKY);              // under the open sky: no ceiling, and no wall at the world's edge
+    if (k === 1 && LV.rough[idx] >= 0.75 && !LEVEL.open && !(fl & F_WATER) && hrand(i, j, 3, 78) < 0.09) {   // a puddle in a hollow of the cave floor, lying on it
+      const cx = (i + 0.3 + 0.4 * hrand(i, j, 1, 79)) * CELL, cz = (j + 0.3 + 0.4 * hrand(i, j, 2, 79)) * CELL, R0 = 0.5 + 0.5 * hrand(i, j, 4, 79), NP = 9;
+      const at = (a, rr) => { const x = cx + Math.cos(a) * rr, z = cz + Math.sin(a) * rr * 0.8; return [x, groundInfo(x, z).floor + 0.025, z]; };
+      const c = at(0, 0);
+      for (let q = 0; q < NP; q++) {
+        const a0 = q / NP * Math.PI * 2, a1 = (q + 1) / NP * Math.PI * 2, r0 = R0 * (0.7 + 0.5 * hrand(i, j, q, 80)), r1 = R0 * (0.7 + 0.5 * hrand(i, j, (q + 1) % NP, 80));
+        mb.tri(c, at(a0, r0 * 0.5), at(a1, r1 * 0.5), T.WATER, 0, 1, 0); mb.quad(at(a0, r0 * 0.5), at(a0, r0), at(a1, r1), at(a1, r1 * 0.5), T.WATER, 0, 1, 0);
+      }
+    }
     if (fl & F_WATER) {                                   // the moat: still black water a little below the banks
       const wy = LEVEL.waterY || -1;
       mb.quad([c0.x, wy, c0.z], [c1.x, wy, c1.z], [c2.x, wy, c2.z], [c3.x, wy, c3.z], T.WATER, 0, 1, 0);
@@ -588,8 +649,9 @@ function buildLevelMesh() {
     const cy = LEVEL.open && !(fl & F_SKY) ? q => (q.tall ? Math.min(q.c, LV.ceil[idx] + 0.2) : q.c) : q => q.c;   // (only a corner the sky shares: between two roofed cells the corner stays shared, watertight)
     const e0 = P(c0, cy(c0)), e1 = P(c1, cy(c1)), e2 = P(c2, cy(c2)), e3 = P(c3, cy(c3));
     if (!open) {
-      if (diag) { mb.tri(e0, e1, e2, cLayer, 0, -1, 0); mb.tri(e0, e2, e3, cLayer, 0, -1, 0); }
-      else { mb.tri(e0, e1, e3, cLayer, 0, -1, 0); mb.tri(e1, e2, e3, cLayer, 0, -1, 0); }
+      const cA = q => 0.55 + 0.45 * ao(q);
+      if (diag) { mb.triV(e0, e1, e2, cLayer, 0, -1, 0, cA(c0), cA(c1), cA(c2)); mb.triV(e0, e2, e3, cLayer, 0, -1, 0, cA(c0), cA(c2), cA(c3)); }
+      else { mb.triV(e0, e1, e3, cLayer, 0, -1, 0, cA(c0), cA(c1), cA(c3)); mb.triV(e1, e2, e3, cLayer, 0, -1, 0, cA(c1), cA(c2), cA(c3)); }
       if (k === 1 && LV.rough[idx] >= 0.75 && !LEVEL.open) for (let q = 0; q < 3; q++) {   // a cave's roof: dripstone hanging from it, clear of a man's head
         if (hrand(i, j, q + 40, 81) > 0.3) continue;
         const x = (i + 0.15 + 0.7 * hrand(i, j, q, 82)) * CELL, z = (j + 0.15 + 0.7 * hrand(i, j, q, 83)) * CELL, g = groundInfo(x, z), room = g.ceil - g.floor - 2.3;
@@ -613,6 +675,15 @@ function buildLevelMesh() {
           const u = 0.15 + 0.7 * hrand(i, j, q * 3 + d[0] * 5 + d[1] * 11, 72), ax = ca.x + (cb.x - ca.x) * u, az = ca.z + (cb.z - ca.z) * u;
           const sz = 0.12 + 0.3 * hrand(i, j, q + 9, 73), x = ax - d[0] * (sz + 0.12), z = az - d[1] * (sz + 0.12), y = groundInfo(x, z).floor;
           addRock(mb, x, y + sz * 0.35, z, sz * 1.3, sz * 0.8, sz * 1.1, i * 131 + j * 17 + q, q === 2 ? T.ROCK : T[tex.wall], 0.4);
+        }
+        if (hrand(i * 3 + d[0], j * 3 + d[1], 5, 74) < 0.22) {   // flowstone: a drape of it down the wall from the roof, sunk in the wall, never a hand out from it
+          const u = 0.3 + 0.4 * hrand(i, j, d[0] * 3 + d[1], 75), ax = ca.x + (cb.x - ca.x) * u, az = ca.z + (cb.z - ca.z) * u, g = groundInfo(ax - d[0] * 0.5, az - d[1] * 0.5);
+          const full = hrand(i, j, 7, 76) < 0.35, n = 7, sd = i * 37 + j * 11 + d[0] * 5;
+          for (let q = 0; q < n; q++) {
+            const t = q / (n - 1), y = g.ceil - (g.ceil - g.floor) * (full ? t : t * 0.6), r = full ? 0.32 + 0.12 * Math.sin(t * 9 + sd) : 0.38 * (1 - t * 0.7);
+            const x = ax - d[0] * (r * 0.55), z = az - d[1] * (r * 0.55), wob = (hrand(sd, q, 1, 77) - 0.5) * 0.25;
+            addRock(mb, x + d[1] * wob, y, z - d[0] * wob, r * (d[0] ? 0.7 : 1.1), (g.ceil - g.floor) / n * 0.9, r * (d[1] ? 0.7 : 1.1), sd + q, T[tex.wall], 0.35);
+          }
         }
       }
       else if (k === 2 && nk === 1) mb.quad(P(ca, ca.fp), P(cb, cb.fp), P(cb, cb.fo), P(ca, ca.fo), T[tex.wall], -d[0], 0, -d[1]);

@@ -458,7 +458,7 @@ const TEXGEN = {
     const id = hrand(Math.floor(sx), by, s, 3);
     let v = 0.55 + 0.12 * (id - 0.5) + 0.15 * (tfbm(px, py, 8, 3, s) - 0.5) + 0.12 * (1 - smoothstep(0.55, 1.6, ey)) * (ly < 0.5 ? 1 : -1.4);
     v -= 0.18 * smoothstep(0.6, 0.85, tfbmP(px, py, 10, 2, 3, s + 5));                  // soot and seep
-    return { v, ramp: 'ink', lo: 0.06, hi: 0.6, h: 0.03 };
+    return { v, ramp: 'ink', lo: 0.05, hi: 0.5, h: 0.03 };
   } },
   JET: { f: (x, y, s) => {                            // carven jet: polished black, cut in deep interlaced relief whose edges take the light, a dark jewel at each knot
     const px = x / 64, py = y / 64, u = (px * 4) % 1, v = (py * 4) % 1, cu = Math.floor(px * 4), cv = Math.floor(py * 4);

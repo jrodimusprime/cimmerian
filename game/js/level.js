@@ -584,7 +584,7 @@ const LEVEL_E1M1 = {
 // pits with him; Satha flees from what she sees in him; the dead jailer works the bolt.
 // ---------------------------------------------------------------------------
 const LEVEL_E1M4 = {
-  level: 'e1m4', next: 'e1m5', torch: true, title: 'Yothga', ramps: ['ink', 'jade', 'scarlet'], grid: [64, 36], ambient: [0.06, 0.06, 0.055], arms: 'sword',
+  level: 'e1m4', next: 'e1m5', torch: true, title: 'Yothga', ramps: ['ink', 'jade', 'scarlet'], grid: [64, 36], ambient: [0.075, 0.072, 0.065], arms: 'sword',
   intro: [['YOTHGA', 'title'], ['Within the bars lay a figure, "twined and bound about with the tendrils of a thick vine which seemed to grow through the solid stone of the floor." Crimson blossoms, "a livid, unnatural crimson, like a perversity of flower-life."', ''],
     ['You find a key for the cage among the keys you carry.', 'dim']],
   objectives: [['stem_cut', 'Cut the stem. Do not touch the roots.'], ['pelias_up', 'Wait for the freed man.'], ['works_crossed', 'Follow Pelias through the old works.'],
@@ -629,6 +629,7 @@ const LEVEL_E1M4 = {
     { prefab: 'bones', at: [7, 23.6], big: true }, { prefab: 'bones', at: [9.5, 23.6], big: true }, { prefab: 'bones', at: [12.5, 23.7], big: true }, { prefab: 'bones', at: [13.4, 26.5], big: true },
     { prefab: 'skull', at: [8, 23.4] }, { prefab: 'skull', at: [8.6, 23.4] }, { prefab: 'skull', at: [11, 23.4] }, { prefab: 'skull', at: [11.6, 23.4] }, { prefab: 'skull', at: [13.6, 25] },
     { prefab: 'chains', at: [12.2, 23], wall: 'N' }, { prefab: 'candles', at: [6.6, 27.3] },
+    { prefab: 'loculi', at: [7.6, 23], wall: 'N', w: 1.2 }, { prefab: 'loculi', at: [12.4, 23], wall: 'N', w: 1.0, tiers: 2 }, { prefab: 'loculi', at: [6, 25.5], wall: 'W', w: 1.2 }, { prefab: 'loculi', at: [14, 25.5], wall: 'E', w: 1.2 },
     
     { prefab: 'door', at: [32, 25.5], wall: 'W', open: 0.55, free: true }, { prefab: 'torch', at: [32, 24.5], wall: 'W', dim: 0.9 }, { prefab: 'torch', at: [32, 26.6], wall: 'W', dim: 0.9 },   // the stair ends at a door: the way out, standing ajar
     { prefab: 'torch', at: [6.5, 14], wall: 'N', dim: 0.7 }, { prefab: 'torch', at: [13.5, 22], wall: 'S', dim: 0.6 }, { prefab: 'torch', at: [31, 10], wall: 'N', dim: 0.6 },
@@ -1422,7 +1423,7 @@ function checkWallMounts(spec) {
 // Walls are not on the grid lines: each corner is set back into the rock (computeCorner: jx, jz) and each wall bows back
 // between floor and ceiling (mesh.js wallStrip: bul, in three rows). How far the real face stands behind the grid line at
 // a hung thing (its span along the wall, between its foot and its top), the least of it so nothing sinks into the stone.
-const HUNG = new Set(['tapestry', 'banner', 'trophy', 'pegs', 'sconce', 'chains', 'seep']);
+const HUNG = new Set(['tapestry', 'banner', 'trophy', 'pegs', 'sconce', 'chains', 'seep', 'loculi']);
 function wallRecess(p, n) {
   const along = n[0] === 0 ? 0 : 1, u0 = along === 0 ? p.at[0] : p.at[1], line = along === 0 ? Math.round(p.at[1]) : Math.round(p.at[0]);
   const g0 = Math.floor(u0), u = u0 - g0, ca = along === 0 ? corner(g0, line) : corner(line, g0), cb = along === 0 ? corner(g0 + 1, line) : corner(line, g0 + 1);
@@ -1486,7 +1487,7 @@ function computeCorner(gx, gz) {
   let jx = 0, jz = 0;
   if (nSolid > 0 && nSolid < 4) { const l = Math.hypot(sx, sz); if (l > 0.01) { jx = sx / l; jz = sz / l; } }
   const amt = (0.12 + 0.3 * h) * CELL * rough;
-  return { gx, gz, x: gx * CELL + jx * amt, z: gz * CELL + jz * amt, fo, fp, c, tall, jx, jz, bul: (0.1 + 0.35 * hrand(gx, gz, 5, 99)) * CELL * rough };
+  return { gx, gz, x: gx * CELL + jx * amt, z: gz * CELL + jz * amt, fo, fp, c, tall, jx, jz, bul: (0.1 + 0.35 * hrand(gx, gz, 5, 99)) * CELL * rough, ao: [1, 0.78, 0.62, 0.5, 1][nSolid] };   // ao: drawn only (mesh.js)
 }
 function corner(gx, gz) { return LV.corners[clamp(gz, 0, LV.H) * (LV.W + 1) + clamp(gx, 0, LV.W)]; }
 
