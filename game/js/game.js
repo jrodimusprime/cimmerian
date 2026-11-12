@@ -2122,15 +2122,16 @@ function render(alpha) {
         yaw += dy * w; hp = lerp(hp, Math.atan2(h[1] - (S.y + 0.4), Math.max(0.5, kd)) * 0.8, w);
       }
       const hm = m4trs(h[0], h[1], h[2], yaw, hp, 0, typeof SKINNED !== 'undefined' && SKINNED.satha_head ? 1.15 : 0.82);   // the built head: a viper's, broader than her neck
+      window.__sathaHM = hm;   // (for the test camera)
       const hl0 = sampleLight(h[0], h[1] + 1, h[2]), hl = [hl0[0] * SATHA_HEAD_L[0], hl0[1] * SATHA_HEAD_L[1], hl0[2] * SATHA_HEAD_L[2]]; hl.d = hl0.d;   // the head's own texture is pale: dim the light on it to match the dark hide
       if (h[1] > -10) {
         const held = S.giant && S.giant.state === 'seized';
-        const jaw = held ? 1.15 : clamp((S.satha.cool - 0.8) * 2.5, 0, 1);
+        const jaw = held ? 0.62 + 0.08 * Math.sin((S.giant.t + alpha * DT) * 9) * Math.max(0, 1 - S.giant.t / 2.4) : clamp((S.satha.cool - 0.8) * 2.5, 0, 1);   // clamped on him, working as he kicks
         if (held) {                                       // the strangler crosswise in her jaws, bent over them, kicking
           const gt = S.giant.t + alpha * DT, kick = Math.sin(gt * 9), ap = (m, v) => [0, 1, 2].map(i => m[i] * v[0] + m[4 + i] * v[1] + m[8 + i] * v[2] + m[12 + i]);
-          const c = ap(hm, [0, -0.32, 0.72]), ax = [hm[0], hm[1], hm[2]], al = Math.hypot(ax[0], ax[2]) || 1, bx = ax[0] / al, bz = ax[2] / al;
+          const c = ap(hm, SKINNED.satha_head ? [0, 0.38, 0.85] : [0, -0.2, 0.5]), ax = [hm[0], hm[1], hm[2]], al = Math.hypot(ax[0], ax[2]) || 1, bx = ax[0] / al, bz = ax[2] / al;   // his middle between her jaws, not under them
           const lim = Math.max(0, 1 - gt / 2.4);                                   // the kicking weakens
-          drawCharacter('giant', c[0] - bx * 1.05, c[1] - 0.25, c[2] - bz * 1.05, Math.atan2(bx, bz), { unarmed: true, pitch: Math.PI / 2, roll: 0.15 * kick * lim, lean: 0.9,
+          drawCharacter('giant', c[0] - bx * 1.0, c[1] - 0.15, c[2] - bz * 1.0, Math.atan2(bx, bz), { unarmed: true, pitch: Math.PI / 2, roll: 0.15 * kick * lim, lean: 0.9,
             headX: 0.6 + 0.3 * kick * lim, uxL: -1.2 + 0.7 * kick * lim, uxR: -1.6 - 0.6 * kick * lim, fxL: -0.8, fxR: -0.5, uzL: 0.5, uzR: 0.4,
             txL: -0.9 + 0.6 * kick * lim, txR: -0.4 - 0.6 * kick * lim, sxL: 1.1, sxR: 0.6 + 0.4 * kick * lim }, sampleLight(c[0], c[1], c[2]));
         }
