@@ -712,9 +712,10 @@ const LEVEL_E1M4 = {
 // his spell's silence, past sleepers, to Tsotha's chambers and the roof.
 // ---------------------------------------------------------------------------
 const HALL_TEX = { floor: 'FLAG', wall: 'HEWN', ceil: 'HEWN' };
+const RED_HALL = { floor: 'FLAG', wall: 'REDSTONE', ceil: 'HEWN' };   // the Scarlet Citadel's own red stone
 const LEVEL_E1M5 = {
   level: 'e1m5', next: 'e1m6', torch: true, title: 'The Scarlet Citadel', ramps: ['ink', 'scarlet', 'bronze'], grid: [70, 34], ambient: [0.07, 0.05, 0.045], arms: 'sword',
-  open: true, night: true, moon: [-0.6, 0.3, 0.5], sun: [0.3, -0.2, 0.9], fog: 0.0075, haze: [0.025, 0.027, 0.05],
+  open: true, night: true, mason: 'REDSTONE', moon: [-0.6, 0.3, 0.5], sun: [0.3, -0.2, 0.9], fog: 0.0075, haze: [0.025, 0.027, 0.05],
   intro: [['THE SCARLET CITADEL', 'title'], ['Up the long stair, Pelias leading. "Tsotha is away, riding for Shamar with the kings," he says. "His household will not trouble us tonight."', 'voice']],
   objectives: [['door_passed', 'Up the long stair behind Pelias, to the skull-crowned door.'], ['censers_passed', 'Through the silent citadel.'], ['in_chamber', 'On, behind Pelias.'], ['globe_ready', 'Drink.'],
     ['globe_seen', 'Look into Tsotha\'s crystal. (E)'], ['tower_climbed', 'Up the gold-worked stair to the pinnacles.'], ['beast_came', 'Across the battlements to the tallest tower.'], ['beast_called', 'Hear him out.'], ['zz', 'Mount, and ride.']],
@@ -735,25 +736,25 @@ const LEVEL_E1M5 = {
     { id: 'stairfoot', name: 'the foot of the long stair', at: [2, 18], size: [4, 5], h: 3, style: 'hewn' },
     { id: 'longstair', name: 'the long stair', at: [6, 19], size: [12, 3], h: 3, floor: 0.4, rise: 0.48, style: 'hewn' },
     { id: 'skulldoor', name: 'the brass, skull-crowned door', at: [18, 18], size: [3, 5], h: 3.4, floor: 6, style: 'hewn' },
-    { id: 'blackcorr', name: 'the black corridor', at: [21, 18], size: [16, 3], h: 2.8, floor: 6, style: 'hewn', tex: { floor: 'BLACKMAIL', wall: 'HEWN', ceil: 'HEWN' } },
-    { id: 'censer', name: 'the corridor of censers', at: [37, 8], size: [3, 15], h: 3.2, floor: 6, style: 'hewn', tex: HALL_TEX },
-    { id: 'guardhall', name: 'a hall with a golden-silled window', at: [40, 3], size: [12, 10], h: 4.2, floor: 6, vault: 1.2, style: 'hewn', tex: HALL_TEX },
-    { id: 'passage', name: 'a passage off the guard hall', at: [37, 4], size: [3, 2], h: 2.8, floor: 6, style: 'hewn', tex: HALL_TEX },
-    { id: 'barracks', name: 'the soldiers\' quarters', at: [21, 2], size: [16, 6], h: 3.2, floor: 6, style: 'hewn', tex: { floor: 'MUD', wall: 'HEWN', ceil: 'HEWN' } },
-    { id: 'armoury', name: 'the armoury', at: [14, 1], size: [7, 8], h: 3.6, floor: 6, vault: 0.8, style: 'hewn', tex: HALL_TEX },
-    { id: 'chambers', name: 'a gold-domed chamber, floored with silver', at: [52, 5], size: [8, 8], h: 4.6, floor: 6, vault: 1.6, style: 'hewn', tex: { floor: 'TABARD', wall: 'HEWN', ceil: 'GILT' } },
-    { id: 'towerstair', name: 'a flight of marble, gold-worked stairs', at: [60, 7], size: [3, 17], h: 3, floor: 6.4, rise: 0.5, riseAxis: 'z', style: 'hewn' },
-    { id: 'roof1', name: 'the battlements', at: [57, 24], size: [6, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SKY' } },
+    { id: 'blackcorr', name: 'the black corridor', at: [21, 18], size: [16, 3], h: 2.8, floor: 6, style: 'hewn', tex: { floor: 'BLACKMAIL', wall: 'JET', ceil: 'BLACK' } },
+    { id: 'censer', name: 'the corridor of censers', at: [37, 8], size: [3, 15], h: 3.2, floor: 6, style: 'hewn', tex: RED_HALL },
+    { id: 'guardhall', name: 'a hall with a golden-silled window', at: [40, 3], size: [12, 10], h: 4.2, floor: 6, vault: 1.2, style: 'hewn', tex: RED_HALL },
+    { id: 'passage', name: 'a passage off the guard hall', at: [37, 4], size: [3, 2], h: 2.8, floor: 6, style: 'hewn', tex: RED_HALL },
+    { id: 'barracks', name: 'the soldiers\' quarters', at: [21, 2], size: [16, 6], h: 3.2, floor: 6, style: 'hewn', tex: { floor: 'MUD', wall: 'REDSTONE', ceil: 'HEWN' } },
+    { id: 'armoury', name: 'the armoury', at: [14, 1], size: [7, 8], h: 3.6, floor: 6, vault: 0.8, style: 'hewn', tex: RED_HALL },
+    { id: 'chambers', name: 'a gold-domed chamber, floored with silver', at: [52, 5], size: [8, 8], h: 4.6, floor: 6, vault: 1.6, style: 'hewn', tex: { floor: 'TABARD', wall: 'REDSTONE', ceil: 'GILT' } },
+    { id: 'towerstair', name: 'a flight of marble, gold-worked stairs', at: [60, 7], size: [3, 17], h: 3, floor: 6.4, rise: 0.5, riseAxis: 'z', style: 'hewn', tex: { floor: 'ASHLAR', wall: 'ASHLAR', ceil: 'GILT' } },
+    { id: 'roof1', name: 'the battlements', at: [57, 24], size: [6, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'REDSTONE', ceil: 'SKY' } },
     { id: 'gap1', name: 'a gap in the battlements', at: [56, 24], size: [1, 5], floor: 14.5, pit: 40, void: true, sky: true, style: 'hewn' },
-    { id: 'roof2', name: 'the battlements', at: [50, 24], size: [6, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SKY' } },
+    { id: 'roof2', name: 'the battlements', at: [50, 24], size: [6, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'REDSTONE', ceil: 'SKY' } },
     { id: 'gap2', name: 'a gap in the battlements', at: [49, 24], size: [1, 5], floor: 14.5, pit: 40, void: true, sky: true, style: 'hewn' },
-    { id: 'roof3', name: 'the battlements', at: [43, 24], size: [6, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SKY' } },
+    { id: 'roof3', name: 'the battlements', at: [43, 24], size: [6, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'REDSTONE', ceil: 'SKY' } },
     { id: 'gap3', name: 'a gap in the battlements', at: [42, 24], size: [1, 5], floor: 14.5, pit: 40, void: true, sky: true, style: 'hewn' },
     { id: 'gap4', name: 'a gap in the battlements', at: [33, 24], size: [1, 5], floor: 14.5, pit: 40, void: true, sky: true, style: 'hewn' },
-    { id: 'roof5', name: 'the battlements', at: [26, 24], size: [7, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SKY' } },
+    { id: 'roof5', name: 'the battlements', at: [26, 24], size: [7, 5], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'REDSTONE', ceil: 'SKY' } },
     { id: 'gap5', name: 'a gap in the battlements', at: [25, 24], size: [1, 5], floor: 14.5, pit: 40, void: true, sky: true, style: 'hewn' },
-    { id: 'roof6', name: 'the roof of the tallest tower', at: [16, 24], size: [9, 6], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SKY' } },
-    { id: 'roof4', name: 'the battlements', at: [34, 23], size: [8, 7], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'HEWN', ceil: 'SKY' } },
+    { id: 'roof6', name: 'the roof of the tallest tower', at: [16, 24], size: [9, 6], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'REDSTONE', ceil: 'SKY' } },
+    { id: 'roof4', name: 'the battlements', at: [34, 23], size: [8, 7], floor: 14.5, sky: true, style: 'hewn', tex: { floor: 'FLAG', wall: 'REDSTONE', ceil: 'SKY' } },
   ],
   shafts: [], links: [],
   planks: [{ from: [48.9, 27.5], to: [50.1, 27.5] }],
@@ -773,6 +774,7 @@ const LEVEL_E1M5 = {
     { prefab: 'bunk', at: [24, 6.6] }, { prefab: 'bunk', at: [29, 6.6] }, { prefab: 'bunk', at: [34, 6.6] }, { prefab: 'cask', at: [26.5, 2.7] }, { prefab: 'cask', at: [31.5, 5.4], lie: true },
     { prefab: 'pegs', at: [27, 2], wall: 'N' }, { prefab: 'trophy', at: [32, 2], wall: 'N', bare: true }, { prefab: 'chest', at: [35.6, 3.0] }, { prefab: 'table', at: [30, 4.3] },
     { prefab: 'rack', at: [14, 3], wall: 'W' }, { prefab: 'spear_rack', at: [14, 6.5], wall: 'W' }, { prefab: 'pegs', at: [17.5, 1], wall: 'N' }, { prefab: 'trophy', at: [17.5, 9], wall: 'S' },
+    { prefab: 'sconce', at: [15.5, 9], wall: 'S' }, { prefab: 'sconce', at: [19.8, 1], wall: 'N' }, { prefab: 'sconce', at: [15, 1], wall: 'N' },
     { prefab: 'divan', at: [57.5, 11.6], yaw: Math.PI }, { prefab: 'tapestry', at: [56, 13], wall: 'S', w: 1.1, h: 2.2, top: 3.4 }, { prefab: 'tapestry', at: [56, 5], wall: 'N', w: 1.2, h: 2.0, top: 3.4 },
     { prefab: 'sconce', at: [60, 16], wall: 'W' }, { prefab: 'sconce', at: [63, 20], wall: 'E' },
   ],
@@ -897,7 +899,7 @@ const LEVEL_E1M6 = {
     { prefab: 'rack', at: [53, 7], wall: 'W' }, { prefab: 'spear_rack', at: [53, 10], wall: 'W' }, { prefab: 'rack', at: [64, 11.5], wall: 'E' },
     { prefab: 'chains', at: [60.5, 2], wall: 'N' }, { prefab: 'brazier', at: [61, 12] },
     { prefab: 'standard', at: [45, 14], rot: 1.2 }, { prefab: 'bones', at: [22, 20] }],
-  lights: [{ at: [54, -0.4], y: 19, col: [1.0, 0.7, 0.4], rad: 6, i: 1.4 }, { at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 2.2 },
+  lights: [{ at: [54, -0.4], y: 19, col: [1.0, 0.7, 0.4], rad: 6, i: 1.4 }, { at: [54, 1.0], y: 19, col: [1.0, 0.8, 0.55], rad: 12, i: 1.3 },
     { at: [150, 30], y: 60, col: [1.0, 0.62, 0.4], rad: 900, i: 1.7, sky: true }],   // the crimson dawn on Tamar's roofs and streets
   items: [{ kind: 'wine', name: 'Arpello\'s wine-flask', heal: 40, at: [44, 13] }, { kind: 'bread', name: 'a guard\'s bread', heal: 30, at: [48.5, 21.5] }, { kind: 'wine', name: 'a guard\'s wine-skin', heal: 35, at: [52.5, 23.5] }, { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [9, 16] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [24, 22] },
     { kind: 'wine', name: 'archer\'s wine-skin', heal: 35, at: [40, 21] }, { kind: 'bread', name: 'soldier\'s bread', heal: 30, at: [53, 20] },
@@ -961,7 +963,7 @@ const LEVEL_E1M6 = {
 // its near side (x 33-38, z 8-13), the south tower against its far side (x 42-47, z 28-33). Each tower is a shell of timber and
 // hides round a solid core, and a stair of single-cell steps runs round three sides of the core inside it.
 function siegeLines() {
-  const BANK = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' }, HIDES = { floor: 'PLANK', wall: 'HIDE', ceil: 'HIDE' }, WALK = { floor: 'PLANK', wall: 'MUD', ceil: 'SUNSET' };
+  const BANK = { floor: 'TURF', wall: 'MUD', ceil: 'SUNSET' }, HIDES = { floor: 'PLANK', wall: 'BULLHIDE', ceil: 'BULLHIDE' }, WALK = { floor: 'PLANK', wall: 'MUD', ceil: 'SUNSET' };
   const IN = { floor: 'PLANK', wall: 'PLANK', ceil: 'PLANK' };
   const R = [
     { id: 'bankW', solid: true, at: [39, 4], size: [1, 36], top: 7.2, tex: BANK }, { id: 'bankE', solid: true, at: [41, 4], size: [1, 36], top: 7.2, tex: BANK },
@@ -1380,7 +1382,7 @@ function buildLevel(spec) {
     else if (p.prefab === 'campfire') { LV.flames.push({ x, y: prop.y + 0.2, z, w: 0.8, h: 1.0 }, { x: x + 0.15, y: prop.y + 0.2, z: z - 0.1, w: 0.5, h: 0.7 }); LV.lights.push({ x, y: prop.y + 1.2, z, r: 1.0, g: 0.55, b: 0.22, rad: 13, i: 1.5 }); }
     else if (p.prefab === 'seep') LV.lights.push({ x: x + wallIn(p.wall)[0] * 0.8, y: prop.y + 1.0, z: z + wallIn(p.wall)[1] * 0.8, r: 0.25, g: 0.6, b: 0.4, rad: 9.5, i: 0.95 });   // its own faint phosphor
     else if (p.prefab === 'fungus') LV.lights.push({ x, y: prop.y + 0.5, z, r: 0.3, g: 0.6, b: 0.45, rad: 7, i: 0.8 });
-    else if (p.prefab === 'sconce') LV.flames.push({ x: x + wallIn(p.wall)[0] * 0.22, y: prop.y + 2.0, z: z + wallIn(p.wall)[1] * 0.22, w: 0.06, h: 0.12 });
+    else if (p.prefab === 'sconce') { LV.flames.push({ x: x + wallIn(p.wall)[0] * 0.22, y: prop.y + 2.0, z: z + wallIn(p.wall)[1] * 0.22, w: 0.06, h: 0.12 }); LV.lights.push({ x: x + wallIn(p.wall)[0] * 0.6, y: prop.y + 2.0, z: z + wallIn(p.wall)[1] * 0.6, r: 1.0, g: 0.66, b: 0.34, rad: 10, i: 1.4 }); }   // two candle-stubs: a small warm pool
   }
   // parapets: a crenellated wall along every edge of a high masonry roof that drops away into the void (not across a gap
   // meant to be leapt: level ground two or three cells over), so its edge has a body and a man doesn't walk off it

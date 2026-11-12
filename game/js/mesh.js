@@ -394,7 +394,7 @@ function addPrefab(mb, p) {
         const a = hrand(sd, k, 2, 2) * 6.283, r = Math.sqrt(hrand(sd, k, 3, 3)) * 1.3, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, y = groundInfo(x, z).floor;
         const yaw = from + (hrand(sd, k, 4, 4) - 0.5) * 0.4, tilt = 0.5 + hrand(sd, k, 5, 5) * 0.35, L = 0.55 + hrand(sd, k, 6, 6) * 0.3;
         const dx = Math.sin(yaw) * Math.sin(tilt), dy = Math.cos(tilt), dz = Math.cos(yaw) * Math.sin(tilt), top = [x + dx * L, y + dy * L, z + dz * L];
-        addSeg(mb, [x - dx * 0.05, y - dy * 0.05, z - dz * 0.05], top, 0.012, 0.012, T.WOOD, ONE3);
+        addLathe(mb, x - dx * 0.05, y - dy * 0.05, z - dz * 0.05, [[0.012, 0], [0.012, L + 0.05]], 3, T.WOOD, 0, ONE3, [dx, dy, dz]);   // the shaft (three-sided: it is a finger thick)
         for (const q of [0, 1.57]) {                     // the fletching: two crossed vanes
           const ux = Math.cos(yaw + q) * 0.035, uz = -Math.sin(yaw + q) * 0.035, b = [top[0] - dx * 0.16, top[1] - dy * 0.16, top[2] - dz * 0.16];
           mb.quad([b[0] - ux, b[1], b[2] - uz], [b[0] + ux, b[1], b[2] + uz], [top[0] + ux * 0.6, top[1], top[2] + uz * 0.6], [top[0] - ux * 0.6, top[1], top[2] - uz * 0.6], T.FEATHER, uz, 0, -ux);
@@ -656,7 +656,8 @@ function buildLevelMesh() {
   // under the open sky a building has a body: the masonry about a roofed room stands up to just over its ceiling, with a
   // top, an outer face toward the sky and a roof over the room, not the bare inner planes of the room seen from behind
   const ROOF = 0.35, roofed = (x, z) => x >= 0 && z >= 0 && x < W && z < H && LV.kind[z * W + x] !== 0 && !(LV.flags[z * W + x] & F_SKY);
-  const masonTex = (x, z, w) => { const t = x >= 0 && z >= 0 && x < W && z < H ? LV.tex[z * W + x] : null; return t && LV.kind[z * W + x] === 0 && T[t[w]] !== undefined ? T[t[w]] : T.HEWN; };   // a solid room's own face (an earth bank, raw hides), or plain masonry
+  const MASON = T[LEVEL.mason] ?? T.HEWN;                // a level's own building stone (the Scarlet Citadel's is red)
+  const masonTex = (x, z, w) => { const t = x >= 0 && z >= 0 && x < W && z < H ? LV.tex[z * W + x] : null; return t && LV.kind[z * W + x] === 0 && T[t[w]] !== undefined ? T[t[w]] : MASON; };   // a solid room's own face (an earth bank, raw hides), or plain masonry
   const roofTop = (x, z) => { if (x >= 0 && z >= 0 && x < W && z < H && LV.kind[z * W + x] === 0 && LV.top[z * W + x] > 0) return LV.top[z * W + x]; let t = -Infinity; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (roofed(x + dx, z + dz)) t = Math.max(t, LV.ceil[(z + dz) * W + x + dx]); return t + ROOF; };
   if (LEVEL.open) for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const idx = j * W + i, x0 = i * CELL, x1 = x0 + CELL, z0 = j * CELL, z1 = z0 + CELL;
@@ -672,12 +673,12 @@ function buildLevelMesh() {
       }
     } else if (!(LV.flags[idx] & F_SKY)) {                 // a roofed room: a roof over it
       const t = LV.ceil[idx] + ROOF;
-      mb.quad([x0, t, z0], [x0, t, z1], [x1, t, z1], [x1, t, z0], T.HEWN, 0, 1, 0);
+      mb.quad([x0, t, z0], [x0, t, z1], [x1, t, z1], [x1, t, z0], MASON, 0, 1, 0);
       for (const d of DIRS) {                             // and a band of stone over its ceiling's edge where it opens onto the sky
         const nx = i + d[0], nz = j + d[1]; if (nx < 0 || nz < 0 || nx >= W || nz >= H) continue;
         const nI = nz * W + nx; if (LV.kind[nI] === 0 || !(LV.flags[nI] & F_SKY)) continue;
         const ax = (i + d[2]) * CELL, az = (j + d[3]) * CELL, bx = (i + d[4]) * CELL, bz = (j + d[5]) * CELL, b = LV.ceil[idx] - 0.05;
-        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], LV.tex[idx] && T[LV.tex[idx].wall] !== undefined && LEVEL.level === 'e1m7' ? T[LV.tex[idx].wall] : T.HEWN, d[0], 0, d[1]);   // (a siege tower's lintel is timber)
+        mb.quad([ax, b, az], [bx, b, bz], [bx, t, bz], [ax, t, az], LV.tex[idx] && T[LV.tex[idx].wall] !== undefined && LEVEL.level === 'e1m7' ? T[LV.tex[idx].wall] : MASON, d[0], 0, d[1]);   // (a siege tower's lintel is timber)
       }
     }
   }
@@ -756,9 +757,9 @@ function buildLevelMesh() {
   addRibs(mb);
   for (const q of LV.parapets || []) {                  // the crenellated parapet: a low wall, merlons on it, a round post at each end of a run
     const len = Math.hypot(q.x1 - q.x0, q.z1 - q.z0), yaw = Math.atan2(q.x1 - q.x0, q.z1 - q.z0), mx = (q.x0 + q.x1) / 2, mz = (q.z0 + q.z1) / 2;
-    addBox(mb, mx, q.y + 0.5, mz, 0.22, 0.5, len / 2, T.HEWN, yaw);
-    for (let k = 0; k < 2; k++) { const u = (k + 0.5) / 2 - 0.5, x = mx + (q.x1 - q.x0) * u, z = mz + (q.z1 - q.z0) * u; addBox(mb, x, q.y + 1.22, z, 0.24, 0.24, len * 0.16, T.HEWN, yaw); }
-    for (const [x, z] of [[q.x0, q.z0], [q.x1, q.z1]]) addLathe(mb, x, q.y, z, [[0.3, 0], [0.3, 1.05], [0.36, 1.1], [0.36, 1.25], [0, 1.3]], 8, T.HEWN);   // rounded off where runs meet
+    addBox(mb, mx, q.y + 0.5, mz, 0.22, 0.5, len / 2, MASON, yaw);
+    for (let k = 0; k < 2; k++) { const u = (k + 0.5) / 2 - 0.5, x = mx + (q.x1 - q.x0) * u, z = mz + (q.z1 - q.z0) * u; addBox(mb, x, q.y + 1.22, z, 0.24, 0.24, len * 0.16, MASON, yaw); }
+    for (const [x, z] of [[q.x0, q.z0], [q.x1, q.z1]]) addLathe(mb, x, q.y, z, [[0.3, 0], [0.3, 1.05], [0.36, 1.1], [0.36, 1.25], [0, 1.3]], 8, MASON);   // rounded off where runs meet
   }
   if (LEVEL.open) {                                       // the plain runs on past the boulders to the horizon, with low hills far off
     const X = W * CELL, Z = H * CELL, F = 1600, g = -0.05, ring = [[-F, -F], [X + F, -F], [X + F, Z + F], [-F, Z + F]], inner = [[0, 0], [X, 0], [X, Z], [0, Z]];

@@ -18,7 +18,7 @@ const TEX_NAMES = ['HEWN', 'ROCK', 'FLAG', 'SLIME', 'WATER', 'IRON', 'WOOD', 'SC
   'CAVE', 'MUD', 'GRIME', 'PALE', 'SICK', 'PLANK', 'SCRATCH', 'TALLY1', 'TALLY2', 'TALLY3',
   'TURF', 'GILT', 'HIDE', 'SUNSET', 'BLACKMAIL', 'FACE_BRUTE', 'FACE_EUNUCH', 'FACE_VULTURE', 'SATHA_HEAD', 'SATHA_JAW', 'PIT_HIDE', 'PIT_HEAD', 'PIT_JAW',
   'LIVERY_POITAIN', 'LIVERY_PELLIA', 'LIVERY_BOSSON', 'LIVERY_GUNDER', 'VELVET', 'TAWNY', 'DEMON_HIDE', 'YOTHGA_STEM', 'YOTHGA_BLOOM', 'YOTHGA_LEAF',
-  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC', 'OAK', 'ASHLAR', 'JET', 'WINDOWS'];
+  'FACE_CONAN', 'FACE_SAGE', 'FACE_OUTLAW', 'FEATHER', 'FLAME0', 'FLAME1', 'FLAME2', 'FLAME3', 'JELLY', 'TAPESTRY', 'MOSAIC', 'OAK', 'ASHLAR', 'JET', 'WINDOWS', 'REDSTONE', 'BULLHIDE'];
 const T = {};
 TEX_NAMES.forEach((n, i) => { T[n] = i; });
 const TEX_SIZE = 128;
@@ -479,6 +479,26 @@ const TEXGEN = {
       return lit ? { v: 0.55 + 0.35 * hrand(cx, cy, s, 2), ramp: 'fire', lo: 0.3, hi: 0.85, e: 1 } : { v: 0.02, ramp: 'ink', lo: 0, hi: 0.1 };
     }
     return { v: 0.25 + 0.25 * tfbm(px, py, 8, 3, s) - (Math.abs(v - 0.98) < 0.03 ? 0.15 : 0), ramp: 'ink', lo: 0.04, hi: 0.35, h: 0.03 };
+  } },
+  REDSTONE: { pre: s => TEXGEN.HEWN.pre(s), f: (x, y, s, rows) => {   // the Scarlet Citadel's own stone: the same great courses, red as old blood
+    const r = TEXGEN.HEWN.f(x, y, s, rows);
+    if (r.ramp === 'jade') return { v: r.v * 0.8, ramp: 'earth', lo: 0.02, hi: 0.4, h: r.h };
+    if (r.hi && r.hi <= 0.3) return r;                                             // the joints stay dark
+    const px = x / 64, py = y / 64;
+    let row = 0; while (row < 3 && py >= rows[row].y1) row++;
+    const R = rows[row], bxr = (px + R.off) % 1; let bi = 0; while (bi < R.cuts.length - 2 && bxr > R.cuts[bi + 1]) bi++;
+    const blk = hrand(row, bi, s, 12);                                                // block by block
+    return { v: r.v * 0.85, ramp: blk < 0.3 ? 'earth' : 'scarlet', lo: 0.02, hi: blk < 0.3 ? 0.42 : 0.46, h: r.h };   // weathered unevenly: some courses gone dun
+  } },
+  BULLHIDE: { f: (x, y, s) => {                        // "hung with raw bull-hides": hides lapped like shingles and laced at the seams, hair and raw side, the timber showing between
+    const px = x / 64, py = y / 64, row = Math.floor(py * 3), off = (row % 2) * 0.5, col = Math.floor(px * 2 + off), u = px * 2 + off - col, v = py * 3 - row;
+    const id = hrand(col, row, s, 3), edge = Math.min(u, 1 - u) * 2, sag = 0.06 * Math.sin(u * Math.PI);
+    if (v > 0.9 - sag) return { v: 0.08, ramp: 'earth', lo: 0, hi: 0.3 };                                      // the shadow under the lap
+    if (edge < 0.05 && Math.floor(v * 10) % 2 === 0) return { v: 0.6, ramp: 'bronze', lo: 0.1, hi: 0.5 };       // the lacing
+    if (edge < 0.035) return { v: 0.1, ramp: 'earth', lo: 0, hi: 0.3 };
+    const hair = 0.6 * tfbm(px, py, 16, 3, s + 5) + 0.4 * tfbm(px, py, 4, 2, s + 6), raw = id > 0.6 && tfbm(px, py, 6, 3, s + 9) > 0.58;
+    if (raw) return { v: 0.3 + 0.3 * tfbm(px, py, 12, 2, s), ramp: 'scarlet', lo: 0.03, hi: 0.3 };              // the raw side, turned out
+    return { v: 0.2 + 0.25 * id + 0.35 * hair - 0.15 * v, ramp: 'earth', lo: 0.04, hi: 0.5, h: 0.03 };
   } },
   CAVE: { f: (x, y, s) => {                           // wet limestone: bedded in layers, flowstone running down it, pocked
     const px = x / 64, py = y / 64, drip = tfbmP(px, py, 20, 2, 3, s), lumps = tfbm(px, py, 4, 4, s + 5);
