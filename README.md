@@ -15,14 +15,14 @@ A free, non-commercial browser game: a first-person sword-and-sorcery adaptation
 > | Level | Golden run | Est. first-time (4×) |
 > |---|---|---|
 > | `e1m1` The Plain of Shamu | 2:12 (9496 ticks) | ~8.8 min |
-> | `e1m2` The Pits | 3:53 (16777 ticks) | ~15.5 min |
+> | `e1m2` The Pits | 4:08 (17822 ticks) | ~16.5 min |
 > | `e1m3` The Tunnels Below | 2:15 (9732 ticks) | ~9.0 min |
 > | `e1m4` Yothga | 3:24 (14682 ticks) | ~13.6 min |
 > | `e1m5` The Scarlet Citadel | 3:14 (13991 ticks) | ~13.0 min |
 > | `e1m6` The Tower of Tamar | 2:04 (8908 ticks) | ~8.2 min |
 > | `e1m7` The Relief of Shamar | 3:24 (14701 ticks) | ~13.6 min |
 > | `e1m8` The Tybor | 3:19 (14346 ticks) | ~13.3 min |
-> | **Campaign** | **23:45** (102633 ticks) | **~95 min** |
+> | **Campaign** | **24:00** (103678 ticks) | **~96 min** |
 > | **Total** | **≥ 90 min** | | |
 
 **Play order.** The campaign is played in the book's order: it opens on the plain of Shamu, the king's last stand, and the pits come second.
@@ -956,3 +956,5 @@ Tsotha's demon birth, which sets up "son of—".
   - *Done:* three found and rendered in the game in its den, at its size: Slime Mold (Grefuntor, CC-BY 3.0), Oozey the Slime (Mophs, CC-BY 3.0) and Frog Guy (Drummyfish, CC0). Oozey was picked: a mound of ooze rising into a frog's head, a gaping toothy maw, eyes on stalks. It is a static mesh, so the game makes it live: it breathes and quakes, heaves with its sobs and shudders as it titters, rears back before a strike and lunges forward into it, hitches its bulk as it moves, and drools from its lip. Scaled to 3 m across, the size of its body. Credited in §17.
 - [x] make the maps look cooler: textures, look, style; an hour of iterating on each level
   - *Done:* all of it drawn only (the sim, the bots and every state hash are unchanged). **Everywhere:** a sky of its own, per pixel (a sunset of banked clouds lit gold toward a barred sun over far ranges; a crimson dawn, violet above, at Tamar; a night of stars, a river of them and a moon over Khorshemish), and an ordered dither before the palette snap, so gradients stipple as Quake's did instead of banding. The stone redone: dressed blocks with lit and shadowed arrises and thin joints, raw rock bedded in layers and split along wandering joints, bedded limestone with wet flowstone, trodden mud with a few stones, tufted turf, finer ashlar, carven jet with dark jewels, the Scarlet Citadel's own red stone, lapped and laced bull-hides on the siege towers. Baked occlusion: walls dark at their feet and under the roof, floors dark along the walls. Dressed corridors ribbed in bays, each arch on pilasters. Caves: walls broken into ridges and hollows, flowstone drapes, puddles, water dripping from the roofs, pale motes rising out of the bottomless drops. Bones with knuckles, ribs and skulls with sockets; open water takes the sky's glare; wall sconces light their walls; the torch reaches further. **e1m1:** the volleys' arrows slanting in the turf, broken lances against the sky, shields, mounds of dead, grass, torn banners on the heap, a thinner mist. **e1m2:** slime seeps and pale fungus glowing jade in the pits; the conclave's jet carven, lit up from its braziers. **e1m4:** the ossuary's walls shelved in tiers of skulls. **e1m5:** Khorshemish lamplit below the battlements, the moon lighting what stands under the sky; the citadel red; Tsotha's chamber gold-domed; the tower stair marble. **e1m6:** Tamar below the leads and its multitude in the square. **e1m7, e1m8:** Shamar's walls and towers on the skyline; the wreck of the battle; reed-beds along the Tybor.
+- [x] e1m2: when the guy is walking you with the chain, you can't see the chain; he should have two men walking with him, protecting him, until you are in the dungeon
+  - *Done:* on the march from the conclave down to the vault one of Tsotha's blacks walks before you with your chain in his fist, and you see it, running from your manacles to his hand, sagging between and dragging if you lag. Two more walk at his shoulders with their axes, and the fourth at your back; Tsotha leads. They keep their places all the way down to the brass door (before, the four walked at your elbows and behind you, where you never saw them).

@@ -1,6 +1,6 @@
 // Golden playthrough of e1m2, The Pits, through the CIM agent API (README §11).
 // It plays the level in the book's order, using only player inputs.
-const EXPECTED = { tick: 16777, hash: 'b048f1f3' };
+const EXPECTED = { tick: 17822, hash: 'eb033552' };
 await ev(`
 const C = 2.5;
 window.__face = (x, z, pitch = 0) => { const s = CIM.state; return CIM.step({ yaw: Math.atan2(-(x - s.x), -(z - s.z)), pitch }, 1); };
@@ -109,7 +109,7 @@ let o = await O('(CIM.load("e1m2"), CIM.step({}, 1))');
 // THE CONCLAVE (ch. II): hear them out; answer them, refuse the parchment, spit in Amalrus's eyes; then go where they march you
 for (const want of ['answer', 'refuse', 'spit']) log('conclave:', want, await ev(`(() => { for (let i = 0; i < 4000; i++) { const t = interactTarget; if (t && t.type === 'act' && t.f.id === '${want}') { CIM.step({ use: true, yaw: CIM.state.yaw, pitch: CIM.state.pitch }, 1); return CIM.state.tick; } __wait(1); } return -1; })()`));
 o = await O(`(() => { for (let i = 0; i < 6000 && !CIM.state.flags.marched; i++) __wait(1);
-  for (let i = 0; i < 12000 && !CIM.state.flags.in_vault; i++) { const a = actor('tsotha'), s = CIM.state, d = Math.hypot(a.x - s.x, a.z - s.z); CIM.step({ forward: d > 2.6 ? 1 : 0, yaw: Math.atan2(-(a.x - s.x), -(a.z - s.z)), pitch: 0 }, 1); }
+  for (let i = 0; i < 12000 && !CIM.state.flags.in_vault; i++) { const a = actor('tsotha'), s = CIM.state, d = Math.hypot(a.x - s.x, a.z - s.z); CIM.step({ forward: d > 4.2 ? 1 : 0, yaw: Math.atan2(-(a.x - s.x), -(a.z - s.z)), pitch: 0 }, 1); }
   return CIM.obs(); })()`); log('vault:', brief(o));
 // THE VAULT (puzzle): lie still while Satha passes; the black; the keys at your feet
 for (let i = 0; i < 240 && !o.flags.keys_down; i++) o = await O('__wait(36)');

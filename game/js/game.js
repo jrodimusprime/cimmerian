@@ -1925,6 +1925,23 @@ function render(alpha) {
       }
     }
   }
+  // the march: the chain from your manacles to the fist of the black who leads you (it sags between, and drags if you lag)
+  for (const a of S.actors || []) {
+    if (!a.leash || a.hidden) continue;
+    const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw), ay = groundInfo(a.x, a.z).floor;
+    const A = [a.x - fx * 0.2 + fz * 0.5, ay + 1.0, a.z - fz * 0.2 - fx * 0.5];   // his left fist, held out from his hip
+    const f = camFwd(), B = [px + f[0] * 0.38, eyeY - 0.78, pz + f[2] * 0.38];         // your wrists, held before you
+    const L = 2.85, NL = 16, dx = B[0] - A[0], dz = B[2] - A[2], dh = Math.hypot(dx, dz), d = Math.hypot(dh, B[1] - A[1]);
+    const sag = d < L ? Math.sqrt(L * L - d * d) * 0.5 : 0;
+    let prevP = null;
+    for (let i = 0; i <= NL; i++) {
+      const t = i / NL, x = A[0] + dx * t, z = A[2] + dz * t;
+      const y = Math.max(groundInfo(x, z).floor + 0.03, A[1] + (B[1] - A[1]) * t - sag * 4 * t * (1 - t));
+      const P = [x, y, z];
+      if (prevP) { const ex = P[0] - prevP[0], ey = P[1] - prevP[1], ez = P[2] - prevP[2]; drawM('link', m4trs((P[0] + prevP[0]) / 2, (P[1] + prevP[1]) / 2, (P[2] + prevP[2]) / 2, Math.atan2(ex, ez), -Math.atan2(ey, Math.hypot(ex, ez)), i % 2 ? Math.PI / 2 : 0, 1.35), sampleLight(x, y + 0.5, z)); }
+      prevP = P;
+    }
+  }
   const nt = feature('niche_torch');
   if (nt && !S.flags.has_torch) {
     const tm = m4trs(nt.x + 0.16, nt.y + 0.1, nt.z, 0, 0, -0.25, 1.3), ll = [1, 0.7, 0.45]; ll.d = [0, 1, 0];   // a hand torch, about a metre long

@@ -6,7 +6,8 @@
 // and moved by beats:  act: { <id>: { to: [cx, cz] | [[cx, cz], ...], sp, pose, yaw, face: 'player'|<id>|null,
 //                                     lead: metres, escort: { of: <id>, side, back }, at, show, hide, seat } }
 //   lead: walk the path, but wait whenever the hero is more than that far behind (Tsotha leading the march)
-//   escort: keep a place beside the hero, side metres to his right and back metres behind, facing <of>
+//   escort: keep a place beside the hero, side metres to his right and back metres behind (ahead, if back < 0), facing <of>
+//   leash: he holds the prisoner's chain (drawn from his fist to the manacles)
 // Everything lives in S and runs in the tick, so it is deterministic.
 // ---------------------------------------------------------------------------
 function actorsInit() {
@@ -25,6 +26,7 @@ function directActors(spec) {
     if ('face' in d) a.face = d.face;
     if ('lead' in d) a.lead = d.lead;
     if ('escort' in d) a.escort = d.escort;
+    if ('leash' in d) a.leash = d.leash;
     if ('seat' in d) a.seat = d.seat;
     if (d.show) a.hidden = false;
     if (d.hide) a.hidden = true;
@@ -44,9 +46,12 @@ function updateActors() {
     if (a.hidden) continue;
     if (a.escort) {                                     // a guard at the prisoner's elbow, between him and any thought of running
       const of = actor(a.escort.of), fx = of ? of.x - S.x : -Math.sin(S.yaw), fz = of ? of.z - S.z : -Math.cos(S.yaw), fl = Math.hypot(fx, fz) || 1;
-      const ux = fx / fl, uz = fz / fl, tx = S.x + uz * a.escort.side - ux * a.escort.back, tz = S.z - ux * a.escort.side - uz * a.escort.back;
+      const ux = fx / fl, uz = fz / fl;
+      let back = a.escort.back;
+      if (back < 0 && of) back = Math.max(back, -(fl - 1.4));   // a place ahead of the prisoner (back < 0), but never on the heels of the man he follows
+      const tx = S.x + uz * a.escort.side - ux * back, tz = S.z - ux * a.escort.side - uz * back;
       const d = Math.hypot(tx - a.x, tz - a.z);
-      if (d > 0.4) actorStep(a, tx, tz, Math.min(5, 1 + d * 1.6));
+      if (d > 0.4) actorStep(a, tx, tz, back < 0 ? Math.min(6, 1 + d * 3) : Math.min(5, 1 + d * 1.6));   // (the one ahead hurries more, to keep his place before you)
       if (d < 1.2) a.yaw = turnTo(a.yaw, Math.atan2(ux, uz), 4 * DT);
       continue;
     }
@@ -65,6 +70,7 @@ function actorColliders(c, self) { for (const a of S.actors || []) if (!a.hidden
 const ACTOR_POSES = {
   stand: () => ({}),
   guard: () => ({ we: 1.35 }),                                                   // the long-shafted axe grounded beside him
+  lead: () => ({ we: 1.35, uxL: 0.35, fxL: -0.25, uzL: 0.45 }),                   // the axe in his right hand, his left fist back at his hip with the prisoner's chain in it
   // seated (on a divan): thighs level, shins straight down, back against the cushions, hands on the thighs (seat: about -0.45, the hips at the cushion)
   sit: () => ({ txL: -1.57, txR: -1.5, sxL: 1.57, sxR: 1.5, tzL: 0.1, tzR: -0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1, uxR: -0.45, fxR: -0.9, uzR: 0.1 }),
   drink: t => ({ txL: -1.57, txR: -1.5, sxL: 1.57, sxR: 1.5, tzL: 0.1, tzR: -0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1,

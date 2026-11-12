@@ -225,14 +225,15 @@ const LEVEL_E1M2 = {
     // "At the wizard's gesture, the blacks laid hold of their prisoner and marched him behind Tsotha"
     { id: 'c_march', needs: ['dusted'], quiet: true, after: 1.0, sets: 'marched',
       act: { tsotha: { pose: 'stand', face: null, to: [[61, 24.6], [57.5, 24.9], [50, 24.9], [45.9, 24.8], [45.9, 21.2]], sp: 1.7, lead: 6 },
-        g1: { pose: 'guard', escort: { of: 'tsotha', side: -1.3, back: 0.4 } }, g3: { pose: 'guard', escort: { of: 'tsotha', side: 1.3, back: 0.4 } },
-        g2: { pose: 'guard', escort: { of: 'tsotha', side: -0.9, back: 2.0 } }, g4: { pose: 'guard', escort: { of: 'tsotha', side: 0.9, back: 2.0 } } },
+        // one black walks before you with your chain in his fist, two at his shoulders with their axes, the fourth at your back
+        g1: { pose: 'lead', leash: true, escort: { of: 'tsotha', side: 0, back: -2.4 } }, g2: { pose: 'guard', escort: { of: 'tsotha', side: -1.35, back: -2.9 } },
+        g3: { pose: 'guard', escort: { of: 'tsotha', side: 1.35, back: -2.9 } }, g4: { pose: 'guard', escort: { of: 'tsotha', side: 0.3, back: 1.9 } } },
       lines: [['At the wizard\'s gesture the blacks lay hold of you and march you out behind him, into a winding corridor floored with many-hued mosaics, where golden censers swing in dreamy perfumed clouds.', '']] },
     { id: 'c_jet', at: 'jetcorr', needs: ['marched'],
       lines: [['Down a smaller corridor, done in jet and black jade, gloomy and awful, to a brass door over whose arch a human skull grins. At the door stands a fat, repellent figure dangling a bunch of keys: Tsotha\'s chief eunuch, Shukeli.', '']] },
     // "The brass door let onto a narrow stair that seemed to wind down into the very bowels of the hill ... They made the king fast to a ring in the stone wall."
     { id: 'c_down', at: ['jetcorr', 'brassdoor'], needs: ['marched'], quiet: true, after: 1.0, sets: 'in_vault', teleport: [6.9, 9.6, -Math.PI / 2], sathaIn: 22,
-      act: { tsotha: { at: [8.7, 9.9], face: 'player', lead: 0, to: [] }, g1: { hide: true, escort: null }, g2: { hide: true, escort: null }, g3: { hide: true, escort: null }, g4: { hide: true, escort: null },
+      act: { tsotha: { at: [8.7, 9.9], face: 'player', lead: 0, to: [] }, g1: { hide: true, escort: null, leash: false }, g2: { hide: true, escort: null }, g3: { hide: true, escort: null }, g4: { hide: true, escort: null },
         shukeli: { hide: true }, strabonus: { hide: true }, amalrus: { hide: true }, g5: { hide: true }, g6: { hide: true }, g7: { hide: true }, g8: { hide: true } },
       lines: [['Down a narrow stair that winds into the very bowels of the hill; through an iron door built to withstand the battering of rams, and a grille of steel bars with a bolt that works only from outside. The blacks make you fast to a ring in the stone wall, set a torch in the niche above your head, and file out in stumbling haste, casting fearful glances at the dark.', ''],
         ['Tsotha: "And so, farewell, barbarian. I must ride to Shamar, and the siege. In ten days I will be in your palace in Tamar, with my warriors. What word from you shall I say to your women, before I flay their dainty skins for scrolls whereon to chronicle the triumphs of Tsotha-lanti?"', 'voice'],

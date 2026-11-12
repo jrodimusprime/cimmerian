@@ -1,3 +1,3 @@
 'use strict';
 // the build stamp (test/build_stamp.sh): a hash of the code; recordings and scripts are fetched with it
-const BUILD = 'b7a64cef53';
+const BUILD = '97d1930193';
