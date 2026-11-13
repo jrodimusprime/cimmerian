@@ -70,7 +70,8 @@ function drawOozey(f, l, t) {
   const M = SKINNED.oozey, S = new Float32Array(32 * 16); S.set(m4ident(), 0);
   const titter = f.alert ? 1 : 0, hitch = f.moving ? Math.sin(f.walk * 2.4) : 0;
   const sob = titter ? 0.03 * Math.sin(t * 15) : 0.05 * Math.max(0, Math.sin(t * 2.2)) ** 2;          // weeping, slow heaves; tittering, a fast shudder
-  const rear = f.state === 'windup' ? smoothstep(0, 0.4, f.t) : 0, lunge = f.state === 'strike' ? 1 : f.state === 'recover' ? Math.max(0, 1 - f.t * 2) : 0;
+  const W = FOES.weeper, rear = f.state === 'windup' ? smoothstep(0, W.windup * 0.7, f.t) : f.state === 'strike' ? 1 - smoothstep(0, W.strike * 0.6, f.t) : 0;   // it rears, gathering its bulk,
+  const lunge = f.state === 'strike' ? 1 - Math.pow(1 - Math.min(1, f.t / W.strike), 3) : f.state === 'recover' ? 1 - smoothstep(W.recover * 0.25, W.recover, f.t) : 0;   // then heaves it all forward, and sags back
   const sy = (1 + 0.035 * Math.sin(t * 1.3) + sob + 0.12 * rear - 0.12 * lunge) * (1 - 0.07 * hitch), sxz = 1 / Math.sqrt(sy);
   const quake = 0.025 * Math.sin(t * 3.1) + 0.015 * Math.sin(t * 7.3 + 1);                              // the quaking jelly
   const root = m4mul(m4trs(f.x, f.y, f.z, f.yaw, 0, 0, 1), m4mul(m4trs(0, 0, 0.55 * lunge, 0, -0.18 * rear + 0.3 * lunge, quake, 1),

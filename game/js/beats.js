@@ -189,9 +189,9 @@ function drawNPC() {
   const n = S.npc; if (!n) return;
   const y = groundInfo(n.x, n.z).floor, l = sampleLight(n.x, y + 1.4, n.z);
   const P = poseIdle({}, gameTime);
-  if (n.moving) poseWalk(P, n.walk * 3.4, 0.8);
+  poseMove(P, n);
   if (n.shy) Object.assign(P, { lean: -0.12, headX: 0.15, uxL: -0.7, fxL: -1.7, uzL: 0.15 });   // an arm up across him, wary
-  if (n.mode === 'bound') Object.assign(P, { uxL: -2.4, uxR: -2.4, uzL: 0.5, uzR: 0.5, headX: 0.5, drop: -0.1, lean: 0.15 });   // held up in the vine's grip
+  if (n.mode === 'bound') Object.assign(P, { plant: 0, gait: null, uxL: -2.4, uxR: -2.4, uzL: 0.5, uzR: 0.5, headX: 0.5, drop: -0.1, lean: 0.15 });   // held up in the vine's grip
   if (n.mode === 'stand') Object.assign(P, { headX: 0.35, lean: 0.12, uxL: -0.35, uxR: -0.4, fxL: -1.3, fxR: -1.2, uzL: -0.25, uzR: -0.25 });   // head bowed, chafing the wrists the vine held
   if (n.mode === 'cast') {                                // one hand out to what he speaks to, the other low
     const k = smoothstep(0, 0.8, n.t - (n.castAt || 0));
@@ -225,8 +225,10 @@ function drawAllies() {
       if (Math.hypot(x - S.x, z - S.z) > 120) continue;
       const y = groundInfo(x, z).floor, P = poseIdle({}, gameTime * 0.8 + k);
       if (a.loose) {                                     // nock, draw, loose, and again: each man on his own rhythm
-        const cyc = 4.2 + (k % 5) * 0.31, ph = ((gameTime + k * 1.37) % cyc) / cyc, draw = ph < 0.55 ? smoothstep(0.1, 0.55, ph) : ph < 0.6 ? 1 : 1 - smoothstep(0.6, 0.8, ph);
-        Object.assign(P, { uxL: lerp(-0.4, -1.5, draw), fxL: lerp(-0.6, -0.1, draw), uxR: lerp(-0.4, -1.3, draw), fxR: lerp(-0.8, -1.6, draw), headX: -0.1 * draw, twist: -0.25 * draw });
+        const cyc = 4.2 + (k % 5) * 0.31, tc = (gameTime + k * 1.37) % cyc, B = { windup: cyc * 0.56, strike: cyc * 0.04, recover: cyc * 0.4 };   // (loosed at 0.58 of the cycle, when allyArrow lets it fly)
+        const st = tc < B.windup ? 'windup' : tc < B.windup + B.strike ? 'strike' : 'recover', t0 = st === 'windup' ? 0 : st === 'strike' ? B.windup : B.windup + B.strike;
+        Object.assign(P, GUARD.bow(CAST[a.id] || {}));
+        keyPose(P, { state: st, t: Math.min(tc - t0, B[st] * 0.999), homeX: k, combo: 0 }, B, ATTACKS.bow(CAST[a.id] || {}));   // the archers' draw, as the foes' (combat.js)
         allyArrow(a, k, x, y, z, cyc, (gameTime + k * 1.37) % cyc);
       }
       else Object.assign(P, { we: 1.35 });
@@ -237,12 +239,13 @@ function drawAllies() {
   for (const m of S.allyMen || []) {
     if (Math.hypot(m.x - S.x, m.z - S.z) > 120) continue;
     const y = groundInfo(m.x, m.z).floor, P = poseIdle({}, gameTime * 0.8 + m.k);
-    if (m.mv) poseWalk(P, m.walk * 3.4, 0.8, false);
-    if (m.tgt) {                                         // pike levelled; draw back, then drive it home
+    poseMove(P, m, false, { moving: !!m.mv });
+    if (m.tgt) {                                         // pike levelled; draw back, then drive it home, stepping in
+      P.gait = null;
       const u = m.t;
-      if (u < 0.5) { const k = smoothstep(0, 0.5, u); Object.assign(P, { uxR: lerp(-0.6, 0.35, k), fxR: lerp(-1.3, -1.9, k), twist: -0.35 * k, lean: -0.1 * k, we: 0.05 }); }
-      else if (u < 0.75) { const k = smoothstep(0.5, 0.62, u); Object.assign(P, { uxR: lerp(0.35, -1.45, k), fxR: lerp(-1.9, -0.05, k), twist: lerp(-0.35, 0.2, k), lean: 0.3 * k, we: 0.0 }); }
-      else { const k = smoothstep(0.75, 1.4, u); Object.assign(P, { uxR: lerp(-1.45, -0.6, k), fxR: lerp(-0.05, -1.3, k), lean: 0.3 * (1 - k), we: 0.05 }); }
+      if (u < 0.5) { const k = smoothstep(0, 0.5, u); Object.assign(P, { uxR: lerp(-0.6, 0.35, k), fxR: lerp(-1.3, -1.9, k), twist: -0.35 * k, lean: -0.1 * k, wel: 0.05, waz: 0, txL: -0.35 * k, sxL: 0.45 * k, txR: 0.2 * k, sxR: 0.55 * k }); }
+      else if (u < 0.75) { const k = smoothstep(0.5, 0.62, u); Object.assign(P, { uxR: lerp(0.35, -1.45, k), fxR: lerp(-1.9, -0.05, k), twist: lerp(-0.35, 0.2, k), lean: 0.3 * k, wel: 0, waz: 0, txL: lerp(-0.35, -0.8, k), sxL: lerp(0.45, 0.95, k), txR: lerp(0.2, 0.45, k), sxR: lerp(0.55, 0.3, k) }); }
+      else { const k = smoothstep(0.75, 1.4, u); Object.assign(P, { uxR: lerp(-1.45, -0.6, k), fxR: lerp(-0.05, -1.3, k), lean: 0.3 * (1 - k), wel: 0.05, waz: 0, txL: -0.8 * (1 - k), sxL: 0.95 * (1 - k), txR: 0.45 * (1 - k), sxR: 0.3 * (1 - k) }); }
     } else Object.assign(P, { we: 1.35 });
     drawCharacter(m.id, m.x, y, m.z, m.yaw, P, sampleLight(m.x, y + 1.5, m.z));
   }
@@ -316,9 +319,10 @@ function drawBeheaded(f) {
   if (rise > 0) {
     const sun = norm3(LEVEL.sun || [-1, 0.06, 0.2]), walk = Math.max(0, td - RISE0 - 1.4) * 1.1;
     x = bx + sun[0] * walk; z = bz + sun[2] * walk; yaw = lerp(f.dieYaw, Math.atan2(sun[0], sun[2]), rise);
-    const W = poseWalk(poseIdle({}, gameTime), walk * 2.6, Math.min(1, walk), true);
+    const W = poseWalk(poseIdle({}, gameTime), walk * 3.6, Math.min(1, walk), true, 0, 3.6);   // a stumbling walk, groping
     Object.assign(W, { lean: 0.2, roll: Math.sin(td * 2.1) * 0.2 * rise, uxL: -1.3, uxR: -0.9, fxL: -0.3, fxR: -0.5, cut: 'head', unarmed: true, noShield: true });
     for (const k of ['pitch', 'drop', 'uxL', 'uxR', 'fxL', 'fxR', 'txL', 'txR', 'sxL', 'sxR', 'lean', 'roll']) W[k] = lerp(P[k] || 0, W[k] || 0, rise);
+    if (rise < 1) { W.gait = null; W.plant = 0; }        // getting up off the ground: the old way, by the angles
     if (walk > 40) return true;                           // lost to sight across the meadow
     drawCharacter(f.cls, x, groundInfo(x, z).floor, z, yaw, W, sampleLight(x, f.y + 1.4, z));
     return true;

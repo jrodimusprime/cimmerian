@@ -73,8 +73,8 @@ const ACTOR_POSES = {
   lead: () => ({ we: 1.35, uxL: 0.35, fxL: -0.25, uzL: 0.45 }),                   // the axe in his right hand, his left fist back at his hip with the prisoner's chain in it
   // seated (on a divan): thighs about level, shins straight down, back against the cushions, hands on the thighs, the knees a little apart
   // (on a divan the thighs' pitch, the height and the place on the seat are fitted to the body: sitFit)
-  sit: () => ({ txL: -1.57, txR: -1.57, sxL: 1.57, sxR: 1.57, tzL: 0.1, tzR: 0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1, uxR: -0.45, fxR: -0.9, uzR: 0.1 }),
-  drink: t => ({ txL: -1.57, txR: -1.57, sxL: 1.57, sxR: 1.57, tzL: 0.1, tzR: 0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1,
+  sit: () => ({ plant: 0, txL: -1.57, txR: -1.57, sxL: 1.57, sxR: 1.57, tzL: 0.1, tzR: 0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1, uxR: -0.45, fxR: -0.9, uzR: 0.1 }),
+  drink: t => ({ plant: 0, txL: -1.57, txR: -1.57, sxL: 1.57, sxR: 1.57, tzL: 0.1, tzR: 0.1, lean: -0.12, unarmed: true, noShield: true, uxL: -0.45, fxL: -0.9, uzL: 0.1,
     uxR: -1.0 - 0.25 * Math.max(0, Math.sin(t * 1.7)), fxR: -2.3, uzR: -0.25, headX: -0.15 * Math.max(0, Math.sin(t * 1.7)) }),
   speak: t => ({ uxR: -0.75 - 0.12 * Math.sin(t * 2.3), fxR: -0.7, uzR: 0.2, headX: 0.05 * Math.sin(t * 1.3) }),
   point: () => ({ uxR: -1.45, fxR: -0.1, uzR: 0.05 }),
@@ -83,16 +83,34 @@ const ACTOR_POSES = {
   blind: t => ({ uxL: -2.0, uxR: -2.0, fxL: -2.1, fxR: -2.1, uzL: 0.3, uzR: -0.3, headX: 0.45, lean: -0.15 + 0.08 * Math.sin(t * 9), unarmed: true }),   // clutching at his eyes
   cheer: t => ({ uxR: -2.6, fxR: -0.3, uxL: -0.5, headX: -0.25 + 0.05 * Math.sin(t * 6), we: 0.2 }),
   laugh: t => ({ headX: -0.35, uxL: -2.3, uxR: -2.3, fxL: -0.4, fxR: -0.4, uzL: 0.6, uzR: -0.6, lean: -0.1 + 0.05 * Math.sin(t * 7) }),
-  kneel: () => ({ txL: -1.5, sxL: 1.5, txR: 0.1, sxR: 1.9, drop: -0.55, lean: 0.25, headX: 0.4, we: 1.35 }),
-  ride: () => ({ txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4 }),
+  kneel: () => ({ txL: -1.5, sxL: 1.5, txR: 0.1, sxR: 1.75, fpR: 1.35, lean: 0.25, headX: 0.4, we: 1.35 }),   // on one knee (planted: the knee on the ground, the toes of that foot behind)
+  ride: () => ({ plant: 0, txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4 }),
 };
+// render side: the pose each actor held before this one, so a change of pose is a movement, not a cut
+const ACTOR_WAS = new WeakMap();
+function actorPose(a) {
+  const pose = p => { const c = CAST[a.cast] || {}, P = Object.assign({}, (ACTOR_POSES[p] || ACTOR_POSES.stand)(p === a.pose ? a.t : 9));
+    if (P.we === undefined && P.wel === undefined && (c.weapon === 'sword' || c.weapon === 'greatsword')) P.we = -1.35;   // at his ease, the blade hangs point-down at his side
+    if (c.shield && P.uxL === undefined && !P.noShield) Object.assign(P, { uxL: -0.3, fxL: -1.2, uzL: 0.22 });           // and the shield carried upright on his arm, not flat like a tray
+    return P; };
+  let w = ACTOR_WAS.get(a);
+  if (!w || w.pose !== a.pose) { w = { pose: a.pose, from: w ? w.pose : a.pose, at: gameTime }; ACTOR_WAS.set(a, w); }
+  const now = pose(a.pose), k = smoothstep(0, 0.45, gameTime - w.at);
+  if (k >= 1 || w.from === a.pose) return now;
+  const was = pose(w.from), out = Object.assign({}, now);
+  for (const q of new Set([...Object.keys(was), ...Object.keys(now)])) {
+    const A = was[q], B = now[q];
+    if (q !== 'plant' && (typeof A === 'number' || typeof B === 'number')) out[q] = lerp(typeof A === 'number' ? A : 0, typeof B === 'number' ? B : 0, k);
+  }
+  return out;
+}
 function drawActors() {
   for (const a of S.actors || []) {
     if (a.hidden || Math.hypot(a.x - S.x, a.z - S.z) > 120) continue;
     const y = groundInfo(a.x, a.z).floor, l = sampleLight(a.x, y + 1.4, a.z);
     const P = poseIdle({}, gameTime + a.x);
-    if (a.moving) poseWalk(P, a.walk * 3.2, 0.8);
-    Object.assign(P, (ACTOR_POSES[a.pose] || ACTOR_POSES.stand)(a.t));
+    poseMove(P, a);
+    Object.assign(P, actorPose(a));
     if (a.pose === 'ride') { drawHorse(a.x, y, a.z, a.yaw, a.moving ? a.walk * 0.6 : 0, l); drawCharacter(a.cast, a.x, y + seatY(), a.z, a.yaw, P, l); continue; }
     const st = a.seat ? seatOn(a) : null;
     if (st) { Object.assign(P, { txL: st.tx, txR: st.tx, sxL: -st.tx, sxR: -st.tx, lean: st.lean }); drawCharacter(a.cast, st.x, st.y, st.z, st.yaw, P, l); continue; }

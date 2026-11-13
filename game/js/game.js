@@ -2024,11 +2024,11 @@ function render(alpha) {
     if (g.arms > 0) Object.assign(P, { uxR: lerp(0.05, -2.9, g.arms), fxR: lerp(-0.2, -0.5, g.arms), uzR: lerp(0.14, 0.3, g.arms), we: lerp(-1.35, 2.5, g.arms),
       uxL: lerp(0.02, -0.6, g.arms), fxL: lerp(-0.35, -0.4, g.arms), lean: lerp(-0.06, -0.12, g.arms), headX: lerp(0.12, -0.25, g.arms), headY: P.headY * (1 - g.arms), twist: P.twist * (1 - g.arms) });
     if (g.state === 'enter') {                         // "pads into the vault": a big man's quick, soft lope, low and forward, the sword carried, the keys swinging
-      const ph = g.walk * 2.45, sn = Math.sin(ph), cs = Math.cos(ph);
-      Object.assign(P, { txL: sn * 0.72, txR: -sn * 0.72, sxL: 0.25 + Math.max(0, -Math.sin(ph - 1.1)) * 1.15, sxR: 0.25 + Math.max(0, Math.sin(ph - 1.1)) * 1.15,
-        drop: -0.05 - Math.abs(cs) * 0.07, lean: 0.2, roll: sn * 0.05, twist: -sn * 0.12, headX: -0.08, headY: sn * 0.04,
+      const ph = g.walk * 2.45, sn = -Math.cos(ph);
+      poseWalk(P, ph, 1, false, 0.35, 2.45);            // the legs solved to the ground (skinGait); the rest is his
+      Object.assign(P, { lean: 0.2, headX: -0.08, headY: sn * 0.04,
         uxL: -sn * 0.5, uzL: 0.18, fxL: -1.05, uxR: 0.15 + sn * 0.3, uzR: 0.2, fxR: -0.55, we: -0.6 });   // the sword-arm swinging less, the blade trailing
-    }   // a big man's heavy, rolling pad: steps of about 0.8 m, the cadence matched to the ground he covers
+    }   // a big man's heavy, rolling pad, the cadence matched to the ground he covers
     drawCharacter('giant', g.x, g.y, g.z, g.yaw, P, gl);
   }
   // Shukeli, the jailer
@@ -2041,7 +2041,7 @@ function render(alpha) {
     const P = poseIdle({}, gameTime * 0.8);
     if (sh.state === 'away') { /* still up the stair */ } else {
     const moving = sh.state === 'walk' || sh.state === 'return' || sh.state === 'retreat' || sh.state === 'come';
-    if (moving) poseWalk(P, sh.walk * 3, 0.7);
+    poseMove(P, sh, true, { moving, walkK: 5.2 });   // a fat man's short waddling steps
     P.fxL = -1.0; P.fxR = -1.0; P.uxL = -0.3; P.uxR = -0.3;                                                // hands clasped over the belly
     if (sh.state === 'peer') Object.assign(P, { lean: 0.22, headX: 0.25, uxL: -0.9, uxR: -0.9, fxL: -0.9, fxR: -0.9 });
     if (sh.state === 'idle' && sh.tauntT > 9) Object.assign(P, { uxR: -1.6, fxR: -0.6, headX: -0.2 });      // a mocking wave
@@ -2056,7 +2056,8 @@ function render(alpha) {
     M.riders.forEach((r, i) => {
       const y = groundInfo(r.x, r.z).floor, l = sampleLight(r.x, y + 1.5, r.z), gal = gameTime * (6 + r.sp * 0.4) + i * 1.7;
       drawHorse(r.x, y, r.z, r.yaw, gal, l);
-      drawCharacter('oknight', r.x - Math.sin(r.yaw) * 0.1, y + seatY() + Math.abs(Math.sin(gal)) * 0.1, r.z - Math.cos(r.yaw) * 0.1, r.yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4, fxR: -0.1, we: 0.05, lean: 0.2, uxL: -0.4, fxL: -1.2 }, l);
+      const bob = horseBob(gal), rk = Math.sin(gal - 0.94);   // the rider rides the stride: up with the horse's back, his seat absorbing the rock
+      drawCharacter('oknight', r.x - Math.sin(r.yaw) * 0.1, y + seatY() + bob * 0.8, r.z - Math.cos(r.yaw) * 0.1, r.yaw, { txL: -1.4, txR: -1.4, sxL: 1.5, sxR: 1.5, tzL: 0.4, tzR: 0.4, uxR: -1.4 + rk * 0.06, fxR: -0.1, wel: 0.02, waz: 0, lean: 0.3 + rk * 0.06, headX: -0.25 - rk * 0.05, uxL: -0.5 + rk * 0.1, fxL: -1.2 }, l);
     });
     const hp = LV.props.find(q => q.prefab === 'heap');   // the dead piled round the heap: horses and men (drawn only; the sim never sees them)
     if (hp && Math.hypot(hp.x - S.x, hp.z - S.z) < 140) {
@@ -2089,7 +2090,7 @@ function render(alpha) {
       const th = LEVEL.kings.horse; drawHorse(th[0] * CELL, groundInfo(th[0] * CELL, th[1] * CELL).floor, th[1] * CELL, -Math.PI / 2, 0, tl);
       if (ts.state !== 'away') {
         const P = poseIdle({}, gameTime);
-        if (ts.state === 'walk') poseWalk(P, ts.walk * 3, 0.7);
+        poseMove(P, ts, true, { moving: ts.state === 'walk', walkK: 4.0 });   // the long, unhurried stride
         if (ts.state === 'offer') Object.assign(P, { uxR: -0.9, fxR: -0.8, headX: 0.15 });
         if (ts.state === 'touch') Object.assign(P, { uxL: -1.3, fxL: -0.3, lean: 0.25 });
         drawCharacter('tsotha', ts.x, groundInfo(ts.x, ts.z).floor, ts.z, ts.yaw, P, tl);

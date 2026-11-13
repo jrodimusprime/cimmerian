@@ -239,10 +239,78 @@ async function loadGLB(url, tint) {
 
 // ---- posing: the pose library's angles, at the real joints --------------------
 const _rx = a => m4rx(a), _ry = a => m4ry(a), _rz = a => m4rz(a);
+// ---- the legs on the ground ------------------------------------------------------
+// Each model's legs, measured once: thigh and shin lengths, the hip's and the ankle's height, the heel and toe.
+const LEGS = new WeakMap();
+function skinLegs(M) {
+  if (LEGS.has(M)) return LEGS.get(M);
+  const B = M.bones, at = n => M.byName[n];
+  let L = null;
+  if (['thigh_l', 'calf_l', 'foot_l', 'thigh_r', 'calf_r', 'foot_r'].every(n => at(n) !== undefined)) {
+    const side = s => {
+      const th = B[at('thigh_' + s)].rest, ca = B[at('calf_' + s)].rest, fo = B[at('foot_' + s)].rest, bi = at('ball_' + s), ba = bi !== undefined ? B[bi].rest : [fo[0], 0, fo[2] + 0.13];
+      return { a: Math.hypot(ca[1] - th[1], ca[2] - th[2]), b: Math.hypot(fo[1] - ca[1], fo[2] - ca[2]), hipY: th[1], ank: fo[1], foot: at('foot_' + s), ball: bi !== undefined ? bi : at('foot_' + s), calf: at('calf_' + s), knee: [ca[0], ca[1] - 0.06, ca[2] + 0.05],
+        heel: [fo[0], 0, fo[2] - 0.05], toe: [ba[0], 0, ba[2] + 0.06], flen: Math.max(0.08, ba[2] - fo[2]) };
+    };
+    L = { L: side('l'), R: side('r') };
+  }
+  LEGS.set(M, L);
+  return L;
+}
+// P.gait = { ph, k, amt, run }: the legs solved (two bones, in the body's plane) to where the feet should be. A planted foot stays
+// where it was put while the body passes over it (the stride is the one the caller's phase is matched to: 2π/k metres), then
+// rolls up onto its toes and swings through, lifted, to land heel first a stride on. ph: phase (radians, k per metre walked);
+// amt: how far into the stride from the pose it was holding (0 .. 1, as it sets off or stops); run: 0 a walk (a foot always down) .. 1 a run (shorter contact, knees high, a moment in the air).
+function skinGait(M, P, sc) {
+  const L = skinLegs(M), g = P.gait; if (!L) return;
+  const amt = clamp(g.amt === undefined ? 1 : g.amt, 0, 1), run = g.run || 0, hip = P.hip || 0;
+  const stride = 2 * Math.PI / (g.k || 3.4) / sc * (g.reach || 1), duty = lerp(0.6, 0.36, run);   // (reach < 1: shorter steps than the ground covered, the feet gliding: under a long robe)
+  const leg = L.L.a + L.L.b, u0 = ((g.ph / (2 * Math.PI)) % 1 + 1) % 1;
+  // the hips ride lowest as the weight comes onto a foot, highest over it (a walk); a run sinks onto the bent leg and springs off it
+  const ws = Math.cos(4 * Math.PI * (u0 - duty / 2));
+  const hipDrop = leg * (lerp(0.03, 0.075, run) + (g.crouch || 0) - lerp(0.018, -0.03, run) * ws);   // (crouch: lower still, the knees well bent: the pit-things' lope)
+  for (const [K, s, off] of [['L', L.L, 0], ['R', L.R, 0.5]]) {
+    const u = (u0 + off) % 1, span = stride * duty;
+    let z, y = 0, p;                                     // the ankle's place before the hip and its height off the ground; the foot's pitch (+ toes down)
+    if (u < duty) {                                      // planted, the body passing over it: heel strike, flat, heel off
+      const q = u / duty;
+      z = span * (0.5 - q);
+      p = q < 0.12 ? lerp(-0.25, 0, q / 0.12) : q > 0.7 ? lerp(0, lerp(0.55, 0.8, run), (q - 0.7) / 0.3) : 0;
+      if (p > 0) { y = s.flen * Math.sin(p); z += s.flen * (1 - Math.cos(p)); }   // rolling up onto the ball: the ankle rises over the toes
+    } else {                                             // the swing: up behind (a run kicks the heel high), through, and reaching to land
+      const q = (u - duty) / (1 - duty), e = q - Math.sin(2 * Math.PI * q) / (2 * Math.PI);
+      z = span * (-0.5 + e);
+      const p0 = lerp(0.55, 0.8, run), lo = 1 - smoothstep(0, 0.45, q);   // (leaving the ground where the heel-off left it)
+      z += s.flen * (1 - Math.cos(p0)) * lo;
+      y = leg * lerp(0.1, 0.3, run) * (g.reach || 1) * Math.pow(Math.sin(Math.PI * Math.pow(q, lerp(0.8, 0.6, run))), 1.3) + s.flen * Math.sin(p0) * lo;
+      p = lerp(p0, -0.25, smoothstep(0, 0.85, q));
+    }
+    const hy = s.hipY - hipDrop - (s.ank + y), d = Math.min(Math.hypot(z, hy), s.a + s.b - 1e-4);
+    const knee = Math.PI - Math.acos(clamp((s.a * s.a + s.b * s.b - d * d) / (2 * s.a * s.b), -1, 1));
+    const th = Math.atan2(z, hy) + Math.acos(clamp((s.a * s.a + d * d - s.b * s.b) / (2 * s.a * d), -1, 1));
+    P['tx' + K] = lerp(P['tx' + K] || 0, -th - hip, amt); P['sx' + K] = lerp(P['sx' + K] || 0, knee, amt); P['fp' + K] = lerp(P['fp' + K] || 0, p, amt);
+  }
+  // the pelvis swings round with the leg going forward, the shoulders against it
+  const yw = -lerp(0.1, 0.16, run) * amt * Math.cos(2 * Math.PI * u0);
+  P.hipY = (P.hipY || 0) + yw; P.twist = (P.twist || 0) - 1.4 * yw;
+  P.roll = (P.roll || 0) + 0.03 * amt * Math.sin(2 * Math.PI * u0) * (1 - run);   // the hips dip toward the swinging leg
+  const fl = ((u0 % 0.5) - duty) / (0.5 - duty);       // a run: both feet off the ground for a moment between strides
+  if (run > 0 && fl > 0) P.lift = (P.lift || 0) + leg * sc * 0.035 * run * amt * Math.sin(Math.PI * fl);
+}
+// P.plant: the lowest of the soles set on the ground (bent knees lower the body, they don't sink the feet in the floor); returns
+// the height (model units) the root must come up by. Planted, the feet lie flat unless told otherwise (P.fpL/fpR, + toes down).
+function skinPlant(M, S) {
+  const L = skinLegs(M); if (!L) return 0;
+  let lo = Infinity;
+  for (const s of [L.L, L.R]) for (const [bi, p] of [[s.foot, s.heel], [s.ball, s.toe], [s.calf, s.knee]]) {   // (and the knee: kneeling, it is the knee on the ground)
+    const o = bi * 16; lo = Math.min(lo, S[o + 1] * p[0] + S[o + 5] * p[1] + S[o + 9] * p[2] + S[o + 13]);
+  }
+  return -lo;
+}
 function skinPose(M, P) {
   const B = M.bones, R3 = new Array(B.length).fill(null), side = n => n.endsWith('_r') ? 'R' : n.endsWith('_l') ? 'L' : '';
   const set = (name, m) => { const i = M.byName[name]; if (i !== undefined) R3[i] = R3[i] ? m4mul(R3[i], m) : m; };
-  set('pelvis', _rx(P.hip || 0));
+  set('pelvis', m4mul(_ry(P.hipY || 0), _rx(P.hip || 0)));
   const lean = P.lean || 0, tw = P.twist || 0;
   for (const [n, f] of [['spine_01', 0.4], ['spine_02', 0.3], ['spine_03', 0.3]]) set(n, m4mul(_ry(tw * f), _rx(lean * f)));
   set('neck_01', m4mul(_ry((P.headY || 0) * 0.4), _rx((P.headX || 0) * 0.4)));
@@ -254,6 +322,7 @@ function skinPose(M, P) {
     else if (b.name.startsWith('lowerarm')) set(b.name, _rx((P['fx' + k] === undefined ? -0.15 : P['fx' + k]) + 0.15));
     else if (b.name.startsWith('thigh')) set(b.name, m4mul(_rx(P['tx' + k] || 0), _rz(s * ((P['tz' + k] === undefined ? 0.02 : P['tz' + k]) - 0.02))));
     else if (b.name.startsWith('calf')) set(b.name, _rx(P['sx' + k] || 0));
+    else if (b.name.startsWith('foot') && P.plant) set(b.name, _rx((P['fp' + k] || 0) - (P.hip || 0) - (P['tx' + k] || 0) - (P['sx' + k] || 0)));   // level with the ground, whatever the leg is doing
   }
   return R3;
 }
@@ -296,6 +365,13 @@ function drawSkinnedRots(id, root, rots, light, glow = 0) {
   });
   skinDraw(M, root, S, light, glow, 1);
 }
+// the rotation taking unit vector a onto unit vector b (the short way round)
+function m4fromTo(a, b) {
+  const k = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], c = a[0] * b[0] + a[1] * b[1] + a[2] * b[2], s2 = k[0] * k[0] + k[1] * k[1] + k[2] * k[2];
+  if (s2 < 1e-10) return c > 0 ? m4ident() : m4rx(Math.PI);
+  const f = (1 - c) / s2, [x, y, z] = k;
+  return new Float32Array([1 - f * (y * y + z * z), z + f * x * y, -y + f * x * z, 0,  -z + f * x * y, 1 - f * (x * x + z * z), x + f * y * z, 0,  y + f * x * z, -x + f * y * z, 1 - f * (x * x + y * y), 0,  0, 0, 0, 1]);
+}
 function skinDraw(M, root, S, light, glow, alpha) {
   const gl = R.gl, c = R._cam;
   gl.useProgram(skinProg);
@@ -323,18 +399,26 @@ function skinDraw(M, root, S, light, glow, alpha) {
   gl.useProgram(R.prog);
 }
 function drawSkinned(id, x, y, z, yaw, P, light, glow = 0, alpha = 1) {
-  const M = SKINNED[id];
-  let root = m4trs(x, y + (P.drop || 0), z, yaw, P.pitch || 0, P.roll || 0, SKIN_SCALE[id] || 1);
-  if (P.cut === 'body' && M.byName.head !== undefined) { const hr = M.bones[M.byName.head].rest; root = m4mul(root, m4t(-hr[0], -hr[1], -hr[2])); }   // the head alone, hung by its neck at (x, y, z)
+  const M = SKINNED[id], sc = SKIN_SCALE[id] || 1;
+  const robe = CAST[id] && CAST[id].torso === 'robe';
+  if (robe && !P.gait && P.plant !== 0) { P = Object.assign({}, P); for (const q of ['txL', 'txR']) P[q] = (P[q] || 0) * 0.45; for (const q of ['sxL', 'sxR']) P[q] = (P[q] || 0) * 0.6; }   // a long robe: the legs kept within its hem
+  if (P.gait && P.plant !== 0) { P = Object.assign({}, P, { plant: 1 }); if (robe) P.gait = Object.assign({}, P.gait, { reach: 0.42 }); skinGait(M, P, sc); }   // (on a copy: the caller's pose is left as it was)
   const { W, S } = skinSolve(M, m4ident(), P);
+  let root = m4trs(x, y + (P.plant ? skinPlant(M, S) * sc + (P.lift || 0) : P.drop || 0), z, yaw, P.pitch || 0, P.roll || 0, sc);
+  if (P.cut === 'body' && M.byName.head !== undefined) { const hr = M.bones[M.byName.head].rest; root = m4mul(root, m4t(-hr[0], -hr[1], -hr[2])); }   // the head alone, hung by its neck at (x, y, z)
   skinDraw(M, root, S, light, glow, alpha);
   // the weapon and shield, mounted on the skeleton's hands as the old rig mounted them
   const mt = skinMounts(M, W), c2 = CAST[id];
   const wpn = P.weapon || (c2 && c2.weapon);
   if (wpn && !P.unarmed && mt.handR) {
-    const handR = m4mul(root, m4mul(mt.handR, m4t(0, -0.07, 0.025)));
+    const hm = m4mul(mt.handR, m4t(0, -0.07, 0.025));
     const wx = P.we !== undefined ? -P.we - ((P.uxR || 0) + (P.fxR === undefined ? -0.15 : P.fxR)) : (P.wx || 0);
-    const wm = m4mul(handR, m4mul(m4rx(Math.PI / 2 + wx), m4ry(P.wy || 0)));
+    let wm = m4mul(hm, m4mul(m4rx(Math.PI / 2 + wx), m4ry(P.wy || 0)));
+    if (P.wel !== undefined) {                          // aimed: the blade turned (about the fist) to point P.wel up, P.waz round to his left, in the body's frame
+      const el = P.wel, az = P.waz || 0, d = [Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)], p = [hm[12], hm[13], hm[14]];
+      wm = m4mul(m4t(p[0], p[1], p[2]), m4mul(m4fromTo(norm3([wm[4], wm[5], wm[6]]), d), m4mul(m4t(-p[0], -p[1], -p[2]), wm)));
+    }
+    wm = m4mul(root, wm);
     const Mn = (part, m) => drawPart('w_' + part, (CAST[id].weapon === part ? 'char:' + id : 'char:warden') + ':' + part, m, light, glow);   // the built weapon, else the old one
     if (wpn === 'bow') { if (mt.handL) Mn('bow', m4mul(m4mul(root, m4mul(mt.handL, m4t(0, -0.07, 0.025))), m4rx(Math.PI / 2 - 0.1))); }
     else Mn(wpn, wpn === 'spear' ? m4mul(wm, m4t(0, -0.35, 0)) : wpn === 'pike' ? m4mul(wm, m4t(0, -0.9, 0)) : wpn === 'axe' ? m4mul(wm, m4t(0, -0.45, 0)) : wpn === 'greatsword' ? m4mul(wm, m4t(0, -0.05, 0)) : wm);

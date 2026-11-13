@@ -59,19 +59,48 @@ function drawCharacter(id, x, y, z, yaw, P, light, glow = 0) {
 }
 
 // Pose library: f = the actor, t = time, w = walk phase. Returns joint angles.
-function poseWalk(P, ph, amt, armsFree = true) {
-  const s = Math.sin(ph) * amt;
-  P.txL = s * 0.6; P.txR = -s * 0.6;
-  P.sxL = Math.max(0, -Math.sin(ph - 0.9)) * 0.9 * amt; P.sxR = Math.max(0, Math.sin(ph - 0.9)) * 0.9 * amt;
-  if (armsFree) { P.uxL = -s * 0.45; P.uxR = s * 0.45; }
+// The walk: ph = metres walked x k (so a full stride is 2π/k metres and the feet don't slide), amt 0..1, run 0 (a walk) .. 1 (a run).
+// The built bodies solve their legs to the feet (skinGait); the angles set here are the part-built rig's.
+function poseWalk(P, ph, amt, armsFree = true, run = 0, k = 3.4) {
+  const c = Math.cos(ph + 0.25) * amt;
+  P.gait = { ph, k, amt, run };
+  P.txL = -Math.cos(ph) * 0.6 * amt; P.txR = Math.cos(ph) * 0.6 * amt;   // (the left foot comes down ahead at ph = 0)
+  P.sxL = Math.max(0, -Math.sin(ph)) * 0.9 * amt; P.sxR = Math.max(0, Math.sin(ph)) * 0.9 * amt;   // the knee bends on the swing, not under the weight
+  if (armsFree) {                                       // the arms against the legs: loose at a walk, pumping, elbows bent, at a run
+    const A = lerp(0.32, 0.6, run);
+    P.uxL = c * A; P.uxR = -c * A;
+    P.fxL = lerp(-0.3, -1.35, run) - Math.max(0, -c) * lerp(0.25, 0.35, run); P.fxR = lerp(-0.3, -1.35, run) - Math.max(0, c) * lerp(0.25, 0.35, run);
+    P.uzL = Math.max(P.uzL || 0, 0.12); P.uzR = Math.max(P.uzR || 0, 0.12);
+  }
   P.drop = -Math.abs(Math.cos(ph)) * 0.04 * amt;
-  P.lean = 0.06 * amt;
+  P.lean = Math.max(P.lean || 0, lerp(0.05, 0.22, run) * amt);
+  P.headX = (P.headX || 0) - lerp(0, 0.1, run) * amt;    // the head kept level as he leans into it
   return P;
 }
-function poseIdle(P, t) { P.breathe = Math.sin(t * 1.6) * 0.006; P.uzL = 0.12; P.uzR = 0.12; P.fxL = -0.25; P.fxR = -0.25; return P; }
-// Quake's killers never stand up straight: hunched, knees bent, head thrust forward
+// poseWalk for something that walks (o.walk: metres walked, o.moving), its pace read off how fast o.walk grows: a walk, a jog,
+// a run, the stride lengthening with it; the phase kept here (render side), so a change of pace never jumps the legs, and the
+// stride eased in as it sets off and out as it stops. walkK/runK: radians per metre at a walk and at a run (2π/k: the stride).
+const GAIT_ST = new WeakMap();
+function poseMove(P, o, armsFree = true, { moving = o.moving, walkK = 4.3, runK = 3.3, runAt = 2.0, crouch = 0 } = {}) {
+  let r = GAIT_ST.get(o); const now = gameTime;
+  if (!r || now - r.t > 0.5 || o.walk < r.w) { r = { w: o.walk, t: now, v: moving ? runAt : 0, ph: o.walk * walkK, amt: moving ? 1 : 0, x: o.x, z: o.z, back: 1 }; GAIT_ST.set(o, r); }
+  const dt = now - r.t, dw = o.walk - r.w;
+  if (dt > 0) { r.v = lerp(r.v, dw / dt, Math.min(1, dt * 5)); r.amt = clamp(r.amt + (moving ? 1 : -1) * dt * 5, 0, 1); }
+  // backing away (still facing you): the stride runs backward, so the feet step back instead of skating
+  const mx = (o.x || 0) - (r.x || 0), mz = (o.z || 0) - (r.z || 0), ml = Math.hypot(mx, mz);
+  if (ml > 1e-4 && o.yaw !== undefined) r.back = lerp(r.back, (mx * Math.sin(o.yaw) + mz * Math.cos(o.yaw)) / ml < -0.3 ? -1 : 1, Math.min(1, dt * 8));
+  const run = smoothstep(runAt, runAt + 1, r.v) * (r.back > 0 ? 1 : 0.4), k = lerp(walkK, runK, run);
+  r.ph += dw * k * Math.sign(r.back || 1); r.w = o.walk; r.t = now; r.x = o.x; r.z = o.z;
+  if (r.amt <= 0) return P;
+  poseWalk(P, r.ph, smoothstep(0, 1, r.amt), armsFree, run, k);
+  if (crouch) P.gait.crouch = crouch;
+  return P;
+}
+function poseIdle(P, t) { P.plant = 1; P.breathe = Math.sin(t * 1.6) * 0.006; P.uzL = 0.12; P.uzR = 0.12; P.fxL = -0.25; P.fxR = -0.25; return P; }
+// Quake's killers never stand up straight: hunched, knees bent, head thrust forward; the left foot ahead, the weight between
 function poseMenace(P, t) {
-  Object.assign(P, { lean: 0.2, headX: -0.18, txL: -0.28, txR: -0.18, sxL: 0.45, sxR: 0.35, drop: -0.06, uzL: 0.32, uzR: 0.28, breathe: Math.sin(t * 2.4) * 0.01 });
+  const sw = Math.sin(t * 0.9) * 0.04;                  // the weight shifting from foot to foot
+  Object.assign(P, { lean: 0.2, headX: -0.18, txL: -0.42 + sw, txR: 0.08 + sw, sxL: 0.55, sxR: 0.5, tzL: 0.08, tzR: 0.06, fpR: 0.05, twist: 0.1, drop: -0.06, uzL: 0.32, uzR: 0.28, breathe: Math.sin(t * 2.4) * 0.01 });
   return P;
 }
 // the crawler goes on all fours: spine flat, head craned up, long arms planted ahead

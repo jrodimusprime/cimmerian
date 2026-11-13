@@ -34,17 +34,32 @@ function buildHorsePart(part) {
   }
   return mb.finish();
 }
+// the saddle's rise and fall through a stride of the gallop (highest in the moment all four hooves are off the ground): the rider rides it
+function horseBob(gallop) { const u0 = ((gallop / (2 * Math.PI)) % 1 + 1) % 1; return 0.03 + 0.1 * Math.max(0, Math.sin(2 * Math.PI * (u0 - 0.62))); }
+const HORSE_FOLD = [1, -1];   // which way the knee (fore) and the hock (hind) fold, in the rig's frame
 function drawHorse(x, y, z, yaw, gallop, light, dead, gaunt) {
   const sid = gaunt ? 'steed' : 'horse';
   if (typeof SKINNED !== 'undefined' && SKINNED[sid]) {             // the built mesh: the same gallop, on real legs
-    const root = m4trs(x, y + (dead ? 0.25 : Math.abs(Math.sin(gallop)) * 0.08), z, yaw, 0, dead ? Math.PI / 2 : 0, 1);
-    const rots = {}, ph = { fl: 0, fr: 0.9, hl: 2.1, hr: 3.0 };
-    if (!gallop && !dead) return drawSkinnedRots(sid, root, rots, light);   // standing square
-    for (const k in ph) {
-      const a = dead ? 0.3 + 0.2 * (k.length) : Math.sin(gallop + ph[k]) * 0.45, bend = dead ? 0.5 : Math.max(0, Math.sin(gallop + ph[k] + 1.2)) * (k[0] === 'f' ? -0.9 : 0.7);
-      rots['leg_' + k + '_u'] = m4rx(a); rots['leg_' + k + '_m'] = m4rx(bend); rots['leg_' + k + '_l'] = m4rx(-bend * 0.5);
+    if (dead || !gallop) {
+      const root = m4trs(x, y + (dead ? 0.25 : 0), z, yaw, 0, dead ? Math.PI / 2 : 0, 1), rots = {};
+      if (!dead) return drawSkinnedRots(sid, root, rots, light);   // standing square
+      for (const k of ['fl', 'fr', 'hl', 'hr']) { const a = 0.3 + 0.2 * k.length; rots['leg_' + k + '_u'] = m4rx(a); rots['leg_' + k + '_m'] = m4rx(0.5); rots['leg_' + k + '_l'] = m4rx(-0.25); }
+      rots.neck = m4rx(0.6); rots.tail = m4rx(0);
+      return drawSkinnedRots(sid, root, rots, light);
     }
-    rots.neck = m4rx(dead ? 0.6 : 0.08 * Math.sin(gallop * 2)); rots.tail = m4rx(dead ? 0 : -0.3 - 0.2 * Math.sin(gallop));
+    // the gallop, hind feet first: each hoof down for a short sweep under the body, then folded up and flung forward to reach
+    // for the next stride; all four off the ground for a moment; the body rocking over the forehand and back, the neck against it
+    const u0 = ((gallop / (2 * Math.PI)) % 1 + 1) % 1, rots = {}, duty = 0.3, FALL = { hl: 0, hr: 0.1, fl: 0.4, fr: 0.5 };
+    for (const k in FALL) {
+      const u = (u0 - FALL[k] + 1) % 1, fore = k[0] === 'f', A = fore ? 0.62 : 0.55;
+      let a, bend;
+      if (u < duty) { const q = u / duty; a = lerp(A, -A * 0.9, q); bend = 0.08 * Math.sin(Math.PI * q); }
+      else { const q = (u - duty) / (1 - duty), e = q * q * (3 - 2 * q); a = lerp(-A * 0.9, A, e); bend = Math.sin(Math.PI * Math.pow(q, 0.7)) * (fore ? 1.25 : 0.95); }
+      rots['leg_' + k + '_u'] = m4rx(-a); rots['leg_' + k + '_m'] = m4rx(bend * HORSE_FOLD[fore ? 0 : 1]); rots['leg_' + k + '_l'] = m4rx(-bend * 0.6 * HORSE_FOLD[fore ? 0 : 1]);
+    }
+    const rock = Math.sin(2 * Math.PI * (u0 - 0.15));
+    const root = m4trs(x, y + horseBob(gallop), z, yaw, rock * 0.07, 0, 1);
+    rots.neck = m4rx(-rock * 0.14); rots.tail = m4rx(-0.45 - 0.2 * rock);
     return drawSkinnedRots(sid, root, rots, light);
   }
   const root = m4trs(x, y, z, yaw, dead ? 0 : 0, dead ? Math.PI / 2 : 0, 1);
