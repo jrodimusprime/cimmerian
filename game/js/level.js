@@ -1363,7 +1363,7 @@ function buildLevel(spec) {
   for (const p of spec.props.concat(scatterProps(spec), fort)) {
     let [x, z] = W2(p.at[0], p.at[1]);
     if (HUNG.has(p.prefab) && p.wall) { const n = wallIn(p.wall), rc = wallRecess(p, n); x -= n[0] * rc; z -= n[1] * rc; }   // hung on the wall as it really stands, not on the grid line in front of it
-    const prop = Object.assign({}, p, { x, z, y: p.level !== undefined ? p.level : groundInfo(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6).floor });
+    const prop = Object.assign({}, p, { x, z, y: p.level !== undefined ? p.level : propFloor(x + wallIn(p.wall)[0] * 0.6, z + wallIn(p.wall)[1] * 0.6) });
     LV.props.push(prop);
     if (p.prefab === 'torch') {
       const n = wallIn(p.wall);
@@ -1463,6 +1463,14 @@ function wallRecess(p, n) {
   };
   let m = Infinity; for (const y of [fl + foot, fl + (foot + top) / 2, fl + top]) m = Math.min(m, lerp(rec(ca, y), rec(cb, y), u));
   return Math.max(0, m - 0.02);
+}
+// the floor a prop stands on: where it stands, or if that is in solid rock (a 'floor' of 1e9: the thing drawn a billion metres up,
+// its faces streaking across the screen), the nearest open floor within a cell
+function propFloor(x, z) {
+  for (const [dx, dz] of [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.6], [1.25, 0], [-1.25, 0], [0, 1.25], [0, -1.25], [1.25, 1.25], [-1.25, 1.25], [1.25, -1.25], [-1.25, -1.25]]) {
+    const g = groundInfo(x + dx, z + dz); if (g.kind !== 0) return g.floor;
+  }
+  return 0;
 }
 function wallIn(w) { return w === 'N' ? [0, 1] : w === 'S' ? [0, -1] : w === 'E' ? [-1, 0] : w === 'W' ? [1, 0] : [0, 0]; }
 

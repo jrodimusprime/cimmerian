@@ -229,7 +229,7 @@ async function loadGLB(url, tint) {
       const mat = p.material !== undefined ? json.materials[p.material] : null;
       const ti = mat && mat.pbrMetallicRoughness && mat.pbrMetallicRoughness.baseColorTexture ? json.textures[mat.pbrMetallicRoughness.baseColorTexture.index].source : -1;
       const glow = mat && mat.emissiveFactor ? Math.max(...mat.emissiveFactor) : 0;
-      prims.push({ vao, count: ix.length, tex: ti >= 0 ? textures[ti] : white, glow, blend: mat && mat.alphaMode === 'BLEND', alphaTest: !!(mat && mat.alphaMode === 'MASK'), name: mat ? mat.name : '' });
+      prims.push({ vao, count: ix.length, tex: ti >= 0 ? textures[ti] : white, glow, blend: mat && mat.alphaMode === 'BLEND', alphaTest: !!(mat && mat.alphaMode === 'MASK'), name: mat ? mat.name : '', vbo, nv: n });   // (vbo, nv: read back once to fit a seated figure to its seat, actors.js sitFit)
     }
   });
   if (!bones.length) bones.push({ name: 'root', parent: -1, rest: [0, 0, 0] });

@@ -1323,7 +1323,8 @@ function updateTunnels() {
   T.pt += DT;
   if (T.pres === 'up') {                                 // the presence: a wind out of the well that drives you away south
     gust = 1; if (inChamber) push = 8.6;
-    if (S.room === 'loop2' || S.room === 'loop3' || T.pt > 40) { T.pres = 'calm'; T.gt = 0; log('Behind you the wind falls away. Whatever came up out of the well has gone back down.', 'dim'); }
+    // driven down the tunnel choked with fallen rock, there is nowhere further to drive you: it gives up at once (its wind, stronger than your run, would hold you in that dead end with nothing to see)
+    if (S.room === 'loop2' || S.room === 'loop3' || S.room === 'blind' || T.pt > 40) { T.pres = 'calm'; T.gt = 0; log('Behind you the wind falls away. Whatever came up out of the well has gone back down.', 'dim'); }
   } else if (T.pres === 'rising') {
     gust = 0.5 + 0.5 * smoothstep(0, 5, T.pt);
     if (S.room === 'out1' || S.room === 'out2') { T.pres = 'calm'; T.gt = 0; }

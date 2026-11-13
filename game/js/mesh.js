@@ -141,6 +141,11 @@ function addBones(mb, x, y, z, seed, big) {
 }
 
 // ---- prefabs baked into the level mesh (README: prefab library) ------------
+// the floor at (x, z), or y0 if that is inside solid rock (whose 'floor' is 1e9): scattered bits round a prop, a puddle's rim
+function floorOr(x, z, y0) { const g = groundInfo(x, z); return g.kind !== 0 ? g.floor : y0; }
+// the divan as built below, in its own frame (v forward, out from the back): the cushion's top, the face of the back cushion and
+// its height over the seat, the seat's front edge. A seated figure is fitted to these (actors.js sitFit).
+const DIVAN = { seat: 0.44, back: -0.19, backH: 0.56, front: 0.33 };
 function addPrefab(mb, p) {
   const n = wallIn(p.wall);
   switch (p.prefab) {
@@ -270,7 +275,7 @@ function addPrefab(mb, p) {
       break;
     }
     case 'trophy': {                                     // arms hung on the wall: a round shield over two crossed blades (or crossed spears, or empty pegs)
-      const bx = p.x + n[0] * 0.08, bz = p.z + n[1] * 0.08, yaw = Math.atan2(n[0], n[1]), t = [n[1], -n[0]], y0 = p.y + (p.at || 2.0);
+      const bx = p.x + n[0] * 0.08, bz = p.z + n[1] * 0.08, yaw = Math.atan2(n[0], n[1]), t = [n[1], -n[0]], y0 = p.y + (p.hang || 2.0);   // (p.at is its place on the grid, never a height)
       for (const e of [-1, 1]) {                          // the blades, crossed behind
         const a = e * 0.75, c = Math.cos(a), sa = Math.sin(a);
         for (let k = -6; k <= 6; k++) { const u = k * 0.09; addBox(mb, bx + t[0] * (sa * u) - n[0] * 0.02, y0 + c * u, bz + t[1] * (sa * u) - n[1] * 0.02, 0.022, 0.05, 0.006, k > 3 ? T.GRIP : T.STEEL, yaw); }
@@ -295,15 +300,17 @@ function addPrefab(mb, p) {
     }
     case 'divan': {                                      // a low couch heaped with silk cushions: "on divans lounged Strabonus and Amalrus in their silks and gold"
       const yaw = p.yaw || 0, c = Math.cos(yaw), s2 = Math.sin(yaw), at = (u, v) => [p.x + c * u + s2 * v, p.z - s2 * u + c * v];
-      // a seat 0.66 deep (front edge at v 0.33), its cushion top 0.5 high; the back and the arms rise above it
-      { const q = at(0, 0); addBox(mb, q[0], p.y + 0.2, q[1], 1.05, 0.2, 0.33, T.WOOD, yaw); addBox(mb, q[0], p.y + 0.44, q[1], 1.0, 0.06, 0.32, T.VELVET, yaw); }
-      { const q = at(0, -0.3); addBox(mb, q[0], p.y + 0.75, q[1], 1.05, 0.33, 0.07, T.VELVET, yaw); }
-      for (const e of [-1, 1]) { const q = at(e * 1.0, 0); addBox(mb, q[0], p.y + 0.6, q[1], 0.08, 0.18, 0.33, T.GILT, yaw); }
-      for (const [u, v] of [[-0.68, -0.17], [0.7, -0.17]]) { const q = at(u, v); addRock(mb, q[0], p.y + 0.66, q[1], 0.22, 0.16, 0.08, Math.floor(u * 9 + 20), T.TABARD, 0.1); }   // bolsters at the ends, clear of whoever sits in the middle
+      // low, as a divan is: a seat 0.66 deep (front edge at v 0.33) with its cushion's top 0.44 up, and the cushions heaped against the back
+      // so that a man sits back into them (their face at v -0.19); arms at the ends. DIVAN holds these for the fitting of whoever sits here.
+      const D = DIVAN, sb = D.seat - 0.1;
+      { const q = at(0, 0); addBox(mb, q[0], p.y + sb / 2, q[1], 1.05, sb / 2, D.front, T.WOOD, yaw); addBox(mb, q[0], p.y + sb + 0.05, q[1], 1.0, 0.05, D.front - 0.01, T.VELVET, yaw); }
+      { const q = at(0, D.back - 0.09); addBox(mb, q[0], p.y + sb + (D.backH + 0.1) / 2, q[1], 1.05, (D.backH + 0.1) / 2, 0.09, T.VELVET, yaw); }
+      for (const e of [-1, 1]) { const q = at(e * 1.0, 0); addBox(mb, q[0], p.y + sb + 0.18, q[1], 0.08, 0.18, D.front, T.GILT, yaw); }
+      for (const [u, v] of [[-0.7, D.back + 0.07], [0.72, D.back + 0.07]]) { const q = at(u, v); addRock(mb, q[0], p.y + D.seat + 0.13, q[1], 0.2, 0.14, 0.08, Math.floor(u * 9 + 20), T.TABARD, 0.1); }   // bolsters at the ends, clear of whoever sits in the middle
       break;
     }
     case 'censer': {                                     // "golden censers, filling the corridor with dreamy perfumed clouds": hung from the vault on a chain
-      const top = groundInfo(p.x, p.z).ceil, y1 = p.y + (p.at || 2.4);
+      const top = groundInfo(p.x, p.z).ceil, y1 = p.y + (p.hang || 2.4);
       for (let k = 0; y1 + 0.3 + k * 0.2 < top; k++) addBox(mb, p.x, y1 + 0.35 + k * 0.2, p.z, k % 2 ? 0.015 : 0.04, 0.09, k % 2 ? 0.04 : 0.015, T.GILT);
       addLathe(mb, p.x, y1 - 0.2, p.z, [[0, 0], [0.12, 0.04], [0.2, 0.18], [0.21, 0.26], [0.14, 0.3], [0.17, 0.38], [0.05, 0.5], [0, 0.55]], 10, T.GILT);
       break;
@@ -391,7 +398,7 @@ function addPrefab(mb, p) {
     case 'arrows': {                                      // a volley's shafts driven into the turf, all slanting the way they came ("feathering them with shafts")
       const sd = Math.floor(p.x * 17 + p.z * 29), from = p.from !== undefined ? p.from : 0, n = 4 + Math.floor(hrand(sd, 1, 1, 1) * 8);
       for (let k = 0; k < n; k++) {
-        const a = hrand(sd, k, 2, 2) * 6.283, r = Math.sqrt(hrand(sd, k, 3, 3)) * 1.3, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, y = groundInfo(x, z).floor;
+        const a = hrand(sd, k, 2, 2) * 6.283, r = Math.sqrt(hrand(sd, k, 3, 3)) * 1.3, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, y = floorOr(x, z, p.y);
         const yaw = from + (hrand(sd, k, 4, 4) - 0.5) * 0.4, tilt = 0.5 + hrand(sd, k, 5, 5) * 0.35, L = 0.55 + hrand(sd, k, 6, 6) * 0.3;
         const dx = Math.sin(yaw) * Math.sin(tilt), dy = Math.cos(tilt), dz = Math.cos(yaw) * Math.sin(tilt), top = [x + dx * L, y + dy * L, z + dz * L];
         addLathe(mb, x - dx * 0.05, y - dy * 0.05, z - dz * 0.05, [[0.012, 0], [0.012, L + 0.05]], 3, T.WOOD, 0, ONE3, [dx, dy, dz]);   // the shaft (three-sided: it is a finger thick)
@@ -416,7 +423,7 @@ function addPrefab(mb, p) {
     case 'tufts': {                                       // grass: a few tufts, dry blades fanned out from the root
       const sd = Math.floor(p.x * 7 + p.z * 19);
       for (let k = 0; k < 5; k++) {
-        const x = p.x + (hrand(sd, k, 1, 1) - 0.5) * 2.2, z = p.z + (hrand(sd, k, 2, 2) - 0.5) * 2.2, y = groundInfo(x, z).floor - 0.02, h = 0.3 + hrand(sd, k, 3, 3) * 0.45;
+        const x = p.x + (hrand(sd, k, 1, 1) - 0.5) * 2.2, z = p.z + (hrand(sd, k, 2, 2) - 0.5) * 2.2, y = floorOr(x, z, p.y) - 0.02, h = 0.3 + hrand(sd, k, 3, 3) * 0.45;
         for (let b = 0; b < 6; b++) {
           const a = b / 6 * 6.283 + hrand(sd, k, b, 4), lean = 0.25 + hrand(sd, k, b, 5) * 0.4, w = 0.05;
           const tx = x + Math.cos(a) * h * lean, tz = z + Math.sin(a) * h * lean, px = -Math.sin(a) * w, pz = Math.cos(a) * w;
@@ -476,7 +483,7 @@ function addPrefab(mb, p) {
     case 'reeds': {                                       // a reed-bed: tall stems in a clump, bowed every way, a few with their brown heads
       const sd = Math.floor(p.x * 23 + p.z * 7);
       for (let k = 0; k < 22; k++) {
-        const a = hrand(sd, k, 1, 1) * 6.283, r = Math.sqrt(hrand(sd, k, 2, 2)) * 1.4, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, y = groundInfo(x, z).floor - 0.05;
+        const a = hrand(sd, k, 1, 1) * 6.283, r = Math.sqrt(hrand(sd, k, 2, 2)) * 1.4, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, y = floorOr(x, z, p.y) - 0.05;
         const h = 1.1 + hrand(sd, k, 3, 3) * 1.2, la = hrand(sd, k, 4, 4) * 6.283, lean = 0.1 + hrand(sd, k, 5, 5) * 0.3, w = 0.03;
         const tx = x + Math.cos(la) * h * lean, tz = z + Math.sin(la) * h * lean, px = -Math.sin(la) * w, pz = Math.cos(la) * w;
         mb.tri([x + px, y, z + pz], [x - px, y, z - pz], [tx, y + h, tz], k % 3 ? T.STRAW : T.YOTHGA_LEAF, Math.cos(la), 0.3, Math.sin(la));
@@ -707,7 +714,7 @@ function buildLevelMesh() {
     const open = LEVEL.open && (fl & F_SKY);              // under the open sky: no ceiling, and no wall at the world's edge
     if (k === 1 && LV.rough[idx] >= 0.75 && !LEVEL.open && !(fl & F_WATER) && hrand(i, j, 3, 78) < 0.09) {   // a puddle in a hollow of the cave floor, lying on it
       const cx = (i + 0.3 + 0.4 * hrand(i, j, 1, 79)) * CELL, cz = (j + 0.3 + 0.4 * hrand(i, j, 2, 79)) * CELL, R0 = 0.5 + 0.5 * hrand(i, j, 4, 79), NP = 9;
-      const at = (a, rr) => { const x = cx + Math.cos(a) * rr, z = cz + Math.sin(a) * rr * 0.8; return [x, groundInfo(x, z).floor + 0.025, z]; };
+      const at = (a, rr) => { const x = cx + Math.cos(a) * rr, z = cz + Math.sin(a) * rr * 0.8; return [x, floorOr(x, z, groundInfo(cx, cz).floor) + 0.025, z]; };
       const c = at(0, 0);
       for (let q = 0; q < NP; q++) {
         const a0 = q / NP * Math.PI * 2, a1 = (q + 1) / NP * Math.PI * 2, r0 = R0 * (0.7 + 0.5 * hrand(i, j, q, 80)), r1 = R0 * (0.7 + 0.5 * hrand(i, j, (q + 1) % NP, 80));
@@ -744,14 +751,17 @@ function buildLevelMesh() {
       }
       if (nk === 0) wallStrip(mb, ca, cb, fy(ca), fy(cb), cy(ca), cy(cb), T[tex.wall], -d[0], -d[1]);
       if (nk === 0 && k === 1 && LV.rough[idx] >= 0.75 && !LEVEL.open) {   // a cave: fallen rock and scree heaped at the foot of its walls
+        // the floor and roof here, read inside this cell: the corners are set back into the rock, so a point off the wall's line can
+        // still be in solid stone, whose 'floor' is 1e9 and 'roof' -1e9 (a drape a billion metres long, streaking across every view)
+        const here = (x, z) => groundInfo(clamp(x, i * CELL + 0.02, (i + 1) * CELL - 0.02), clamp(z, j * CELL + 0.02, (j + 1) * CELL - 0.02));
         for (let q = 0; q < 3; q++) {
           const h = hrand(i * 4 + d[0] + 7, j * 4 + d[1] + 7, q, 71); if (h > 0.62) continue;
           const u = 0.15 + 0.7 * hrand(i, j, q * 3 + d[0] * 5 + d[1] * 11, 72), ax = ca.x + (cb.x - ca.x) * u, az = ca.z + (cb.z - ca.z) * u;
-          const sz = 0.12 + 0.3 * hrand(i, j, q + 9, 73), x = ax - d[0] * (sz + 0.12), z = az - d[1] * (sz + 0.12), y = groundInfo(x, z).floor;
+          const sz = 0.12 + 0.3 * hrand(i, j, q + 9, 73), x = ax - d[0] * (sz + 0.12), z = az - d[1] * (sz + 0.12), y = here(x, z).floor;
           addRock(mb, x, y + sz * 0.35, z, sz * 1.3, sz * 0.8, sz * 1.1, i * 131 + j * 17 + q, q === 2 ? T.ROCK : T[tex.wall], 0.4);
         }
         if (hrand(i * 3 + d[0], j * 3 + d[1], 5, 74) < 0.22) {   // flowstone: a drape of it down the wall from the roof, sunk in the wall, never a hand out from it
-          const u = 0.3 + 0.4 * hrand(i, j, d[0] * 3 + d[1], 75), ax = ca.x + (cb.x - ca.x) * u, az = ca.z + (cb.z - ca.z) * u, g = groundInfo(ax - d[0] * 0.5, az - d[1] * 0.5);
+          const u = 0.3 + 0.4 * hrand(i, j, d[0] * 3 + d[1], 75), ax = ca.x + (cb.x - ca.x) * u, az = ca.z + (cb.z - ca.z) * u, g = here(ax - d[0] * 0.5, az - d[1] * 0.5);
           const full = hrand(i, j, 7, 76) < 0.35, n = 7, sd = i * 37 + j * 11 + d[0] * 5;
           for (let q = 0; q < n; q++) {
             const t = q / (n - 1), y = g.ceil - (g.ceil - g.floor) * (full ? t : t * 0.6), r = full ? 0.32 + 0.12 * Math.sin(t * 9 + sd) : 0.38 * (1 - t * 0.7);
@@ -796,7 +806,13 @@ function buildLevelMesh() {
   }
   if (LEVEL.city) addCity(mb, LEVEL.city);
   bakeLights(mb, LV.lights, LEVEL.ambient || AMBIENT);
-  return mb.finish();
+  const out = mb.finish();
+  // a vertex that isn't a number (NaN from a bad prefab field) or is off in the billions (a height read inside solid rock) is drawn
+  // by the GPU as streaks across the screen, through everything: say where
+  for (let i = 0, bad = 0; i < out.length; i += 10) if (!(Math.abs(out[i]) < 1e5 && Math.abs(out[i + 1]) < 1e4 && Math.abs(out[i + 2]) < 1e5)) {
+    if (!bad++) console.warn('[level] ' + LEVEL.level + ': a vertex at ' + out[i].toFixed(1) + ',' + out[i + 1].toFixed(1) + ',' + out[i + 2].toFixed(1) + ' (layer ' + out[i + 9] + ')');
+  }
+  return out;
 }
 
 // ---- the sky over an open level: a dome graded from a burning horizon to a dark zenith, and the sun going down
