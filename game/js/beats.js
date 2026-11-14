@@ -199,8 +199,9 @@ function drawNPC() {
   }
   drawCharacter(n.id, n.x, y, n.z, n.yaw, P, l);
   if (LEVEL.vine && n.id === 'pelias') {                  // "the tendrils of the plant ... about the man's body": Yothga's vine, from the vault down round him
-    const top = groundInfo(n.x, n.z).ceil, held = n.mode === 'bound', len = held ? top - y - 1.0 : 0.9;
-    const vx = n.x + 0.15, vz = n.z - 0.1;
+    const bx = LEVEL.npc.at[0] * CELL, bz = LEVEL.npc.at[1] * CELL;   // where it held him: freed, he walks away and its cut end stays hanging there
+    const top = groundInfo(bx, bz).ceil, held = n.mode === 'bound', len = held ? top - y - 1.0 : 0.9;
+    const vx = bx + 0.15, vz = bz - 0.1;
     drawM('vinestem', m4mul(m4trs(vx, top - len, vz, 0.3, 0.06, 0, 1), m4s3(1.4, len, 1.4)), l);
     if (held) for (let k = 0; k < 3; k++) drawM('vinecoil', m4mul(m4trs(n.x, y + 0.75 + k * 0.32, n.z, k * 1.1 + Math.sin(gameTime * 0.9 + k) * 0.08, 0.18 * (k - 1), 0.12, 1), m4s3(0.3, 1, 0.24)), l);
   }
