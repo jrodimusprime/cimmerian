@@ -106,7 +106,7 @@ function skinInit() {
   const sc = R.setCamera.bind(R), lm = R.lightMul.bind(R), bs = R.beginScene.bind(R);
   R.setCamera = (vp, camPos, lampPos, lampCol, lampRange, fog) => { sc(vp, camPos, lampPos, lampCol, lampRange, fog); R._cam = { vp, camPos, lampPos, lampCol, lampRange, fog }; };
   R.lightMul = v => { lm(v); R._lm = v; };
-  R.beginScene = t => { bs(t); R._time = t; R._lm = 1; };
+  R.beginScene = (t, mirror) => { bs(t, mirror); R._time = t; R._lm = 1; };
 }
 
 // ---- .glb loading --------------------------------------------------------------
@@ -422,6 +422,13 @@ function drawSkinned(id, x, y, z, yaw, P, light, glow = 0, alpha = 1) {
     const Mn = (part, m) => drawPart('w_' + part, (CAST[id].weapon === part ? 'char:' + id : 'char:warden') + ':' + part, m, light, glow);   // the built weapon, else the old one
     if (wpn === 'bow') { if (mt.handL) Mn('bow', m4mul(m4mul(root, m4mul(mt.handL, m4t(0, -0.07, 0.025))), m4rx(Math.PI / 2 - 0.1))); }
     else Mn(wpn, wpn === 'spear' ? m4mul(wm, m4t(0, -0.35, 0)) : wpn === 'pike' ? m4mul(wm, m4t(0, -0.9, 0)) : wpn === 'axe' ? m4mul(wm, m4t(0, -0.45, 0)) : wpn === 'greatsword' ? m4mul(wm, m4t(0, -0.05, 0)) : wm);
+  }
+  if (P.torch && mt.handL) {                           // a torch in the left fist, held up (P.torch 2: alight)
+    const hm = m4mul(mt.handL, m4t(0, -0.07, 0.025)), t0 = m4mul(hm, m4rx(Math.PI / 2)), p = [hm[12], hm[13], hm[14]], el = 1.15;
+    let tm = m4mul(m4t(p[0], p[1], p[2]), m4mul(m4fromTo(norm3([t0[4], t0[5], t0[6]]), [0, Math.sin(el), Math.cos(el)]), m4mul(m4t(-p[0], -p[1], -p[2]), t0)));
+    tm = m4mul(root, m4mul(tm, m4s(0.8 / (SKIN_SCALE[id] || 1))));
+    drawM('vm_torch', tm, light);
+    if (P.torch > 1 && R._cam) { const fp = [0, 1, 2].map(i => tm[4 + i] * 0.3 + tm[12 + i]); drawFlame(fp[0], fp[1], fp[2], 0.2, 0.36, 0.5, R._cam.camPos[0], R._cam.camPos[2]); }
   }
   if (c2 && c2.pit !== undefined && M.byName.head !== undefined && P.cut !== 'head') {   // the pit-things' teeth: "monsters with dripping jaws agape"
     const hb = M.bones[M.byName.head].rest, k = MAW_AT[c2.pit] || MAW_AT[0];

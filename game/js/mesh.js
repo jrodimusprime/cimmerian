@@ -274,6 +274,17 @@ function addPrefab(mb, p) {
       addBox(mb, bx + n[0] * 0.03, top - h - 0.02, bz + n[1] * 0.03, w + 0.02, 0.03, 0.03, T.WOOD, yaw);
       break;
     }
+    case 'mirror': {                                     // a great mirror of polished silver in a gilt frame, hung flat on the wall (its glass is drawn live: game.js mirrorGlass)
+      const bx = p.x + n[0] * 0.06, bz = p.z + n[1] * 0.06, yaw = Math.atan2(n[0], n[1]), t = [n[1], -n[0]], w = p.w || 1.0, h = p.h || 2.4, top = p.y + (p.top || 3.0), fr = 0.09;
+      addBox(mb, bx - n[0] * 0.03, top - h / 2, bz - n[1] * 0.03, w + fr, h / 2 + fr, 0.03, T.WOOD, yaw);                                    // the backing board
+      for (const e of [-1, 1]) {
+        addBox(mb, bx + t[0] * e * (w + fr / 2), top - h / 2, bz + t[1] * e * (w + fr / 2), fr / 2, h / 2 + fr, 0.05, T.GILT, yaw);         // the sides
+        addBox(mb, bx, e > 0 ? top + fr / 2 : top - h - fr / 2, bz, w + fr, fr / 2, 0.05, T.GILT, yaw);                                  // top and foot
+        for (const v of [-1, 1]) addRock(mb, bx + t[0] * e * (w + fr / 2) + n[0] * 0.05, (v > 0 ? top : top - h) + v * fr * 0.5, bz + t[1] * e * (w + fr / 2) + n[1] * 0.05, 0.07, 0.07, 0.04, 3, T.GILT, 0.3);   // bosses at the corners
+      }
+      addRock(mb, bx + n[0] * 0.05, top + fr + 0.08, bz + n[1] * 0.05, 0.16, 0.12, 0.05, 5, T.GILT, 0.25);   // a cartouche over it
+      break;
+    }
     case 'trophy': {                                     // arms hung on the wall: a round shield over two crossed blades (or crossed spears, or empty pegs)
       const bx = p.x + n[0] * 0.08, bz = p.z + n[1] * 0.08, yaw = Math.atan2(n[0], n[1]), t = [n[1], -n[0]], y0 = p.y + (p.hang || 2.0);   // (p.at is its place on the grid, never a height)
       for (const e of [-1, 1]) {                          // the blades, crossed behind

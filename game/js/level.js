@@ -779,6 +779,9 @@ const LEVEL_E1M5 = {
     { prefab: 'sconce', at: [15.5, 9], wall: 'S' }, { prefab: 'sconce', at: [19.8, 1], wall: 'N' }, { prefab: 'sconce', at: [15, 1], wall: 'N' },
     { prefab: 'divan', at: [57.5, 11.6], yaw: Math.PI }, { prefab: 'tapestry', at: [56, 13], wall: 'S', w: 1.1, h: 2.2, top: 3.4 }, { prefab: 'tapestry', at: [56, 5], wall: 'N', w: 1.2, h: 2.0, top: 3.4 },
     { prefab: 'sconce', at: [60, 16], wall: 'W' }, { prefab: 'sconce', at: [63, 20], wall: 'E' },
+    // Tsotha's great mirrors of polished silver, in which the king sees himself (drawn live: game.js mirrorList)
+    { prefab: 'mirror', at: [46, 13], wall: 'S', w: 1.1, h: 2.8, top: 3.3 }, { prefab: 'mirror', at: [58.4, 5], wall: 'N', w: 0.95, h: 2.6, top: 3.3 },
+    { prefab: 'mirror', at: [29.4, 18], wall: 'N', w: 0.85, h: 2.1, top: 2.45 },
   ],
   lights: [{ at: [56, 9], y: 7.5, col: [0.4, 0.6, 1.0], rad: 10, i: 1.2 },
     { at: [-25, 67], y: 90, col: [0.5, 0.56, 0.8], rad: 600, i: 0.7, sky: true }],   // the moon over the battlements (only on what is under the sky)
@@ -1447,12 +1450,12 @@ function checkWallMounts(spec) {
 // Walls are not on the grid lines: each corner is set back into the rock (computeCorner: jx, jz) and each wall bows back
 // between floor and ceiling (mesh.js wallStrip: bul, in three rows). How far the real face stands behind the grid line at
 // a hung thing (its span along the wall, between its foot and its top), the least of it so nothing sinks into the stone.
-const HUNG = new Set(['tapestry', 'banner', 'trophy', 'pegs', 'sconce', 'chains', 'seep', 'loculi']);
+const HUNG = new Set(['tapestry', 'mirror', 'banner', 'trophy', 'pegs', 'sconce', 'chains', 'seep', 'loculi']);
 function wallRecess(p, n) {
   const along = n[0] === 0 ? 0 : 1, u0 = along === 0 ? p.at[0] : p.at[1], line = along === 0 ? Math.round(p.at[1]) : Math.round(p.at[0]);
   const g0 = Math.floor(u0), u = u0 - g0, ca = along === 0 ? corner(g0, line) : corner(line, g0), cb = along === 0 ? corner(g0 + 1, line) : corner(line, g0 + 1);
   const fl = groundInfo((along === 0 ? u0 : line) * CELL + n[0] * 0.6, (along === 0 ? line : u0) * CELL + n[1] * 0.6).floor;
-  const top = p.prefab === 'tapestry' ? (p.top || 3.3) : p.prefab === 'banner' ? 4.2 : 2.3, foot = p.prefab === 'tapestry' ? top - (p.h || 1.6) : p.prefab === 'banner' ? 1.6 : 1.4;
+  const tall = p.prefab === 'tapestry' || p.prefab === 'mirror', top = tall ? (p.top || 3.3) : p.prefab === 'banner' ? 4.2 : 2.3, foot = tall ? top - (p.h || 1.6) : p.prefab === 'banner' ? 1.6 : 1.4;
   const rec = (c, y) => {                                 // set back at corner c, height y: the corner's own setback, plus the bow at that height
     const back = -((c.x - c.gx * CELL) * n[0] + (c.z - c.gz * CELL) * n[1]), dir = -(c.jx * n[0] + c.jz * n[1]);
     const t = clamp((y - c.fo) / Math.max(0.5, c.c - c.fo), 0, 1) * 3, r0 = Math.floor(Math.min(2.999, t)), f = t - r0;

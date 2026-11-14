@@ -242,6 +242,29 @@ void main() {
   outColor = vec4(col, 1.0);
 }`;
 
+// the glass of a mirror: what the mirror pass saw, at this very pixel (it was drawn from this camera, through the reflection),
+// silvered: a little dark and warm, with a faint bloom of old tarnish toward the frame
+const MIRROR_VS = `#version 300 es
+layout(location=0) in vec3 aPos;
+uniform mat4 uVP;
+uniform mat4 uModel;
+out vec2 vQ;
+void main() { vQ = aPos.xy; gl_Position = uVP * uModel * vec4(aPos, 1.0); }`;
+const MIRROR_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uMir;
+uniform vec2 uSize;
+uniform vec3 uTint;
+uniform float uLive;
+in vec2 vQ;
+out vec4 outColor;
+void main() {
+  vec3 c = uLive > 0.5 ? texture(uMir, gl_FragCoord.xy / uSize).rgb : vec3(0.02, 0.018, 0.016);
+  float edge = max(abs(vQ.x), abs(vQ.y * 2.0 - 1.0));
+  c *= uTint * (1.0 - 0.35 * smoothstep(0.75, 1.0, edge));
+  outColor = vec4(c, 1.0);
+}`;
+
 class Renderer {
   constructor(canvas) {
     const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
@@ -250,6 +273,8 @@ class Renderer {
     this.prog = this.program(SCENE_VS, SCENE_FS);
     this.post = this.program(POST_VS, POST_FS);
     this.skyProg = this.program(SKY_VS, SKY_FS);
+    this.mirProg = this.program(MIRROR_VS, MIRROR_FS);
+    this.mu = {}; for (const n of ['uVP', 'uModel', 'uMir', 'uSize', 'uTint', 'uLive']) this.mu[n] = gl.getUniformLocation(this.mirProg, n);
     this.su = {};
     for (const n of ['uInvVP', 'uSun', 'uHaze', 'uNight', 'uTime']) this.su[n] = gl.getUniformLocation(this.skyProg, n);
     this.u = {};
@@ -301,6 +326,7 @@ class Renderer {
     this.aspect = w / h;
     this.lh = lowH; this.lw = Math.max(1, Math.round(lowH * w / h));
     if (this.fbo) { gl.deleteFramebuffer(this.fbo); gl.deleteTexture(this.fboTex); gl.deleteRenderbuffer(this.fboDepth); }
+    if (this.mir) { gl.deleteFramebuffer(this.mir.fbo); gl.deleteTexture(this.mir.tex); gl.deleteRenderbuffer(this.mir.depth); this.mir = null; }
     this.fboTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.fboTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, this.lw, this.lh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -350,9 +376,33 @@ class Renderer {
   }
   deleteMesh(m) { if (!m) return; this.gl.deleteBuffer(m.vbo); this.gl.deleteVertexArray(m.vao); }
 
-  beginScene(time) {
+  // the mirror pass's own target (made when first wanted, the size of the scene's)
+  mirrorTarget() {
+    if (this.mir) return this.mir;
+    const gl = this.gl, tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, this.lw, this.lh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+    const depth = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, depth); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, this.lw, this.lh);
+    const fbo = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return (this.mir = { fbo, tex, depth });
+  }
+  // a mirror's glass (a unit quad, x -1..1, y 0..1, placed by model), showing the mirror pass if live, else dark
+  drawMirror(m, model, vp, tint, live) {
+    const gl = this.gl, u = this.mu;
+    gl.useProgram(this.mirProg);
+    gl.uniformMatrix4fv(u.uVP, false, vp); gl.uniformMatrix4fv(u.uModel, false, model);
+    gl.uniform2f(u.uSize, this.lw, this.lh); gl.uniform3fv(u.uTint, tint); gl.uniform1f(u.uLive, live ? 1 : 0);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, live ? this.mirrorTarget().tex : null); gl.uniform1i(u.uMir, 3);
+    gl.bindVertexArray(m.vao); gl.drawArrays(gl.TRIANGLES, 0, m.count);
+    gl.activeTexture(gl.TEXTURE0); gl.useProgram(this.prog);
+  }
+  beginScene(time, mirror = false) {
     const gl = this.gl;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, mirror ? this.mirrorTarget().fbo : this.fbo);
     gl.viewport(0, 0, this.lw, this.lh);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

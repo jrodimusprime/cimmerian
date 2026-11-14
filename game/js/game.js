@@ -126,6 +126,79 @@ function viewPose(wep, prog, sw, th, sb, cb, combo, parryT, tp = 0, raise = 0) {
   const upper = new Float32Array([ux[0], ux[1], ux[2], 0, uy[0], uy[1], uy[2], 0, L[0], L[1], L[2], 0, E[0], E[1], E[2], 1]);
   return { hand, swordAt, blade, upper };
 }
+// ---- mirrors (e1m5: the great mirrors of the citadel, where you see yourself) ----------------------------------------
+// The level's 'mirror' props, each a plane of glass: its centre's foot (x, y0, z), half-width w, height h, facing n.
+let MIRRORS = { props: null, list: [] }, MIRROR_QUAD = null;
+function mirrorList() {
+  if (MIRRORS.props === LV.props) return MIRRORS.list;
+  MIRRORS = { props: LV.props, list: LV.props.filter(p => p.prefab === 'mirror').map(p => {
+    const nn = wallIn(p.wall), w = p.w || 1.0, h = p.h || 2.4, top = p.y + (p.top || 3.0), x = p.x + nn[0] * 0.095, z = p.z + nn[1] * 0.095;
+    return { x, z, y0: top - h, y1: top, w, n: [nn[0], 0, nn[1]], model: m4mul(m4trs(x, top - h, z, Math.atan2(nn[0], nn[1]), 0, 0, 1), m4s3(w, h, 1)) };
+  }) };
+  return MIRRORS.list;
+}
+function mirrorQuad() {
+  if (MIRROR_QUAD) return MIRROR_QUAD;
+  const v = [[-1, 0], [1, 0], [1, 1], [-1, 0], [1, 1], [-1, 1]], d = new Float32Array(60);
+  v.forEach(([x, y], i) => d.set([x, y, 0, 0, 0, 1, 1, 1, 1, 0], i * 10));
+  return (MIRROR_QUAD = R.createMesh(d));
+}
+// the one mirror worth the pass: the nearest within 30 m that you stand before and can see
+function pickMirror(cx, cy, cz) {
+  let best = null, bd = 30;
+  const f = camFwd();
+  for (const m of mirrorList()) {
+    const dx = cx - m.x, dz = cz - m.z, side = dx * m.n[0] + dz * m.n[2], d = Math.hypot(dx, dz);
+    if (side < 0.2 || d > bd) continue;
+    if ((-dx * f[0] - dz * f[2]) / d < -0.3 && d > m.w + 1) continue;          // behind you
+    if (!los(cx, cy, cz, m.x + m.n[0] * 0.3, (m.y0 + m.y1) / 2, m.z + m.n[2] * 0.3)) continue;
+    best = m; bd = d;
+  }
+  return best;
+}
+// a projection whose near plane is C (eye space; kept where C.x > 0): nothing between the eye and the glass is drawn (Lengyel's oblique clip)
+function obliqueNear(P, C) {
+  const M = Float32Array.from(P), q = [(Math.sign(C[0]) + M[8]) / M[0], (Math.sign(C[1]) + M[9]) / M[5], -1, (1 + M[10]) / M[14]];
+  const k = 2 / (C[0] * q[0] + C[1] * q[1] + C[2] * q[2] + C[3] * q[3]);
+  M[2] = C[0] * k - M[3]; M[6] = C[1] * k - M[7]; M[10] = C[2] * k - M[11]; M[14] = C[3] * k - M[15];
+  return M;
+}
+// Conan himself, as a mirror shows him: where you stand, facing where you look, doing what you do. Render side only.
+const HERO = { x: 0, z: 0, walk: 0, moving: false, yaw: 0 };
+function drawHero(px, py, pz) {
+  const H = HERO, d = Math.hypot(px - H.x, pz - H.z);
+  if (d < 1.5) H.walk += d;                            // (a checkpoint, a cut: no stride)
+  H.x = px; H.z = pz; H.yaw = S.yaw + Math.PI;
+  const fl = groundInfo(px, pz).floor, air = py > fl + 0.15, w = S.flags.has_bone ? 'bone' : S.weapon;
+  H.moving = !air && Math.hypot(S.vx, S.vz) > 0.6;
+  const P = poseIdle({}, gameTime);
+  Object.assign(P, { lean: 0.06, headX: clamp(-S.pitch, -0.9, 0.9) * 0.75, noShield: true });
+  if (w === 'sword' || w === 'dagger') Object.assign(P, GUARD.sword({}), { weapon: w });
+  else if (w === 'spear') Object.assign(P, GUARD.spear({}), { weapon: 'spear' });
+  else Object.assign(P, { unarmed: true, uxR: -0.55, fxR: -1.6, uzR: 0.2 });   // bare fists up
+  const torch = torchInHand(), TORCH = { uxL: -0.75, fxL: -1.15, uzL: 0.18 };
+  if (torch) Object.assign(P, TORCH, { torch: torchLit() ? 2 : 1 });
+  else if (w !== 'sword' && w !== 'dagger' && w !== 'spear') Object.assign(P, { uxL: -0.6, fxL: -1.7, uzL: 0.2 });
+  poseMove(P, H, !torch && P.unarmed, { walkK: 4.0, runK: 3.0, runAt: 4.8 });
+  // the blow you are striking, in the foes' own key poses (combat.js ATTACKS), stretched over your own timing
+  const keyed = (keys, tW, tS, tR, u) => {
+    const T = tW + tS + tR, at = clamp(u, 0, 0.999) * T, st = at < tW ? 'windup' : at < tW + tS ? 'strike' : 'recover';
+    keyPose(P, { state: st, t: st === 'windup' ? at : st === 'strike' ? at - tW : at - tW - tS, homeX: 0, combo: 0 }, { windup: tW, strike: tS, recover: tR }, keys);
+    P.gait = null;
+  };
+  if (S.swing > 0) {
+    const u = 1 - S.swing / S.swingLen, L = S.swingLen;
+    if (w === 'sword') keyed(ATTACKS.sword({}), L * 0.28, L * 0.24, L * 0.48, u);
+    else if (w === 'spear' || w === 'dagger') keyed(ATTACKS.spear({}), L * 0.25, L * 0.25, L * 0.5, u);
+    else keyed(ATTACKS.fist(), L * 0.22, L * 0.24, L * 0.54, u);
+  }
+  if (S.throwKind === 'spear' && S.throwT > 0) keyed(ATTACKS.throw({}), THROW_REL, 0.08, THROW_LEN - THROW_REL - 0.08, 1 - S.throwT / THROW_LEN);
+  if (S.parryT > 0) { keyMix(P, { uxR: -1.5, uzR: -0.3, fxR: -0.95, wel: 0.15, waz: 1.45, twist: 0.2, lean: -0.05 }, Math.sin(Math.PI * Math.min(1, (1 - S.parryT / PARRY.window) * 1.3))); P.gait = null; }
+  if (S.kickT > 0) { const u = 1 - S.kickT / KICK.period; keyMix(P, { txR: -1.45, sxR: 0.3, fpR: -0.3, lean: -0.28, txL: -0.12, sxL: 0.25, headX: P.headX + 0.2 }, Math.sin(Math.PI * Math.min(1, u * 1.35))); P.gait = null; }   // a front kick, from the hip
+  if (torch) Object.assign(P, TORCH);
+  if (air) { Object.assign(P, { gait: null, plant: 0, txL: -0.9, sxL: 1.1, txR: -0.35, sxR: 0.9, fpL: 0.3, fpR: 0.3 }); }   // a leap: the knees drawn up
+  drawCharacter('conan', px, air ? py - 0.05 : fl, pz, H.yaw, P, sampleLight(px, py + 1.4, pz));
+}
 // Satha's colouring: a dark hide, dimmed head, and only a faint sheen of her own
 const SATHA_HIDE = [28, 27, 20], SATHA_HEAD_L = [0.85, 0.85, 0.88], SATHA_GLOW = 0.04;
 function drawM(name, m, light, glow = 0, alpha = 1) {
@@ -1918,8 +1991,8 @@ function render(alpha) {
   if (t >= 0 && t < 6.5) lm *= 1 - 0.5 * smoothstep(0, 0.6, t) * (1 - smoothstep(5, 6.5, t)) * (0.75 + 0.25 * Math.sin(gameTime * 37));
   const ev = LEVEL.exitVoid;
   R.voidLine = ev ? [ev.from[0] * CELL, ev.from[1] * CELL, ev.to[0] * CELL, ev.to[1] * CELL] : [0, 0, 0, 0]; R.voidW = ev ? ev.w : 0;
-  R.beginScene(gameTime);
-  R.lightMul(lm);
+  // the world, from an eye at (px, eyeY, pz) through vp: drawn once as you see it, and first through a mirror if one is in view
+  const drawScene = (vp, px, eyeY, pz) => {
   if (LEVEL.open) R.drawSky(vp, LEVEL.night ? (LEVEL.moon || [0.5, 0.35, -0.6]) : (LEVEL.sun || [-1, 0.05, 0.2]), LEVEL.dawn ? 'dawn' : LEVEL.night, gameTime);   // the open sky: drawn first, behind everything
   R.setCamera(vp, [px, eyeY, pz], lampPos, lc, lampRange, LEVEL.fog || 0.034);
   R.drawWorld(levelMesh);
@@ -2232,6 +2305,21 @@ function render(alpha) {
   R.blend(true);
   for (const pd of S.puddles) drawM('puddle', m4trs(pd.x, pd.y, pd.z, 0, 0, 0, 0.6 + 0.4 * Math.min(1, (6 - pd.t) * 3)), sampleLight(pd.x, pd.y + 0.5, pd.z), 0.1, Math.min(0.6, pd.t * 0.5));
   R.blend(false);
+  };
+  const mir = cc ? null : pickMirror(px, eyeY, pz);
+  if (mir) {                                           // the mirror pass: the world reflected in the glass's plane, seen from this eye, nothing on this side of it
+    const n = mir.n, dd = n[0] * mir.x + n[2] * mir.z, Ref = new Float32Array([1 - 2 * n[0] * n[0], -2 * n[0] * n[1], -2 * n[0] * n[2], 0, -2 * n[0] * n[1], 1 - 2 * n[1] * n[1], -2 * n[1] * n[2], 0,
+      -2 * n[0] * n[2], -2 * n[1] * n[2], 1 - 2 * n[2] * n[2], 0, 2 * dd * n[0], 2 * dd * n[1], 2 * dd * n[2], 1]);
+    const Vi = m4inv(view), Cw = [-n[0], -n[1], -n[2], dd + 0.01], Ce = [0, 1, 2, 3].map(c => Cw[0] * Vi[c * 4] + Cw[1] * Vi[c * 4 + 1] + Cw[2] * Vi[c * 4 + 2] + Cw[3] * Vi[c * 4 + 3]);
+    const mvp = m4mul(obliqueNear(proj, Ce), m4mul(view, Ref)), re = [0, 1, 2].map(i => Ref[i] * px + Ref[4 + i] * eyeY + Ref[8 + i] * pz + Ref[12 + i]);
+    R.beginScene(gameTime, true); R.lightMul(lm);
+    drawScene(mvp, re[0], re[1], re[2]);
+    drawHero(px, py, pz);                               // and there he is
+  }
+  R.beginScene(gameTime);
+  R.lightMul(lm);
+  drawScene(vp, px, eyeY, pz);
+  for (const m of mirrorList()) if (Math.hypot(m.x - px, m.z - pz) < 60) R.drawMirror(mirrorQuad(), m.model, vp, [1.05, 1.02, 0.96], m === mir);
   // view-model: the hero's manacled right hand, with whatever is in it
   if ((mode === 'play' || mode === 'paused') && !window.NO_VIEWMODEL && cineT() < 0) {   // NO_VIEWMODEL: for the gallery's photographs; none in the closing scene
     R.clearDepth(); R.lightMul(1);
