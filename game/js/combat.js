@@ -33,7 +33,7 @@ const FOES = {
   // the weeping thing (ch. III): Conan fled it, "doubting the power of man-made weapons to harm it"
   // ---- e1m4-e1m8 ----
   // Yothga (ch. III): rooted; "the long tendrils arched toward him"; cut through the stem
-  yothga: { hp: 560, speed: 0, reach: 4.2, dmg: 22, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
+  yothga: { hp: 392, speed: 0, reach: 4.2, dmg: 22, windup: 0.75, strike: 0.3, recover: 0.8, sight: 9, name: 'Yothga', boss: true, rooted: true },
   // Tamar (ch. IV): "the swaggering Pellian soldiery", the archers on the tower, Arpello
   pellian: { hp: 60, speed: 3.3, reach: 3.2, dmg: 14, windup: 0.6, strike: 0.22, recover: 0.7, block: 'alternate', sight: 18, name: 'Pellian man-at-arms', spears: 3, throwAt: [6, 14] },
   pellian_archer: { hp: 40, speed: 3.6, reach: 0, dmg: 12, windup: 0.85, strike: 0.15, recover: 1.0, ranged: true, keep: [7, 16], sight: 26, name: 'Pellian archer' },
