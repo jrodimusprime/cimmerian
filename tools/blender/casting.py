@@ -133,7 +133,9 @@ def human(spec):
         e = body.add_asset(h, os.path.join(d, 'low-poly.mhclo'), 'Eyes')
         e['eye_tex'] = os.path.join(MH, 'sys', 'eyes', 'materials', eye + '_eye.png'); e.name = 'eyes'
         assets.append(e)
-    body.stand(rig, arm_out=spec.get('arm_out', 0.12))
+    body.stand(rig, arm_out=spec.get('arm_out', 0.12), fist=0.0 if spec.get('grip') else 1.0)
+    if spec.get('grip'):                             # a hand closed round a hilt (the view-model's), not the standing fist
+        g = spec['grip']; body.deviate(rig, g['side']); body.grip(rig, g['side'], g.get('at'), g['radius'])
     body.apply_rest(rig)
     helpers = body.split_helpers(h)
     body.fold_fingers(h, rig)
@@ -388,12 +390,13 @@ CAST = {
 }
 
 
-def build_view_arm(side='r'):
+def build_view_arm(side='r', name='vm_arm', radius=0.0125):
     """Conan's own forearm and fist (CC0 body, his baked skin) for the first-person view-model,
     re-expressed in the game's hand frame: wrist at the origin, fingers toward -z, back of the hand +y."""
     import bmesh
     from mathutils import Vector
     spec = dict(CAST['conan']); spec['outfit'] = []
+    spec['grip'] = dict(side=side, radius=radius)   # round a hilt the size of the game's (vm_hilt); where it lies is printed, and is mesh.js GRIP_C (vm_fist: closed on nothing)
     h, rig, helpers = human(spec)
     for k, o in list(helpers.items()):
         if hasattr(o, 'name') and o.name in bpy.data.objects:
@@ -401,7 +404,7 @@ def build_view_arm(side='r'):
     outfit.shade_smooth(h)
     outfit.bake([h])
     wrist = outfit.bone_head(rig, 'hand_' + side)
-    d = (outfit.bone_tail(rig, 'hand_' + side) - wrist).normalized()
+    d = (outfit.bone_tail(rig, 'lowerarm_' + side) - outfit.bone_head(rig, 'lowerarm_' + side)).normalized()   # the forearm's line (as body.hand_frame)
     out_side = Vector((1 if wrist.x > 0 else -1, 0, 0))
     n_back = (out_side - d * out_side.dot(d)).normalized()          # the back of the hand faces outward from the thigh
     across = d.cross(n_back)
@@ -419,5 +422,5 @@ def build_view_arm(side='r'):
     for m in list(h.modifiers):
         h.modifiers.remove(m)
     h.parent = None
-    h.name = 'vm_arm'
+    h.name = name
     return [h]

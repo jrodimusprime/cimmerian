@@ -2245,12 +2245,13 @@ function render(alpha) {
     const { hand, swordAt, blade, upper } = viewPose(throwing ? 'throw' : wep, prog, sw, th, sb, cb, S.combo, S.parryT, throwing ? 1 - S.throwT / THROW_LEN : 0, S.raiseT || 0);
     drawM('vm_upper', upper, vl);
     // his own forearm and fist (the CC0 body, his baked skin), else the old modelled ones
-    if (typeof SKINNED !== 'undefined' && SKINNED.vm_arm) { drawStatic('vm_arm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); }
+    const arm = wep === 'fists' && typeof SKINNED !== 'undefined' && SKINNED.vm_fist ? 'vm_fist' : 'vm_arm';   // bare-handed, the fist closed tight; else closed round what it holds
+    if (typeof SKINNED !== 'undefined' && SKINNED[arm]) { drawStatic(arm, hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); }
     else { drawM('vm_forearm', hand, vl); drawM('vm_manacle', hand, vl); drawM('vm_chain', hand, vl); drawM('vm_hand_grip', hand, vl); }
     if (wep === 'bone') drawM('bone', m4mul(hand, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], Math.PI / 2, 0, 0, 0.42)), vl);
-    else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
-    else if (wep === 'sword') { drawM('sword', m4mul(swordAt, m4trs(0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl); if (blade) drawM('vm_hilt', hand, vl); }   // the hilt seated in the fist while the wrist cocks the blade
-    else if (wep === 'spear') drawPart('w_spear', 'spear', m4mul(hand, m4trs(0.05, GRIP_C[1], GRIP_C[2] - 0.0, 0, 0, Math.PI / 2, 0.55)), vl);
+    else if (wep === 'dagger') drawM('dagger2', m4mul(hand, m4trs(GRIP_C[0] + 0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 1)), vl);
+    else if (wep === 'sword') { drawM('vm_blade', m4mul(swordAt, m4trs(GRIP_C[0] - 0.058 + 0.11 * 0.62, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.62)), vl); drawM('vm_hilt', hand, vl); }   // the hilt in the fist (the hand closes round it: tools/blender body.grip), the blade on from its guard, cocked by the wrist
+    else if (wep === 'spear') drawPart('w_spear', 'spear', m4mul(hand, m4trs(GRIP_C[0] + 0.05, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.55)), vl);
     if (torchInHand()) {                     // the torch in his left fist: the right hand's model, mirrored
       const tf = norm3([-0.32 + sb * 2, 1.3, -0.7]), TX = [-tf[0], -tf[1], -tf[2]], tarm = [0.62, -0.55, 0.55];
       const td = tarm[0] * TX[0] + tarm[1] * TX[1] + tarm[2] * TX[2], TZ = norm3([tarm[0] - TX[0] * td, tarm[1] - TX[1] * td, tarm[2] - TX[2] * td]), TY = cross3(TZ, TX);
@@ -2259,7 +2260,7 @@ function render(alpha) {
       const handL = m4mul(m4s3(-1, 1, 1), handR), tl = [0.85, 0.55, 0.3];
       tl.d = [0.2, 1, 0.3];
       if (typeof SKINNED !== 'undefined' && SKINNED.vm_arm) drawStatic('vm_arm', handL, tl); else { drawM('vm_forearm', handL, tl); drawM('vm_hand_grip', handL, tl); }
-      const torch = m4mul(handL, m4trs(0.0, GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.5));
+      const torch = m4mul(handL, m4trs(GRIP_C[0], GRIP_C[1], GRIP_C[2], 0, 0, Math.PI / 2, 0.5));
       drawM('vm_torch', torch, tl);
       // the flame: three nested tongues, each flickering on its own, leaning with the draft
       const dr = S.tun ? S.tun.draft : [0, 0], lat = dr[0] * Math.cos(S.yaw) - dr[1] * Math.sin(S.yaw), fwd = -dr[0] * Math.sin(S.yaw) - dr[1] * Math.cos(S.yaw);
@@ -2441,7 +2442,7 @@ function buildWallDecals(lm) {
 // ---------------------------------------------------------------- the cast's built models
 // a rider's seat: the built war-horse stands taller than the old part-built one
 function seatY() { return typeof SKINNED !== 'undefined' && SKINNED.horse ? 0.68 : 0.5; }
-const W_MODELS = ['vm_arm', 'w_sword', 'w_greatsword', 'w_dagger', 'w_axe', 'w_spear', 'w_pike', 'w_bow'];
+const W_MODELS = ['vm_arm', 'vm_fist', 'w_sword', 'w_greatsword', 'w_dagger', 'w_axe', 'w_spear', 'w_pike', 'w_bow'];
 const ALL_MODELS = Object.keys(CAST).concat(['horse', 'steed', 'oozey', 'weeper_body', 'weeper_tentacle', 'weeper_head', 'yothga_stem', 'yothga_tendril', 'yothga_bloom', 'eagle_body', 'eagle_wing', 'satha_head', 'satha_jaw', 'presence'], W_MODELS);
 // only what this level puts on screen
 function levelCast(L) {

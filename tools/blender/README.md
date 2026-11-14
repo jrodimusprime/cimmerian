@@ -55,3 +55,14 @@ Then open `game/index.html?cast` to see them, front and profile.
 6. **Decimate and export** as `.glb`.
 
 The horses and the pit-things are downloaded CC0 models (above), refitted in `beasts.py` to the bones the game drives: the horse's legs, neck and tail for the gallop, the goblin's skeleton folded down to the cast's 23 bones so the pit-things' crawl and strike poses drive it. The other beasts use metaballs (the weeping thing) or tubes and leaves (Yothga, the eagle). They are static parts that the game animates piece by piece.
+
+## The first-person hands (`vm_arm`, `vm_fist`)
+
+Conan's own forearm and hand, cut from his body (`casting.build_view_arm`) and closed round what he holds (`body.grip`):
+
+1. **The wrist bends toward the little finger** (`body.deviate`) until the knuckle line (index to ring) runs straight across the forearm, as a hand closing on a sword does. The hand frame is measured from the forearm, so the game's view-model poses (which hold the forearm along +Z and the grip along X) are unchanged.
+2. **The hilt is seated from the knuckles** (`body.grip_seat`): across the bases of the fingers, in the crease of the palm. The build prints it (`GRIP seat ...`), and it is `GRIP_C` in `game/js/mesh.js`.
+3. **The fingers close as a grasp:** all three joints together, the middle one fastest, each about the axis of its own bone that swings the fingertip toward the hilt without moving it sideways (the axis is measured from the rig, not assumed). When a segment touches the hilt, it and the joints before it stop, and the rest close on round it.
+4. **The thumb** swings across the palm from its root (three axes) and bends at its two hinges (one axis each, one way only). A search (coordinate descent from 17 starts) finds the pose that lays its pad on the outside of the index finger's middle segment, without passing through the hilt or the curled fingers.
+
+`vm_arm` closes round a 25 mm hilt (the sword's, the dagger's, the spear's shaft, the torch); `vm_fist` closes on nothing (bare-handed). The same method, with the three.js runtime, is in the [hands](https://github.com/jrodimusprime/hands) repo.

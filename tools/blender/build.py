@@ -14,8 +14,8 @@ os.makedirs(OUT, exist_ok=True)
 def build(cid):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     outfit._tile_cache.clear()
-    if cid in beasts.STATIC or cid == 'vm_arm':
-        parts = casting.build_view_arm() if cid == 'vm_arm' else beasts.STATIC[cid]()
+    if cid in beasts.STATIC or cid in ('vm_arm', 'vm_fist'):
+        parts = casting.build_view_arm() if cid == 'vm_arm' else casting.build_view_arm(name='vm_fist', radius=0.004) if cid == 'vm_fist' else beasts.STATIC[cid]()
         bpy.ops.object.select_all(action='DESELECT')
         for p in parts:
             p.select_set(True)

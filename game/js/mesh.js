@@ -862,7 +862,7 @@ function buildModel(name) {
   if (name.startsWith('satha_head') || name.startsWith('satha_jaw')) return buildSathaHead(name);
   if (name === 'vm_hand_grip') return buildHand('grip');
   if (name === 'vm_hand_open') return buildHand('open');
-  if (['vm_forearm', 'vm_manacle', 'vm_chain', 'vm_hilt', 'vm_upper', 'dagger2'].includes(name)) return buildViewModel(name);
+  if (['vm_forearm', 'vm_manacle', 'vm_chain', 'vm_hilt', 'vm_blade', 'vm_upper', 'dagger2'].includes(name)) return buildViewModel(name);
   const mb = new MeshBuilder(512);
   if (name.startsWith('char:')) { const [, id, part] = name.split(':'); return buildCharPart(id, part); }
   if (name.startsWith('weeper:')) return buildWeeperPart(name.split(':')[1]);
@@ -1125,7 +1125,7 @@ function buildSathaTube(spine, len, step, B0, radius, shade) {   // shade(point)
 // ---- the hero's right hand (view-model) ------------------------------------
 // Hand space: wrist at the origin, forearm along +z, fingers along -z, palm
 // facing -y, thumb on the -x side. The grip axis runs across the palm (x).
-const GRIP_C = [0, -0.03, -0.083];
+const GRIP_C = [-0.0102, -0.0306, -0.109];   // where the hilt lies in the fist, in the hand frame (tools/blender: body.grip_seat prints it)
 // lathe along an arbitrary axis with smooth (Gouraud) normals: fingers, thumb
 function smoothLathe(mb, ox, oy, oz, profile, sides, layer, col, axis) {
   const ax = norm3(axis), ref = Math.abs(ax[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0], u = norm3(cross3(ax, ref)), w = cross3(ax, u);
@@ -1216,8 +1216,12 @@ function buildViewModel(name) {
       loft(mb, [S_(0, 0.05, 0.05, 0.05, 0), S_(0.04, 0.056, 0.055, 0.055, 0), S_(0.5, 0.062, 0.06, 0.06, 0), S_(1, 0.07, 0.066, 0.066, 0)], 14, T.ARM, 2);
       break;
     case 'vm_hilt':                                         // a wrapped grip through the fist and a pommel at the little finger
-      smoothLathe(mb, -0.045, GRIP_C[1], GRIP_C[2], [[0.012, 0], [0.013, 0.05], [0.012, 0.095]], 8, T.GRIP, ONE3, [1, 0, 0]);
-      addRock(mb, 0.058, GRIP_C[1], GRIP_C[2], 0.016, 0.016, 0.016, 2, T.IRON, 0.05);
+      smoothLathe(mb, GRIP_C[0] - 0.052, GRIP_C[1], GRIP_C[2], [[0.012, 0], [0.013, 0.055], [0.012, 0.11]], 8, T.GRIP, ONE3, [1, 0, 0]);   // (a hand's breadth: the guard beyond the forefinger, the pommel beyond the little finger)
+      addRock(mb, GRIP_C[0] + 0.068, GRIP_C[1], GRIP_C[2], 0.016, 0.016, 0.016, 2, T.IRON, 0.05);
+      break;
+    case 'vm_blade':                                        // the sword's cross and blade (the warden's sword, as drawn at 0.62), along +y from the cross; the grip is vm_hilt
+      addBox(mb, 0, 0.11, 0, 0.09, 0.012, 0.016, T.IRON);
+      loft(mb, [S_(0.12, 0.028, 0.006, 0.006, 0), S_(0.5, 0.025, 0.005, 0.005, 0), S_(0.8, 0.017, 0.004, 0.004, 0), S_(0.88, 0.001, 0.001, 0.001, 0)], 4, T.STEEL, 1, null, 'y');
       break;
     case 'vm_chain':                                        // the broken chain still hanging from the cuff
       addBox(mb, 0.011, -0.034, 0.055, 0.008, 0.012, 0.012, T.IRON);   // the staple, on the underside of the band
