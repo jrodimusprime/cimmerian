@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // The later levels (e1m4-e1m8) are told in beats: data in the level spec, run here.
 //   beats: [{ id, at: room or [rooms], needs: [flags], killed: group, after: secs, sets: flag,
-//             lines: [[text, cls]], wake: [groups], npc: 'follow'|'stay', hurl: true }]
+//             lines: [[text, cls]], wake: [groups], npc: 'follow'|'stay', npcTo: [cx, cz] (he walks there and waits), hurl: true }]
 // A beat fires once, the first tick its conditions all hold. Its lines come one by one.
 // Also here: sleeping guards (wake to running feet nearby, or to a fight), the
 // companion who follows you (Pelias), the bosses' special draws, allied ranks,
@@ -39,7 +39,7 @@ function updateBeats() {
     if (b.act) directActors(b.act);
     if (b.kill) for (const id of b.kill) { const f = S.foes.find(q => q.id === id); if (f && !f.dead) { f.ragYaw = 0; killFoe(f, 'blade'); S.kills--; } }   // cut down by others' hands (not yours)
     if (b.rout) for (const g in b.rout) for (const f of S.foes) if (f.group === g && !f.dead) { f.state = 'rout'; f.t = 0; f.routTo = b.rout[g]; f.alert = false; }   // their nerve broken: they throw down the post and run
-    if (b.npc && S.npc) { S.npc.mode = b.npc; S.npc.castAt = S.npc.t; }
+    if (b.npc && S.npc) { S.npc.mode = b.npc; S.npc.castAt = S.npc.t; S.npc.to = b.npcTo ? (Array.isArray(b.npcTo[0]) ? b.npcTo : [b.npcTo]).map(p => [p[0] * CELL, p[1] * CELL]) : null; }   // npcTo: he goes to that place (by those places, if a list) and waits there
     if (b.sound) Sfx[b.sound] && Sfx[b.sound](1);
     if (b.hurl) { const f = S.foes.find(q => q.id === b.hurl); if (f) { f.y += 2.2; f.vy = 5; f.falling = 1; f.vx = 0; f.fallTo = 0; const a = f.yaw + Math.PI; f.x += Math.sin(a) * 0; f.z -= 14; } }   // over the parapet: far out, and down
     if (b.teleport) {                                   // the scene cuts: you are somewhere else
@@ -146,6 +146,13 @@ function updateNPC() {
   const n = S.npc; if (!n) return;
   n.t += DT; n.moving = false; n.shy = false;
   if (S.tick % 36 === 0) { (S.npcTrail ||= []).push([S.x, S.z]); if (S.npcTrail.length > 40) S.npcTrail.shift(); }   // the way you came, for him to follow
+  if (n.mode === 'stay' && n.to) {                        // to his place in the scene, walking, then there he stands and faces you
+    if (n.to.length > 1 && Math.hypot(n.to[0][0] - n.x, n.to[0][1] - n.z) < 0.4) n.to.shift();
+    const dx = n.to[0][0] - n.x, dz = n.to[0][1] - n.z, d = Math.hypot(dx, dz);
+    if (d > 0.15 || n.to.length > 1) { const st = d > 1.5 ? flowToward(n.x, n.z, n.to[0][0], n.to[0][1]) : null, tx = st ? st[0] - n.x : dx, tz = st ? st[1] - n.z : dz; npcMove(n, tx, tz, Math.min(d, 1.9 * DT)); n.yaw = Math.atan2(tx, tz); }
+    else { let a = Math.atan2(S.x - n.x, S.z - n.z) - n.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); n.yaw += clamp(a, -3 * DT, 3 * DT); }
+    return;
+  }
   if (n.mode !== 'follow') return;
   const dx = S.x - n.x, dz = S.z - n.z, d = Math.hypot(dx, dz);
   const foe = npcThreat(n);
